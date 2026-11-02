@@ -95,6 +95,11 @@ Short format: decision · why · evidence · status. "Proposed" = the team still
 | D81 | **Pinned versions** (`constraints.txt`, Python 3.13) and **CI on every push** (pytest, web build, image with OCR and password; end-to-end on demand) | A `pip install` without versions can break a deployment; the container's OCR cannot be tested in the session (X25) | Workflow `Prüfungen` ([22 §10](22_deployment.md#10-automated-tests-ci)) | Verified (CI green) |
 | D82 | **Documentation in English with the German technical terms** (Bodengutachten, Bohrung, Schicht, GOK, Lageplan…); doc file names in English; app UI, code and comments stay in German | Public repository (AGPL), readable for an international audience; the German terms are the ones the Gutachten and the app use | All Markdown translated, relative links and anchors checked | Decided (2026-10-29) |
 | D83 | **Free way online: own PC + Cloudflare Quick Tunnel** (`start_online.bat` / `scripts/online.py`): the server always gets a password, the https address is temporary, the Gutachten stay on the PC | The free hosts forget the projects (Render Free, Hugging Face) or run outside the EU, and Gutachten are confidential | `tests/test_online.py` (simulated cloudflared: address, 401/200, Ctrl+C stops everything); real tunnel not tested in the session | Verified (simulated) |
+| D84 | **BoreholeML 3.x as the exchange format for Bohrungen** (import and export), SEP3 for petrography; the export first | The format of the SGD and the BGR; a prefilled file helps the submission under the GeolDG; it defines the mapping that the import uses | [23 §2.1](23_open_data_integration.md#21-boreholeml-the-exchange-format-of-the-länder) | Proposed (2026-11-02) |
+| D85 | **Third-party Bohrungen only with source, license and date**, marked `herkunft = SGD`; a model that uses them carries the maturity **Vorerkundung**; never merged silently with the Gutachten | Archive data of unknown quality; a doubtful value is marked, never hidden | [23 §2.3](23_open_data_integration.md#23-a-baugrundmodell-from-a-point-standort-start) | Proposed (2026-11-02) |
+| D86 | **Umgebungsmodell from the open data of the Länder** (DGM1, LoD2) in ETRS89/UTM + DHHN2016; basemap.de 3D Tiles only for viewing; OSM only as a fallback | Same frame and height datum as the model; official data, mostly dl-de/zero or dl-de/by | [23 §2.4](23_open_data_integration.md#24-umgebungsmodell-dgm-and-lod2-buildings) | Proposed (2026-11-02) |
+| D87 | **No Cesium engine and no Cesium ion inside the app**; an optional 3D Tiles export serves Cesium users | A second 3D engine next to That Open; ion is paid for commercial use; 3D Tiles is an open standard | [23 §2.5](23_open_data_integration.md#25-basemaps-openstreetmap-basemapde-and-cesium) | Proposed (2026-11-02) |
+| D88 | **External services optional and switchable off per project**; the app keeps working offline | A query reveals the site of a confidential project; services can be down | [23 §4](23_open_data_integration.md#4-architecture-of-the-integration-proposal) | Proposed (2026-11-02) |
 
 ## Open questions
 
@@ -108,7 +113,9 @@ Short format: decision · why · evidence · status. "Proposed" = the team still
    in the viewer ([20](20_lage_pruefung_viewer.md), D57).
 4. Who sends the issues and the email to swisstopo, and on behalf of which organisation?
    ([13](13_swisstopo_collaboration.md))
+5. Open data ([23](23_open_data_integration.md)): which Länder and sites first, and is the Standort start (Vorerkundung)
+   wanted before the DGM checks? Confirm D84–D88.
 
 Up: [Index](README.md)
 
-Related: [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [10 Plan](10_implementation_plan.md) · [09 Validation](09_validation_benchmark.md) · [18 Layer modeler](18_layer_modeler.md) · [20 Lage and Prüfstand](20_lage_pruefung_viewer.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md)
+Related: [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [10 Plan](10_implementation_plan.md) · [09 Validation](09_validation_benchmark.md) · [18 Layer modeler](18_layer_modeler.md) · [20 Lage and Prüfstand](20_lage_pruefung_viewer.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md) · [23 Open data](23_open_data_integration.md)

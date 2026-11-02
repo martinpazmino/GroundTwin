@@ -12,13 +12,15 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D83.
+- `docs/11_decisions.md`: decisions D1–D88 (D84–D88 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
 - `docs/21_app_schritte_normen.md`: step app (FastAPI + viewer), norms for the description, new calibration.
 - `docs/22_deployment.md`: free online from your own PC (Cloudflare tunnel), container (Render), free hosts compared,
   why not Vercel, variables, memory, CI.
+- `docs/23_open_data_integration.md`: open data and open-source integration (BoreholeML, BGR Bohrpunktkarte, DGM +
+  LoD2 Umgebungsmodell, 3D Tiles, Cesium/OSM): evaluation and plan P0–P6.
 
 ## Working rules
 - **Blind test**: with a new PDF, freeze the predictions (`benchmark/blind_test.py freeze`)
@@ -68,7 +70,8 @@ license **AGPL-3.0-or-later** (D79).
   port. Test `tests/test_online.py` with a simulated cloudflared.
 
 ## Environment (cloud sessions)
-- Municipal websites blocked by the network policy; pypi and GitHub reachable. The user uploads the PDFs.
+- Municipal websites and geodata hosts (BGR, BKG, Länder) blocked by the network policy, also for WebFetch (X30,
+  docs/23 §7); pypi, npm and GitHub reachable. The user uploads the PDFs.
 - Heavy dependencies in venvs in the scratchpad: `venv` (pymupdf, opencv, rapidocr), `sgvenv` (swissgeol).
 - Docker (X25, X26): start `dockerd` in the background with the longest time limit; apt blocked → `--build-arg OCR=0`,
   `--network host`, the session's proxy and CA as a secret. vercel.com, render.com, gnu.org and flaviocopes.com

@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Evaluation and intervention plan for open data and open-source integrations
+  ([docs/23](docs/23_open_data_integration.md)): BoreholeML, BGR Bohrpunktkarte and the state
+  geological surveys, DGM and LoD2 for the Umgebungsmodell, basemap.de, Cesium / 3D Tiles,
+  OpenStreetMap.
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed

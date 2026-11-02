@@ -18,7 +18,8 @@ The notes are in English and keep the German technical terms of the Gutachten an
 > [!NOTE]
 > Summary: v1 depended on fixed positions and colours. Extraction v4 reads the drawing instead
 > (geometry, labels, OCR) and is measured on real, stress and synthetic PDFs; the step app turns it
-> into a reviewed Baugrundmodell in IFC 4.3.
+> into a reviewed Baugrundmodell in IFC 4.3. Next: open data and open-source projects (BoreholeML,
+> BGR, geoportals, 3D Tiles) in [23](23_open_data_integration.md).
 
 ## Start here
 
@@ -34,6 +35,10 @@ The notes are in English and keep the German technical terms of the Gutachten an
 - [18 Layer modeler and That Open viewer](18_layer_modeler.md): automatic Bodenschichten (Einheiten by correlation, surfaces, closed solids), IFC 4.3 and web viewer; results against synthetic ground truth and with Berlin.
 - [17 Extraction algorithm v4](17_extraction_algorithm.md): specification by stages E0–E9, parameters and their origin, confidence and canonical output.
 - [22 Online: deployment from GitHub](22_deployment.md): free on your own PC with a Cloudflare tunnel (`start_online.bat`), the app as a container (`Dockerfile`, Render blueprint with disk and password), the free hosts compared, why not Vercel, environment variables, measured memory, security, AGPL license and CI.
+
+## Next
+
+- [23 Open data and open-source integration](23_open_data_integration.md): evaluation and intervention plan for BoreholeML, the BGR Bohrpunktkarte and the state geological surveys, a Baugrundmodell from a point, the Umgebungsmodell (DGM + LoD2 buildings), basemaps, Cesium / 3D Tiles and OpenStreetMap.
 
 ## Extraction: problem and design
 
@@ -97,6 +102,8 @@ Architecture ─► 11 Decisions ─► 16 Lessons
                                             20 Lage and Prüfstand ─► 21 Step app
                                                                 ▼
                                                   22 Online (own PC, container)
+                                                                ▼
+                                                  23 Open data integration (plan)
 ```
 
 Up: [Repository README](../README.md)

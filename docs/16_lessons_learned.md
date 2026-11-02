@@ -202,7 +202,8 @@ doubtful value stays **marked**, never hidden.
 | X27 | Generic environment variable names collide with the system: tcsh sets `HOST` to the machine name, which would have put the server on the network. Use app-specific names (`GEO_AGENT_HOST`); `PORT` stays because the platforms set it | Review of `server/__main__.py` |
 | X28 | Local health checks with `urllib` must bypass the proxy (`ProxyHandler({})`): a company proxy from `HTTP_PROXY` does not know this machine's 127.0.0.1 | `scripts/online.py` |
 | X29 | The repository was renamed twice (CAD_Extract → GeoIM → GroundTwin). `git push` keeps working through GitHub's redirect and prints "This repository moved"; the session's GitHub tools only accept the name in the session scope. When a push mentions a move, check `list_repos` and update links | Push output; Actions run read via the old name |
+| X30 | Geodata services (BGR, BKG / basemap.de, state geoportals) and `schemas.bgr.de` are blocked in the cloud session, also for WebFetch (proxy 403 or name not resolved). Research with WebSearch, develop against fixtures and list the hosts to allow ([23 §7](23_open_data_integration.md#7-hosts-to-allow-in-the-cloud-session)) | curl and WebFetch, 2026-11-02 |
 
 Up: [Index](README.md)
 
-Related: [15 Real results](15_results_real_pdfs.md) · [11 Decisions](11_decisions.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md)
+Related: [15 Real results](15_results_real_pdfs.md) · [11 Decisions](11_decisions.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md) · [23 Open data](23_open_data_integration.md)
