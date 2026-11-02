@@ -38,8 +38,10 @@ desktop.ini
 data/Geo_Daten.xlsx
 *.ifc
 
-# Ausgaben von Pruefungen und Skripten (testplan.py, check.mjs, check_app.mjs, Benchmark)
+# Ausgaben von Pruefungen und Skripten (testplan.py, check.mjs, check_app.mjs; die CI nutzt planes/ und capturas/)
 plans/
+planes/
 screenshots/
+capturas/
 /arbeit/
 *.log
