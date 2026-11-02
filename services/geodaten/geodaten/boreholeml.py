@@ -77,6 +77,8 @@ def _m(v: float) -> str:
 def exportierbar(b: dict) -> str:
     """Grund, warum eine Bohrung nicht exportiert wird ('' = exportierbar)."""
     schichten = b.get("layers") or []
+    if b.get("herkunft") in ("SGD", "BoreholeML"):
+        return "aus dem Bestand des Landes bzw. einer BoreholeML-Datei, nicht aus dem Gutachten"
     if not schichten:
         return "keine Schichten"
     if not all(ly.get("geprueft") for ly in schichten):
@@ -258,6 +260,10 @@ for _k, _v in CODES["bodenart"].items():                  # Reihenfolge der Tabe
         _UMKEHR_EINS.setdefault(_v["petrographie"]["code"], []).append(_k)
 
 
+# Nur beim Import: kuenstliches Lockermaterial ohne Genese ist eine Auffuellung (der Export schreibt la + yf)
+_NUR_IMPORT = {"la": "Auffuellung"}
+
+
 def _kette(code: str | None, eltern: dict) -> list[str]:
     out = []
     while code and code not in out:
@@ -277,8 +283,10 @@ def bodenart_aus(petro: str | None, genese: str | None) -> tuple[str | None, str
     for p in _kette(petro, CODES["petrographie_eltern"]):
         if treffer is None and p in _UMKEHR_EINS:
             treffer = _UMKEHR_EINS[p]
+    if not treffer and any(p in _NUR_IMPORT for p in _kette(petro, CODES["petrographie_eltern"])):
+        treffer = [next(_NUR_IMPORT[p] for p in _kette(petro, CODES["petrographie_eltern"]) if p in _NUR_IMPORT)]
     if not treffer:
-        return None, f"Petrographie „{petro or '–'}“ keiner Bodenart zugeordnet"
+        return None, (f"Petrographie „{petro}“ keiner Bodenart zugeordnet" if petro else "keine Petrographie angegeben")
     andere = [k for k in treffer[1:] if k not in ("Glimmerton", "Lauenburger Ton")]   # Namen, keine Lithologie
     return treffer[0], (f"mehrdeutig ({', '.join(treffer[:1] + andere)}) – {treffer[0]} angenommen" if andere else "")
 
@@ -319,19 +327,23 @@ def importieren(daten: bytes, name: str = "boreholeml.xml") -> dict:
         wurzel = ET.fromstring(daten)
     except ET.ParseError as err:
         raise ValueError(f"{name}: kein lesbares XML ({err})") from None
+    if _lokal(wurzel) == "ExceptionReport":
+        raise ValueError(f"{name}: Fehlermeldung des Dienstes – {_textwert(wurzel)[:300]}")
     bohrungen = [el for el in wurzel.iter() if _lokal(el) == "Borehole" and "boreholeml" in el.tag]
     if not bohrungen:
         raise ValueError(f"{name}: keine BoreholeML-Bohrung (bml:Borehole) gefunden")
+    rahmen = next((el.get("srsName") for el in wurzel.iter() if _lokal(el) == "Envelope" and el.get("srsName")), None)
     return {"document": {"file": name, "sha256": hashlib.sha256(daten).hexdigest(), "parser_version": "boreholeml",
                          "pages": None},
-            "boreholes": [_bohrung_lesen(b) for b in bohrungen], "soundings": {}}
+            "boreholes": [_bohrung_lesen(b, rahmen) for b in bohrungen], "soundings": {}}
 
 
-def _bohrung_lesen(bh: ET.Element) -> dict:
+def _bohrung_lesen(bh: ET.Element, rahmen_srs: str | None = None) -> dict:
     hinweise: list[str] = []
     punkt = next((el for el in bh.iter() if _lokal(el) == "Point"), None)
     werte = [float(v) for v in _textwert(_kind(punkt, "pos") if punkt is not None else None).split()] if punkt is not None else []
-    epsg = _epsg(punkt.get("srsName") if punkt is not None else None)
+    eigener = next((el.get("srsName") for el in bh.iter() if _lokal(el) == "Envelope" and el.get("srsName")), None)
+    epsg = _epsg((punkt.get("srsName") if punkt is not None else None) or eigener or rahmen_srs)
     x = y = gok = None
     if len(werte) >= 2:
         x, y = werte[0], werte[1]
@@ -355,6 +367,8 @@ def _bohrung_lesen(bh: ET.Element) -> dict:
             schichten.append(_schicht_lesen(iv, quelle))
     if not schichten:
         hinweise.append("ohne Schichtdaten (nicht freigegeben oder nicht vorhanden)")
+    elif all(ly["soil_class"] is None for ly in schichten):
+        hinweise.append("Schichten ohne Petrographie (nur Tiefen bzw. Stratigraphie freigegeben)")
     gw = []
     for g in (el for el in bh.iter() if _lokal(el) == "Groundwater"):
         for feld, art in (("entryDepth", "angetroffen"), ("balancedLevel", "Ruhewasser"), ("endLevel", "Bohrende")):

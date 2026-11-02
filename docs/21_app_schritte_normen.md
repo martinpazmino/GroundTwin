@@ -344,6 +344,44 @@ First piece of the open data plan ([23](23_open_data_integration.md), D89).
 
 ![Gelände (DGM): Berlin, DGM1-like tile with 2 m grid; four Bohrungen within 0.07 m, 422C-5527 took its GOK from the DGM, S2a without a position](img/21_lage_gelaende.jpg)
 
+### 4.5 Bohrungen der Länder: existing boreholes around the site
+
+Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91).
+
+**Querying:**
+
+- Section *Bohrungen der Länder* in the *Lage* step. *Abfragen* asks the services of the state geological
+  surveys for the Bohrungen within the radius (250 m by default) around the middle of the project.
+- The registry with evidence is [`dienste.json`](../services/geodaten/geodaten/dienste.json):
+  - Berlin and Brandenburg: header data, with the Schichtenverzeichnis as an image.
+  - NRW and Baden-Württemberg: BoreholeML with the released Schichtdaten.
+- **Nothing is sent without the click**: the button text says that the query sends the location of the
+  project to the service.
+
+**The list:**
+
+- Name, distance, GOK, Endteufe, and the Schichten: *n Schichten*, *Profil ↗* or *keine*.
+- The sources and licenses: Berlin dl-de/zero-2.0, Brandenburg and NRW dl-de/by-2.0 with the required
+  attribution.
+
+**Gegenprobe:**
+
+- A Bohrung of the Gutachten that the Land also has (same name within 50 m, or closer than 3 m) is
+  marked = *code*, with the difference in Lage and GOK. This is an independent check of the calibration,
+  like the DGM.
+- With the Berlin example, all five georeferenced Bohrungen are found: Lage ≤ 0.05 m, GOK identical.
+
+**Übernehmen:** only Bohrungen with Schichtdaten in BoreholeML.
+
+- They come into the project as a further document (`fremd.json`; the project keeps its signature).
+- Their codes carry the Land (`NW-14`).
+- Each one carries source, ID, license and date: *aus … – nicht aus dem Gutachten*.
+- They appear as a rhombus in the viewer, are reviewed like the others, and are modelled.
+- They are **never** exported back as BoreholeML.
+- *Zurücksetzen* removes them.
+
+![Bohrungen der Länder: Berlin, 37 Bohrungen within 250 m; the five of the Gutachten found at the Land within 0.05 m](img/21_lage_laender.jpg)
+
 ## 5. Einheiten and Modell
 
 **Einheiten**:
@@ -421,9 +459,9 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 | Test | Result |
 |---|---|
 | Modeler (`cd services/modeler && python -m pytest tests`) | 57 (19 for norms, 1 IFC with Bodenansprache/diameter) |
-| App and API (`python -m pytest tests`) | 70: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 4 for the online script |
+| App and API (`python -m pytest tests`) | 83: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 33/33 and no page error: BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 34/34 and no page error: Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

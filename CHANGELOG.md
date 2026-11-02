@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- *Lage* step: Bohrungen der Länder (Berlin, Brandenburg, NRW, Baden-Württemberg) around the site,
+  queried only on a click (decisions D85, D88, D91).
+  - A Gegenprobe of the Bohrungen of the Gutachten that the Land also has.
+  - Import of the BoreholeML Schichtdaten with source, license and date.
 - BoreholeML 3.2, the exchange format of the state geological surveys (decisions D84, D90).
   - Export of the reviewed Bohrungen in the *Modell* step, with the sender organisation; valid against
     the official XSD.

@@ -2,7 +2,8 @@
 //   A  Talheim: Warnung = unklassifizierte Schicht, blaettern (Pfeil, N), G = alle Schichten geprueft und weiter,
 //      Schicht klassifizieren, Bohrung entfernen und wiederherstellen, alle Bohrungen geprueft
 //   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen; B2 Gelaende (DGM-Datei): Vergleich
-//      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen
+//      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen; B3 Bohrungen der Laender: echte
+//      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -195,6 +196,21 @@ try {
   await page.getByRole("button", { name: "DGM entfernen" }).click();
   await warte(() => window.app.z.gelaende === null, null, 30000);
   pruefe("DGM entfernt, übernommene GOK bleibt", (await bohrung("422C-5527")).gok_quelle === "DGM");
+
+  // ---------------------------------------------------------------- B3: Bohrungen der Laender (echter Dienst Berlin)
+  await page.locator("details.abschnitt summary", { hasText: "Bohrungen der Länder" }).click();
+  await page.getByRole("button", { name: "Abfragen" }).click();
+  await warte(() => window.app.z.sgd, null, 90000);
+  const sgd = (await stand()).z.sgd;
+  const zeilenSgd = await page.locator("table.sgd tbody tr").count();
+  // nur ein Netzproblem des Dienstes laesst die Pruefung aus (wie die Live-Tests in tests/test_bohrdaten.py);
+  // jeder andere Fehler (HTTP 4xx, ExceptionReport, Lesefehler) faellt durch
+  const netzBerlin = sgd.fehler.find((f) => f.dienst === "BE" && /^(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(f.fehler));
+  if (netzBerlin) console.log(`AUS  Bohrungen der Länder: Dienst Berlin nicht erreichbar (${netzBerlin.fehler}) – Prüfung ausgelassen`);
+  else pruefe("Bohrungen der Länder: Gegenprobe – die fünf Bohrungen des Gutachtens auch beim Land (≤ 0,1 m)",
+    sgd.gegenprobe.anzahl === 5 && sgd.gegenprobe.lage_max <= 0.1 && zeilenSgd > 5 && sgd.quellen.some((q) => q.lizenz === "dl-de/zero-2.0"),
+    `${sgd.treffer.length} Treffer · ${JSON.stringify(sgd.gegenprobe)} · Fehler ${JSON.stringify(sgd.fehler)}`);
+  await page.screenshot({ path: `${aus}/B3_laender.png` });
 
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen
   await hochladen(`${plaene}/plan_extraktion.json`);

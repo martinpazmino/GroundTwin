@@ -8,6 +8,9 @@ Ablage unter ARBEIT (ui/pipeline.py, mit GEO_AGENT_ARBEIT festlegbar):
   web/unterlagen/<sha>_<seite>.png   Lageplan/Laengsschnitt als Bild
   web/seiten/<sha>_<seite>.png       Seiten des Gutachtens (Quelle einer Schicht zeigen)
   projekte/<signatur>/dgm.npy        Gelaendemodell aus den Dateien des Nutzers (Kopf in projekt.json, docs/23)
+  projekte/<signatur>/sgd.json       letzte Abfrage der Bohrungen der Laender (Treffer, Gegenprobe, Quellen)
+  projekte/<signatur>/fremd.json     uebernommene Bohrungen der Laender: weiteres Dokument hinter docs.json (die
+                                     Signatur bleibt die der Gutachten; die Kennungen "Dokument:Bohrung" bleiben fest)
 """
 from __future__ import annotations
 
@@ -28,7 +31,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import boreholeml, gelaende  # noqa: E402
+from geodaten import bohrdaten, boreholeml, gelaende  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -147,6 +150,7 @@ class Arbeitsplatz:
                         p = None                          # kaputter Stand: neu beginnen
             if p is not None and not p.name:
                 p.name = pj.neues_projekt(docs, sig).name
+            docs = self._mit_fremd(sig, docs)
             self._projekte[sig] = (docs, p or pj.neues_projekt(docs, sig))
             self.sichern(sig)
         return sig
@@ -156,11 +160,16 @@ class Arbeitsplatz:
             ordner = self.ordner(sig)
             if not (ordner / "docs.json").exists():
                 raise KeyError(sig)
-            docs = json.loads((ordner / "docs.json").read_text(encoding="utf-8"))
+            docs = self._mit_fremd(sig, json.loads((ordner / "docs.json").read_text(encoding="utf-8")))
             p = pj.laden(json.loads((ordner / "projekt.json").read_text(encoding="utf-8"))) \
                 if (ordner / "projekt.json").exists() else pj.neues_projekt(docs, sig)
             self._projekte[sig] = (docs, p)
         return self._projekte[sig]
+
+    def _mit_fremd(self, sig: str, docs: list[dict]) -> list[dict]:
+        """Gutachten + uebernommene Bohrungen der Laender (immer als letztes Dokument)."""
+        datei = self.ordner(sig) / "fremd.json"
+        return docs + [json.loads(datei.read_text(encoding="utf-8"))] if datei.exists() else docs
 
     def sichern(self, sig: str) -> None:
         _, p = self._projekte[sig]
@@ -169,7 +178,10 @@ class Arbeitsplatz:
     def zuruecksetzen(self, sig: str) -> None:
         """Alle Korrekturen, Lagen, Pruefhaken und Eincheckungen verwerfen."""
         with self.sperre(sig):
-            docs, _ = self.laden(sig)
+            self.laden(sig)
+            for datei in ("fremd.json", "sgd.json", "dgm.npy"):           # Uebernommenes und Abfragen gehoeren dazu
+                (self.ordner(sig) / datei).unlink(missing_ok=True)
+            docs = json.loads((self.ordner(sig) / "docs.json").read_text(encoding="utf-8"))
             self._projekte[sig] = (docs, pj.neues_projekt(docs, sig))
             self.sichern(sig)
 
@@ -262,6 +274,7 @@ class Arbeitsplatz:
                            if gecacht and (self.web / "modelle" / self._ifc_name(schluessel, docs, p)).exists() else None},
                 "punkte": p.punkte,
                 "gelaende": self._gelaende(sig, docs, p),
+                "sgd": self._sgd(sig, docs),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg, "modus": p.lage_modus,
                            "punkte": p.punkte},
@@ -455,6 +468,70 @@ class Arbeitsplatz:
         if raster is None:
             raise ValueError("kein DGM geladen")
         return gelaende.gok_vorschlaege(raster, pj.gelaende_eingabe(docs, p), ids)
+
+    # ------------------------------------------------------------ Bohrungen der Laender (docs/23 §2.2, nur auf Klick)
+    def sgd_abfragen(self, sig: str, radius: float | None = None, holer=None) -> dict:
+        """Dienste der Laender um die Mitte des Projekts abfragen; Treffer mit Gegenprobe gegen das Gutachten."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            x, y, epsg = pj.projekt_mitte(docs, p)
+        erg = bohrdaten.abfragen(x, y, epsg, radius or bohrdaten.RADIUS_STANDARD, holer=holer)   # Netz: ohne Sperre
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(f"{len(self._gutachten(sig))}:")]
+            erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+            json_schreiben(self.ordner(sig) / "sgd.json", erg)
+            p.version += 1
+            self.sichern(sig)
+            return erg
+
+    def sgd_uebernehmen(self, sig: str, auswahl: list[dict], holer=None) -> str:
+        """Gewaehlte Bohrungen (BoreholeML mit Schichtdaten) als weiteres Dokument ins Projekt; Herkunft markiert."""
+        je_dienst: dict[str, list[str]] = {}
+        for a in auswahl:
+            je_dienst.setdefault(str(a.get("dienst")), []).append(str(a.get("id")))
+        geholt = [bohrdaten.holen(d, ids, holer=holer) for d, ids in je_dienst.items()]   # Netz: ohne Sperre
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            gutachten = self._gutachten(sig)
+            fremd = docs[len(gutachten)] if len(docs) > len(gutachten) else {
+                "document": {"file": "Bohrungen der Länder (SGD)", "sha256": "", "parser_version": "sgd", "pages": None},
+                "boreholes": [], "soundings": {}}
+            schon = {(b.get("quelle"), b.get("fremd_id")) for b in fremd["boreholes"]}
+            neu = [b for doc in geholt for b in doc["boreholes"] if (b.get("quelle"), b.get("fremd_id")) not in schon]
+            if not neu:
+                raise ValueError("diese Bohrungen sind schon im Projekt")
+            fremd["boreholes"] += neu
+            json_schreiben(self.ordner(sig) / "fremd.json", fremd)
+            self._projekte[sig] = (gutachten + [fremd], p)
+            p.version += 1
+            self.sichern(sig)
+            fehlen = [i for doc in geholt for i in doc.get("fehlen", [])]
+            return (f"{len(neu)} Bohrungen der Länder übernommen ({', '.join(b['code'] for b in neu[:6])}"
+                    f"{' …' if len(neu) > 6 else ''})" + (f"; nicht geliefert: {', '.join(fehlen)}" if fehlen else ""))
+
+    def sgd_verwerfen(self, sig: str) -> None:
+        """Die letzte Abfrage vergessen (uebernommene Bohrungen bleiben; entfernen wie jede Bohrung)."""
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            (self.ordner(sig) / "sgd.json").unlink(missing_ok=True)
+            p.version += 1
+            self.sichern(sig)
+
+    def _gutachten(self, sig: str) -> list[dict]:
+        return json.loads((self.ordner(sig) / "docs.json").read_text(encoding="utf-8"))
+
+    def _sgd(self, sig: str, docs: list[dict]) -> dict | None:
+        datei = self.ordner(sig) / "sgd.json"
+        if not datei.exists():
+            return None
+        erg = json.loads(datei.read_text(encoding="utf-8"))
+        n = len(self._gutachten(sig))
+        drin = {(b.get("quelle"), b.get("fremd_id")) for d in docs[n:] for b in d["boreholes"]}
+        for t in erg["treffer"]:
+            t["uebernommen"] = (t["dienst"], t["id"]) in drin
+            t["uebernehmbar"] = t["schichten"] == "boreholeml" and not t.get("gutachten") and not t["uebernommen"]
+        return erg
 
     # ------------------------------------------------------------ Seiten des Gutachtens (Quelle einer Schicht)
     def seite(self, sig: str, dokument: int, seite: int) -> dict:

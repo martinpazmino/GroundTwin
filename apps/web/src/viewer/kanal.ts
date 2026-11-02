@@ -14,6 +14,7 @@ export interface Nadel {
   gok_bekannt: boolean;
   gok_pdf?: boolean;                    // GOK steht im PDF: im Schnitt nicht verschiebbar
   gok_quelle?: string;                  // PDF, manuell, DGM oder leer
+  herkunft?: string;                    // SGD = Bohrung aus dem Bestand eines Landes (nicht aus dem Gutachten)
   ende: number;
   geprueft: boolean;
   schichten_geprueft: number;

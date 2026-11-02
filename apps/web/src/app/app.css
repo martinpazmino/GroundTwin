@@ -319,6 +319,9 @@ select.epsg { width: 100%; max-width: 24rem; }
 /* Gelaende (DGM): Vergleich GOK - DGM im Schritt Lage */
 .gelaende tr.warn td { background: rgba(240, 163, 58, 0.09); }
 .gelaende td button.klein { padding: 0.1rem 0.45rem; font-size: 0.75rem; }
+/* Bohrungen der Laender: Zeilen, die eine Bohrung des Gutachtens sind */
+.sgd tr.doppelt td { background: rgba(140, 180, 40, 0.08); }
+.sgd a, .abschnitt-inhalt p a { color: #8fc6ff; }                 /* Links auf dunklem Grund lesbar */
 
 /* BoreholeML: Knopf ohne exportierbare Bohrung */
 .knopf.aus { opacity: 0.45; cursor: not-allowed; }

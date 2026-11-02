@@ -123,6 +123,9 @@ doubtful value stays **marked**, never hidden.
 | S6 | The log can be **only a text table** (Tiefe \| Beschreibung) without a graphic column; accept it only if ≥ 60 % of the intervals give a Bodenart (DPH and lab tables do not) | A7367 (Switzerland) |
 | S8 | A **scanned** Schichtenverzeichnis is read the same way through OCR if the reader uses the common primitives: OCR glues the marker to the text (`a)Auffullung`), drops umlauts (`Auffullung`) and spaces (`B1` on one page, `B 1` on another): compare **normalised** codes and accept forms without umlauts | Raster perturbation: Triefenstein 0/5 → 5/5, Wesel 0/24 → 24/24 |
 | S7 | Label and value in the title block can be **separate blocks** on the same row (`Höhe in m ü.M.:` · `668.99`): join by row before searching | A7367 |
+| S9 | The **services of the Länder deliver differently**: Berlin and Brandenburg only header data and the Schichtenverzeichnis as an image; NRW and Baden-Württemberg BoreholeML 3.0 (old namespace `infogeo.de`), in Baden-Württemberg often without petrography. Mark what is missing (*Schichten ohne Petrographie*), never guess | Queries of 2026-11-02 |
+| S10 | **Do not trust the metadata of a service blindly**: the NRW BoreholeML WFS announces an area in Lower Saxony and puts the CRS only on the envelope of the collection (`gml:Point` without `srsName`), and errors come as an `ExceptionReport` with HTTP 200. Take the area from a second source (OGC API) and inherit the CRS as GML says | `dienste.json`, `boreholeml.importieren` |
+| S11 | **A Bohrung of the Gutachten is often already at the Land**: names, Lage and GOK of the Berlin example match the state database (≤ 0.05 m). Such a match is an independent check of the calibration, and it shows that archive Bohrungen of a Gutachten come from there | Gegenprobe in the *Lage* step |
 
 ## R. swissgeol: what to copy and what not
 

@@ -7,8 +7,8 @@ aliases: [Geodaten, DGM, BoreholeML export]
 
 # Geodaten: DGM from files and BoreholeML
 
-Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM (phase P3)
-and BoreholeML (phase P1, below).
+Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM (phase P3),
+BoreholeML (phase P1) and the Bohrungen der Länder (phases P0 and P2), below.
 
 The user downloads the DGM tiles of their Land (open data, usually DGM1) and loads them in the
 *Lage* step. The app compares the GOK of the Gutachten with the terrain and proposes a missing
@@ -20,6 +20,8 @@ GOK. No network: nothing reveals the site of the project, and it works in every 
 | [`geodaten/boreholeml.py`](geodaten/boreholeml.py) | BoreholeML 3.2: export of reviewed Bohrungen, import of BoreholeML 3.x into the canonical JSON |
 | [`geodaten/boreholeml_codes.json`](geodaten/boreholeml_codes.json) | Codes of the official codelists v2 that GroundTwin uses, each with the official name as evidence, and the code hierarchies |
 | [`werkzeuge/boreholeml_codes.py`](werkzeuge/boreholeml_codes.py) | Generates the JSON from the official codelists; stops if a name is missing or ambiguous |
+| [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
+| [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten |
 
 **Formats:**
 
@@ -82,6 +84,25 @@ The exchange format of the state geological surveys (AK BoreholeML4, MIT License
 - Every Bohrung carries its origin (`herkunft`, `quelle`, `fremd_id`, a hint in the app).
 
 Tests: `python -m pytest tests/test_boreholeml.py tests/test_boreholeml_app.py`.
+
+## Bohrungen der Länder
+
+Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site).
+
+| Land | Service | Delivers | License |
+|---|---|---|---|
+| Berlin | WFS `gdi.berlin.de/services/wfs/bohrdaten` | header data, profile as image | dl-de/zero-2.0 |
+| Brandenburg | WFS-BPK `inspire.brandenburg.de/services/bpk_wfs` | header data with / without Schichtenverzeichnis, image | dl-de/by-2.0 |
+| NRW | BoreholeML WFS `www.bml3.nrw.de/service/bml` | BoreholeML 3.0 with the released Schichtdaten | dl-de/by-2.0 |
+| Baden-Württemberg | BoreholeML WFS `services.lgrb-bw.de/boreholeml/services/bml` | BoreholeML 3.0, often without petrography | not stated by the service |
+
+- Queried only on a click.
+- The middle of the project goes to longitude/latitude (Snyder series, < 1 mm against PROJ) to pick the
+  services. Then a WFS 2.0 GetFeature runs with a box in the project's UTM system.
+- Errors of one service, including an `ExceptionReport` with HTTP 200, only mark that service.
+
+Tests: `python -m pytest tests/test_bohrdaten.py tests/test_bohrdaten_app.py` (a dummy replaces the services;
+two tests ask the real ones).
 
 Up: [Documentation index](../../docs/README.md)
 

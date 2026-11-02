@@ -56,6 +56,21 @@ export interface Gelaende {
   fehler: string;
 }
 
+/** Bohrung eines Landes aus der Abfrage (docs/23 §2.2). */
+export interface SgdTreffer {
+  dienst: string; id: string; name: string; x: number; y: number; gok: number | null; teufe: number | null;
+  datum: string | null; schichten: "boreholeml" | "grafik" | "keine" | "ohne Petrographie"; schichten_n: number | null;
+  profil: string | null; abstand: number; gutachten?: string; abweichung_lage?: number; abweichung_gok?: number | null;
+  uebernommen: boolean; uebernehmbar: boolean;
+}
+
+export interface Sgd {
+  mitte: [number, number]; epsg: number; radius: number; zeit: string; dienste: string[]; treffer: SgdTreffer[];
+  fehler: { dienst: string; fehler: string }[];
+  quellen: { dienst: string; titel: string; land: string; lizenz: string; namensnennung: string; beleg: string }[];
+  gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
+}
+
 export interface Einstellungen { methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean }
 
 export interface Zustand {
@@ -73,6 +88,7 @@ export interface Zustand {
   modell: { schluessel: string; aktuell: boolean; ifc: string | null };
   punkte: Punkt[];                                    // freie Punkte auf dem Plan (noch keiner Bohrung zugeordnet)
   gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
+  sgd: Sgd | null;                                    // letzte Abfrage der Bohrungen der Länder
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -164,6 +180,10 @@ export const api = {
     return anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "POST", body: f });
   },
   dgmEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "DELETE" }),
+  sgdAbfrage: (sig: string, radius: number) => anfrage<Zustand>(`/api/projekt/${sig}/sgd/abfrage`, json({ radius })),
+  sgdUebernehmen: (sig: string, auswahl: { dienst: string; id: string }[]) =>
+    anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/sgd/uebernehmen`, json({ auswahl })),
+  sgdVerwerfen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/sgd`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,

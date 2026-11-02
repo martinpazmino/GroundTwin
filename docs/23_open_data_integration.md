@@ -31,17 +31,19 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
 - **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
-- **Status (2026-11-02):** P1 and the first part of P3 are done.
+- **Status (2026-11-02):** P0, P1, P2 and the first part of P3 are done.
+  - Bohrungen der Länder around the site, with a Gegenprobe against the Gutachten and the import of
+    BoreholeML Schichtdaten ([21 §4.5](21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
   - BoreholeML 3.2 export of the reviewed Bohrungen, valid against the official XSD, and import of
     BoreholeML files ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
   - The DGM comes from files the user downloads: GOK check and missing GOK on a click
     ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
 - **Before anything is fetched from outside:**
-  - Every external service can be switched off per project. Querying a service reveals the site of
-    a confidential project.
+  - Nothing is fetched without an explicit click, and the button says what is sent (D88, D91).
+    Querying a service reveals the site of a confidential project.
   - Every fetched dataset carries its source, license and date.
-- **Blocker for development in the cloud session:** the geodata hosts are blocked by the network
-  policy. §7 lists the domains to allow.
+- **Cloud session:** the geodata hosts of §7 are allowed since 2026-11-02 (before, they were
+  blocked: lesson X30).
 
 ## 1. Today and the gap
 
@@ -351,7 +353,8 @@ Rules:
 | P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)), 21 tests + 4 end-to-end checks |
 | P1: BoreholeML export and import | **Done.** [`boreholeml.py`](../services/geodaten/geodaten/boreholeml.py), code table from the official codelists v2 with the official names as evidence, export valid against the official XSD 3.2, import of the official examples and round trip; *Modell* and *Gutachten* steps ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)); 11 tests + 1 end-to-end check |
 | P3b: DGM through WCS, terrain surface in the model and the IFC | Open |
-| P0: service registry `dienste.json`; P2: Bohrungen of the state services | Open; the hosts of §7 are allowed since 2026-11-02 |
+| P0: service registry | **Done for four Länder.** [`dienste.json`](../services/geodaten/geodaten/dienste.json): Berlin, Brandenburg, NRW, Baden-Württemberg with license, attribution and evidence; area per service (NRW from its OGC API: its capabilities name a wrong area). Open: Bayern; the BGR GBL has no feature service (its WFS answers 404, only the WMS map exists) |
+| P2: Bohrungen of the state services | **Done.** [`bohrdaten.py`](../services/geodaten/geodaten/bohrdaten.py), *Lage* step ([21 §4.5](21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)): query only on a click, Gegenprobe (Berlin example: 5 of 5 found, ≤ 0.05 m), import of the BoreholeML Schichtdaten of NRW and Baden-Württemberg; 13 tests + 1 end-to-end check. The GBL is not queried: as a WMS it gives a map, not data |
 
 **Why this order:**
 

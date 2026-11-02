@@ -298,11 +298,13 @@ export class LageEditor {
     s.marke.classList.toggle("geprueft", n.geprueft);
     s.marke.classList.toggle("offen", offen);
     s.marke.classList.toggle("raus", !n.im_modell);
+    s.marke.classList.toggle("fremd", n.herkunft === "SGD");
     s.marke.classList.toggle("gewaehlt", this.ausgewaehlt === n.id);
     const zeilen = [n.code, n.quelle ? `Lage: ${n.quelle}` : "ohne Lage",
                     `GOK ${n.gok_bekannt ? `${zahlText(n.gok)} m NHN` : "unbekannt (relativ)"}${n.gok_pdf ? " (PDF)" : n.gok_quelle === "DGM" ? " (DGM)" : ""} · Endteufe ${zahlText(n.ende)} m`,
                     `Schichten geprüft ${n.schichten_geprueft}/${n.schichten_n}` +
                     (n.unklassifiziert ? ` · ${n.unklassifiziert} nicht klassifiziert` : "")];
+    if (n.herkunft === "SGD") zeilen.push("aus dem Bestand des Landes (nicht aus dem Gutachten)");
     if (!n.im_modell) zeilen.push(`nicht im Modell${n.grund ? `: ${n.grund}` : ""}`);
     if (this.aktiv) zeilen.push(this.ziehHinweis(n));
     s.marke.title = zeilen.join("\n");

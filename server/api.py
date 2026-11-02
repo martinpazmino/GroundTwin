@@ -54,6 +54,14 @@ class Beispiel(BaseModel):
     ocr: bool = False
 
 
+class SgdAbfrage(BaseModel):
+    radius: float | None = None
+
+
+class SgdAuswahl(BaseModel):
+    auswahl: list[dict]
+
+
 class Seite(BaseModel):
     seite: int = 0
     art: str = "plan"
@@ -180,6 +188,21 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.delete("/api/projekt/{sig}/dgm")
     def dgm_entfernen(sig: str):
         ap.dgm_entfernen(sig)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/sgd/abfrage")
+    def sgd_abfrage(sig: str, a: SgdAbfrage):
+        ap.sgd_abfragen(sig, a.radius)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/sgd/uebernehmen")
+    def sgd_uebernehmen(sig: str, a: SgdAuswahl):
+        meldung = ap.sgd_uebernehmen(sig, a.auswahl)
+        return {"meldungen": [meldung], "zustand": ap.zustand(sig)}
+
+    @app.delete("/api/projekt/{sig}/sgd")
+    def sgd_verwerfen(sig: str):
+        ap.sgd_verwerfen(sig)
         return ap.zustand(sig)
 
     @app.post("/api/projekt/{sig}/modell")

@@ -419,6 +419,21 @@ def gelaende_eingabe(docs: list[dict], p: Projekt) -> list[dict]:
     return out
 
 
+def projekt_mitte(docs: list[dict], p: Projekt) -> tuple[float, float, int]:
+    """Mitte der Bohrungen mit Lage (haeufigstes EPSG), sonst der Bezugspunkt eines kalibrierten Lageplans."""
+    if p.lage_modus != LAGE_KOORDINATEN:
+        raise ValueError("Bohrungen der Länder nur mit Lage nach Koordinaten")
+    mit = [b for b in gelaende_eingabe(docs, p) if b["x"] is not None and b["y"] is not None and b["epsg"]]
+    if mit:
+        epsg = max({b["epsg"] for b in mit}, key=lambda e: sum(b["epsg"] == e for b in mit))
+        auswahl = [b for b in mit if b["epsg"] == epsg]
+        return (sum(b["x"] for b in auswahl) / len(auswahl), sum(b["y"] for b in auswahl) / len(auswahl), int(epsg))
+    kal = (p.unterlage or {}).get("kalibrierung") or {}
+    if kal.get("bezug") and kal.get("epsg"):
+        return float(kal["bezug"]["x"]), float(kal["bezug"]["y"]), int(kal["epsg"])
+    raise ValueError("erst Lage setzen: Bohrungen mit Koordinaten (EPSG) oder einen kalibrierten Lageplan")
+
+
 def gok_aus_dgm(docs: list[dict], p: Projekt, werte: dict | None) -> str:
     """Vorgeschlagene GOK aus dem DGM uebernehmen (nur Bohrungen ohne GOK; markiert als Quelle DGM)."""
     if not p.dgm:
@@ -909,6 +924,7 @@ def viewer_bohrungen(docs: list[dict], p: Projekt, vorb: Vorbereitung, bericht: 
         out.append({"id": bid, "code": b["code"], "x": x, "y": y, "quelle": quelle,
                     "gok": 0.0 if gok is None else float(gok), "gok_bekannt": gok is not None,
                     "gok_pdf": b0.get("gok_nhn") is not None, "gok_quelle": gok_quelle(p, bid, b0),
+                    "herkunft": b0.get("herkunft") or "",
                     "ende": float(b.get("end_depth") or (schichten[-1]["bottom_depth"] if schichten else 0.0)),
                     "geprueft": bool(b.get("geprueft")),
                     "schichten_geprueft": sum(bool(ly.get("geprueft")) for ly in schichten), "schichten_n": len(schichten),

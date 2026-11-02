@@ -129,6 +129,8 @@ and how to update the versions.
    - Gelände (DGM): load the DGM tiles of the Land (open data). The GOK of every Bohrung is compared
      with the terrain, and a missing GOK can be taken from it with a click
      ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
+   - Bohrungen der Länder: the Bohrungen of the state databases around the site (on a click), a
+     Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
      and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
@@ -149,7 +151,7 @@ app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
 services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
 services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
-services/geodaten/          DGM from files, GOK check, BoreholeML export/import (open data plan, docs/23)
+services/geodaten/          DGM, GOK check, BoreholeML, Bohrungen der Länder (open data plan, docs/23)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)
