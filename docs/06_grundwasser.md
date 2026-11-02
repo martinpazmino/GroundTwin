@@ -13,7 +13,7 @@ read deterministically. It is worth combining our own geometric detection (DIN s
 swissgeol's keyword lists and colour detection.
 
 **Status:** symbol tested in the prototype (`groundwater` in
-[`prototyp_v2.py`](../spikes/extraktion_v2/prototyp_v2.py)): **17/17** synthetic Bohrungen with
+[`prototyp_v2.py`](../services/extractor/prototyp_v2.py)): **17/17** synthetic Bohrungen with
 depth within ±5 cm and date. swissgeol unchanged found **0/14** in the 5 layouts it was tested on
 (its detector looks for the Swiss two-line symbol;
 [08](08_swissgeol_reuse.md#4-test-swissgeol-unchanged-on-our-pdfs)).

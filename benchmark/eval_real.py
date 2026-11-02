@@ -1,4 +1,4 @@
-"""Echte Gutachten gegen die Wahrheit in groundtruth/*.json bewerten (v1, v3, swissgeol).
+"""Echte Gutachten gegen die Wahrheit in groundtruth/*.json bewerten (v1, aktuelle Extraktion v4, swissgeol).
 
     python eval_real.py <ordner_mit_pdfs> [<ordner_mit_swissgeol_predictions>]
 
@@ -15,11 +15,11 @@ from pathlib import Path
 import pymupdf
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1]))
-sys.path.insert(0, str(HERE.parent / "extraktion_v2"))
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "services" / "extractor"))
 from geo_agent.bohrprofil import parse_bohrprofil  # noqa: E402
 from geo_agent.legend import parse_legend  # noqa: E402
-from prototyp_v3 import extract  # noqa: E402
+from prototyp_v4 import extract  # noqa: E402
 
 TOL = 0.05
 
@@ -90,7 +90,7 @@ def run_v1(pdf: Path) -> dict:
     return out
 
 
-def run_v3(pdf: Path) -> tuple[dict, list]:
+def run_v4(pdf: Path) -> tuple[dict, list]:
     bhs, _ = extract(pdf)
     out = {norm(b.code): {"gok": b.gok, "bottoms": [ly.bottom for ly in b.layers],
                           "soils": [(ly.top, ly.bottom, ly.soil) for ly in b.layers], "gw": b.gw_depths}
@@ -119,7 +119,7 @@ def run_sg(pred: Path, name: str) -> dict:
 def gw_table(pdf: Path) -> dict[str, float]:
     """Grundwasserstaende aus Tabellen (Zellen per Clip lesen, siehe docs/07 §2)."""
     import re
-    from prototyp_v3 import ID_RE
+    from prototyp_v4 import ID_RE
     out = {}
     doc = pymupdf.open(pdf)
     for page in doc:
@@ -141,8 +141,8 @@ def main(pdf_dir: Path, sg_dir: Path | None) -> None:
             continue
         print(f"== {gt_file.stem}")
         print("   v1 ", score(gt, run_v1(pdf)))
-        f3, bhs = run_v3(pdf)
-        print("   v3 ", score(gt, f3))
+        f4, bhs = run_v4(pdf)
+        print("   v4 ", score(gt, f4))
         for b in bhs:
             unconf = sum(not ly.label_confirmed for ly in b.layers)
             print(f"        {b.code:6s} S.{b.page} M1:{b.scale} {b.mode:13s} GOK {b.gok} "

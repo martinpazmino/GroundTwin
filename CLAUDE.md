@@ -21,12 +21,12 @@ license **AGPL-3.0-or-later** (D79).
   why not Vercel, variables, memory, CI.
 
 ## Working rules
-- **Blind test**: with a new PDF, freeze the predictions (`spikes/korpus/blind_test.py freeze`)
-  and **push them to the repo before opening the PDF**; then transcribe the ground truth in `spikes/korpus/groundtruth/`.
+- **Blind test**: with a new PDF, freeze the predictions (`benchmark/blind_test.py freeze`)
+  and **push them to the repo before opening the PDF**; then transcribe the ground truth in `benchmark/groundtruth/`.
 - Always keep blind figures apart from training figures.
 - Every change to the extraction passes the regression on real PDFs, stress cases and synthetic ones:
-  `python spikes/korpus/regression.py --module spikes/extraktion_v2/prototyp_v4.py --real <pdfs> --stress <ordner>
-  --synth <ordner> --baseline spikes/korpus/baseline_v4.json` (stress cases: `stress_cases.py`; OCR with
+  `python benchmark/regression.py --module services/extractor/prototyp_v4.py --real <pdfs> --stress <ordner>
+  --synth <ordner> --baseline benchmark/baseline_v4.json` (stress cases: `stress_cases.py`; OCR with
   `GEO_OCR_CACHE=<dir>`). In addition: `ablation.py` (which rule protects which case) and `perturb.py`
   (rotate/scale/raster).
 - General rules (features of the drawing), never exceptions per PDF or office.
@@ -43,7 +43,7 @@ license **AGPL-3.0-or-later** (D79).
   reviewed, remove/restore, Ø of the columns, calibration (scale by distance or 1:n + reference point + rotation /
   vertical scale + lock), dragging only with the lock (plan x/y; section: height only without a GOK from the PDF),
   points on the locked plan (place, assign to a Bohrung, delete).
-  Extraction/model in `ui/pipeline.py`; the extraction is used from `spikes/extraktion_v2/prototyp_v4.py` without
+  Extraction/model in `ui/pipeline.py`; the extraction is used from `services/extractor/prototyp_v4.py` without
   touching it.
 - Norms (DIN 4023 / EN ISO 14688-1 / DIN 18196): `services/modeler/baugrundmodell/normen.json` + `normen.py`, with
   evidence per value; read them, never apply them silently (proposal with a click). IFC: `CPset_Bodenansprache` per

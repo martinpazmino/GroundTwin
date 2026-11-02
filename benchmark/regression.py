@@ -1,6 +1,6 @@
 """Regressionstest der Extraktion: echte Gutachten, Stressfaelle (je Lektion) und synthetische Layouts.
 
-    python regression.py --module ../extraktion_v2/prototyp_v4.py --real <pdfs> --stress <stressordner> \\
+    python regression.py --module ../services/extractor/prototyp_v4.py --real <pdfs> --stress <stressordner> \\
                          --synth <synthordner> [--baseline baseline.json] [--write] [--disable regel1,regel2]
 
 Echte PDFs: <real>/<name>.pdf mit groundtruth/<name>.json. Stressfaelle und synthetische Layouts tragen
@@ -19,7 +19,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parent / "extraktion_v2"))
+sys.path.insert(0, str(HERE.parent / "services" / "extractor"))
 from eval_real import norm, score  # noqa: E402
 
 GOOD = ("Bohrungen", "Grenzen", "Grenzen exakt", "Bodenart", "GOK", "GW", "XY", "GW-Status")

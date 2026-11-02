@@ -36,4 +36,4 @@ See the result: [`apps/web` viewer](../../apps/web/README.md) or the step app (`
 
 Up: [Documentation index](../../docs/README.md)
 
-Related: [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §7](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#7-baugrundmodell-generating-the-geometry) · [IFC spike](../../spikes/ifc_thatopen/README.md)
+Related: [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §7](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#7-baugrundmodell-generating-the-geometry) · [IFC spike (history)](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen)

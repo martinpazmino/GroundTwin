@@ -14,7 +14,7 @@ Indicative estimates for one person.
 
 | Step | Content | Files | Acceptance criterion | Effort |
 |---|---|---|---|---|
-| 0 | **Test bench**: move the synthetic generator and the metrics from `spikes/extraktion_v2` to `tests/`; add the silent error KPI; non-regression test of the Excel with the reference PDFs | `tests/synth/`, `tests/test_extraction.py` | CI green with v1 on A/A2; v1 failures on A3/A4/B documented | 2–3 days |
+| 0 | **Test bench**: move the synthetic generator and the metrics from `services/extractor` to `tests/`; add the silent error KPI; non-regression test of the Excel with the reference PDFs | `tests/synth/`, `tests/test_extraction.py` | CI green with v1 on A/A2; v1 failures on A3/A4/B documented | 2–3 days |
 | 1 | **Canonical model with provenance** (Pydantic) + adapter v1 → model → Excel; **primitives layer** (the only PyMuPDF import, [14 §4](14_licensing.md#4-primitives-layer-do-it-now)) | `geo_agent/model.py`, `geo_agent/primitives/`, `exporters/excel_writer.py` | Excel identical to the current one; `import pymupdf` only in `primitives/` | 3–4 days |
 | 2 | **Bohrprofil v2 core** following `prototyp_v3.py`: segments → columns, normalised rotation, generic header/GOK, scale from candidates with label confirmation (incl. swissgeol's AAboveB), geometric boundaries, top/base convention, table/scale filters ([15](15_results_real_pdfs.md)) | `geo_agent/bohrprofil/{columns,header,scale,text_assign}.py` | A–A5 and B at 100 % in CI; Wachenroth/Talheim as in [15](15_results_real_pdfs.md); reference Excel without regression | 1–1.5 weeks |
 | 3 | **Classification**: noun vs. adjective, remove the silent "continuation", Schraffur + merge + confidence | `geo_agent/soil.py`, `geo_agent/bohrprofil/hatch.py`, `validate/` | Silent error = 0 on the corpus; A5 raises its issue | 3–4 days |
@@ -22,7 +22,7 @@ Indicative estimates for one person.
 | 5 | **Coordinates**: tables (reading per cell), header, German CRSs; Lageplan later | `lageplan/coord_tables.py`, `lageplan/georef.py` | Rechts-/Hochwert filled in and verified against GOK | 3–4 days (+1 week Lageplan) |
 | 6 | **Längsschnitt v2**: generic axes, colours from the legend, OCG, vector polygons, mini-columns | `geo_agent/laengsschnitt/{axes,tunnel,geoslice}.py` | Same result as v1 on the reference drawing + a second, different drawing | 1–1.5 weeks |
 | 7 | **swissgeol**: oracle in the benchmark, keyword lists, upstream contact ([13](13_swisstopo_collaboration.md)) | `tests/oracle_swissgeol.py` | Automatic comparison report | 2 days |
-| 8 | **Real corpus**: 5–10 public Gutachten ([12](12_public_corpus.md), `spikes/korpus/`), semi-automatic ground truth, calibrate thresholds and weights | `spikes/korpus/manifest.tsv` → `tests/corpus/`, private bucket, `tests/thresholds.yml` | Real metrics published in [09](09_validation_benchmark.md) | ongoing; can start now (only depends on the network) |
+| 8 | **Real corpus**: 5–10 public Gutachten ([12](12_public_corpus.md), `benchmark/`), semi-automatic ground truth, calibrate thresholds and weights | `benchmark/manifest.tsv` → `tests/corpus/`, private bucket, `tests/thresholds.yml` | Real metrics published in [09](09_validation_benchmark.md) | ongoing; can start now (only depends on the network) |
 
 ## Order and dependencies
 

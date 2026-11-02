@@ -19,7 +19,8 @@ wrong data that the app marks as certain.
 
 ## 1. Current results (spike, synthetic PDFs)
 
-Reproduce: [`spikes/extraktion_v2/README.md`](../spikes/extraktion_v2/README.md).
+Reproduce: the runners are in the git history, see the
+[extractor history](../services/extractor/README.md#history).
 
 | Layout | current v1: boundaries / Bodenart | v2 prototype: boundaries / Bodenart / Schraffur | swissgeol unchanged: boundaries / Bodenart |
 |---|---|---|---|

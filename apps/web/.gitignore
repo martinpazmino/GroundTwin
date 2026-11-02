@@ -1,10 +1,10 @@
 node_modules/
 public/vendor/
+src/icons.gen.json
+# dist/ ist eingecheckt (der Server liefert die Seite ohne Node aus); erzeugte Modelle nicht
+dist/modelle/*.ifc
+dist/modelle/*.json
+dist/modelle/*.png
 public/modelle/*.ifc
 public/modelle/*.json
-# dist/ ist eingecheckt (die Streamlit-App laeuft damit ohne Node); erzeugte Modelle nicht
-dist/modelle/*.ifc
-src/icons.gen.json
-dist/modelle/*.png
-dist/modelle/*.json
 public/modelle/*.png

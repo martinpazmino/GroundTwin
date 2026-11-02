@@ -9,7 +9,7 @@ committen (siehe docs/12_public_corpus.md). Der Zielordner sollte ausserhalb des
 Sichtung je Seite: Textzeichen, Vektorpfade, Bilder (Bildflaeche > 80 % und kaum Text = Scan),
 Schlagworte (Bohrprofil-Indizien). Auswertung ohne Wahrheit = Selbstkonsistenz:
   v1  Bohrungen, NHN-Arithmetik ok
-  v3  Bohrungen, Schichten, abgeleiteter Massstab vs. Text 'M 1:xx', Anteil durch Tiefenlabels
+  v4  Bohrungen, Schichten, abgeleiteter Massstab vs. Text 'M 1:xx', Anteil durch Tiefenlabels
       bestaetigter Grenzen, Issues, GW / 'kein Grundwasser', Koordinaten
 Mit Wahrheit (groundtruth/*.json): eval_real.py
 Dazu ein Vorschaubild je Bohrprofil-Seite fuer die Sichtpruefung.
@@ -28,8 +28,8 @@ from pathlib import Path
 import pymupdf
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1]))                       # Repo-Wurzel -> geo_agent
-sys.path.insert(0, str(HERE.parent / "extraktion_v2"))          # Prototyp v2
+sys.path.insert(0, str(HERE.parent))                       # Repo-Wurzel -> geo_agent
+sys.path.insert(0, str(HERE.parent / "services" / "extractor"))  # Extraktion v4
 
 KEYWORDS = ["bohrprofil", "din 4023", "zeichenerkl", "legende", "rammsondierung", "schichtenverzeichnis",
             "kleinrammbohrung", "rammkernsondierung", "bohrung", "dph", "grundwasser", "nhn", "m nn"]
@@ -70,7 +70,7 @@ def screen_page(page: pymupdf.Page) -> dict:
 def evaluate(pdf: Path, out: Path) -> dict:
     from geo_agent.bohrprofil import parse_bohrprofil
     from geo_agent.legend import parse_legend
-    from prototyp_v3 import extract
+    from prototyp_v4 import extract
 
     doc = pymupdf.open(pdf)
     pages = [screen_page(p) for p in doc]
@@ -89,7 +89,7 @@ def evaluate(pdf: Path, out: Path) -> dict:
     try:
         bhs, dph = extract(pdf)
         layers = [ly for b in bhs for ly in b.layers]
-        res["v3"] = {
+        res["v4"] = {
             "boreholes": len(bhs), "layers": len(layers),
             "scales": sorted({b.scale for b in bhs}),
             "labels_confirm": round(sum(ly.label_confirmed for ly in layers) / len(layers), 2) if layers else None,
@@ -100,7 +100,7 @@ def evaluate(pdf: Path, out: Path) -> dict:
             "soundings": len(dph),
         }
     except Exception as e:                                       # noqa: BLE001
-        res["v3"] = {"error": repr(e)[:120]}
+        res["v4"] = {"error": repr(e)[:120]}
     for i in cand[:3]:
         doc[i].get_pixmap(dpi=40).save(out / f"{pdf.stem}_p{i + 1}.png")
     return res
@@ -108,17 +108,17 @@ def evaluate(pdf: Path, out: Path) -> dict:
 
 def report(rows: list[dict], out: Path) -> None:
     lines = ["| PDF | Seiten | Vektor/Scan | Bohrprofil-Seiten | M (Text) | v1 Bohrungen (NHN ok) | "
-             "v3 Bohrungen / Schichten | v3 M | Labels bestaetigt | Issues | GW / kein GW | Koord. |",
+             "v4 Bohrungen / Schichten | v4 M | Labels bestaetigt | Issues | GW / kein GW | Koord. |",
              "|" + "---|" * 12]
     for r in rows:
-        v1, v3 = r.get("v1", {}), r.get("v3", {})
+        v1, v4 = r.get("v1", {}), r.get("v4", {})
         lines.append(
             f"| {r['file']} | {r['pages']} | {r['vector_pages']}/{r['scan_pages']} | "
             f"{','.join(map(str, r['bohrprofil_pages'][:8]))} | {r['scale_text']} | "
             f"{v1.get('boreholes', v1.get('error'))} ({v1.get('nhn_ok', '-')}) | "
-            f"{v3.get('boreholes', v3.get('error'))} / {v3.get('layers', '-')} | {v3.get('scales', '-')} | "
-            f"{v3.get('labels_confirm', '-')} | {v3.get('issues', '-')} | "
-            f"{v3.get('gw', '-')} / {v3.get('no_gw', '-')} | {v3.get('coords', '-')} |")
+            f"{v4.get('boreholes', v4.get('error'))} / {v4.get('layers', '-')} | {v4.get('scales', '-')} | "
+            f"{v4.get('labels_confirm', '-')} | {v4.get('issues', '-')} | "
+            f"{v4.get('gw', '-')} / {v4.get('no_gw', '-')} | {v4.get('coords', '-')} |")
     (out / "report.md").write_text("\n".join(lines) + "\n")
     (out / "report.json").write_text(json.dumps(rows, indent=1, default=str))
     print("\n".join(lines))

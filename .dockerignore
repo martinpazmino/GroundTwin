@@ -17,13 +17,11 @@ apps/web/dist/modelle/*.json
 docs
 tests
 scripts
-spikes/korpus
-spikes/ifc_thatopen
-spikes/supabase
+benchmark
+supabase
 services/modeler/tests
 data/*.pdf
 data/Geo_Daten.xlsx
 *.svg
-start.bat
-start_excel.bat
+*.bat
 app.py

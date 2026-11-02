@@ -2,7 +2,7 @@
 
 Die Faelle bilden die Merkmale nach, an denen v1-v3 bei echten Gutachten gescheitert sind
 (Titel mit Zusatz, gedrehte Seite, Achsen, Probenspalte, Kuerzel, SHX-Text, Raster, ...).
-Jede Datei bekommt eine Wahrheit im Format von spikes/korpus/groundtruth/*.json.
+Jede Datei bekommt eine Wahrheit im Format von benchmark/groundtruth/*.json.
 
     python stress_cases.py <ausgabeordner>
 """

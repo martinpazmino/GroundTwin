@@ -30,12 +30,12 @@ with synthetic reproducers and an introduction email.
 | Contribution | Value for them | Effort | Already tested |
 |---|---|---|---|
 | **Bug reports with a synthetic reproducer** (§4) | They fix real failures: name of the neighbouring diagram assigned to the Bohrung, legend treated as a Bohrung | Low | Yes ([08 §4](08_swissgeol_reuse.md#4-test-swissgeol-unchanged-on-our-pdfs)) |
-| **Generator of synthetic PDFs** with ground truth | Regression tests without copyright problems | Low | Yes ([spike](../spikes/extraktion_v2/README.md)) |
+| **Generator of synthetic PDFs** with ground truth | Regression tests without copyright problems | Low | Yes ([extractor](../services/extractor/README.md)) |
 | **Lines from vectors** (`get_drawings()` → their `Line`) instead of FLD on raster | Accuracy and speed on digitally born PDFs | Low-medium | Design ([08 §6](08_swissgeol_reuse.md#6-proposed-adapter-vector-lines-for-their-pipeline)) |
 | **Schraffur classification with the legend** | Their strip log detector locates but does not classify | Medium | Yes, synthetic ([04](04_schraffur_din4023.md)) |
 | **German conventions**: elevation keys `NHN/NN`, UTM/Gauß-Krüger CRS, DIN 4023 water symbol | Opens the project to German logs | Medium | Water and coordinates, synthetic ([06](06_grundwasser.md), [07](07_coordinates.md)) |
 | **Digitising Sondierungen** (DPH/CPT) | New data for their database | Medium | DPH, synthetic ([05](05_sondierungen.md)) |
-| **IFC 4.3** export of Bohrungen | Bridge to BIM / swissgeol 3D | Medium | Yes ([IFC spike](../spikes/ifc_thatopen/README.md)) |
+| **IFC 4.3** export of Bohrungen | Bridge to BIM / swissgeol 3D | Medium | Yes ([modeler](../services/modeler/README.md)) |
 
 ## 3. How to collaborate and intellectual property
 

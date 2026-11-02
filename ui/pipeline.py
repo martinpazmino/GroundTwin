@@ -1,6 +1,6 @@
 """Ablauf v2 ohne Oberflaeche: PDF -> kanonisches JSON (Extraktion v4) -> Pruefung/Korrekturen -> Baugrundmodell (IFC).
 
-Die Extraktion bleibt in spikes/extraktion_v2/prototyp_v4.py (Regressionsreferenz, docs/17); der
+Die Extraktion bleibt in services/extractor/prototyp_v4.py (Regressionsreferenz, docs/17); der
 Modellierer in services/modeler (docs/18). Hier nur Verdrahtung, Korrekturen des Nutzers und
 Fortschritt; jede Korrektur wird im JSON markiert (coord_source/gok_source), nie still uebernommen.
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = Path(__file__).resolve().parents[1]
-EXTRAKTOR = REPO / "spikes" / "extraktion_v2" / "prototyp_v4.py"
+EXTRAKTOR = REPO / "services" / "extractor" / "prototyp_v4.py"
 BEISPIELE = REPO / "data" / "beispiele"
 sys.path.insert(0, str(REPO / "services" / "modeler"))
 

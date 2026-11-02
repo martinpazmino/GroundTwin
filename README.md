@@ -142,14 +142,15 @@ server/                     Baugrundmodell app: FastAPI + projects, background e
 ui/                         project state (projekt.py), pipeline without UI, Excel v1 page
 app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
-spikes/extraktion_v2/       extraction v4 (reference of the regression, docs/17)
+services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
 services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)
 tests/  scripts/            tests of the app and the API; end-to-end test (Playwright); synthetic plans; online.py
+benchmark/                  public corpus, ground truth, blind test, regression, ablation
+supabase/                   PostGIS migration and loader of the canonical JSON (not used by the app yet)
 docs/                       linked notes (English, German technical terms): index in docs/README.md
-spikes/                     corpus, regression, IFC, Supabase
 Dockerfile  docker/         container (docs/22); render.yaml: Render blueprint
 .github/workflows/          tests on every push (Prüfungen)
 requirements*.txt           dependencies; constraints.txt pins the tested versions
@@ -176,6 +177,9 @@ The end-to-end test is started by hand (*Run workflow*).
 - [`docs/README.md`](docs/README.md): architecture, decisions, lessons and results.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): project rules (blind test, regression, no third-party PDFs in
   the repository, documentation in English and code in German).
+- [`CHANGELOG.md`](CHANGELOG.md): notable changes per version.
+- [`SECURITY.md`](SECURITY.md): how to report a vulnerability privately.
+- [`CLAUDE.md`](CLAUDE.md): the same rules, condensed for coding assistants (Claude Code).
 
 ## License
 

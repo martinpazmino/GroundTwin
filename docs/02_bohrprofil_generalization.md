@@ -13,14 +13,14 @@ their value, and the description is the block of text aligned to the right of th
 the same code works for any office and any scale.
 
 **Status:** tested in the prototype
-[`spikes/extraktion_v2/prototyp_v2.py`](../spikes/extraktion_v2/prototyp_v2.py) on the 6 synthetic
+[`services/extractor/prototyp_v2.py`](../services/extractor/prototyp_v2.py) on the 6 synthetic
 layouts (17 Bohrungen, 102 Schichten): **102/102 Schichten** with correct boundary, Bodenart and
 text, also in A3, A4 and B, where v1 fails, and the deliberate contradiction of A5 is reported as an
 issue ([01](01_diagnosis_fixed_layout.md)).
 
 **With real PDFs** (Wachenroth, Talheim) seven changes were needed, among them: geometry reduced to
 segments, rotation normalisation, scale chosen by label confirmation, table filters and normalised
-scales. The result is [`prototyp_v3.py`](../spikes/extraktion_v2/prototyp_v3.py). In the **blind
+scales. The result is [`prototyp_v3.py`](https://github.com/martinpazmino/GroundTwin/blob/03be932/spikes/extraktion_v2/prototyp_v3.py). In the **blind
 test** with two new PDFs, v3 scored **0/13**: labels like `0.20m`, a scale fitted to the sheet and a
 scan. After fixing that (including a raster adapter that produces the same segments from the image)
 it reaches **29/29 Bohrungen and 143/143 boundaries** in the five real PDFs, with no regression on

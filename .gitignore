@@ -1,10 +1,45 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+/build/
+/dist/
+
+# Umgebungen (start.bat legt .venv an; Hilfsumgebungen fuer swissgeol/OCR)
+.venv/
+venv/
+sgvenv/
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Node (die gebaute Seite apps/web/dist ist eingecheckt, siehe apps/web/.gitignore)
+node_modules/
+
+# Editor und Betriebssystem
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code: lokale Einstellungen
 .claude/settings.local.json
 
-# Projektdaten (reale Baugrunddaten / Ergebnisse) - nicht öffentlich versionieren
-data/*.pdf
+# Gutachten und Ergebnisse nie versionieren (Urheberrecht, Vertraulichkeit): nur die eigenen Beispiele
+*.pdf
+!data/beispiele/*.pdf
 data/Geo_Daten.xlsx
+*.ifc
 
-# lokale Umgebung (start.bat)
-.venv/
+# Ausgaben von Pruefungen und Skripten (testplan.py, check.mjs, check_app.mjs, Benchmark)
+plans/
+screenshots/
+/arbeit/
+*.log

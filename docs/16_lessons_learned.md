@@ -35,8 +35,8 @@ doubtful value stays **marked**, never hidden.
 | P7 | The ground truth is transcribed **from the image** and checked against a second source (Schichtenverzeichnis, report) when there is one | The Schichtenverzeichnis confirmed 14/14 transcribed Bohrungen |
 | P8 | The PDFs are **not** pushed to the repo; only URL, `sha256` and factual data | Internal use of other people's work (D16, D23) |
 | P9 | **Perturb the PDFs that already work** (rotate, scale, rasterise) with the same ground truth: it finds failures the originals hide | Rotating Wesel revealed that the Schichtenverzeichnis reader used unrotated coordinates |
-| P10 | **Ablation**: switch off each rule and see which case gets worse. A rule whose removal makes nothing worse is not protected by any test | [`ablation.py`](../spikes/korpus/ablation.py): 22 of 28 rules protected ([table](../spikes/korpus/ablation_v4.md)) |
-| P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../spikes/extraktion_v2/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
+| P10 | **Ablation**: switch off each rule and see which case gets worse. A rule whose removal makes nothing worse is not protected by any test | [`ablation.py`](../benchmark/ablation.py): 22 of 28 rules protected ([table](../benchmark/ablation_v4.md)) |
+| P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../services/extractor/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
 | P12 | Also measure **precision to the centimetre** (exact boundaries), not only the 5 cm tolerance | v3 414/515 exact, v4 509/515 after T2 |
 
 ## E. Input: what kind of PDF it is
@@ -138,7 +138,7 @@ doubtful value stays **marked**, never hidden.
 | M3 | Encapsulate the IFC writer: IFC 4.4 replaces `IfcGeotechnicalStratum` with `IfcGeoScienceFeature` | 4.4 draft |
 | M4 | Without coordinates, the section model (station, NHN) already adds value; with local coordinates from the Lageplan a relative 3D can be built | [Architecture §7.1](ARCHITECTURE_BAUGRUNDMODELL.md#71-ladder-of-levels-each-one-is-deliverable) |
 | M5 | An **empty Pset** is invalid IFC: create the Pset only if there are values | Exporter: 5 schema errors → 0 |
-| M6 | PostGIS installed in `extensions`: **qualify** `extensions.geometry`, otherwise the migration only works inside Supabase | [Supabase spike](../spikes/supabase/README.md) |
+| M6 | PostGIS installed in `extensions`: **qualify** `extensions.geometry`, otherwise the migration only works inside Supabase | [`supabase/`](../supabase/README.md) |
 | M7 | The full chain already works with a real PDF: OCR → canonical JSON → PostGIS → georeferenced IFC 4.3 → That Open (80 strata) | Berlin ([15 §8](15_results_real_pdfs.md)) |
 | M8 | **Below the Endteufe is unknown, not absent**: treating it as absence pinches out the deep Einheiten at every short Bohrung | Case `zensiert`, Berlin ([18](18_layer_modeler.md)) |
 | M9 | The same Bodenart at another elevation is **another Einheit** (Sand 1 / Sand 2): correlate by class **and** elevation, not only by name | Berlin 422C-461: two levels of Kies |

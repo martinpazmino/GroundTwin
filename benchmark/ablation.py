@@ -1,6 +1,6 @@
 """Ablation: jede Regel einzeln abschalten und messen, welche Faelle schlechter werden.
 
-    python ablation.py --module ../extraktion_v2/prototyp_v4.py --real <pdfs> --stress <ordner> --synth <ordner> \\
+    python ablation.py --module ../services/extractor/prototyp_v4.py --real <pdfs> --stress <ordner> --synth <ordner> \\
                        [--out ablation.md] [--jobs 2]
 
 Eine Regel, deren Abschalten nichts verschlechtert, ist durch keinen Testfall belegt: entweder fehlt

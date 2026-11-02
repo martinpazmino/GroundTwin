@@ -13,7 +13,7 @@ vector PDF their curves are **exact polylines**. With the axes calibrated by reg
 technique as in the Längsschnitt) they can be digitised without loss.
 
 **Status:** tested for DPH in the synthetic layout B (`soundings` in
-[`prototyp_v2.py`](../spikes/extraktion_v2/prototyp_v2.py)): **32 steps**, maximum error
+[`prototyp_v2.py`](../services/extractor/prototyp_v2.py)): **32 steps**, maximum error
 **0.4 blows N10** (rounding of the regression on the centre of the labels). CPT: design.
 
 ## 1. What they contain

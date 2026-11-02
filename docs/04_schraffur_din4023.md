@@ -14,7 +14,7 @@ of the same document**, it classifies the Bodenart without prior training and ma
 detect errors in the text.
 
 **Status:** tested in the prototype (`hatch_features`, `legend_swatches`, `classify_hatch` in
-[`prototyp_v2.py`](../spikes/extraktion_v2/prototyp_v2.py)): **101/102 Schichten** of the 6
+[`prototyp_v2.py`](../services/extractor/prototyp_v2.py)): **101/102 Schichten** of the 6
 synthetic layouts classified correctly from the Schraffur alone. The remaining one is the A5
 Schicht drawn on purpose with the wrong pattern, and the prototype reports it as
 `Text 'Sand' != Schraffur 'Kies'` (v1 does not notice). Real drawings need calibration (see §5).

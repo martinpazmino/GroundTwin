@@ -15,7 +15,7 @@ Grundwasser level and the coordinates.
 
 ## 1. Measured evidence (synthetic PDFs)
 
-Generator and scripts: [`spikes/extraktion_v2/`](../spikes/extraktion_v2/README.md). Six simplified
+Generator and scripts: [`services/extractor/`](../services/extractor/README.md). Six simplified
 DIN 4023 layouts with known ground truth (18 Schichten in A–A5, 12 in B):
 
 | Layout | What changes compared with A | v1: Bohrungen | v1: boundaries | v1: correct Bodenart | v1: correct text |

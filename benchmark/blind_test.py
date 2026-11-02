@@ -16,14 +16,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from eval_real import run_sg, run_v1, run_v3, score  # noqa: E402
+from eval_real import run_sg, run_v1, run_v4, score  # noqa: E402
 
 
 def freeze(src: Path, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=HERE, capture_output=True, text=True).stdout.strip()
     for pdf in sorted(src.glob("*.pdf")):
-        v3, bhs = run_v3(pdf)
+        v4, bhs = run_v4(pdf)
         detail = [{"code": b.code, "page": b.page, "scale": b.scale, "mode": b.mode, "gok": b.gok,
                    "bottoms": [ly.bottom for ly in b.layers], "soils": [ly.soil for ly in b.layers],
                    "unconfirmed": sum(not ly.label_confirmed for ly in b.layers),
@@ -31,9 +31,9 @@ def freeze(src: Path, out: Path) -> None:
                   for b in bhs]
         sha = hashlib.sha256(pdf.read_bytes()).hexdigest()
         (out / f"{pdf.stem}.json").write_text(json.dumps(
-            {"code_rev": rev, "pdf_sha256": sha, "v1": run_v1(pdf), "v3": v3, "v3_detail": detail},
+            {"code_rev": rev, "pdf_sha256": sha, "v1": run_v1(pdf), "v4": v4, "v4_detail": detail},
             indent=1, default=float))
-        print(pdf.stem, "v3 Bohrungen:", len(v3))
+        print(pdf.stem, "v4 Bohrungen:", len(v4))
 
 
 def score_frozen(out: Path, sg_dir: Path | None) -> None:
@@ -44,7 +44,9 @@ def score_frozen(out: Path, sg_dir: Path | None) -> None:
         gt, pred = json.loads(gt_file.read_text()), json.loads(pred_file.read_text())
         print(f"== {pred_file.stem} (Code-Stand {pred.get('code_rev')})")
         print("   v1 ", score(gt, pred["v1"]))
-        print("   v3 ", score(gt, pred["v3"]))
+        for version in ("v4", "v3"):                     # v3: eingefrorene Dateien bis Runde 4
+            if version in pred:
+                print(f"   {version} ", score(gt, pred[version]))
         if "sg" in pred:                                   # mit eingefroren (ab Runde 3)
             print("   sg ", score(gt, pred["sg"]))
         elif sg_dir and (sg := sg_dir / f"real_out_{pred_file.stem}" / "predictions.json").exists():
