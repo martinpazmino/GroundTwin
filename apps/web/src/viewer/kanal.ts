@@ -13,6 +13,7 @@ export interface Nadel {
   gok: number;
   gok_bekannt: boolean;
   gok_pdf?: boolean;                    // GOK steht im PDF: im Schnitt nicht verschiebbar
+  gok_quelle?: string;                  // PDF, manuell, DGM oder leer
   ende: number;
   geprueft: boolean;
   schichten_geprueft: number;

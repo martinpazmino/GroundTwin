@@ -168,7 +168,7 @@ function kopf(b: Bohrung) {
       <div class="felder">
         ${feld("GOK [m NHN]", html`<input type="number" step="0.01" .value=${live(b.gok === null ? "" : String(b.gok))}
             placeholder="unbekannt" @change=${op("gok")}>
-            <small class=${b.gok_quelle === "manuell" ? "manuell" : "leise"}>${b.gok_quelle || "fehlt"}</small>`, "gok")}
+            <small class=${b.gok_quelle === "manuell" || b.gok_quelle === "DGM" ? "manuell" : "leise"}>${b.gok_quelle || "fehlt"}</small>`, "gok")}
         ${feld("Endteufe [m]", html`<output>${zahl(b.endteufe)}</output>`)}
         ${feld("Rechtswert", html`<input type="number" step="0.01" .value=${live(b.x === null ? "" : String(b.x))} @change=${op("x")}>`, "koordinaten")}
         ${feld("Hochwert", html`<input type="number" step="0.01" .value=${live(b.y === null ? "" : String(b.y))} @change=${op("y")}>`)}

@@ -126,6 +126,9 @@ and how to update the versions.
    - The Bohrungen are placed with points or dragged in x/y only. In the section the station moves;
      the height only if the PDF has no GOK.
    - The diameter of the columns is adjustable.
+   - Gelände (DGM): load the DGM tiles of the Land (open data). The GOK of every Bohrung is compared
+     with the terrain, and a missing GOK can be taken from it with a click
+     ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
    surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres.
 6. **That Open viewer** ([apps/web](apps/web/README.md)): compact toolbar, help on every setting and
@@ -144,6 +147,7 @@ app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
 services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
 services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
+services/geodaten/          DGM from files and GOK check (first piece of the open data plan, docs/23)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)

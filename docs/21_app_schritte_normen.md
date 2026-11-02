@@ -311,6 +311,39 @@ it never blocks (D75). Examples: 565,000 / 5,933,000 → ✓ 25832; 4,468,000 / 
 the digits". An unknown code coming from the PDF is shown marked (⚠), not lost. Without an EPSG on the
 Bohrungen, the viewer uses the plan's.
 
+### 4.4 Gelände (DGM): check and fill the GOK
+
+First piece of the open data plan ([23](23_open_data_integration.md), D89).
+
+**Loading:**
+
+- The user downloads the DGM tiles of the site from their Land (open data, usually DGM1) and loads
+  them in the *Lage* step, section *Gelände (DGM)*.
+- Formats: XYZ, ASCII grid or GeoTIFF, several tiles at once, also as ZIP.
+- XYZ and ASCII carry no coordinate system: the list offers the project's one
+  ([`services/geodaten`](../services/geodaten/README.md)).
+- Nothing is fetched from the internet, so nothing reveals the site of a confidential project.
+
+**The comparison table** has one row per Bohrung: GOK, DGM height, Δ and a status (✓, *weicht ab*,
+*GOK fehlt*, *aus dem DGM*, *außerhalb*, *ohne Lage*, *anderes EPSG*).
+
+- |Δ| up to 0.5 m is unremarkable (DGM1 ± 0.2 m, plus vegetation and excavation).
+- **If all Bohrungen lie about the same amount above or below the terrain** (median > 1 m, ≥ 80 %
+  with the same sign), a warning names the likely causes: Lage (EPSG, calibration) or height
+  reference (local height instead of NHN). It is an independent check of the calibration.
+- Bohrungen outside the DGM, or in another EPSG, are listed rather than compared.
+
+**A missing GOK** gets the DGM height as a **proposal**.
+
+- It is applied only with *übernehmen* (one Bohrung) or *Alle … übernehmen*.
+- It is marked as source **DGM** in the table, in the viewer, and in the IFC
+  (`CPset_Herkunft.Hoehe = "aus dem DGM (m NHN)"`).
+- Typing a value afterwards makes it *manuell*.
+- A GOK from the PDF is never replaced.
+- Removing the DGM keeps the GOK already taken from it.
+
+![Gelände (DGM): Berlin, DGM1-like tile with 2 m grid; four Bohrungen within 0.07 m, 422C-5527 took its GOK from the DGM, S2a without a position](img/21_lage_gelaende.jpg)
+
 ## 5. Einheiten and Modell
 
 **Einheiten**:
@@ -362,9 +395,9 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 | Test | Result |
 |---|---|
 | Modeler (`cd services/modeler && python -m pytest tests`) | 57 (19 for norms, 1 IFC with Bodenansprache/diameter) |
-| App and API (`python -m pytest tests`) | 24 for project logic (points included) + 9 for the API (TestClient) |
+| App and API (`python -m pytest tests`) | 59: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 28/28 and no page error: warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 32/32 and no page error: warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

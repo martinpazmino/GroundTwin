@@ -168,6 +168,20 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         ap.unterlage_entfernen(sig)
         return ap.zustand(sig)
 
+    @app.post("/api/projekt/{sig}/dgm")
+    async def dgm(sig: str, dateien: list[UploadFile] = File(...), epsg: str = Form("")):
+        inhalt = [(f.filename or "dgm", await f.read()) for f in dateien]
+        code = epsg.strip()
+        if code and not code.isdigit():
+            raise ValueError("EPSG als Zahl (z. B. 25832)")
+        ap.dgm_setzen(sig, inhalt, int(code) if code else None)
+        return ap.zustand(sig)
+
+    @app.delete("/api/projekt/{sig}/dgm")
+    def dgm_entfernen(sig: str):
+        ap.dgm_entfernen(sig)
+        return ap.zustand(sig)
+
     @app.post("/api/projekt/{sig}/modell")
     def modell(sig: str):
         erg = ap.modell(sig)

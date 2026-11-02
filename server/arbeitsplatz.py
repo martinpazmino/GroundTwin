@@ -7,12 +7,14 @@ Ablage unter ARBEIT (ui/pipeline.py, mit GEO_AGENT_ARBEIT festlegbar):
   web/modelle/<schluessel>.ifc       Modell fuer den Viewer (Name = Schluessel der Eingaben)
   web/unterlagen/<sha>_<seite>.png   Lageplan/Laengsschnitt als Bild
   web/seiten/<sha>_<seite>.png       Seiten des Gutachtens (Quelle einer Schicht zeigen)
+  projekte/<signatur>/dgm.npy        Gelaendemodell aus den Dateien des Nutzers (Kopf in projekt.json, docs/23)
 """
 from __future__ import annotations
 
 import hashlib
 import json
 import shutil
+import sys
 import threading
 import traceback
 import uuid
@@ -23,6 +25,11 @@ from pathlib import Path
 from ui import pipeline as pl
 from ui import projekt as pj
 
+_GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
+if _GEODATEN not in sys.path:
+    sys.path.insert(0, _GEODATEN)
+from geodaten import gelaende  # noqa: E402
+
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
     "talheim": ("Talheim – echte Daten ohne Koordinaten (Reihe)", "talheim.json"),
@@ -31,6 +38,7 @@ BEISPIELE = {
     "pdf": ("Synthetisches Bohrprofil-PDF (ganzer Ablauf mit Extraktion)", "synthetisch_bohrprofil.pdf"),
 }
 MODELLE_IM_SPEICHER = 6
+DGM_IM_SPEICHER = 2
 
 
 def extraktion_aus_json(daten: bytes) -> list[dict]:
@@ -94,6 +102,8 @@ class Arbeitsplatz:
         self._extraktion = threading.Lock()               # der Extraktor ist nicht fuer parallele Laeufe gebaut
         self._auftraege: dict[str, Auftrag] = {}
         self._modelle: OrderedDict[str, tuple[object, dict]] = OrderedDict()
+        self._dgm: OrderedDict[tuple, gelaende.Raster] = OrderedDict()
+        self._dgm_sperre = threading.Lock()              # Cache wird von mehreren Projekten (Threads) benutzt
 
     # ------------------------------------------------------------ Projekte
     def ordner(self, sig: str) -> Path:
@@ -179,6 +189,8 @@ class Arbeitsplatz:
             meldungen = []
             try:
                 for op in ops:
+                    if op.get("op") == "gok_aus_dgm":            # Werte rechnet der Server aus dem DGM
+                        op = {**op, "werte": self._gok_vorschlaege(sig, docs, p, op.get("ids"))}
                     m = pj.aendern(docs, p, op)
                     if m:
                         meldungen.append(m)
@@ -234,6 +246,7 @@ class Arbeitsplatz:
                            "ifc": f"/dateien/modelle/{self._ifc_name(schluessel, docs, p)}"
                            if gecacht and (self.web / "modelle" / self._ifc_name(schluessel, docs, p)).exists() else None},
                 "punkte": p.punkte,
+                "gelaende": self._gelaende(sig, docs, p),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg, "modus": p.lage_modus,
                            "punkte": p.punkte},
@@ -364,6 +377,64 @@ class Arbeitsplatz:
             p.unterlage = None
             p.version += 1
             self.sichern(sig)
+
+    # ------------------------------------------------------------ Gelaende (DGM aus Dateien des Nutzers, docs/23)
+    def dgm_setzen(self, sig: str, dateien: list[tuple[str, bytes]], epsg: int | None) -> None:
+        """DGM-Kachel(n) lesen, zusammenfuegen und im Projektordner ablegen; ersetzt ein vorhandenes DGM."""
+        raster = gelaende.dateien_lesen(dateien, epsg)
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            ziel = self.ordner(sig) / "dgm.npy"
+            kopf = gelaende.speichern(raster, ziel)
+            namen = [n for n, _ in dateien]
+            p.dgm = {**kopf, "name": namen[0] if len(namen) == 1 else f"{len(namen)} Dateien",
+                     "dateien": namen, "datei": ziel.name, "geladen": pj.jetzt(),
+                     "stand": hashlib.sha256(raster.z.tobytes() + json.dumps(kopf, sort_keys=True).encode())
+                     .hexdigest()[:12]}                    # Inhalt und Georeferenz (gleiche Datei, anderes EPSG)
+            p.version += 1
+            self.sichern(sig)
+
+    def dgm_entfernen(self, sig: str) -> None:
+        """DGM aus dem Projekt nehmen; uebernommene GOK bleiben (Quelle DGM, in der Tabelle aenderbar)."""
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            p.dgm = None
+            (self.ordner(sig) / "dgm.npy").unlink(missing_ok=True)
+            p.version += 1
+            self.sichern(sig)
+
+    def _raster(self, sig: str, p: pj.Projekt) -> gelaende.Raster | None:
+        if not p.dgm:
+            return None
+        pfad = self.ordner(sig) / p.dgm.get("datei", "dgm.npy")
+        if not pfad.exists():
+            return None
+        schluessel = (str(pfad), p.dgm.get("stand"))
+        with self._dgm_sperre:
+            if schluessel not in self._dgm:
+                self._dgm[schluessel] = gelaende.laden(pfad, p.dgm)
+                while len(self._dgm) > DGM_IM_SPEICHER:
+                    self._dgm.popitem(last=False)
+            self._dgm.move_to_end(schluessel)
+            return self._dgm[schluessel]
+
+    def _gelaende(self, sig: str, docs: list[dict], p: pj.Projekt) -> dict | None:
+        """Kopf des DGM und Vergleich GOK - DGM fuer die Oberflaeche (None ohne DGM)."""
+        if not p.dgm:
+            return None
+        kopf = {k: v for k, v in p.dgm.items() if k != "datei"}
+        raster = self._raster(sig, p)
+        if raster is None:
+            return {"info": kopf, "pruefung": None, "fehler": "DGM-Datei fehlt im Projektordner – bitte neu laden"}
+        if p.lage_modus != pj.LAGE_KOORDINATEN:
+            return {"info": kopf, "pruefung": None, "fehler": "Vergleich nur mit Lage nach Koordinaten"}
+        return {"info": kopf, "pruefung": gelaende.gok_pruefen(raster, pj.gelaende_eingabe(docs, p)), "fehler": ""}
+
+    def _gok_vorschlaege(self, sig: str, docs: list[dict], p: pj.Projekt, ids: list[str] | None) -> dict[str, float]:
+        raster = self._raster(sig, p)
+        if raster is None:
+            raise ValueError("kein DGM geladen")
+        return gelaende.gok_vorschlaege(raster, pj.gelaende_eingabe(docs, p), ids)
 
     # ------------------------------------------------------------ Seiten des Gutachtens (Quelle einer Schicht)
     def seite(self, sig: str, dokument: int, seite: int) -> dict:

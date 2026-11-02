@@ -30,8 +30,12 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
     Apache-2.0).
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
-- **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional. Phase P1
-  (BoreholeML export) needs no network and can start now.
+- **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
+- **Status (2026-11-02):** the first part of P3 is done.
+  - The DGM comes from files the user downloads: GOK check and missing GOK on a click
+    ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
+  - P1 waits for `schemas.bgr.de`. The export runs offline, but writing it needs the official
+    XSD, which is blocked in the cloud session (§7). It is not invented.
 - **Before anything is fetched from outside:**
   - Every external service can be switched off per project. Querying a service reveals the site of
     a confidential project.
@@ -339,6 +343,14 @@ Rules:
 | **P4 Umgebungsmodell** | Buildings: basemap.de 3D Tiles in the viewer (toggle) with ζ and the meridian convergence; then LoD2 CityGML of the Land as IFC context or `Umgebung.ifc` | Buildings in place (±1 m in plan, ±0.5 m in height at a known building) on two sites in different Länder; the viewer stays fluid and does not flicker; attribution visible | 1–2 weeks |
 | **P5 Standort start** | Step 1 accepts a point; the project uses P2 and P3; `reifegrad = Vorerkundung` in the app, the IFC and the report; a PDF can be added later | From a point in Berlin, a model with ≥ 3 SGD Bohrungen in under a minute; Vorerkundung visible everywhere; with the PDF added, both sources stay apart | 1 week |
 | **P6 Optional** | 3D Tiles export for Cesium; GeolDG help (prefilled BoreholeML / SEP3 for the SGD); swissgeol boreholes for Switzerland; OSM fallback; 3DCityDB if a project database is needed | Per item | Per item |
+
+**Status (2026-11-02):**
+
+| Phase | State |
+|---|---|
+| P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)), 21 tests + 4 end-to-end checks |
+| P3b: DGM through WCS, terrain surface in the model and the IFC | Open; needs the hosts of §7 |
+| P0, P1, P2 | Blocked by the network policy (§7) |
 
 **Why this order:**
 

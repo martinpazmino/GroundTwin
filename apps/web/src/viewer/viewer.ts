@@ -578,7 +578,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       rahmen.modus === "reihe" ? `Station ${formatiere(n.x)} m` : `R ${formatiere(n.x)} · H ${formatiere(n.y)}`;
     const kopf: Record<string, unknown> = {
       Lage: lage, Lage_aus: n.quelle || "–",
-      GOK: n.gok_bekannt ? `${formatiere(n.gok)} m NHN${n.gok_pdf ? " (PDF)" : ""}` : "unbekannt (relativ 0 m)",
+      GOK: n.gok_bekannt ? `${formatiere(n.gok)} m NHN${n.gok_pdf ? " (PDF)" : n.gok_quelle === "DGM" ? " (DGM)" : ""}` : "unbekannt (relativ 0 m)",
       Endteufe: `${formatiere(n.ende)} m`,
       Schichten_geprueft: `${n.schichten_geprueft}/${n.schichten_n}`,
       Nicht_klassifiziert: n.unklassifiziert ?? "–",

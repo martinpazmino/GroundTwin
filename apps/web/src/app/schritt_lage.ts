@@ -1,9 +1,10 @@
 // Schritt 3 · Lage: Unterlage (Lageplan oder Laengsschnitt) hochladen, kalibrieren (Strecke messen -> Massstab,
 // Bezugspunkt mit Koordinate, Drehung bzw. Hoehenmassstab), sperren, dann die Bohrungen im Viewer daraufziehen.
-// Ohne Koordinaten: Reihe mit Abstaenden oder Stationen. Dazu der Durchmesser der Bohrsaeulen.
+// Ohne Koordinaten: Reihe mit Abstaenden oder Stationen. Dazu der Durchmesser der Bohrsaeulen und das Gelaende
+// (DGM-Dateien des Nutzers): Vergleich GOK - DGM und fehlende GOK auf Klick (docs/23 §2.4).
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { api, type Zustand } from "./api";
+import { api, type GelaendeZeile, type Zustand } from "./api";
 import { hilfe } from "./hilfe";
 import { epsgAuswahl, lagePruefen, systemText } from "./epsg";
 import { S, aendern, melden, naechsteOhneLage, neu, versuchen, viewerAktualisieren, zustandUebernehmen } from "./store";
@@ -31,6 +32,7 @@ interface Entwurf {
 let e: Entwurf | null = null;
 let waehlt = "";                              // welcher Punkt gerade im Plan gewaehlt wird
 let neueArt: "plan" | "schnitt" = "plan";
+let dgmEpsg: number | null | undefined;               // System der DGM-Dateien (undefined = das des Projekts)
 
 function schluessel(z: Zustand) {
   const u = z.unterlage;
@@ -428,6 +430,86 @@ function reiheTeil(z: Zustand) {
     </table>`;
 }
 
+// ------------------------------------------------------------------ Gelaende (DGM)
+async function dgmHochladen(ev: Event) {
+  const input = ev.target as HTMLInputElement;
+  const dateien = [...(input.files ?? [])];
+  input.value = "";
+  if (!dateien.length) return;
+  const epsg = dgmEpsg === undefined ? S.z?.viewer.epsg ?? null : dgmEpsg;
+  const z = await versuchen(() => api.dgm(S.sig, dateien, epsg), "DGM wird gelesen …");
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+    const warnungen = z.gelaende?.pruefung?.warnungen.length ?? 0;
+    melden(warnungen ? "DGM geladen – Hinweise zum Vergleich beachten." : "DGM geladen.", warnungen ? "warn" : "ok");
+  }
+}
+
+async function dgmEntfernen() {
+  if (!confirm("DGM aus dem Projekt entfernen? Übernommene GOK bleiben (Quelle DGM).")) return;
+  const z = await versuchen(() => api.dgmEntfernen(S.sig));
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+  }
+}
+
+const STATUS: Record<GelaendeZeile["status"], [string, string]> = {
+  ok: ["✓", "ok"], abweichung: ["⚠ weicht ab", "warn"], ohne_gok: ["GOK fehlt", ""], aus_dgm: ["aus dem DGM", "leise"],
+  ausserhalb: ["außerhalb", "leise"], ohne_lage: ["ohne Lage", "leise"], anderes_system: ["anderes EPSG", "warn"],
+};
+
+const mitVorzeichen = (v: number | null) =>
+  v === null ? "" : Math.abs(v) < 0.005 ? zahl(0) : `${v > 0 ? "+" : ""}${zahl(v)}`;   // kein "-0,00"
+
+function gelaendeTeil(z: Zustand) {
+  const g = z.gelaende;
+  const datei = (text: string) => html`<label class="datei-knopf"><input type="file" multiple aria-label="DGM-Dateien"
+    accept=".xyz,.txt,.csv,.asc,.tif,.tiff,.zip,.gz" @change=${dgmHochladen}>${text}</label>`;
+  const system = dgmEpsg === undefined ? z.viewer.epsg ?? null : dgmEpsg;
+  const wahl = html`<label class="feld breit"><span>System der Datei (XYZ, ASCII) ${hilfe("dgm_epsg")}</span>
+    ${epsgAuswahl(system, (c) => { dgmEpsg = c; neu(); }, "System der DGM-Datei")}</label>`;
+  if (!g) {
+    return html`
+      <p class="leise klein">DGM-Kachel(n) des Landes (Open Data, z. B. DGM1) als XYZ, ASCII-Raster oder GeoTIFF, auch als
+        ZIP – Höhen in m NHN. Damit prüft die App die GOK und schlägt fehlende vor.</p>
+      ${wahl}
+      ${datei("DGM-Dateien wählen …")}`;
+  }
+  const i = g.info;
+  const pr = g.pruefung;
+  return html`
+    <p><b>${i.name}</b><br><span class="leise klein">${systemText(i.epsg)} · Raster ${zahl(i.dx, 1)} m ·
+      ${i.spalten.toLocaleString("de-DE")} × ${i.zeilen.toLocaleString("de-DE")} · ${zahl(i.zmin, 1)} – ${zahl(i.zmax, 1)} m NHN</span></p>
+    ${g.fehler ? html`<p class="warnung klein">${g.fehler}</p>` : nothing}
+    ${pr ? html`
+      <table class="tabelle kompakt gelaende">
+        <thead><tr><th>Bohrung</th><th class="zahl">GOK</th><th class="zahl">DGM</th><th class="zahl">Δ [m]</th><th></th></tr></thead>
+        <tbody>
+          ${pr.zeilen.map((r) => html`
+            <tr class=${STATUS[r.status][1]}>
+              <td><button class="link" title="Im Viewer wählen" @click=${() => { void S.viewer?.nadelWaehlen(r.id); neu(); }}>${r.code}</button></td>
+              <td class="zahl">${zahl(r.gok)}</td>
+              <td class="zahl">${zahl(r.dgm)}</td>
+              <td class="zahl">${mitVorzeichen(r.differenz)}</td>
+              <td class=${`klein ${STATUS[r.status][1]}`}>${r.status === "ohne_gok"
+                ? html`<button class="klein" title="GOK aus dem DGM übernehmen (Quelle DGM)"
+                    @click=${() => aendern([{ op: "gok_aus_dgm", ids: [r.id] }])}>übernehmen</button>`
+                : STATUS[r.status][0]}</td>
+            </tr>`)}
+        </tbody>
+      </table>
+      ${pr.verglichen ? html`<p class="leise klein">${pr.verglichen} verglichen · Median ${mitVorzeichen(pr.median)} m ·
+        größte Abweichung ${zahl(pr.max)} m (unauffällig bis ${zahl(pr.toleranz, 1)} m)</p>` : nothing}
+      ${pr.warnungen.map((w) => html`<p class="warnung klein">⚠ ${w}</p>`)}
+      ${pr.vorschlaege > 1 ? html`<button @click=${() => aendern([{ op: "gok_aus_dgm" }])}>
+        Alle ${pr.vorschlaege} fehlenden GOK aus dem DGM übernehmen</button>` : nothing}` : nothing}
+    ${wahl}
+    <div class="zeile">${datei("Andere DGM-Dateien …")}
+      <button class="link klein" @click=${dgmEntfernen}>DGM entfernen</button></div>`;
+}
+
 /** Hilfsmarken (Strecke, Bezugspunkt) nur beim Kalibrieren; gesperrt zeigt der Plan nur die Bohrungen. */
 function hilfsmarkenNachziehen(z: Zustand) {
   const v = S.viewer;
@@ -464,6 +546,8 @@ export function schrittLage() {
       ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z))}
       ${z.unterlage ? abschnitt(html`Kalibrieren`, kalibrierenTeil(z)) : nothing}
       ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z))}
+      ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
+        gelaendeTeil(z), !!z.gelaende)}
       ${abschnitt(html`Darstellung`, html`
         <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}
           <input type="number" step="0.1" min="0" class="kurz" placeholder=${`auto ${zahl(z.durchmesser_auto, 1)}`}

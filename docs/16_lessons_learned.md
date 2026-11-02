@@ -38,6 +38,7 @@ doubtful value stays **marked**, never hidden.
 | P10 | **Ablation**: switch off each rule and see which case gets worse. A rule whose removal makes nothing worse is not protected by any test | [`ablation.py`](../benchmark/ablation.py): 22 of 28 rules protected ([table](../benchmark/ablation_v4.md)) |
 | P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../services/extractor/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
 | P12 | Also measure **precision to the centimetre** (exact boundaries), not only the 5 cm tolerance | v3 414/515 exact, v4 509/515 after T2 |
+| P13 | **A new input on a page can break the end-to-end test** (Playwright strict mode): a second `.datei-knopf input` or `select.epsg` made two locators ambiguous. Give every input a unique accessible name (`aria-label`) and scope locators to their section; run `check_app.mjs` after every UI change | DGM section in the *Lage* step, 2026-11-02 |
 
 ## E. Input: what kind of PDF it is
 

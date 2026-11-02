@@ -1,7 +1,8 @@
 // End-to-End-Pruefung der Schritt-App (Chromium/Playwright, ohne Bildschirm) gegen den laufenden Server.
 //   A  Talheim: Warnung = unklassifizierte Schicht, blaettern (Pfeil, N), G = alle Schichten geprueft und weiter,
 //      Schicht klassifizieren, Bohrung entfernen und wiederherstellen, alle Bohrungen geprueft
-//   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen
+//   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen; B2 Gelaende (DGM-Datei): Vergleich
+//      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -105,7 +106,7 @@ async function zuLage() {
 
 async function unterlageHochladen(datei, art) {
   if (art === "schnitt") await page.getByLabel("Längsschnitt", { exact: true }).check();
-  await page.locator('.datei-knopf input[type="file"]').setInputFiles(datei);
+  await page.locator('.datei-knopf input[accept*="pdf"]').setInputFiles(datei);
   await warte(() => window.baugrund?.lage?.unterlage?.sichtbar);
   await ruhe(2000);
 }
@@ -168,6 +169,32 @@ try {
   pruefe("Vorschlag nach Norm übernommen (Grobaand → Sand)", s2a.korrigiert === 1, `${s2a.unklassifiziert} weiter unklassifiziert`);
   await page.screenshot({ path: `${aus}/B1_vorschlag.png` });
 
+  // ---------------------------------------------------------------- B2: Gelaende (DGM-Datei des Nutzers)
+  await hochladen(`${plaene}/berlin_ohne_gok_extraktion.json`);
+  await zuLage();
+  await page.locator("details.abschnitt summary", { hasText: "Gelände (DGM)" }).click();
+  await page.getByLabel("DGM-Dateien").setInputFiles(`${plaene}/dgm_berlin.xyz`);
+  await warte(() => window.app.z.gelaende?.pruefung, null, 60000);
+  let gz = (await stand()).z.gelaende;
+  const status = Object.fromEntries(gz.pruefung.zeilen.map((r) => [r.code, r.status]));
+  pruefe("DGM geladen: GOK der Bohrungen mit Lage passt (≤ 0,5 m), fehlende GOK erkannt",
+    gz.info.epsg === 25833 && status["422C-5527"] === "ohne_gok" && status.S2a === "ohne_lage" &&
+    ["422C-460", "422C-461", "422C-5525", "422C-5526"].every((c) => status[c] === "ok") && !gz.pruefung.warnungen.length,
+    JSON.stringify(status));
+  await page.locator("table.gelaende tr", { hasText: "422C-5527" }).getByRole("button", { name: "übernehmen" }).click();
+  await warte(() => window.app.z.bohrungen.find((b) => b.code === "422C-5527")?.gok_quelle === "DGM", null, 30000);
+  const g5527 = await bohrung("422C-5527");
+  pruefe("Fehlende GOK auf Klick aus dem DGM übernommen (Quelle DGM)", g5527.gok_quelle === "DGM" && g5527.gok > 30,
+    `${g5527.gok} m NHN`);
+  await page.screenshot({ path: `${aus}/B2_gelaende.png` });
+  await page.getByLabel("DGM-Dateien").setInputFiles(`${plaene}/dgm_berlin_hoch.xyz`);
+  await warte(() => window.app.z.gelaende?.pruefung?.warnungen.length > 0, null, 60000);
+  const warnText = await page.locator("table.gelaende ~ p.warnung").first().textContent();
+  pruefe("DGM 3 m höher: systematische Abweichung gewarnt", /im Mittel 3,\d\d m unter dem DGM/.test(warnText), warnText);
+  await page.getByRole("button", { name: "DGM entfernen" }).click();
+  await warte(() => window.app.z.gelaende === null, null, 30000);
+  pruefe("DGM entfernt, übernommene GOK bleibt", (await bohrung("422C-5527")).gok_quelle === "DGM");
+
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen
   await hochladen(`${plaene}/plan_extraktion.json`);
   await zuLage();
@@ -218,7 +245,7 @@ try {
   const epsgHinweis = page.locator("fieldset", { hasText: "Bezugspunkt" }).locator("p.klein");
   await rechtswert.fill("74848.9");
   await page.locator("label", { hasText: "Hochwert" }).locator("input").fill(String(wPlan["B 1"].y));
-  await page.locator("select.epsg").selectOption("25832");
+  await page.locator("fieldset", { hasText: "Bezugspunkt" }).locator("select.epsg").selectOption("25832");
   await ruhe(300);
   const falsch = await epsgHinweis.textContent();
   await rechtswert.fill(String(wPlan["B 1"].x));

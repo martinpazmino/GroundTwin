@@ -42,6 +42,20 @@ export interface Pruefstand {
 
 export interface ReiheZeile { id: string; nr: number; code: string; abstand: number | null; station: number; quelle: string; quelle_text: string }
 
+export interface GelaendeZeile {
+  id: string; code: string; gok: number | null; dgm: number | null; differenz: number | null;
+  status: "ok" | "abweichung" | "ohne_gok" | "aus_dgm" | "ausserhalb" | "ohne_lage" | "anderes_system";
+}
+
+/** Gelaendemodell (DGM aus Dateien des Nutzers, docs/23) und Vergleich GOK - DGM. */
+export interface Gelaende {
+  info: { name: string; dateien: string[]; epsg: number | null; dx: number; dy: number; zeilen: number; spalten: number;
+          ausdehnung: [number, number, number, number]; zmin: number | null; zmax: number | null; abdeckung: number; geladen: string };
+  pruefung: { zeilen: GelaendeZeile[]; verglichen: number; median: number | null; max: number | null; vorschlaege: number;
+              warnungen: string[]; toleranz: number } | null;
+  fehler: string;
+}
+
 export interface Einstellungen { methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean }
 
 export interface Zustand {
@@ -58,6 +72,7 @@ export interface Zustand {
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
   modell: { schluessel: string; aktuell: boolean; ifc: string | null };
   punkte: Punkt[];                                    // freie Punkte auf dem Plan (noch keiner Bohrung zugeordnet)
+  gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -142,6 +157,13 @@ export const api = {
   },
   unterlageSeite: (sig: string, seite: number, art: string) => anfrage<Zustand>(`/api/projekt/${sig}/unterlage/seite`, json({ seite, art })),
   unterlageEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/unterlage`, { method: "DELETE" }),
+  dgm(sig: string, dateien: File[], epsg: number | null) {
+    const f = new FormData();
+    for (const d of dateien) f.append("dateien", d, d.name);
+    f.append("epsg", epsg === null ? "" : String(epsg));
+    return anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "POST", body: f });
+  },
+  dgmEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,

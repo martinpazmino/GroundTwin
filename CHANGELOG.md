@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- *Lage* step: Gelände (DGM) from the user's files (XYZ, ASCII grid, GeoTIFF, ZIP, several tiles).
+  - The GOK is checked against the terrain, with a warning for a systematic deviation.
+  - A missing GOK is taken on a click and marked as source DGM in the app and the IFC.
+  - Code in `services/geodaten`, decision D89.
 - Evaluation and intervention plan for open data and open-source integrations
   ([docs/23](docs/23_open_data_integration.md)): BoreholeML, BGR Bohrpunktkarte and the state
   geological surveys, DGM and LoD2 for the Umgebungsmodell, basemap.de, Cesium / 3D Tiles,
