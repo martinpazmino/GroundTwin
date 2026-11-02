@@ -311,9 +311,9 @@ it never blocks (D75). Examples: 565,000 / 5,933,000 → ✓ 25832; 4,468,000 / 
 the digits". An unknown code coming from the PDF is shown marked (⚠), not lost. Without an EPSG on the
 Bohrungen, the viewer uses the plan's.
 
-### 4.4 Gelände (DGM): check and fill the GOK
+### 4.4 Gelände (DGM): GOK check, DGM from the Land, terrain in the model
 
-First piece of the open data plan ([23](23_open_data_integration.md), D89).
+Phases P3a and P3b of the open data plan ([23](23_open_data_integration.md), D89, D92).
 
 **Loading:**
 
@@ -322,7 +322,23 @@ First piece of the open data plan ([23](23_open_data_integration.md), D89).
 - Formats: XYZ, ASCII grid or GeoTIFF, several tiles at once, also as ZIP.
 - XYZ and ASCII carry no coordinate system: the list offers the project's one
   ([`services/geodaten`](../services/geodaten/README.md)).
-- Nothing is fetched from the internet, so nothing reveals the site of a confidential project.
+- Files are read without network, so nothing reveals the site of a confidential project.
+
+**DGM vom Land** (P3b, D92):
+
+- *DGM vom Land abrufen* fetches the DGM1 of the cut-out around the Bohrungen (plus a margin, 100 m by
+  default) from the WCS of the Land ([`dienste.json`](../services/geodaten/geodaten/dienste.json)):
+  - Brandenburg with Berlin (LGB, dl-de/by-2.0).
+  - NRW (Geobasis NRW, dl-de/zero-2.0).
+- **Only on a click**: the button says that the cut-out is sent to the service.
+- Source, license and attribution stay with the DGM and go into the IFC.
+- A cut-out of more than 3 km per side comes with a coarser grid (2 m and up).
+- Not offered, load the DGM1 tiles as files:
+  - Baden-Württemberg: its WCS delivers whole metres.
+  - Bayern: no free WCS.
+- Berlin example: 2.4 s for 340 × 331 m.
+  - 422C-460, -461 and -5525 lie within 0.45 m of the DGM.
+  - 422C-5526 and -5527 lie 1.0 and 1.1 m below today's terrain and are marked.
 
 **The comparison table** has one row per Bohrung: GOK, DGM height, Δ and a status (✓, *weicht ab*,
 *GOK fehlt*, *aus dem DGM*, *außerhalb*, *ohne Lage*, *anderes EPSG*).
@@ -343,6 +359,32 @@ First piece of the open data plan ([23](23_open_data_integration.md), D89).
 - Removing the DGM keeps the GOK already taken from it.
 
 ![Gelände (DGM): Berlin, DGM1-like tile with 2 m grid; four Bohrungen within 0.07 m, 422C-5527 took its GOK from the DGM, S2a without a position](img/21_lage_gelaende.jpg)
+
+**Gelände im Modell** (P3b, D92): setting *Gelände aus dem DGM* in the *Einheiten* step, on by default
+when a DGM is loaded.
+
+- **The top of the model follows the DGM** instead of an interpolation between the GOK of the
+  Bohrungen.
+- **At each Bohrung it stays exactly on the GOK.** The difference GOK − DGM fades out with the
+  distance to the Bohrung, so the model joins the DGM at its edge. Reach: half the spacing of the
+  Bohrungen, at least two mesh cells, at most 25 m. Contacts stay exact and solids stay closed
+  ([18 §3](18_layer_modeler.md#3-surfaces-and-solids)).
+- **A note marks the unexplored ground.** Where the DGM lies more than 1 m above or below the
+  interpolation of the GOK (an embankment, a hollow, an excavation), the top Einheit was not
+  explored. Berlin example: up to 5.6 m above, an embankment west of 422C-461.
+- **Fallback with a note:** the top comes from the GOK as before when any of these holds:
+  - The DGM does not cover the model area.
+  - The DGM is in another EPSG.
+  - A Bohrung has a schematic Lage or a relative height.
+- **IFC:** the terrain around the model is an `IfcGeographicElement` TERRAIN.
+  - It reaches 100 m out, at most to the edge of the DGM.
+  - It is an open triangulated surface that shares the edge nodes of the model: no gap and no double
+    surface.
+  - `CPset_Gelaende` holds source, license, attribution and date; `CPset_Baugrundmodell.Gelaende`
+    names the source of the top.
+- **Viewer:** the *Gelände* button shows or hides the terrain.
+
+![Berlin example with the DGM1 of the Land, 5× vertical exaggeration: the top of the model follows the terrain, the terrain around it in green; the embankment west of 422C-461 is marked as not explored](img/21_modell_gelaende.jpg)
 
 ### 4.5 Bohrungen der Länder: existing boreholes around the site
 
@@ -458,10 +500,10 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 
 | Test | Result |
 |---|---|
-| Modeler (`cd services/modeler && python -m pytest tests`) | 57 (19 for norms, 1 IFC with Bodenansprache/diameter) |
-| App and API (`python -m pytest tests`) | 83: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 4 for the online script |
+| Modeler (`cd services/modeler && python -m pytest tests`) | 61 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM) |
+| App and API (`python -m pytest tests`) | 92: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 7 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 34/34 and no page error: Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 37/37 and no page error: Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

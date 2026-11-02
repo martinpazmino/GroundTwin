@@ -126,15 +126,17 @@ and how to update the versions.
    - The Bohrungen are placed with points or dragged in x/y only. In the section the station moves;
      the height only if the PDF has no GOK.
    - The diameter of the columns is adjustable.
-   - Gelände (DGM): load the DGM tiles of the Land (open data). The GOK of every Bohrung is compared
-     with the terrain, and a missing GOK can be taken from it with a click
-     ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
+   - Gelände (DGM): load the DGM tiles of the Land (open data) or fetch them from the service of the
+     Land with a click. The GOK of every Bohrung is compared with the terrain, a missing GOK can be
+     taken from it with a click, and the top of the model follows the terrain
+     ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)).
    - Bohrungen der Länder: the Bohrungen of the state databases around the site (on a click), a
      Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
      and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
-   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres.
+   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM, the
+   terrain around the model.
 6. **That Open viewer** ([apps/web](apps/web/README.md)): compact toolbar, help on every setting and
    the Lage editor. With every change, the model is recomputed.
 

@@ -39,6 +39,7 @@ class Einstellungen:
     raster: float | None = None
     basis: float | None = None
     gok_relativ: bool = True                # fehlt die GOK bei allen: 0 m (relativ, markiert)
+    gelaende_dgm: bool = True               # mit DGM: Oberkante aus dem DGM, an den Bohrungen auf die GOK (docs/21 §4.4)
 
 
 @dataclass
@@ -419,19 +420,24 @@ def gelaende_eingabe(docs: list[dict], p: Projekt) -> list[dict]:
     return out
 
 
-def projekt_mitte(docs: list[dict], p: Projekt) -> tuple[float, float, int]:
-    """Mitte der Bohrungen mit Lage (haeufigstes EPSG), sonst der Bezugspunkt eines kalibrierten Lageplans."""
+def projekt_punkte(docs: list[dict], p: Projekt) -> tuple[list[tuple[float, float]], int]:
+    """Lage der Bohrungen im haeufigsten EPSG, sonst der Bezugspunkt eines kalibrierten Lageplans (Dienste der Laender)."""
     if p.lage_modus != LAGE_KOORDINATEN:
-        raise ValueError("Bohrungen der Länder nur mit Lage nach Koordinaten")
+        raise ValueError("Dienste der Länder nur mit Lage nach Koordinaten")
     mit = [b for b in gelaende_eingabe(docs, p) if b["x"] is not None and b["y"] is not None and b["epsg"]]
     if mit:
         epsg = max({b["epsg"] for b in mit}, key=lambda e: sum(b["epsg"] == e for b in mit))
-        auswahl = [b for b in mit if b["epsg"] == epsg]
-        return (sum(b["x"] for b in auswahl) / len(auswahl), sum(b["y"] for b in auswahl) / len(auswahl), int(epsg))
+        return [(b["x"], b["y"]) for b in mit if b["epsg"] == epsg], int(epsg)
     kal = (p.unterlage or {}).get("kalibrierung") or {}
     if kal.get("bezug") and kal.get("epsg"):
-        return float(kal["bezug"]["x"]), float(kal["bezug"]["y"]), int(kal["epsg"])
+        return [(float(kal["bezug"]["x"]), float(kal["bezug"]["y"]))], int(kal["epsg"])
     raise ValueError("erst Lage setzen: Bohrungen mit Koordinaten (EPSG) oder einen kalibrierten Lageplan")
+
+
+def projekt_mitte(docs: list[dict], p: Projekt) -> tuple[float, float, int]:
+    """Mitte der Bohrungen mit Lage (haeufigstes EPSG), sonst der Bezugspunkt eines kalibrierten Lageplans."""
+    punkte, epsg = projekt_punkte(docs, p)
+    return sum(x for x, _ in punkte) / len(punkte), sum(y for _, y in punkte) / len(punkte), epsg
 
 
 def gok_aus_dgm(docs: list[dict], p: Projekt, werte: dict | None) -> str:

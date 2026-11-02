@@ -31,7 +31,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import bohrdaten, boreholeml, gelaende  # noqa: E402
+from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -237,7 +237,8 @@ class Arbeitsplatz:
         """Schluessel der Modell-Eingaben (ohne Pruefhaken: Haken setzen rechnet nicht neu)."""
         e = pj.einstellungen(p)
         eingabe = {"docs": pl.ohne_pruefvermerke(vorb.docs), "vorgabe": p.vorgabe, "methode": e.methode,
-                   "puffer": e.puffer, "raster": e.raster, "basis": e.basis, "ursprung": list(ursprung)}
+                   "puffer": e.puffer, "raster": e.raster, "basis": e.basis, "ursprung": list(ursprung),
+                   "dgm": p.dgm.get("stand") if self._mit_dgm(p) else None}
         return hashlib.sha256(json.dumps(eingabe, sort_keys=True).encode()).hexdigest()[:16]
 
     def zustand(self, sig: str) -> dict:
@@ -309,7 +310,8 @@ class Arbeitsplatz:
                 else:
                     e = pj.einstellungen(p)
                     try:
-                        m = pl.modell_bauen(vorb.docs, p.vorgabe, e.methode, e.puffer, e.raster, e.basis, ursprung)
+                        m = pl.modell_bauen(vorb.docs, p.vorgabe, e.methode, e.puffer, e.raster, e.basis, ursprung,
+                                            *self._dgm_fuer_modell(sig, p))
                         self._modelle[schluessel] = (m, pl.bericht(m))
                         while len(self._modelle) > MODELLE_IM_SPEICHER:
                             self._modelle.popitem(last=False)
@@ -415,13 +417,26 @@ class Arbeitsplatz:
     def dgm_setzen(self, sig: str, dateien: list[tuple[str, bytes]], epsg: int | None) -> None:
         """DGM-Kachel(n) lesen, zusammenfuegen und im Projektordner ablegen; ersetzt ein vorhandenes DGM."""
         raster = gelaende.dateien_lesen(dateien, epsg)
+        namen = [n for n, _ in dateien]
+        self._dgm_ablegen(sig, raster, namen[0] if len(namen) == 1 else f"{len(namen)} Dateien", namen)
+
+    def dgm_abrufen(self, sig: str, rand: float | None = None, holer=None) -> None:
+        """DGM des Ausschnitts um die Bohrungen vom Dienst des Landes (nur auf Klick); ersetzt ein vorhandenes DGM."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            punkte, epsg = pj.projekt_punkte(docs, p)
+        box = dgm_dienst.ausschnitt(punkte, dgm_dienst.RAND_STANDARD if rand is None else rand)
+        raster, quelle = dgm_dienst.abrufen(*box, epsg, holer=holer)          # Netz: ohne Sperre
+        self._dgm_ablegen(sig, raster, f"{quelle['titel']} ({quelle['land']})", [], quelle)
+
+    def _dgm_ablegen(self, sig: str, raster: gelaende.Raster, name: str, dateien: list[str],
+                     quelle: dict | None = None) -> None:
         with self.sperre(sig):
             _, p = self.laden(sig)
             ziel = self.ordner(sig) / "dgm.npy"
             kopf = gelaende.speichern(raster, ziel)
-            namen = [n for n, _ in dateien]
-            p.dgm = {**kopf, "name": namen[0] if len(namen) == 1 else f"{len(namen)} Dateien",
-                     "dateien": namen, "datei": ziel.name, "geladen": pj.jetzt(),
+            p.dgm = {**kopf, "name": name, "dateien": dateien, "datei": ziel.name, "geladen": pj.jetzt(),
+                     "quelle": quelle,                     # Dienst des Landes: Lizenz, Namensnennung, Zeit
                      "stand": hashlib.sha256(raster.z.tobytes() + json.dumps(kopf, sort_keys=True).encode())
                      .hexdigest()[:12]}                    # Inhalt und Georeferenz (gleiche Datei, anderes EPSG)
             p.version += 1
@@ -450,6 +465,18 @@ class Arbeitsplatz:
                     self._dgm.popitem(last=False)
             self._dgm.move_to_end(schluessel)
             return self._dgm[schluessel]
+
+    @staticmethod
+    def _mit_dgm(p: pj.Projekt) -> bool:
+        """Oberkante des Modells aus dem DGM: DGM geladen, Lage nach Koordinaten, Einstellung an."""
+        return bool(p.dgm) and p.lage_modus == pj.LAGE_KOORDINATEN and pj.einstellungen(p).gelaende_dgm
+
+    def _dgm_fuer_modell(self, sig: str, p: pj.Projekt) -> tuple:
+        """(Raster, Angaben) fuer den Modellierer oder (None, None)."""
+        raster = self._raster(sig, p) if self._mit_dgm(p) else None
+        if raster is None:
+            return None, None
+        return raster, {"name": p.dgm.get("name"), "raster_m": p.dgm.get("dx"), "quelle_dienst": p.dgm.get("quelle")}
 
     def _gelaende(self, sig: str, docs: list[dict], p: pj.Projekt) -> dict | None:
         """Kopf des DGM und Vergleich GOK - DGM fuer die Oberflaeche (None ohne DGM)."""

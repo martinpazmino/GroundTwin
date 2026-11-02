@@ -121,9 +121,10 @@ class Ergebnis:
 
 def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: str = "idw",
                  puffer: float | None = None, raster: float | None = None, basis: float | None = None,
-                 ursprung: tuple[float, float] | None = None):
-    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes."""
-    return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung)
+                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None):
+    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes. gelaende: DGM-Raster fuer die Oberkante."""
+    return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung,
+                 gelaende=gelaende, gelaende_info=gelaende_info)
 
 
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,

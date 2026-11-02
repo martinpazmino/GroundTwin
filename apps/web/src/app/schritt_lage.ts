@@ -34,6 +34,7 @@ let waehlt = "";                              // welcher Punkt gerade im Plan ge
 let neueArt: "plan" | "schnitt" = "plan";
 let dgmEpsg: number | null | undefined;               // System der DGM-Dateien (undefined = das des Projekts)
 let sgdRadius = 250;                                  // m um die Mitte des Projekts
+let dgmRand = 100;                                    // m um die Bohrungen (DGM vom Land)
 const sgdWahl = new Set<string>();                    // "dienst/id" der Bohrungen, die übernommen werden sollen
 
 function schluessel(z: Zustand) {
@@ -448,6 +449,29 @@ async function dgmHochladen(ev: Event) {
   }
 }
 
+async function dgmAbrufen() {
+  const z = await versuchen(() => api.dgmAbruf(S.sig, dgmRand), "DGM wird beim Land abgerufen …");
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+    const warnungen = z.gelaende?.pruefung?.warnungen.length ?? 0;
+    melden(warnungen ? "DGM vom Land geladen – Hinweise zum Vergleich beachten." : "DGM vom Land geladen.", warnungen ? "warn" : "ok");
+  }
+}
+
+/** Abruf beim Land: nur auf Klick, der Knopf sagt, was gesendet wird (D88). */
+function dgmVomLand(z: Zustand) {
+  if (z.lage_modus !== "koordinaten") return nothing;
+  return html`
+    <div class="zeile">
+      <label class="inline">Rand <input type="number" min="0" max="1000" step="25" class="kurz" aria-label="Rand um die Bohrungen"
+        .value=${live(String(dgmRand))} @change=${(ev: Event) => { dgmRand = eingabe(ev) ?? 100; }}> m</label>
+      <button @click=${dgmAbrufen} title="Sendet den Ausschnitt um die Bohrungen an den Dienst des Landes">
+        DGM vom Land abrufen</button>${hilfe("dgm_land")}
+    </div>
+    <p class="leise klein">Brandenburg mit Berlin und NRW (DGM1, WCS). Sendet den Ausschnitt um die Bohrungen an den Dienst.</p>`;
+}
+
 async function dgmEntfernen() {
   if (!confirm("DGM aus dem Projekt entfernen? Übernommene GOK bleiben (Quelle DGM).")) return;
   const z = await versuchen(() => api.dgmEntfernen(S.sig));
@@ -475,15 +499,19 @@ function gelaendeTeil(z: Zustand) {
   if (!g) {
     return html`
       <p class="leise klein">DGM-Kachel(n) des Landes (Open Data, z. B. DGM1) als XYZ, ASCII-Raster oder GeoTIFF, auch als
-        ZIP – Höhen in m NHN. Damit prüft die App die GOK und schlägt fehlende vor.</p>
+        ZIP – Höhen in m NHN. Damit prüft die App die GOK, schlägt fehlende vor und legt das Gelände ins Modell.</p>
+      ${dgmVomLand(z)}
       ${wahl}
       ${datei("DGM-Dateien wählen …")}`;
   }
   const i = g.info;
   const pr = g.pruefung;
+  const q = i.quelle;
   return html`
     <p><b>${i.name}</b><br><span class="leise klein">${systemText(i.epsg)} · Raster ${zahl(i.dx, 1)} m ·
       ${i.spalten.toLocaleString("de-DE")} × ${i.zeilen.toLocaleString("de-DE")} · ${zahl(i.zmin, 1)} – ${zahl(i.zmax, 1)} m NHN</span></p>
+    ${q ? html`<p class="leise klein">${q.anbieter} · <a href=${q.beleg} target="_blank" rel="noopener">${q.lizenz}</a> ·
+      ${q.namensnennung} · abgerufen ${q.abgerufen}</p>` : nothing}
     ${g.fehler ? html`<p class="warnung klein">${g.fehler}</p>` : nothing}
     ${pr ? html`
       <table class="tabelle kompakt gelaende">
@@ -507,6 +535,7 @@ function gelaendeTeil(z: Zustand) {
       ${pr.warnungen.map((w) => html`<p class="warnung klein">⚠ ${w}</p>`)}
       ${pr.vorschlaege > 1 ? html`<button @click=${() => aendern([{ op: "gok_aus_dgm" }])}>
         Alle ${pr.vorschlaege} fehlenden GOK aus dem DGM übernehmen</button>` : nothing}` : nothing}
+    ${dgmVomLand(z)}
     ${wahl}
     <div class="zeile">${datei("Andere DGM-Dateien …")}
       <button class="link klein" @click=${dgmEntfernen}>DGM entfernen</button></div>`;

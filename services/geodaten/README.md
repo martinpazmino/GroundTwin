@@ -1,18 +1,20 @@
 ---
-title: "Geodaten: DGM from files and BoreholeML"
+title: "Geodaten: DGM, BoreholeML and the services of the Länder"
 date: 2026-11-02
-tags: [open-data, dgm, gok, boreholeml]
+tags: [open-data, dgm, wcs, gok, boreholeml]
 aliases: [Geodaten, DGM, BoreholeML export]
 ---
 
-# Geodaten: DGM from files and BoreholeML
+# Geodaten: DGM, BoreholeML and the services of the Länder
 
-Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM (phase P3),
-BoreholeML (phase P1) and the Bohrungen der Länder (phases P0 and P2), below.
+Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM from files and
+from the services of the Länder (phase P3), BoreholeML (phase P1) and the Bohrungen der Länder (phases P0
+and P2), below.
 
 The user downloads the DGM tiles of their Land (open data, usually DGM1) and loads them in the
-*Lage* step. The app compares the GOK of the Gutachten with the terrain and proposes a missing
-GOK. No network: nothing reveals the site of the project, and it works in every Land.
+*Lage* step, or fetches the cut-out around the Bohrungen from the service of the Land with a click. The
+app compares the GOK of the Gutachten with the terrain and proposes a missing GOK. Files need no
+network: nothing reveals the site of the project, and they work in every Land.
 
 | File | What it does |
 |---|---|
@@ -22,6 +24,7 @@ GOK. No network: nothing reveals the site of the project, and it works in every 
 | [`werkzeuge/boreholeml_codes.py`](werkzeuge/boreholeml_codes.py) | Generates the JSON from the official codelists; stops if a name is missing or ambiguous |
 | [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
 | [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten |
+| [`geodaten/dgm_dienst.py`](geodaten/dgm_dienst.py) | DGM1 of the cut-out around the Bohrungen from the WCS 2.0.1 of the Land (GeoTIFF, read by `gelaende.py`), coarser grid for large cut-outs, ExceptionReport and NoData as messages |
 
 **Formats:**
 
@@ -42,7 +45,7 @@ GOK. No network: nothing reveals the site of the project, and it works in every 
 - Heights must lie between −500 and 9,000 m (otherwise the unit or the NoData value is wrong).
 - Tiles must share the same cell size, grid and EPSG.
 
-**GOK check** ([docs/21 §4.4](../../docs/21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)):
+**GOK check** ([docs/21 §4.4](../../docs/21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)):
 
 - |GOK − DGM| ≤ 0.5 m is unremarkable. A larger difference is marked: a pit, a fill, or a wrong
   Lage.
@@ -52,6 +55,22 @@ GOK. No network: nothing reveals the site of the project, and it works in every 
   app and in the IFC (`CPset_Herkunft.Hoehe`).
 
 Tests: `python -m pytest tests/test_gelaende.py tests/test_gelaende_app.py`.
+
+**DGM from the Land** (`dgm_dienst.py`, entries `wcs-dgm` in `dienste.json`):
+
+| Land | Service | Delivers | License |
+|---|---|---|---|
+| Brandenburg with Berlin | WCS `isk.geobasis-bb.de/ows/dgm_wcs`, coverage `bb_dgm` | DGM1, float32, EPSG:25833 | dl-de/by-2.0 (© GeoBasis-DE/LGB; © Geoportal Berlin) |
+| NRW | WCS `www.wcs.nrw.de/geobasis/wcs_nw_dgm`, coverage `nw_dgm` | DGM1, float32, EPSG:25832 | dl-de/zero-2.0 |
+
+- Checked and not taken (with the reason in `dienste.json`): Baden-Württemberg (whole metres),
+  Bayern (no free WCS).
+- Only on a click: the request sends the cut-out to the service.
+- More than 3,000 cells per side: a coarser grid (`SCALEFACTOR`).
+- In the zone-prefixed systems (EPSG 4647, 5650), the raster stays in the system of the project.
+
+Tests: `python -m pytest tests/test_dgm_dienst.py tests/test_dgm_dienst_app.py` (a dummy replaces the WCS;
+one test asks the real ones).
 
 ## BoreholeML 3.2
 

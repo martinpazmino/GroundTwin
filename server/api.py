@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 from ui import pipeline as pl
 
-from .arbeitsplatz import BEISPIELE, Arbeitsplatz
+from .arbeitsplatz import BEISPIELE, Arbeitsplatz, bohrdaten
 
 DIST = Path(__file__).resolve().parents[1] / "apps" / "web" / "dist"
 VERSION = "3.0"
@@ -56,6 +56,10 @@ class Beispiel(BaseModel):
 
 class SgdAbfrage(BaseModel):
     radius: float | None = None
+
+
+class DgmAbruf(BaseModel):
+    rand: float | None = None
 
 
 class SgdAuswahl(BaseModel):
@@ -97,6 +101,11 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.exception_handler(ValueError)
     async def ungueltig(_: Request, err: ValueError):
         return JSONResponse({"detail": str(err)}, status_code=400)
+
+    @app.exception_handler(bohrdaten.DienstFehler)
+    async def dienst_fehler(_: Request, err: Exception):
+        """Ein Dienst des Landes antwortet nicht oder mit Fehler: Meldung an die Oberflaeche statt Serverfehler."""
+        return JSONResponse({"detail": f"Dienst des Landes: {err}"}, status_code=502)
 
     # ------------------------------------------------------------ Start
     @app.get("/gesund")
@@ -183,6 +192,11 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         if code and not code.isdigit():
             raise ValueError("EPSG als Zahl (z. B. 25832)")
         ap.dgm_setzen(sig, inhalt, int(code) if code else None)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/dgm/abruf")
+    def dgm_abruf(sig: str, a: DgmAbruf):
+        ap.dgm_abrufen(sig, a.rand)
         return ap.zustand(sig)
 
     @app.delete("/api/projekt/{sig}/dgm")

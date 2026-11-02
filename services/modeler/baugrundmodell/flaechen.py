@@ -128,8 +128,10 @@ def _freie_grenzen(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]],
 
 
 def schichtmodell(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]], punkte: np.ndarray,
-                  xy_b: np.ndarray, basis: float, methode: str = "idw") -> dict:
+                  xy_b: np.ndarray, basis: float, methode: str = "idw", oben: np.ndarray | None = None) -> dict:
     """Grenzflaechen an allen Netzknoten: Zeile 0 = Gelaende, Zeile j+1 = Unterkante Einheit j.
+
+    oben: Gelaende an den Knoten (aus dem DGM, an den Bohrungen = GOK); sonst aus den GOK interpoliert.
 
     1. vorlaeufig aus exakten Kontakten (ohne solche: Mitte der freien Bereiche; ohne alles: Basis)
     2. freie Grenzen (Linsen) festlegen, neu interpolieren
@@ -139,7 +141,8 @@ def schichtmodell(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]], punkt
     5. Ausdehnung nicht durchgehender Einheiten begrenzen (_ausdehnung)
     """
     nb, n = len(bohrungen), len(kontakte[0]) if kontakte else 0
-    oben = interpolieren(punkte, xy_b, np.array([b.gok for b in bohrungen]), methode)
+    if oben is None:
+        oben = interpolieren(punkte, xy_b, np.array([b.gok for b in bohrungen]), methode)
 
     def flaeche(daten: dict[int, float]) -> np.ndarray:
         if not daten:

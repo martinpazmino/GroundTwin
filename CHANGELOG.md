@@ -6,6 +6,13 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Gelände from the DGM of the Land (decision D92).
+  - *Lage* step: the DGM1 of the cut-out around the Bohrungen from the WCS of Brandenburg with Berlin
+    and NRW, only on a click, with source, license and attribution.
+  - The top of the model follows the DGM and stays exactly on the GOK at each Bohrung. Relief over
+    1 m between the Bohrungen is marked as not explored.
+  - The terrain around the model is an `IfcGeographicElement` TERRAIN in the IFC, with a *Gelände*
+    button in the viewer.
 - *Lage* step: Bohrungen der Länder (Berlin, Brandenburg, NRW, Baden-Württemberg) around the site,
   queried only on a click (decisions D85, D88, D91).
   - A Gegenprobe of the Bohrungen of the Gutachten that the Land also has.
@@ -26,6 +33,7 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed
+- A service of the Land that does not answer gives a message (HTTP 502) instead of a server error.
 - Repository layout: the extraction moved from `spikes/extraktion_v2` to `services/extractor`, the
   test bench from `spikes/korpus` to `benchmark`, the Supabase migration from `spikes/supabase` to
   `supabase`. The extraction code is unchanged (identical regression results).

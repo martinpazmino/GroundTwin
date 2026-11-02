@@ -67,11 +67,14 @@ def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
     return zone * 6 - 183 + math.degrees(laenge), math.degrees(breite)
 
 
-def dienste_am_ort(x: float, y: float, epsg: int) -> list[dict]:
-    """Dienste, deren Gebiet die Mitte des Projekts enthaelt (an Landesgrenzen auch mehrere)."""
+BOHRDIENSTE = ("wfs-kopf", "wfs-boreholeml")
+
+
+def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRDIENSTE) -> list[dict]:
+    """Dienste der Arten, deren Gebiet die Mitte des Projekts enthaelt (an Landesgrenzen auch mehrere)."""
     x, y, epsg = utm_normal(x, y, epsg)
     lon, lat = utm_zu_geo(x, y, {25831: 31, 25832: 32, 25833: 33}[epsg])
-    return [d for d in DIENSTE if d["gebiet_wgs84"][0] <= lon <= d["gebiet_wgs84"][2]
+    return [d for d in DIENSTE if d["art"] in arten and d["gebiet_wgs84"][0] <= lon <= d["gebiet_wgs84"][2]
             and d["gebiet_wgs84"][1] <= lat <= d["gebiet_wgs84"][3]]
 
 
@@ -204,8 +207,10 @@ def _boreholeml_kopf(d: dict, daten: bytes) -> list[dict]:
 def holen(dienst_id: str, ids: list[str], holer=None, heute: date | None = None) -> dict:
     """Ausgewaehlte Bohrungen eines BoreholeML-Dienstes mit Schichtdaten -> Dokument im kanonischen JSON (Herkunft)."""
     d = dienst(dienst_id)
-    if d["art"] != "wfs-boreholeml":
+    if d["art"] == "wfs-kopf":
         raise ValueError(f"{d['titel']}: nur Kopfdaten, das Schichtenverzeichnis als Grafik – nicht ins Modell übernehmbar")
+    if d["art"] != "wfs-boreholeml":
+        raise ValueError(f"{d['titel']}: kein Dienst für Bohrdaten")
     ids = [i for i in dict.fromkeys(ids) if i]
     if not ids:
         raise ValueError("keine Bohrung gewählt")

@@ -47,10 +47,17 @@ export interface GelaendeZeile {
   status: "ok" | "abweichung" | "ohne_gok" | "aus_dgm" | "ausserhalb" | "ohne_lage" | "anderes_system";
 }
 
-/** Gelaendemodell (DGM aus Dateien des Nutzers, docs/23) und Vergleich GOK - DGM. */
+/** Dienst des Landes, von dem das DGM stammt (docs/23 §2.4): Lizenz und Namensnennung gehen ins IFC. */
+export interface DgmQuelle {
+  dienst: string; land: string; titel: string; anbieter: string; lizenz: string; lizenz_url: string;
+  namensnennung: string; beleg: string; abgerufen: string; ausschnitt: [number, number, number, number]; raster_m: number;
+}
+
+/** Gelaendemodell (DGM aus Dateien des Nutzers oder vom Dienst des Landes, docs/23) und Vergleich GOK - DGM. */
 export interface Gelaende {
   info: { name: string; dateien: string[]; epsg: number | null; dx: number; dy: number; zeilen: number; spalten: number;
-          ausdehnung: [number, number, number, number]; zmin: number | null; zmax: number | null; abdeckung: number; geladen: string };
+          ausdehnung: [number, number, number, number]; zmin: number | null; zmax: number | null; abdeckung: number; geladen: string;
+          quelle: DgmQuelle | null };
   pruefung: { zeilen: GelaendeZeile[]; verglichen: number; median: number | null; max: number | null; vorschlaege: number;
               warnungen: string[]; toleranz: number } | null;
   fehler: string;
@@ -71,7 +78,10 @@ export interface Sgd {
   gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
 }
 
-export interface Einstellungen { methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean }
+export interface Einstellungen {
+  methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
+  gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
+}
 
 export interface Zustand {
   signatur: string; name: string; version: number; schritt: string;
@@ -179,6 +189,7 @@ export const api = {
     f.append("epsg", epsg === null ? "" : String(epsg));
     return anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "POST", body: f });
   },
+  dgmAbruf: (sig: string, rand: number) => anfrage<Zustand>(`/api/projekt/${sig}/dgm/abruf`, json({ rand })),
   dgmEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "DELETE" }),
   sgdAbfrage: (sig: string, radius: number) => anfrage<Zustand>(`/api/projekt/${sig}/sgd/abfrage`, json({ radius })),
   sgdUebernehmen: (sig: string, auswahl: { dienst: string; id: string }[]) =>

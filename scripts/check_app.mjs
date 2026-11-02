@@ -3,7 +3,8 @@
 //      Schicht klassifizieren, Bohrung entfernen und wiederherstellen, alle Bohrungen geprueft
 //   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen; B2 Gelaende (DGM-Datei): Vergleich
 //      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen; B3 Bohrungen der Laender: echte
-//      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens
+//      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens; B4 DGM vom Land (echter
+//      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -211,6 +212,36 @@ try {
     sgd.gegenprobe.anzahl === 5 && sgd.gegenprobe.lage_max <= 0.1 && zeilenSgd > 5 && sgd.quellen.some((q) => q.lizenz === "dl-de/zero-2.0"),
     `${sgd.treffer.length} Treffer · ${JSON.stringify(sgd.gegenprobe)} · Fehler ${JSON.stringify(sgd.fehler)}`);
   await page.screenshot({ path: `${aus}/B3_laender.png` });
+
+  // ---------------------------------------------------------------- B4: DGM vom Land (echter WCS Brandenburg mit Berlin)
+  const gelaendeTeil = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Gelände (DGM)" }) });
+  if (!(await gelaendeTeil.evaluate((d) => d.open))) await gelaendeTeil.locator("summary").click();   // nach "DGM entfernen" zu
+  await page.getByRole("button", { name: "DGM vom Land abrufen" }).click();
+  await warte(() => window.app.z.gelaende?.info?.quelle || window.app.meldungen.some((m) => m.art === "fehler"), null, 150000);
+  gz = (await stand()).z.gelaende;
+  const fehlerLand = (await page.evaluate(() => window.app.meldungen.filter((m) => m.art === "fehler").map((m) => m.text))).join("; ");
+  if (!gz?.info?.quelle && /Dienst des Landes: .*(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(fehlerLand)) {
+    console.log(`AUS  DGM vom Land: Dienst nicht erreichbar (${fehlerLand}) – Prüfungen ausgelassen`);
+  } else {
+    const st = Object.fromEntries((gz?.pruefung?.zeilen ?? []).map((r) => [r.code, r.status]));
+    pruefe("DGM vom Land (WCS Brandenburg mit Berlin, 1 m): GOK-Vergleich markiert 422C-5526 (1 m unter dem DGM)",
+      gz?.info?.quelle?.dienst === "BB-DGM1" && gz.info.dx === 1 && st["422C-5526"] === "abweichung" &&
+      ["422C-460", "422C-461", "422C-5525"].every((c) => st[c] === "ok"), `${JSON.stringify(st)} ${fehlerLand}`);
+    await page.screenshot({ path: `${aus}/B4_dgm_land.png` });
+    const ladungen = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
+    await page.getByRole("button", { name: /Weiter: Einheiten/ }).click();
+    await warte(() => document.querySelector("table.einheiten"), null, 180000);
+    await page.getByRole("button", { name: /Weiter: Modell/ }).click();
+    await warte((n) => window.baugrund?.ladungen > n && !window.app.rechnet, ladungen, 240000);
+    await ruhe(2000);
+    const v = await page.evaluate(() => ({ gelaende: window.baugrund.gelaende,
+                                           quelle: window.app.modell?.bericht?.parameter?.gelaende?.quelle }));
+    pruefe("Modell mit Gelände aus dem DGM, Gelände um das Modell im Viewer", v.gelaende === 1 && v.quelle === "DGM", JSON.stringify(v));
+    await page.screenshot({ path: `${aus}/B4_gelaende_modell.png` });
+    await page.locator('bim-button[label="Gelände"]').click();
+    await warte(() => window.baugrund.gelaendeSichtbar === false, null, 10000).catch(() => {});
+    pruefe("Gelände im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gelaendeSichtbar === false));
+  }
 
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen
   await hochladen(`${plaene}/plan_extraktion.json`);
