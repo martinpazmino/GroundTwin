@@ -371,7 +371,7 @@ when a DGM is loaded.
   ([18 §3](18_layer_modeler.md#3-surfaces-and-solids)).
 - **A note marks the unexplored ground.** Where the DGM lies more than 1 m above or below the
   interpolation of the GOK (an embankment, a hollow, an excavation), the top Einheit was not
-  explored. Berlin example: up to 5.6 m above, an embankment west of 422C-461.
+  explored. Berlin example: a mound up to 5.6 m above, 11 m north of 422C-461.
 - **Fallback with a note:** the top comes from the GOK as before when any of these holds:
   - The DGM does not cover the model area.
   - The DGM is in another EPSG.
@@ -384,7 +384,7 @@ when a DGM is loaded.
     names the source of the top.
 - **Viewer:** the *Gelände* button shows or hides the terrain.
 
-![Berlin example with the DGM1 of the Land, 5× vertical exaggeration: the top of the model follows the terrain, the terrain around it in green; the embankment west of 422C-461 is marked as not explored](img/21_modell_gelaende.jpg)
+![Berlin example with the DGM1 of the Land, 5× vertical exaggeration: the top of the model follows the terrain, the terrain around it in green; the mound north of 422C-461 is marked as not explored](img/21_modell_gelaende.jpg)
 
 ### 4.5 Bohrungen der Länder: existing boreholes around the site
 
