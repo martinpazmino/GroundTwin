@@ -7,7 +7,8 @@
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
 //   D  Laengsschnitt: 1:500/1:100, Bezugspunkt (Station/Hoehe), sperren, Bohrungen auf ihre Saeule ziehen (GOK aus dem
-//      PDF bleibt), Einheit umbenennen, Modell im Viewer, einchecken, IFC mit Bodenansprache
+//      PDF bleibt), Einheit umbenennen, Modell im Viewer, einchecken, IFC mit Bodenansprache; BoreholeML ohne
+//      Koordinaten gesperrt
 //   E  PDF-Beispiel: Extraktion mit Fortschritt, Quelle der Schicht im PDF
 //
 //   python -m server --port 8511 --kein-browser --arbeit <leerer-ordner>     (in einem zweiten Terminal)
@@ -428,6 +429,12 @@ try {
   const ifc = await page.evaluate(async (s) => (await fetch(`/api/projekt/${s}/export/ifc`)).text(), sig);
   pruefe("IFC: Bodenansprache je Schicht, Beschreibungen je Einheit, Prüfstand",
     ifc.includes("CPset_Bodenansprache") && ifc.includes("'Beschreibungen'") && ifc.includes("Kieslinse") && ifc.includes("IFCLABEL('v1 "), `${(ifc.length / 1e6).toFixed(1)} MB`);
+  // ueber den Anfrage-Kontext, nicht fetch in der Seite: ein erwartetes 400 waere sonst ein Konsolenfehler
+  const bml = (await page.request.get(`${url}/api/projekt/${sig}/export/boreholeml`)).status();
+  const bmlText = await page.locator(".export-liste p.klein").textContent();
+  pruefe("BoreholeML: ohne Koordinaten gesperrt (Knopf aus, Server 400)",
+    bml === 400 && (await page.locator(".export-liste .knopf.aus").count()) === 1 && /^0 von \d+ Bohrungen/.test(bmlText),
+    `${bml} · ${bmlText}`);
   await page.screenshot({ path: `${aus}/D3_modell.png` });
 
   // ---------------------------------------------------------------- E: PDF mit Extraktion

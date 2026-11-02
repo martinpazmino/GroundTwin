@@ -363,6 +363,32 @@ First piece of the open data plan ([23](23_open_data_integration.md), D89).
 
 ![Modell step: model Einheiten (Kies renamed to Kieslinse), Prüfstand eingecheckt and exports](img/21_modell.jpg)
 
+### 5.1 BoreholeML for the Geologische Dienste
+
+Under the GeolDG, every Bohrung is notified to the state geological survey (SGD) and its
+Schichtenverzeichnis submitted ([23 §2.1](23_open_data_integration.md#21-boreholeml-the-exchange-format-of-the-länder), D84, D90).
+
+**Export:** *Export → Bohrungen für den Geologischen Dienst (BoreholeML 3.2)* writes the Bohrungen in
+their exchange format.
+
+- Only Bohrungen whose Schichten are **all reviewed**, with ETRS89/UTM coordinates and a GOK in m NHN.
+  Next to the button the app counts how many qualify; without any, the button is off.
+- The *Organisation* field is written as the sender. The browser remembers it.
+- At the top of the file a comment lists what was exported, what was skipped and why, and the
+  assumptions:
+  - Height reference: EPSG 5555/5556 = UTM + DHHN92, as in the official examples.
+  - Groundwater only as text.
+  - DIN 4022 Kurzzeichen.
+- Codes come from the official codelists, mapped by name ([`services/geodaten`](../services/geodaten/README.md)).
+- The file validates against the official XSD.
+
+**Import:** in the *Gutachten* step a BoreholeML file (`.xml`, for example downloaded from a state
+portal) can be uploaded like a PDF.
+
+- Its Bohrungen show their origin: GOK source *BoreholeML*, Lage *BoreholeML (database)*, and the
+  hint *aus BoreholeML … – nicht aus dem Gutachten*.
+- A Schicht whose petrography has no Bodenart stays unklassifiziert, with the code named.
+
 ## 6. IFC: the description on every Schicht
 
 | Pset | Where | Content |
@@ -395,9 +421,9 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 | Test | Result |
 |---|---|
 | Modeler (`cd services/modeler && python -m pytest tests`) | 57 (19 for norms, 1 IFC with Bodenansprache/diameter) |
-| App and API (`python -m pytest tests`) | 59: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 4 for the online script |
+| App and API (`python -m pytest tests`) | 70: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 32/32 and no page error: warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 33/33 and no page error: BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

@@ -400,7 +400,7 @@ def gok_quelle(p: Projekt, bid: str, b: dict) -> str:
     o = p.bohrung.get(bid, {})
     if "gok" in o:
         return o.get("gok_quelle") or "manuell"
-    return "PDF" if b.get("gok_nhn") is not None else ""
+    return (b.get("gok_source") or "PDF") if b.get("gok_nhn") is not None else ""   # PDF oder BoreholeML (Import)
 
 
 def gelaende_eingabe(docs: list[dict], p: Projekt) -> list[dict]:

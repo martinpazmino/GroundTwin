@@ -31,11 +31,11 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
 - **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
-- **Status (2026-11-02):** the first part of P3 is done.
+- **Status (2026-11-02):** P1 and the first part of P3 are done.
+  - BoreholeML 3.2 export of the reviewed Bohrungen, valid against the official XSD, and import of
+    BoreholeML files ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
   - The DGM comes from files the user downloads: GOK check and missing GOK on a click
     ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)).
-  - P1 waits for `schemas.bgr.de`. The export runs offline, but writing it needs the official
-    XSD, which is blocked in the cloud session (§7). It is not invented.
 - **Before anything is fetched from outside:**
   - Every external service can be switched off per project. Querying a service reveals the site of
     a confidential project.
@@ -349,8 +349,9 @@ Rules:
 | Phase | State |
 |---|---|
 | P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-check-and-fill-the-gok)), 21 tests + 4 end-to-end checks |
-| P3b: DGM through WCS, terrain surface in the model and the IFC | Open; needs the hosts of §7 |
-| P0, P1, P2 | Blocked by the network policy (§7) |
+| P1: BoreholeML export and import | **Done.** [`boreholeml.py`](../services/geodaten/geodaten/boreholeml.py), code table from the official codelists v2 with the official names as evidence, export valid against the official XSD 3.2, import of the official examples and round trip; *Modell* and *Gutachten* steps ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)); 11 tests + 1 end-to-end check |
+| P3b: DGM through WCS, terrain surface in the model and the IFC | Open |
+| P0: service registry `dienste.json`; P2: Bohrungen of the state services | Open; the hosts of §7 are allowed since 2026-11-02 |
 
 **Why this order:**
 
@@ -384,7 +385,7 @@ Rules:
 ## 7. Hosts to allow in the cloud session
 
 Only for developing in Claude's cloud environment. A user who runs the app on their own PC needs
-nothing. Blocked on 2026-11-02 (proxy 403 or not resolved, also for WebFetch):
+nothing. Blocked on 2026-11-02 (proxy 403 or not resolved, also for WebFetch), allowed the same day:
 
 - `services.bgr.de`, `schemas.bgr.de`, `boreholemap.bgr.de`, `gitlab.opencode.de` (BGR, BoreholeML).
 - `sgx.geodatenzentrum.de`, `sg.geodatenzentrum.de`, `basemap.de` (BKG).
@@ -394,6 +395,8 @@ nothing. Blocked on 2026-11-02 (proxy 403 or not resolved, also for WebFetch):
   - `services.lgrb-bw.de`.
   - `gdi.berlin.de`.
 - `tile.openstreetmap.org`, `overpass-api.de` (OSM fallback).
+- `schemas.opengis.net` only answers over **https**: the BoreholeML XSD imports GML and ISO 19139 with
+  `http://`, so the check maps them to `https://` (`xmlschema`, `uri_mapper`; X31).
 
 Where: the cloud environment menu in the session's title bar → Edit → Network access. Choose a
 broader access level, or add these hosts under Allowed domains and keep "Allow package managers"

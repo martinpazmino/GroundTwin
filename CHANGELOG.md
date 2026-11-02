@@ -6,6 +6,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- BoreholeML 3.2, the exchange format of the state geological surveys (decisions D84, D90).
+  - Export of the reviewed Bohrungen in the *Modell* step, with the sender organisation; valid against
+    the official XSD.
+  - Codes from the official codelists v2, mapped by name.
+  - Import of BoreholeML files in the *Gutachten* step, with the origin marked.
 - *Lage* step: Gelände (DGM) from the user's files (XYZ, ASCII grid, GeoTIFF, ZIP, several tiles).
   - The GOK is checked against the terrain, with a warning for a systematic deviation.
   - A missing GOK is taken on a click and marked as source DGM in the app and the IFC.

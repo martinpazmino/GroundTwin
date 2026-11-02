@@ -8,11 +8,11 @@ Repository `github.com/martinpazmino/GroundTwin` (formerly CAD_Extract and GeoIM
 license **AGPL-3.0-or-later** (D79).
 
 ## Read before touching the extraction
-- `docs/16_lessons_learned.md`: explicit rules (process P1–P13, input E, geometry G, labels L/T, text B, water W,
+- `docs/16_lessons_learned.md`: explicit rules (process P1–P15, input E, geometry G, labels L/T, text B, water W,
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D89 (D84–D88 proposed).
+- `docs/11_decisions.md`: decisions D1–D90 (D85–D88 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -50,6 +50,10 @@ license **AGPL-3.0-or-later** (D79).
 - Gelände (D89, docs/21 §4.4): `services/geodaten` (package `geodaten`) reads the user's DGM files (XYZ, ASCII,
   GeoTIFF, ZIP) without network; the GOK check marks, a missing GOK is applied on a click (`gok_quelle` DGM, IFC
   `CPset_Herkunft.Hoehe`); never replaces a GOK from the PDF. Tests `tests/test_gelaende*.py`.
+- BoreholeML 3.2 (D84, D90, docs/21 §5.1): `services/geodaten/geodaten/boreholeml.py` exports only reviewed
+  Bohrungen with ETRS89/UTM and GOK (EPSG 5555/5556), codes from `boreholeml_codes.json` (regenerate with
+  `werkzeuge/boreholeml_codes.py`, mapped by official names, P15); import marks the origin. Must stay valid against
+  the official XSD: `tests/test_boreholeml.py` (needs network; opengis only over https, X31).
 - Norms (DIN 4023 / EN ISO 14688-1 / DIN 18196): `services/modeler/baugrundmodell/normen.json` + `normen.py`, with
   evidence per value; read them, never apply them silently (proposal with a click). IFC: `CPset_Bodenansprache` per
   Schicht.
@@ -60,7 +64,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (32 checks; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (33 checks; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except
@@ -73,8 +77,9 @@ license **AGPL-3.0-or-later** (D79).
   port. Test `tests/test_online.py` with a simulated cloudflared.
 
 ## Environment (cloud sessions)
-- Municipal websites and geodata hosts (BGR, BKG, Länder) blocked by the network policy, also for WebFetch (X30,
-  docs/23 §7); pypi, npm and GitHub reachable. The user uploads the PDFs.
+- Geodata hosts of docs/23 §7 (BGR, schemas.bgr.de, BKG, Länder) allowed since 2026-11-02 (before: X30);
+  schemas.opengis.net only over https (X31). Municipal websites were blocked (the user uploads the PDFs); pypi, npm
+  and GitHub reachable.
 - Heavy dependencies in venvs in the scratchpad: `venv` (pymupdf, opencv, rapidocr), `sgvenv` (swissgeol).
 - Docker (X25, X26): start `dockerd` in the background with the longest time limit; apt blocked → `--build-arg OCR=0`,
   `--network host`, the session's proxy and CA as a secret. vercel.com, render.com, gnu.org and flaviocopes.com

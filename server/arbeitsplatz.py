@@ -28,7 +28,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import gelaende  # noqa: E402
+from geodaten import boreholeml, gelaende  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -54,8 +54,23 @@ def extraktion_aus_json(daten: bytes) -> list[dict]:
     return docs
 
 
+def _ist_xml(daten: bytes) -> bool:
+    return daten.lstrip(b"\xef\xbb\xbf \t\r\n")[:1] == b"<"
+
+
 def signatur(docs: list[dict]) -> str:
     return hashlib.sha256(json.dumps(docs, sort_keys=True).encode()).hexdigest()[:12]
+
+
+def _mit_bericht(xml: bytes, bericht: dict) -> bytes:
+    """Bericht des BoreholeML-Exports als Kommentar hinter die XML-Deklaration (wer die Datei oeffnet, sieht ihn)."""
+    zeilen = [f"GroundTwin: {len(bericht['exportiert'])} Bohrungen exportiert ({', '.join(bericht['exportiert'])})."]
+    if bericht["ausgelassen"]:
+        zeilen.append("Ausgelassen: " + "; ".join(f"{a['code']} ({a['grund']})" for a in bericht["ausgelassen"]) + ".")
+    zeilen += bericht["hinweise"]
+    kommentar = "\n".join("  " + z.replace("--", "- -") for z in zeilen)
+    kopf, _, rest = xml.partition(b"?>")
+    return kopf + b"?>\n<!--\n" + kommentar.encode("utf-8") + b"\n-->" + rest
 
 
 def json_schreiben(pfad: Path, obj) -> None:
@@ -312,8 +327,8 @@ class Arbeitsplatz:
             self.sichern(sig)
             return eintrag
 
-    def export(self, sig: str, art: str) -> tuple[bytes, str, str]:
-        """(Inhalt, Dateiname, Medientyp) fuer den Download."""
+    def export(self, sig: str, art: str, organisation: str = "") -> tuple[bytes, str, str]:
+        """(Inhalt, Dateiname, Medientyp) fuer den Download; organisation nur fuer BoreholeML."""
         with self.sperre(sig):
             docs, p = self.laden(sig)
             stamm = p.name or "baugrundmodell"
@@ -324,6 +339,11 @@ class Arbeitsplatz:
                 return pl.json_bytes(vorb.docs), f"{stamm}_modell_eingabe.json", "application/json"
             if art == "projekt":
                 return pl.json_bytes(pj.speichern(p)), f"{stamm}_projekt.json", "application/json"
+            if art == "boreholeml":                     # nur gepruefte Bohrungen mit UTM und GOK (docs/23 §2.1)
+                inhalt, bericht = boreholeml.exportieren(
+                    vorb.docs, projekt=p.name, organisation=organisation, sig=sig,
+                    dgm_zelle=(p.dgm or {}).get("dx"))
+                return _mit_bericht(inhalt, bericht), f"{stamm}_boreholeml.xml", "application/xml"
         erg = self.modell(sig)
         if erg["fehler"]:
             raise ValueError(erg["fehler"])
@@ -469,9 +489,9 @@ class Arbeitsplatz:
         with self._extraktion:
             for nr, (name, daten) in enumerate(dateien, start=1):
                 a.stand.update(datei=name, nr=nr, dateien=len(dateien), seite=0, seiten=0, klasse="")
-                if not daten.startswith(b"%PDF-"):              # Extraktion als JSON (Export oder Kommandozeile)
+                if not daten.startswith(b"%PDF-"):              # Extraktion als JSON oder Bohrungen als BoreholeML
                     try:
-                        docs += extraktion_aus_json(daten)
+                        docs += [boreholeml.importieren(daten, name)] if _ist_xml(daten) else extraktion_aus_json(daten)
                     except ValueError as err:
                         a.fehler.append(f"{name}: {err}")
                     continue

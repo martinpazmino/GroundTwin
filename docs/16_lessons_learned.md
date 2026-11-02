@@ -39,6 +39,8 @@ doubtful value stays **marked**, never hidden.
 | P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../services/extractor/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
 | P12 | Also measure **precision to the centimetre** (exact boundaries), not only the 5 cm tolerance | v3 414/515 exact, v4 509/515 after T2 |
 | P13 | **A new input on a page can break the end-to-end test** (Playwright strict mode): a second `.datei-knopf input` or `select.epsg` made two locators ambiguous. Give every input a unique accessible name (`aria-label`) and scope locators to their section; run `check_app.mjs` after every UI change | DGM section in the *Lage* step, 2026-11-02 |
+| P14 | **An expected 4xx in the end-to-end test goes through `page.request`**, not `fetch` in the page: the browser logs a failed request as a console error and the run fails on "Seitenfehler" | BoreholeML check in section D, 2026-11-02 |
+| P15 | **Codes of another vocabulary are mapped by their official names, never by matching abbreviations**: `Ko` is coal in the BoreholeML RockNameList but conglomerate in DIN 4023; Auffüllung, Löss or Mudde are genesis, not petrography. A generator reads the official lists and stops on a missing or ambiguous name | `services/geodaten/werkzeuge/boreholeml_codes.py` |
 
 ## E. Input: what kind of PDF it is
 
@@ -204,6 +206,7 @@ doubtful value stays **marked**, never hidden.
 | X28 | Local health checks with `urllib` must bypass the proxy (`ProxyHandler({})`): a company proxy from `HTTP_PROXY` does not know this machine's 127.0.0.1 | `scripts/online.py` |
 | X29 | The repository was renamed twice (CAD_Extract → GeoIM → GroundTwin). `git push` keeps working through GitHub's redirect and prints "This repository moved"; the session's GitHub tools only accept the name in the session scope. When a push mentions a move, check `list_repos` and update links | Push output; Actions run read via the old name |
 | X30 | Geodata services (BGR, BKG / basemap.de, state geoportals) and `schemas.bgr.de` are blocked in the cloud session, also for WebFetch (proxy 403 or name not resolved). Research with WebSearch, develop against fixtures and list the hosts to allow ([23 §7](23_open_data_integration.md#7-hosts-to-allow-in-the-cloud-session)) | curl and WebFetch, 2026-11-02 |
+| X31 | `schemas.opengis.net` answers only over **https** through the session proxy (http: no connection); the BoreholeML XSD imports GML/ISO 19139 with `http://`. Validate with `xmlschema` and a `uri_mapper` http → https; the first load of all schemas takes about 30 s | `tests/test_boreholeml.py` |
 
 Up: [Index](README.md)
 

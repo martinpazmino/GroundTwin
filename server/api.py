@@ -108,8 +108,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.post("/api/gutachten")
     async def gutachten(dateien: list[UploadFile] = File(...), ocr: bool = Form(True)):
         inhalt = [(f.filename or "dokument.pdf", await f.read()) for f in dateien]
-        if not inhalt or not all(d[:5] == b"%PDF-" or n.lower().endswith(".json") for n, d in inhalt):
-            raise ValueError("bitte PDF-Dateien hochladen (oder eine Extraktion als JSON)")
+        if not inhalt or not all(d[:5] == b"%PDF-" or n.lower().endswith((".json", ".xml")) for n, d in inhalt):
+            raise ValueError("bitte PDF-Dateien hochladen (oder eine Extraktion als JSON, Bohrungen als BoreholeML)")
         return ap.extrahieren(inhalt, ocr and pl.ocr_verfuegbar()).als_dict()
 
     @app.get("/api/auftrag/{aid}")
@@ -193,8 +193,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         return {"eintrag": eintrag, "zustand": ap.zustand(sig)}
 
     @app.get("/api/projekt/{sig}/export/{art}")
-    def export(sig: str, art: str):
-        inhalt, name, typ = ap.export(sig, art)
+    def export(sig: str, art: str, organisation: str = ""):
+        inhalt, name, typ = ap.export(sig, art, organisation)
         return Response(inhalt, media_type=typ, headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
     # ------------------------------------------------------------ Dateien und Oberflaeche

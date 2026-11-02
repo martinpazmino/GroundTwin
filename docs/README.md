@@ -30,7 +30,7 @@ The notes are in English and keep the German technical terms of the Gutachten an
 
 ## The app today
 
-- [21 Step app, norms and new calibration](21_app_schritte_normen.md): the full-screen app (Gutachten → Bohrungen → Lage → Einheiten → Modell, FastAPI + integrated viewer), warnings for unclassified Schichten, mini database DIN 4023 / EN ISO 14688-1 / DIN 18196 with colours, calibration by distance + reference point + lock, column diameter, description and norm on every Schicht of the IFC, Gelände (DGM) to check and fill the GOK.
+- [21 Step app, norms and new calibration](21_app_schritte_normen.md): the full-screen app (Gutachten → Bohrungen → Lage → Einheiten → Modell, FastAPI + integrated viewer), warnings for unclassified Schichten, mini database DIN 4023 / EN ISO 14688-1 / DIN 18196 with colours, calibration by distance + reference point + lock, column diameter, description and norm on every Schicht of the IFC, Gelände (DGM) to check and fill the GOK, BoreholeML for the Geologische Dienste.
 - [20 Viewer with TwinBimM controls, Lage on the plan and Prüfstand](20_lage_pruefung_viewer.md): TwinBimM controls, camera for models > 5 km, Bohrungen placed on the PDF of the Lageplan/Längsschnitt, own distances in the row, automatic nachführen and einchecken of the review state.
 - [18 Layer modeler and That Open viewer](18_layer_modeler.md): automatic Bodenschichten (Einheiten by correlation, surfaces, closed solids), IFC 4.3 and web viewer; results against synthetic ground truth and with Berlin.
 - [17 Extraction algorithm v4](17_extraction_algorithm.md): specification by stages E0–E9, parameters and their origin, confidence and canonical output.
@@ -77,7 +77,7 @@ Kept because the decisions refer to them; the current state is in the sections a
 - [Web app and viewer](../apps/web/README.md): step app and That Open Engine viewer; Einheiten, properties, sections, vertical exaggeration, Lage editor.
 - [Benchmark](../benchmark/README.md): public corpus, ground truth, blind test, regression, ablation and perturbations.
 - [Supabase](../supabase/README.md): migration tested on PostGIS and loader of the canonical JSON.
-- [Geodaten](../services/geodaten/README.md): DGM from files and the GOK check (first piece of [23](23_open_data_integration.md)).
+- [Geodaten](../services/geodaten/README.md): DGM from files, the GOK check and BoreholeML export/import (pieces of [23](23_open_data_integration.md)).
 - [Examples of the app](../data/beispiele/README.md): Berlin, Talheim, demo and synthetic PDF.
 
 ## How to read
