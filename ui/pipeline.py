@@ -1,6 +1,6 @@
 """Ablauf v2 ohne Oberflaeche: PDF -> kanonisches JSON (Extraktion v4) -> Pruefung/Korrekturen -> Baugrundmodell (IFC).
 
-Die Extraktion bleibt in spikes/extraktion_v2/prototyp_v4.py (Regressionsreferenz, docs/17); der
+Die Extraktion bleibt in services/extractor/prototyp_v4.py (Regressionsreferenz, docs/17); der
 Modellierer in services/modeler (docs/18). Hier nur Verdrahtung, Korrekturen des Nutzers und
 Fortschritt; jede Korrektur wird im JSON markiert (coord_source/gok_source), nie still uebernommen.
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = Path(__file__).resolve().parents[1]
-EXTRAKTOR = REPO / "spikes" / "extraktion_v2" / "prototyp_v4.py"
+EXTRAKTOR = REPO / "services" / "extractor" / "prototyp_v4.py"
 BEISPIELE = REPO / "data" / "beispiele"
 sys.path.insert(0, str(REPO / "services" / "modeler"))
 
@@ -121,9 +121,10 @@ class Ergebnis:
 
 def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: str = "idw",
                  puffer: float | None = None, raster: float | None = None, basis: float | None = None,
-                 ursprung: tuple[float, float] | None = None):
-    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes."""
-    return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung)
+                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None):
+    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes. gelaende: DGM-Raster fuer die Oberkante."""
+    return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung,
+                 gelaende=gelaende, gelaende_info=gelaende_info)
 
 
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,

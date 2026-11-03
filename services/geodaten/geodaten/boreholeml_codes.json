@@ -1,0 +1,1222 @@
+{
+ "format": "groundtwin-boreholeml-codes/1",
+ "beschreibung": "Codes der amtlichen BoreholeML-Codelisten v2 fuer den Export von GroundTwin, je mit dem amtlichen Namen als Beleg. Erzeugt mit services/geodaten/werkzeuge/boreholeml_codes.py.",
+ "quelle": {
+  "url": "https://schemas.bgr.de/boreholeml/codelists/v2/",
+  "lizenz": "MIT, AK BoreholeML4 (https://gitlab.opencode.de/ak-boreholeml4/boreholeml)",
+  "erzeugt": "2026-11-02",
+  "versionen": {
+   "RockNameList": "version 2.2 - date: 2026-01-30 - designed for BoreholeML 3.2.0",
+   "GeoGenesisList": "version 2.2 - date: 2026-01-30 - designed for BoreholeML 3.2.0",
+   "ConsistencyList": "version 2.0 - date: 2024-06-25 - designed for BoreholeML 3.1.0",
+   "CompactnessList": "version 2.1 - date: 2025-04-25 - designed for BoreholeML 3.1.0",
+   "CarbonateContentList": "version 2.0 - date: 2024-06-25 - designed for BoreholeML 3.1.0",
+   "WaterContentList": "version 2.1 - date: 2026-01-30 - designed for BoreholeML 3.2.0",
+   "LevelMethodList": "version 2.0 - date: 2024-06-25 - designed for BoreholeML 3.1.0",
+   "LocationMethodList": "version 2.1 - date: 2025-04-25 - designed for BoreholeML 3.1.0",
+   "BoreholeStatusList": "version 2.1 - date: 2025-04-25 - designed for BoreholeML 3.1.0",
+   "DatabaseSourceList": "version 2.2 - date: 2026-09-03 - designed for BoreholeML 3.2.0",
+   "CodingStandardList": "version 2.1 - date: 2026-09-09 - designed for BoreholeML 3.2.0",
+   "SegmentDataQualityList": "version 2.0 - date: 2024-06-25 - designed for BoreholeML 3.1.0",
+   "DrillingPurposeList": "version 2.0 - date: 2024-06-25 - designed for BoreholeML 3.1.0"
+  }
+ },
+ "bodenart": {
+  "Kies": {
+   "petrographie": {
+    "code": "G",
+    "name": "Kies",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Sand": {
+   "petrographie": {
+    "code": "S",
+    "name": "Sand",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Schluff": {
+   "petrographie": {
+    "code": "U",
+    "name": "Schluff",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Ton": {
+   "petrographie": {
+    "code": "T",
+    "name": "Ton",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Steine": {
+   "petrographie": {
+    "code": "X",
+    "name": "Steine",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Bloecke": {
+   "petrographie": {
+    "code": "Y",
+    "name": "Blöcke",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Torf": {
+   "petrographie": {
+    "code": "H",
+    "name": "Torf",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Mudde": {
+   "petrographie": {
+    "code": "lo",
+    "name": "Organisches Lockergestein",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "md",
+    "name": "Mudde",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Mutterboden": {
+   "petrographie": {
+    "code": "l",
+    "name": "Lockergestein",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "boh",
+    "name": "Humoser Oberboden",
+    "liste": "GeoGenesisList"
+   },
+   "hinweis": "Petrographie des Oberbodens nicht bestimmt"
+  },
+  "Auffuellung": {
+   "petrographie": {
+    "code": "la",
+    "name": "Künstliches Lockermaterial",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "yf",
+    "name": "Auffüllung",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Geschiebemergel": {
+   "petrographie": {
+    "code": "M",
+    "name": "Mergel",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "gt",
+    "name": "Till",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Geschiebelehm": {
+   "petrographie": {
+    "code": "L",
+    "name": "Lehm",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "gtv",
+    "name": "entkalkter Till",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Loess": {
+   "petrographie": {
+    "code": "U",
+    "name": "Schluff",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "lo",
+    "name": "Löss",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Loesslehm": {
+   "petrographie": {
+    "code": "L",
+    "name": "Lehm",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "lol",
+    "name": "Lösslehm",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Lehm": {
+   "petrographie": {
+    "code": "L",
+    "name": "Lehm",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Mergel": {
+   "petrographie": {
+    "code": "M",
+    "name": "Mergel",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Klei": {
+   "petrographie": {
+    "code": "T",
+    "name": "Ton",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "mar",
+    "name": "Marsch",
+    "liste": "GeoGenesisList"
+   },
+   "hinweis": "Klei als Marschenton"
+  },
+  "Glimmerton": {
+   "petrographie": {
+    "code": "T",
+    "name": "Ton",
+    "liste": "RockNameList"
+   },
+   "genese": null,
+   "hinweis": "lithostratigraphischer Name nicht kodiert"
+  },
+  "Lauenburger Ton": {
+   "petrographie": {
+    "code": "T",
+    "name": "Ton",
+    "liste": "RockNameList"
+   },
+   "genese": null,
+   "hinweis": "lithostratigraphischer Name nicht kodiert"
+  },
+  "Beton": {
+   "petrographie": {
+    "code": "fa",
+    "name": "Künstlicher Feststoff",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "y",
+    "name": "Anthropogene Bildungen",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Asphalt": {
+   "petrographie": {
+    "code": "fa",
+    "name": "Künstlicher Feststoff",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "y",
+    "name": "Anthropogene Bildungen",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Schwarzdecke": {
+   "petrographie": {
+    "code": "fa",
+    "name": "Künstlicher Feststoff",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "y",
+    "name": "Anthropogene Bildungen",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Pflaster": {
+   "petrographie": {
+    "code": "fa",
+    "name": "Künstlicher Feststoff",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "y",
+    "name": "Anthropogene Bildungen",
+    "liste": "GeoGenesisList"
+   }
+  },
+  "Fels": {
+   "petrographie": {
+    "code": "f",
+    "name": "Festgestein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Sandstein)": {
+   "petrographie": {
+    "code": "Sst",
+    "name": "Sandstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Schluffstein)": {
+   "petrographie": {
+    "code": "Ust",
+    "name": "Schluffstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Tonstein)": {
+   "petrographie": {
+    "code": "Tst",
+    "name": "Tonstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Mergelstein)": {
+   "petrographie": {
+    "code": "Mst",
+    "name": "Mergelstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Kalkstein)": {
+   "petrographie": {
+    "code": "Kst",
+    "name": "Kalkstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Konglomerat)": {
+   "petrographie": {
+    "code": "rGst",
+    "name": "Konglomerat",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Brekzie)": {
+   "petrographie": {
+    "code": "eGst",
+    "name": "Breccie",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Dolomit)": {
+   "petrographie": {
+    "code": "Dst",
+    "name": "Dolomitstein",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Tonschiefer)": {
+   "petrographie": {
+    "code": "Tsf",
+    "name": "Tonschiefer",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Quarzit)": {
+   "petrographie": {
+    "code": "Qzt",
+    "name": "Quarzit",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Granit)": {
+   "petrographie": {
+    "code": "Gr",
+    "name": "Granit",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Gneis)": {
+   "petrographie": {
+    "code": "Gn",
+    "name": "Gneis",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Basalt)": {
+   "petrographie": {
+    "code": "Bas",
+    "name": "Basalt",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Gips)": {
+   "petrographie": {
+    "code": "Gyp",
+    "name": "Gips",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  },
+  "Fels (Anhydrit)": {
+   "petrographie": {
+    "code": "Ahy",
+    "name": "Anhydrit",
+    "liste": "RockNameList"
+   },
+   "genese": null
+  }
+ },
+ "konsistenz": {
+  "breiig": {
+   "code": "bre",
+   "name": "breiig",
+   "liste": "ConsistencyList"
+  },
+  "weich": {
+   "code": "wh",
+   "name": "weich",
+   "liste": "ConsistencyList"
+  },
+  "steif": {
+   "code": "stf",
+   "name": "steif",
+   "liste": "ConsistencyList"
+  },
+  "halbfest": {
+   "code": "hfe",
+   "name": "halbfest",
+   "liste": "ConsistencyList"
+  },
+  "fest": {
+   "code": "fe",
+   "name": "fest",
+   "liste": "ConsistencyList"
+  }
+ },
+ "lagerung": {
+  "sehr locker": {
+   "code": "ld1",
+   "name": "sehr locker",
+   "liste": "CompactnessList"
+  },
+  "locker": {
+   "code": "ld2",
+   "name": "locker gelagert",
+   "liste": "CompactnessList"
+  },
+  "mitteldicht": {
+   "code": "ld3",
+   "name": "mitteldicht gelagert",
+   "liste": "CompactnessList"
+  },
+  "dicht": {
+   "code": "ld4",
+   "name": "dicht gelagert",
+   "liste": "CompactnessList"
+  },
+  "sehr dicht": {
+   "code": "ld5",
+   "name": "sehr dicht",
+   "liste": "CompactnessList"
+  }
+ },
+ "kalk": {
+  "kalkfrei": {
+   "code": "c0",
+   "name": "karbonatfrei",
+   "liste": "CarbonateContentList",
+   "hinweis": "kalkfrei (keine Reaktion mit HCl) als karbonatfrei"
+  },
+  "schwach kalkhaltig": {
+   "code": "k1",
+   "name": "kalkarm",
+   "liste": "CarbonateContentList",
+   "hinweis": "schwach kalkhaltig als kalkarm"
+  },
+  "kalkhaltig": {
+   "code": "k2",
+   "name": "kalkhaltig",
+   "liste": "CarbonateContentList"
+  },
+  "stark kalkhaltig": {
+   "code": "k3",
+   "name": "kalkreich",
+   "liste": "CarbonateContentList",
+   "hinweis": "stark kalkhaltig als kalkreich"
+  }
+ },
+ "feuchte": {
+  "trocken": {
+   "code": "feu1",
+   "name": "trocken",
+   "liste": "WaterContentList"
+  },
+  "erdfeucht": {
+   "code": "feu3",
+   "name": "feucht (bergfeucht)",
+   "liste": "WaterContentList"
+  },
+  "feucht": {
+   "code": "feu3",
+   "name": "feucht (bergfeucht)",
+   "liste": "WaterContentList"
+  },
+  "nass": {
+   "code": "feu5",
+   "name": "nass",
+   "liste": "WaterContentList"
+  },
+  "naß": {
+   "code": "feu5",
+   "name": "nass",
+   "liste": "WaterContentList"
+  }
+ },
+ "hoehe": {
+  "PDF": {
+   "code": "F",
+   "name": "Fremdangabe",
+   "liste": "LevelMethodList"
+  },
+  "manuell": {
+   "code": "F",
+   "name": "Fremdangabe",
+   "liste": "LevelMethodList"
+  },
+  "DGM": {
+   "code": "D",
+   "name": "aus digitalem Geländemodell bestimmt",
+   "liste": "LevelMethodList"
+  },
+  "DGM1": {
+   "code": "D1",
+   "name": "aus DGM 1 ermittelt",
+   "liste": "LevelMethodList"
+  },
+  "DGM2": {
+   "code": "D2",
+   "name": "aus DGM 2 ermittelt",
+   "liste": "LevelMethodList"
+  },
+  "DGM5": {
+   "code": "D5",
+   "name": "aus DGM 5 ermittelt",
+   "liste": "LevelMethodList"
+  },
+  "DGM25": {
+   "code": "D25",
+   "name": "aus DGM 25 ermittelt",
+   "liste": "LevelMethodList"
+  },
+  "DGM50": {
+   "code": "D50",
+   "name": "aus DGM 50 ermittelt",
+   "liste": "LevelMethodList"
+  }
+ },
+ "lage": {
+  "PDF": {
+   "code": "F",
+   "name": "Fremdangabe, von Firma oder Einsender",
+   "liste": "LocationMethodList"
+  },
+  "manuell (Tabelle)": {
+   "code": "F",
+   "name": "Fremdangabe, von Firma oder Einsender",
+   "liste": "LocationMethodList"
+  },
+  "Plan (kalibriert)": {
+   "code": "K",
+   "name": "aus der Karte abgelesen",
+   "liste": "LocationMethodList"
+  },
+  "manuell (Viewer)": {
+   "code": "GE",
+   "name": "geschätzt",
+   "liste": "LocationMethodList"
+  }
+ },
+ "fest": {
+  "BoreholeStatusList": {
+   "code": "bo",
+   "name": "gebohrt/abgeteuft",
+   "liste": "BoreholeStatusList"
+  },
+  "DatabaseSourceList": {
+   "code": "na",
+   "name": "sonstige Datenbank/nicht angegeben",
+   "liste": "DatabaseSourceList"
+  },
+  "CodingStandardList": {
+   "code": "DIN4022",
+   "name": "DIN 4022-1 oder DIN 4022-2",
+   "liste": "CodingStandardList"
+  },
+  "SegmentDataQualityList": {
+   "code": "A",
+   "name": "angenommen",
+   "liste": "SegmentDataQualityList"
+  },
+  "DrillingPurposeList": {
+   "code": "GTE",
+   "name": "Geotechnische Untersuchung, Baugrund",
+   "liste": "DrillingPurposeList"
+  }
+ },
+ "petrographie_eltern": {
+  "ls": "l",
+  "lsk": "ls",
+  "lpel": "lsk",
+  "TU": "lpel",
+  "T": "TU",
+  "U": "TU",
+  "fU": "U",
+  "mU": "U",
+  "gU": "U",
+  "siTU": "TU",
+  "L": "siTU",
+  "siT": "siTU",
+  "Ben": "siT",
+  "siTK": "siT",
+  "siU": "siTU",
+  "Kie": "siU",
+  "TUc": "TU",
+  "Tc": "TUc",
+  "Uc": "TUc",
+  "M": "TU",
+  "TM": "M",
+  "UM": "M",
+  "SM": "M",
+  "CM": "M",
+  "KM": "CM",
+  "DM": "CM",
+  "C": "TU",
+  "K": "C",
+  "Ksl": "K",
+  "D": "C",
+  "Das": "D",
+  "lpsa": "lsk",
+  "S": "lpsa",
+  "fS": "S",
+  "mS": "S",
+  "gS": "S",
+  "Sis": "S",
+  "QS": "Sis",
+  "FspS": "Sis",
+  "LkS": "Sis",
+  "Sc": "S",
+  "CS": "S",
+  "KS": "CS",
+  "DS": "CS",
+  "lpse": "lsk",
+  "GY": "lpse",
+  "G": "GY",
+  "fG": "G",
+  "mG": "G",
+  "gG": "G",
+  "X": "GY",
+  "Y": "GY",
+  "GYr": "GY",
+  "rG": "GYr",
+  "rX": "GYr",
+  "rY": "GYr",
+  "eGY": "GY",
+  "eG": "eGY",
+  "eX": "eGY",
+  "eY": "eGY",
+  "siGY": "GY",
+  "siG": "siGY",
+  "siX": "siGY",
+  "siY": "siGY",
+  "GYc": "GY",
+  "CGY": "GY",
+  "CG": "CGY",
+  "CX": "CGY",
+  "CY": "CGY",
+  "lY": "GY",
+  "lDm": "lsk",
+  "Dm": "lDm",
+  "siDm": "Dm",
+  "Dmc": "Dm",
+  "CDm": "Dm",
+  "lsc": "ls",
+  "lK": "lsc",
+  "Kon": "lK",
+  "Sch": "lK",
+  "lsi": "ls",
+  "Kig": "lsi",
+  "lo": "ls",
+  "Pfl": "lo",
+  "Hu": "Pfl",
+  "H": "Pfl",
+  "Ko": "lo",
+  "Bkw": "Ko",
+  "le": "l",
+  "lEox": "le",
+  "lFeox": "lEox",
+  "Ock": "lFeox",
+  "lLMox": "lEox",
+  "lBax": "lLMox",
+  "lm": "l",
+  "lvk": "lm",
+  "lvp": "lvk",
+  "Tea": "lvp",
+  "Asv": "Tea",
+  "Lap": "Tea",
+  "XYv": "Tea",
+  "lvs": "lvk",
+  "TUvk": "lvs",
+  "Svk": "lvs",
+  "XYvk": "lvs",
+  "lvt": "lvk",
+  "TUvt": "lvt",
+  "Svt": "lvt",
+  "XYvt": "lvt",
+  "lso": "l",
+  "lt": "lso",
+  "Kak": "lt",
+  "Katl": "lt",
+  "li": "lso",
+  "fs": "f",
+  "fsk": "fs",
+  "fpel": "fsk",
+  "TUst": "fpel",
+  "Tst": "TUst",
+  "Ust": "TUst",
+  "siTUst": "TUst",
+  "TUstc": "TUst",
+  "fpsa": "fsk",
+  "Sst": "fpsa",
+  "fSst": "Sst",
+  "mSst": "Sst",
+  "gSst": "Sst",
+  "siSst": "Sst",
+  "QSst": "siSst",
+  "FspSst": "siSst",
+  "Grwk": "siSst",
+  "Sstc": "Sst",
+  "Sstk": "Sstc",
+  "fpse": "fsk",
+  "Gst": "fpse",
+  "CGst": "Gst",
+  "rGst": "Gst",
+  "sirGst": "rGst",
+  "rGstc": "rGst",
+  "CrGst": "rGst",
+  "eGst": "Gst",
+  "sieGst": "eGst",
+  "eGstc": "eGst",
+  "CeGst": "eGst",
+  "fsc": "fs",
+  "Cstsi": "fsc",
+  "Mst": "Cstsi",
+  "Ksts": "Cstsi",
+  "Kstki": "Cstsi",
+  "Cst": "fsc",
+  "Kst": "Cst",
+  "DKst": "Cst",
+  "Dst": "Cst",
+  "Mik": "Cst",
+  "Are": "Cst",
+  "Spa": "Cst",
+  "fss": "fs",
+  "SOst": "fss",
+  "Gyp": "SOst",
+  "Ahy": "SOst",
+  "Clst": "fss",
+  "NaCl": "Clst",
+  "KCl": "Clst",
+  "fsi": "fs",
+  "Pzt": "fsi",
+  "Dia": "Pzt",
+  "Hor": "fsi",
+  "Fst": "Hor",
+  "Kar": "Hor",
+  "Rad": "Hor",
+  "fsp": "fs",
+  "Pos": "fsp",
+  "fo": "fs",
+  "Kost": "fo",
+  "Bkh": "Kost",
+  "Stk": "Kost",
+  "fe": "f",
+  "Eox": "fe",
+  "Feox": "Eox",
+  "Lim": "Feox",
+  "fLMox": "Eox",
+  "fBax": "fLMox",
+  "Ec": "fe",
+  "Esu": "fe",
+  "Eel": "fe",
+  "fh": "f",
+  "Met": "fh",
+  "fk": "f",
+  "fm": "f",
+  "fvk": "fm",
+  "fvp": "fvk",
+  "Ign": "fvp",
+  "Tuf": "fvp",
+  "Asvst": "Tuf",
+  "Lapst": "Tuf",
+  "XYvst": "Tuf",
+  "fvs": "fvk",
+  "TUvkst": "fvs",
+  "Svkst": "fvs",
+  "eGvkst": "fvs",
+  "fvt": "fvk",
+  "TUvtst": "fvt",
+  "Svtst": "fvt",
+  "rGvtst": "fvt",
+  "fmv": "fm",
+  "fmvs": "fmv",
+  "vgl": "fmvs",
+  "Bim": "vgl",
+  "Obs": "vgl",
+  "Pec": "vgl",
+  "ryda": "fmvs",
+  "AfRy": "ryda",
+  "Ryw": "ryda",
+  "Rye": "Ryw",
+  "Ryd": "Ryw",
+  "Dac": "ryda",
+  "tra": "fmvs",
+  "ATr": "tra",
+  "Tra": "tra",
+  "Lat": "tra",
+  "fmvb": "fmv",
+  "anba": "fmvb",
+  "And": "anba",
+  "Bas": "anba",
+  "pho": "fmvb",
+  "Pho": "pho",
+  "tep": "fmvb",
+  "Tep": "tep",
+  "Bsn": "tep",
+  "foi": "fmvb",
+  "vka": "fmvb",
+  "fmg": "fm",
+  "mmag": "fmg",
+  "MGr": "mmag",
+  "MSy": "mmag",
+  "MDG": "mmag",
+  "MFo": "mmag",
+  "MUm": "mmag",
+  "MKa": "mmag",
+  "sogg": "fmg",
+  "Peg": "sogg",
+  "Lam": "sogg",
+  "gmin": "fmg",
+  "Qzg": "gmin",
+  "fmt": "fm",
+  "fmts": "fmt",
+  "qgr": "fmts",
+  "gra": "fmts",
+  "AFGr": "gra",
+  "Gr": "gra",
+  "SyGr": "Gr",
+  "MzGr": "Gr",
+  "Grd": "gra",
+  "Ton": "gra",
+  "sye": "fmts",
+  "AFSy": "sye",
+  "Sy": "sye",
+  "Mz": "sye",
+  "fmtb": "fmt",
+  "diga": "fmtb",
+  "MsDi": "diga",
+  "Di": "diga",
+  "Gab": "diga",
+  "fosy": "fmtb",
+  "fodiga": "fmtb",
+  "fol": "fmtb",
+  "ano": "fmtb",
+  "uma": "fmtb",
+  "Per": "uma",
+  "Pyx": "uma",
+  "tka": "fmtb",
+  "fu": "f",
+  "fun": "fu",
+  "fus": "fun",
+  "fuski": "fus",
+  "uKisf": "fuski",
+  "Qsf": "fuski",
+  "fust": "fus",
+  "Tsf": "fust",
+  "fuss": "fus",
+  "uSst": "fuss",
+  "uArk": "fuss",
+  "uGwk": "fuss",
+  "fusg": "fus",
+  "uKgl": "fusg",
+  "fupy": "fun",
+  "upys": "fupy",
+  "upyb": "fupy",
+  "fuv": "fun",
+  "uvs": "fuv",
+  "uRyt": "uvs",
+  "uvb": "fuv",
+  "uBat": "uvb",
+  "fut": "fun",
+  "uts": "fut",
+  "uSyt": "uts",
+  "uGrt": "uts",
+  "utb": "fut",
+  "uDiGa": "utb",
+  "fuh": "fu",
+  "fuk": "fuh",
+  "Hfs": "fuk",
+  "fuc": "fuh",
+  "uC": "fuc",
+  "Mar": "uC",
+  "Ksi": "fuc",
+  "Ksifs": "Ksi",
+  "fuhs": "fuh",
+  "Qzt": "fuhs",
+  "Fspsf": "fuhs",
+  "Fspfs": "fuhs",
+  "Phy": "fuhs",
+  "QPhy": "Phy",
+  "Glsf": "fuhs",
+  "Gn": "fuhs",
+  "Grl": "fuhs",
+  "fub": "fuh",
+  "Gsf": "fub",
+  "Pra": "fub",
+  "Gpsf": "fub",
+  "Amp": "fub",
+  "Grlb": "fub",
+  "Ekl": "fub",
+  "Sep": "fub",
+  "Tal": "fub",
+  "ClAksf": "fub",
+  "fuu": "fu",
+  "Mig": "fuu",
+  "Mex": "Mig",
+  "Dix": "Mig",
+  "fums": "fu",
+  "Glfs": "fums",
+  "Grs": "fums",
+  "Skr": "fums",
+  "fui": "fu",
+  "GIBr": "fui",
+  "Sue": "GIBr",
+  "Tkt": "fui",
+  "Mdv": "Tkt",
+  "ft": "fu",
+  "Kakv": "ft",
+  "Kat": "ft",
+  "Pmyl": "ft",
+  "Myl": "ft",
+  "Umyl": "ft",
+  "Bmyl": "ft",
+  "Phyt": "ft",
+  "Pst": "ft",
+  "sl": "s",
+  "la": "sl",
+  "mr": "la",
+  "Ask": "mr",
+  "Slk": "mr",
+  "Skk": "mr",
+  "Bau": "mr",
+  "Mul": "mr",
+  "lag": "la",
+  "Kop": "lag",
+  "sfll": "sl",
+  "sf": "s",
+  "fa": "sf",
+  "fBau": "fa",
+  "Gls": "fa",
+  "Bib": "fa",
+  "Mtl": "fa",
+  "Pla": "fa",
+  "sflg": "sf",
+  "sfg": "sf",
+  "sfl": "s",
+  "slw": "sfl",
+  "Was": "slw",
+  "slz": "sfl",
+  "Bifl": "slz",
+  "Erd": "Bifl",
+  "Bitp": "sfl",
+  "Erdw": "Bitp",
+  "sg": "s",
+  "kh": "k",
+  "Hohn": "kh",
+  "KlSp": "Hohn",
+  "Kast": "Hohn",
+  "Hohk": "kh",
+  "Scha": "Hohk",
+  "Tun": "Hohk",
+  "ku": "k",
+  "KV": "ku",
+  "KMat": "ku"
+ },
+ "genese_eltern": {
+  "ysw": "y",
+  "yf": "ysw",
+  "yw": "ysw",
+  "yHa": "ysw",
+  "yDep": "ysw",
+  "yDa": "ysw",
+  "yDe": "ysw",
+  "yWu": "ysw",
+  "yFk": "ysw",
+  "ybg": "y",
+  "yAb": "ybg",
+  "yBr": "ybg",
+  "ym": "y",
+  "ydm": "ym",
+  "ytm": "ydm",
+  "yas": "ydm",
+  "yam": "ym",
+  "yPg": "yam",
+  "yWA": "yam",
+  "yMB": "yam",
+  "ydt": "ym",
+  "yth": "ydt",
+  "ybk": "ydt",
+  "ysp": "ydt",
+  "yvf": "ydt",
+  "yat": "ym",
+  "ydk": "yat",
+  "yep": "yat",
+  "gtv": "vr",
+  "bo": "vr",
+  "boh": "bo",
+  "lol": "vr",
+  "r": "vr",
+  "rbl": "r",
+  "rss": "r",
+  "z": "vr",
+  "kc": "c",
+  "kt": "kc",
+  "ktm": "kt",
+  "ktq": "kt",
+  "ktk": "kt",
+  "kts": "ktk",
+  "ka": "kc",
+  "km": "kc",
+  "kal": "kc",
+  "emnc": "c",
+  "er": "emnc",
+  "eoc": "emnc",
+  "eo": "emnc",
+  "eoe": "emnc",
+  "kic": "c",
+  "kist": "kic",
+  "hok": "ho",
+  "hof": "hok",
+  "hog": "hok",
+  "hov": "hok",
+  "hop": "ho",
+  "hoc": "ho",
+  "hoq": "hoc",
+  "hob": "ho",
+  "hoy": "ho",
+  "w": "u",
+  "wm": "w",
+  "low": "w",
+  "sws": "w",
+  "swu": "w",
+  "shg": "w",
+  "glb": "u",
+  "ru": "glb",
+  "ruS": "ru",
+  "fsb": "u",
+  "hgx": "fsb",
+  "hgy": "fsb",
+  "szs": "fsb",
+  "szf": "fsb",
+  "szb": "fsb",
+  "ky": "u",
+  "fl": "ky",
+  "flu": "fl",
+  "flb": "fl",
+  "kyd": "ky",
+  "blo": "ky",
+  "Sp": "ky",
+  "fbi": "u",
+  "mu": "fbi",
+  "sas": "fbi",
+  "sus": "fbi",
+  "MFU": "u",
+  "MFV": "MFU",
+  "sk": "MFV",
+  "sf": "MFV",
+  "MFS": "MFU",
+  "SKG": "MFS",
+  "SCH": "MFS",
+  "MFF": "MFU",
+  "muK": "MFF",
+  "Hm": "H",
+  "Hn": "H",
+  "Hue": "H",
+  "Hh": "H",
+  "Hfm": "H",
+  "m": "mk",
+  "sca": "m",
+  "res": "sca",
+  "msk": "sca",
+  "war": "m",
+  "k": "mk",
+  "wa": "k",
+  "wami": "wa",
+  "watu": "wa",
+  "was": "wa",
+  "bwa": "k",
+  "wab": "bwa",
+  "la": "bwa",
+  "mar": "k",
+  "dw": "mar",
+  "epa": "mar",
+  "gr": "mar",
+  "vsa": "k",
+  "wiwa": "vsa",
+  "st": "k",
+  "stsf": "st",
+  "kv": "k",
+  "kd": "k",
+  "fgz": "k",
+  "ufw": "k",
+  "fak": "k",
+  "mkV": "mk",
+  "HAK": "mkV",
+  "NEH": "mkV",
+  "UFWK": "mkV",
+  "stW": "mkV",
+  "lf": "fV",
+  "l": "lf",
+  "ln": "l",
+  "md": "ln",
+  "mdo": "md",
+  "mdl": "mdo",
+  "mdh": "mdo",
+  "mdd": "mdo",
+  "mddf": "mdd",
+  "mddg": "mdd",
+  "mdom": "md",
+  "mdt": "mdom",
+  "mdu": "mdom",
+  "mds": "mdom",
+  "mdk": "mdom",
+  "mdkg": "mdom",
+  "lk": "ln",
+  "ltu": "ln",
+  "lt": "ltu",
+  "lu": "ltu",
+  "lm": "ltu",
+  "ls": "ln",
+  "luf": "ln",
+  "faw": "ln",
+  "gl": "l",
+  "gltu": "gl",
+  "glä": "gltu",
+  "glt": "gltu",
+  "glu": "gltu",
+  "glm": "gltu",
+  "gls": "gl",
+  "glv": "gl",
+  "gln": "gl",
+  "gei": "gl",
+  "gst": "gl",
+  "glr": "gl",
+  "f": "lf",
+  "fwp": "f",
+  "fah": "fwp",
+  "fa": "fah",
+  "fal": "fa",
+  "fam": "fa",
+  "fas": "fa",
+  "fag": "fa",
+  "fh": "fah",
+  "fhl": "fh",
+  "fhm": "fh",
+  "fhs": "fh",
+  "fr": "fwp",
+  "fs": "fr",
+  "fg": "fr",
+  "fu": "fwp",
+  "ff": "fwp",
+  "ld": "fwp",
+  "dbl": "fwp",
+  "ni": "fwp",
+  "niu": "ni",
+  "nis": "ni",
+  "gf": "f",
+  "fv": "gf",
+  "fn": "gf",
+  "flV": "fV",
+  "SAN": "flV",
+  "TFLT": "flV",
+  "MDF": "flV",
+  "DEL": "flV",
+  "UFF": "flV",
+  "UFWF": "UFF",
+  "UFWS": "UFF",
+  "STWL": "UFF",
+  "lo": "a",
+  "los": "a",
+  "Loss": "a",
+  "loa": "a",
+  "sa": "a",
+  "DU": "a",
+  "DUB": "DU",
+  "DUK": "DU",
+  "g": "gGV",
+  "gt": "g",
+  "gtp": "gt",
+  "gtm": "gtp",
+  "gtt": "gtp",
+  "gts": "gt",
+  "gta": "gts",
+  "gtf": "gts",
+  "gtw": "gts",
+  "ge": "g",
+  "ygt": "ge",
+  "ggs": "ge",
+  "gtk": "g",
+  "GV": "gGV",
+  "GML": "GV",
+  "FM": "GV",
+  "RH": "GV",
+  "KAT": "GV",
+  "GK": "GV",
+  "EM": "GV",
+  "SEM": "EM",
+  "PM": "EM",
+  "SM": "GV",
+  "MM": "GV",
+  "KA": "GV",
+  "OS": "GV",
+  "DR": "GV",
+  "py": "vul",
+  "pyt": "py",
+  "pyf": "py",
+  "pyu": "vul",
+  "pys": "vul",
+  "pya": "vul",
+  "pyh": "pya",
+  "pyp": "pya"
+ }
+}

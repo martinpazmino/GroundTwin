@@ -35,9 +35,12 @@ doubtful value stays **marked**, never hidden.
 | P7 | The ground truth is transcribed **from the image** and checked against a second source (Schichtenverzeichnis, report) when there is one | The Schichtenverzeichnis confirmed 14/14 transcribed Bohrungen |
 | P8 | The PDFs are **not** pushed to the repo; only URL, `sha256` and factual data | Internal use of other people's work (D16, D23) |
 | P9 | **Perturb the PDFs that already work** (rotate, scale, rasterise) with the same ground truth: it finds failures the originals hide | Rotating Wesel revealed that the Schichtenverzeichnis reader used unrotated coordinates |
-| P10 | **Ablation**: switch off each rule and see which case gets worse. A rule whose removal makes nothing worse is not protected by any test | [`ablation.py`](../spikes/korpus/ablation.py): 22 of 28 rules protected ([table](../spikes/korpus/ablation_v4.md)) |
-| P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../spikes/extraktion_v2/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
+| P10 | **Ablation**: switch off each rule and see which case gets worse. A rule whose removal makes nothing worse is not protected by any test | [`ablation.py`](../benchmark/ablation.py): 22 of 28 rules protected ([table](../benchmark/ablation_v4.md)) |
+| P11 | **One stress case per lesson**: the real failure becomes a minimal PDF that reproduces it. Writing the case for an unprotected rule often uncovers a new failure | [`stress_cases.py`](../services/extractor/stress_cases.py), 17 cases; s15 uncovered the L14 failure |
 | P12 | Also measure **precision to the centimetre** (exact boundaries), not only the 5 cm tolerance | v3 414/515 exact, v4 509/515 after T2 |
+| P13 | **A new input on a page can break the end-to-end test** (Playwright strict mode): a second `.datei-knopf input` or `select.epsg` made two locators ambiguous. Give every input a unique accessible name (`aria-label`) and scope locators to their section; run `check_app.mjs` after every UI change | DGM section in the *Lage* step, 2026-11-02 |
+| P14 | **An expected 4xx in the end-to-end test goes through `page.request`**, not `fetch` in the page: the browser logs a failed request as a console error and the run fails on "Seitenfehler" | BoreholeML check in section D, 2026-11-02 |
+| P15 | **Codes of another vocabulary are mapped by their official names, never by matching abbreviations**: `Ko` is coal in the BoreholeML RockNameList but conglomerate in DIN 4023; Auffüllung, Löss or Mudde are genesis, not petrography. A generator reads the official lists and stops on a missing or ambiguous name | `services/geodaten/werkzeuge/boreholeml_codes.py` |
 
 ## E. Input: what kind of PDF it is
 
@@ -120,6 +123,11 @@ doubtful value stays **marked**, never hidden.
 | S6 | The log can be **only a text table** (Tiefe \| Beschreibung) without a graphic column; accept it only if ≥ 60 % of the intervals give a Bodenart (DPH and lab tables do not) | A7367 (Switzerland) |
 | S8 | A **scanned** Schichtenverzeichnis is read the same way through OCR if the reader uses the common primitives: OCR glues the marker to the text (`a)Auffullung`), drops umlauts (`Auffullung`) and spaces (`B1` on one page, `B 1` on another): compare **normalised** codes and accept forms without umlauts | Raster perturbation: Triefenstein 0/5 → 5/5, Wesel 0/24 → 24/24 |
 | S7 | Label and value in the title block can be **separate blocks** on the same row (`Höhe in m ü.M.:` · `668.99`): join by row before searching | A7367 |
+| S9 | The **services of the Länder deliver differently**: Berlin and Brandenburg only header data and the Schichtenverzeichnis as an image; NRW and Baden-Württemberg BoreholeML 3.0 (old namespace `infogeo.de`), in Baden-Württemberg often without petrography. Mark what is missing (*Schichten ohne Petrographie*), never guess | Queries of 2026-11-02 |
+| S10 | **Do not trust the metadata of a service blindly**: the NRW BoreholeML WFS announces an area in Lower Saxony and puts the CRS only on the envelope of the collection (`gml:Point` without `srsName`), and errors come as an `ExceptionReport` with HTTP 200. Take the area from a second source (OGC API) and inherit the CRS as GML says | `dienste.json`, `boreholeml.importieren` |
+| S11 | **A Bohrung of the Gutachten is often already at the Land**: names, Lage and GOK of the Berlin example match the state database (≤ 0.05 m). Such a match is an independent check of the calibration, and it shows that archive Bohrungen of a Gutachten come from there | Gegenprobe in the *Lage* step |
+| S12 | **Check what a coverage really delivers before trusting it**: the DescribeCoverage of the Baden-Württemberg DGM1 WCS announces a range of 0–255, and GetCoverage gives 16-bit whole metres, resampled to the requested box (pixel 1.005 m). Brandenburg and NRW give float32 on the exact 1 m grid. One test cut-out per service, read with the real reader, decides | `dienste.json` (`geprueft_nicht_aufgenommen`) |
+| S13 | **WCS 2.0.1 (MapServer) of the Länder**: SUBSET with the axis labels of the coverage (`x`, `y`), bounds on whole metres give whole cells (pixel centres at .5), SCALEFACTOR coarsens large cut-outs, a box outside gives HTTP 400 with an ExceptionReport and a box inside the envelope but outside the Land gives only NoData | `dgm_dienst.py` |
 
 ## R. swissgeol: what to copy and what not
 
@@ -138,7 +146,7 @@ doubtful value stays **marked**, never hidden.
 | M3 | Encapsulate the IFC writer: IFC 4.4 replaces `IfcGeotechnicalStratum` with `IfcGeoScienceFeature` | 4.4 draft |
 | M4 | Without coordinates, the section model (station, NHN) already adds value; with local coordinates from the Lageplan a relative 3D can be built | [Architecture §7.1](ARCHITECTURE_BAUGRUNDMODELL.md#71-ladder-of-levels-each-one-is-deliverable) |
 | M5 | An **empty Pset** is invalid IFC: create the Pset only if there are values | Exporter: 5 schema errors → 0 |
-| M6 | PostGIS installed in `extensions`: **qualify** `extensions.geometry`, otherwise the migration only works inside Supabase | [Supabase spike](../spikes/supabase/README.md) |
+| M6 | PostGIS installed in `extensions`: **qualify** `extensions.geometry`, otherwise the migration only works inside Supabase | [`supabase/`](../supabase/README.md) |
 | M7 | The full chain already works with a real PDF: OCR → canonical JSON → PostGIS → georeferenced IFC 4.3 → That Open (80 strata) | Berlin ([15 §8](15_results_real_pdfs.md)) |
 | M8 | **Below the Endteufe is unknown, not absent**: treating it as absence pinches out the deep Einheiten at every short Bohrung | Case `zensiert`, Berlin ([18](18_layer_modeler.md)) |
 | M9 | The same Bodenart at another elevation is **another Einheit** (Sand 1 / Sand 2): correlate by class **and** elevation, not only by name | Berlin 422C-461: two levels of Kies |
@@ -168,6 +176,7 @@ doubtful value stays **marked**, never hidden.
 | M33 | EPSG never as a free number: a **list** (DE/AT/CH, codes and names verified with pyproj) and a **plausibility range** per system (digits, zone prefix); an unknown code from the PDF is shown marked, not hidden | "EPSG 52" in the HUD; R 74,848.90 → "fits no system" |
 | M34 | Orthographic view with a negative `near`: `Raycaster.setFromCamera` starts the ray **at the camera plane**; what lies between `near` and the camera (e.g. the raised GOK of a Bohrung) is never hit. Move the origin to `near` in all our own rays; and draw the plan at the height of the Bohrungen, not at a fixed elevation | Bohrungen with a GOK could not be dragged, GWM without a GOK could |
 | M35 | That Open `setOrthoCamera` derives the orthographic frame from the perspective camera (depth to the target) and `setOrthoPerspCameraAspect` scales it with the previous size of the viewer: without a placed camera or with the viewer still without a size it comes out **negative or huge** (image rotated by 180°, zoom stuck at `minZoom`). Normalise after every change of projection and of size | Calibration with «Drehung 180»; plan invisible when opened directly |
+| M36 | **A terrain beside the model needs shared edge nodes, not a second surface**: a DGM sheet over the model would cover its top twice (flicker) and a cut-out hole leaves gaps. Rings along the outward normals of the model edge start at its edge nodes; the top pulled onto the GOK fades out before the edge, so model and terrain meet without a step | `umgebung.ring`, test `test_ifc_mit_gelaende_um_das_modell` |
 
 ## X. Working environment
 
@@ -202,7 +211,9 @@ doubtful value stays **marked**, never hidden.
 | X27 | Generic environment variable names collide with the system: tcsh sets `HOST` to the machine name, which would have put the server on the network. Use app-specific names (`GEO_AGENT_HOST`); `PORT` stays because the platforms set it | Review of `server/__main__.py` |
 | X28 | Local health checks with `urllib` must bypass the proxy (`ProxyHandler({})`): a company proxy from `HTTP_PROXY` does not know this machine's 127.0.0.1 | `scripts/online.py` |
 | X29 | The repository was renamed twice (CAD_Extract → GeoIM → GroundTwin). `git push` keeps working through GitHub's redirect and prints "This repository moved"; the session's GitHub tools only accept the name in the session scope. When a push mentions a move, check `list_repos` and update links | Push output; Actions run read via the old name |
+| X30 | Geodata services (BGR, BKG / basemap.de, state geoportals) and `schemas.bgr.de` are blocked in the cloud session, also for WebFetch (proxy 403 or name not resolved). Research with WebSearch, develop against fixtures and list the hosts to allow ([23 §7](23_open_data_integration.md#7-hosts-to-allow-in-the-cloud-session)) | curl and WebFetch, 2026-11-02 |
+| X31 | `schemas.opengis.net` answers only over **https** through the session proxy (http: no connection); the BoreholeML XSD imports GML/ISO 19139 with `http://`. Validate with `xmlschema` and a `uri_mapper` http → https; the first load of all schemas takes about 30 s | `tests/test_boreholeml.py` |
 
 Up: [Index](README.md)
 
-Related: [15 Real results](15_results_real_pdfs.md) · [11 Decisions](11_decisions.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md)
+Related: [15 Real results](15_results_real_pdfs.md) · [11 Decisions](11_decisions.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md) · [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) · [22 Online](22_deployment.md) · [23 Open data](23_open_data_integration.md)

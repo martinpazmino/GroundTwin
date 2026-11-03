@@ -23,6 +23,8 @@ import ifcopenshell.api.unit  # noqa: F401
 from .koerper import dreiecke_aus
 from .normen import KLASSEN, UNKLASSIFIZIERT, bekannt, deuten, farbinfo, ifc_eigenschaften
 
+GELAENDE_RGB = (0.55, 0.66, 0.44)          # Gelaende: gedecktes Gruen, hebt sich von den Bodenfarben (Auffuellung grau) ab
+
 
 def rgb_aus(hexwert: str) -> tuple[float, float, float]:
     return tuple(int(hexwert[i:i + 2], 16) / 255 for i in (1, 3, 5))
@@ -189,6 +191,16 @@ class IfcAusgabe:
         if koerper:
             api.aggregate.assign_object(f, products=koerper, relating_object=gm)
         return gm
+
+    def gelaende(self, knoten, dreiecke, eigenschaften: dict):
+        """IfcGeographicElement TERRAIN: offene Dreiecksflaeche des Gelaendes um das Baugrundmodell (lokal, m NHN)."""
+        f = self.f
+        g = api.root.create_entity(f, ifc_class="IfcGeographicElement", name="Gelände (DGM)", predefined_type="TERRAIN")
+        g.Description = "Gelaende um das Baugrundmodell"
+        api.spatial.assign_container(f, products=[g], relating_structure=self.site)
+        self._geometrie(g, knoten, np.asarray(dreiecke, dtype=np.int64), GELAENDE_RGB, "Gelaende", geschlossen=False)
+        self._pset(g, "CPset_Gelaende", eigenschaften)
+        return g
 
     def schreiben(self, pfad) -> None:
         self.f.write(str(pfad))

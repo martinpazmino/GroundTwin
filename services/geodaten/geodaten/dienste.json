@@ -1,0 +1,83 @@
+{
+ "format": "groundtwin-dienste/1",
+ "stand": "2026-11-02",
+ "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2) und Digitale Geländemodelle der Vermessungsverwaltungen (§2.4). Jede Angabe aus den Capabilities bzw. Metadaten des Dienstes (beleg). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88).",
+ "dienste": [
+  {
+   "id": "BE", "land": "Berlin", "titel": "Geologische Bohrdaten",
+   "anbieter": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
+   "art": "wfs-kopf", "url": "https://gdi.berlin.de/services/wfs/bohrdaten", "typen": ["bohrdaten:bohrpunkte"],
+   "systeme": [25833, 25832], "gebiet_wgs84": [13.0815, 52.3334, 13.7581, 52.6724],
+   "felder": {"id": "schluessel", "name": "langname", "x": "xcoord", "y": "ycoord", "gok": "ansatzhoehe",
+              "teufe": "endteufe", "datum": "bohrende", "profil": "profil_lang"},
+   "schichten": "grafik",
+   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geologische Bohrdaten Berlin, SenSBW (dl-de/zero-2.0)",
+   "beleg": "https://gdi.berlin.de/services/wfs/bohrdaten?request=GetCapabilities&service=WFS"
+  },
+  {
+   "id": "BB", "land": "Brandenburg", "titel": "Bohrpunktkarte Brandenburg (WFS-BPK)",
+   "anbieter": "Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg (LBGR)",
+   "art": "wfs-kopf", "url": "https://inspire.brandenburg.de/services/bpk_wfs", "typen": ["app:bpk_m_sch", "app:bpk_o_sch"],
+   "systeme": [25833, 25832], "gebiet_wgs84": [11.2419, 51.3157, 14.7637, 53.5429],
+   "felder": {"id": "Bohrungs_ID", "name": "Bohrungsname", "x": "Ostwert", "y": "Nordwert", "gok": "HoeheNN_in_m",
+              "teufe": "Teufe_in_m", "profil": "Schichtenverzeichnis_grafisch"},
+   "schichten": "grafik",
+   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg",
+   "beleg": "https://inspire.brandenburg.de/services/bpk_wfs?SERVICE=WFS&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "NW", "land": "Nordrhein-Westfalen", "titel": "Bohrpunkte boreholeML Full",
+   "anbieter": "Geologischer Dienst NRW",
+   "art": "wfs-boreholeml", "url": "https://www.bml3.nrw.de/service/bml", "typen": ["bml:Borehole"],
+   "systeme": [25832], "gebiet_wgs84": [5.7724, 50.3282, 9.4470, 52.5170],
+   "gebiet_beleg": "Ausdehnung der Sammlung Bohrungen in https://ogc-api.nrw.de/brgnrw/v1/collections (die Capabilities nennen ein falsches Gebiet)",
+   "schichten": "boreholeml",
+   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© Geowissenschaftliche Daten: Bohrungen NRW @ Geologischer Dienst NRW, {jahr}",
+   "beleg": "https://www.bml3.nrw.de/service/bml?SERVICE=WFS&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "BW", "land": "Baden-Württemberg", "titel": "Bohrpunkte der LGRB-Aufschlussdatenbank in BoreholeML",
+   "anbieter": "Regierungspräsidium Freiburg, Landesamt für Geologie, Rohstoffe und Bergbau (LGRB)",
+   "art": "wfs-boreholeml", "url": "https://services.lgrb-bw.de/boreholeml/services/bml", "typen": ["bml:Borehole"],
+   "systeme": [25832], "gebiet_wgs84": [7.4521, 47.5316, 10.5133, 49.7914],
+   "schichten": "boreholeml",
+   "lizenz": "im Dienst nicht genannt (Gebühren: keine; Zugriff ohne Beschränkung) – vor Weitergabe beim LGRB prüfen",
+   "lizenz_url": "",
+   "namensnennung": "LGRB Baden-Württemberg, Aufschlussdatenbank",
+   "beleg": "https://services.lgrb-bw.de/boreholeml/services/bml?SERVICE=WFS&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "BB-DGM1", "land": "Brandenburg mit Berlin", "titel": "WCS BB DGM 1m",
+   "anbieter": "Landesvermessung und Geobasisinformation Brandenburg (LGB)",
+   "art": "wcs-dgm", "url": "https://isk.geobasis-bb.de/ows/dgm_wcs", "coverage": "bb_dgm", "achsen": ["x", "y"],
+   "system": 25833, "raster_m": 1.0, "gebiet_wgs84": [10.898, 51.3, 14.905, 53.6],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25833) in Länge/Breite umgerechnet; außerhalb des Landes liefert der Dienst NoData (-9999)",
+   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal Berlin, dl-de/by-2-0 (Daten geändert)",
+   "beleg": "https://isk.geobasis-bb.de/ows/dgm_wcs?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "NW-DGM1", "land": "Nordrhein-Westfalen", "titel": "WCS NW DGM", "anbieter": "Geobasis NRW",
+   "art": "wcs-dgm", "url": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm", "coverage": "nw_dgm", "achsen": ["x", "y"],
+   "system": 25832, "raster_m": 1.0, "gebiet_wgs84": [5.725, 50.151, 9.532, 52.601],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25832) in Länge/Breite umgerechnet",
+   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
+   "beleg": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  }
+ ],
+ "geprueft_nicht_aufgenommen": [
+  {
+   "land": "Baden-Württemberg", "art": "wcs-dgm", "geprueft": "2026-11-02",
+   "url": "https://owsproxy.lgl-bw.de/owsproxy/wcs/WCS_INSP_BW_Hoehe_Coverage_DGM1",
+   "grund": "liefert ganze Meter (16 bit) und rechnet auf den angefragten Ausschnitt um (Pixel 1,005 m): für den Vergleich mit der GOK (±0,5 m) ungeeignet – DGM1 als Datei laden"
+  },
+  {
+   "land": "Bayern", "art": "wcs-dgm", "geprueft": "2026-11-02", "url": "",
+   "grund": "kein frei zugänglicher WCS für das DGM1 gefunden – DGM1-Kacheln (GeoTIFF) als Datei laden"
+  }
+ ]
+}

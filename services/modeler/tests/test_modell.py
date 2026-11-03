@@ -355,3 +355,114 @@ def test_bodenansprache_beschreibungen_und_durchmesser(tmp_path):
     b = bericht(m)
     sand = next(e for e in b["einheiten"] if e["name"] in ("Sand", "Sand 1"))
     assert any(s["beschreibung"] == "mS, fs', u, mitteldicht" and s["bohrung"] == b0["code"] for s in sand["schichten"])
+
+
+# ---------------------------------------------------------------- Gelaende aus dem DGM (umgebung.py, docs/23 P3b)
+class DGM:
+    """Raster wie geodaten.gelaende.Raster: Knoten (i, j) bei (x0 + j*dx, y0 - i*dy)."""
+
+    def __init__(self, x0, y0, dx, z, epsg=syn.EPSG):
+        self.x0, self.y0, self.dx, self.dy, self.z, self.epsg = x0, y0, dx, dx, np.asarray(z, dtype=np.float32), epsg
+
+
+def dgm_fuer(fall, rand=150.0, dx=1.0, buckel=(0.0, 0.0, 0.0), epsg=syn.EPSG):
+    """DGM aus der GOK-Funktion des Falls (lokal zum syn.URSPRUNG) plus ein Buckel (x, y, Hoehe) zwischen Bohrungen."""
+    xs = [b[1] for b in fall.bohrungen]
+    ys = [b[2] for b in fall.bohrungen]
+    x0, x1 = min(xs) - rand, max(xs) + rand
+    y0, y1 = min(ys) - rand, max(ys) + rand
+    gx = np.arange(x0, x1 + dx, dx)
+    gy = np.arange(y1, y0 - dx, -dx)
+    X, Y = np.meshgrid(gx, gy)
+    z = np.vectorize(fall.gok)(X, Y) + buckel[2] * np.exp(-((X - buckel[0]) ** 2 + (Y - buckel[1]) ** 2) / 100.0)
+    return DGM(x0 + syn.URSPRUNG[0], y1 + syn.URSPRUNG[1], dx, z, epsg)
+
+
+def test_gelaende_aus_dgm_exakt_an_bohrungen_und_im_dgm_dazwischen():
+    """Oberkante = DGM zwischen den Bohrungen (Buckel bleibt), an den Bohrungen exakt die GOK (+0,8 m an einer)."""
+    from baugrundmodell.umgebung import abtasten
+    fall = syn.demo()
+    buckel = (106.8, 33.1, 2.0)                                # 37 m von der naechsten Bohrung: dort wirkt keine GOK
+    r = dgm_fuer(fall, buckel=buckel)
+    docs = [syn.dokument(fall)]
+    docs[0]["boreholes"][0]["gok_nhn"] += 0.8                   # Bohrung 1: GOK 0,8 m ueber dem DGM (Aufschuettung?)
+    m = bauen(docs, gelaende=r, gelaende_info={"name": "Test-DGM"})
+    gel = m.parameter["gelaende"]
+    assert gel["quelle"] == "DGM" and gel["gok_minus_dgm_max_m"] == pytest.approx(0.8, abs=0.01)
+    gok = np.array([b.gok for b in m.bohrungen])
+    assert np.abs(m.flaechen[0][:len(gok)] - gok).max() < 1e-9 and m.max_abweichung < 1e-6
+    weit = cKDTree_abstand(m) > gel["reichweite_m"]
+    dgm = abtasten(r, m.punkte + np.asarray(m.ursprung))
+    assert weit.sum() > 50 and np.abs(m.flaechen[0][weit] - dgm[weit]).max() < 1e-6
+    lokal = m.punkte + np.asarray(m.ursprung) - np.asarray(syn.URSPRUNG)
+    am_buckel = np.hypot(lokal[:, 0] - buckel[0], lokal[:, 1] - buckel[1]) < 4.0
+    glatt = np.vectorize(fall.gok)(lokal[:, 0], lokal[:, 1])   # was die Interpolation der GOK ergaebe
+    assert am_buckel.any() and (m.flaechen[0][am_buckel] - glatt[am_buckel]).min() > 1.0
+    # der Buckel ist nicht erkundet: markiert, nicht versteckt
+    assert gel["ueber_interpolation_max_m"] > 1.5 and any("nicht erkundet" in h for h in m.hinweise)
+    assert np.all(np.diff(m.flaechen, axis=0) <= 1e-9)
+    assert all(k["pruefung"]["geschlossen"] for k in m.koerper)
+    assert m.dgm is r
+
+
+def cKDTree_abstand(m):
+    from scipy.spatial import cKDTree
+    xy_b = np.array([(b.x - m.ursprung[0], b.y - m.ursprung[1]) for b in m.bohrungen])
+    return cKDTree(xy_b).query(m.punkte)[0]
+
+
+def test_gelaende_faellt_zurueck_und_sagt_warum():
+    """Luecke im Gebiet, anderes System: Gelaende aus den GOK wie bisher, mit Hinweis statt still."""
+    fall = syn.demo()
+    ohne = bauen([syn.dokument(fall)])
+    luecke = dgm_fuer(fall)
+    luecke.z[luecke.z.shape[0] // 2, luecke.z.shape[1] // 2] = np.nan
+    for r, wort in ((luecke, "nicht ganz ab"), (dgm_fuer(fall, epsg=25833), "EPSG:25833")):
+        m = bauen([syn.dokument(fall)], gelaende=r)
+        assert m.parameter["gelaende"]["quelle"] == "GOK" and m.dgm is None
+        assert any(wort in h for h in m.hinweise)
+        assert np.allclose(m.flaechen, ohne.flaechen)
+
+
+def test_ifc_mit_gelaende_um_das_modell(tmp_path):
+    """IfcGeographicElement TERRAIN: offen, in Metern, teilt die Randknoten des Modells; IFC bleibt fehlerfrei."""
+    import ifcopenshell
+    import ifcopenshell.util.element
+    import ifcopenshell.util.unit
+    import ifcopenshell.validate
+    fall = syn.demo()
+    r = dgm_fuer(fall, rand=60.0)
+    docs = [syn.dokument(fall)]
+    m = bauen(docs, gelaende=r, gelaende_info={"name": "Test-DGM", "raster_m": 1.0,
+                                               "quelle_dienst": {"titel": "WCS Test", "lizenz": "dl-de/zero-2.0"}})
+    pfad = tmp_path / "gelaende.ifc"
+    assert ifc_schreiben(m, pfad, docs)["gelaende"]
+    f = ifcopenshell.open(str(pfad))
+    log = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(f, log)
+    assert log.statements == []
+    assert ifcopenshell.util.unit.calculate_unit_scale(f) == 1.0
+    (g,) = f.by_type("IfcGeographicElement")
+    assert g.PredefinedType == "TERRAIN"
+    fs = g.Representation.Representations[0].Items[0]
+    assert fs.is_a("IfcTriangulatedFaceSet") and not fs.Closed
+    knoten = np.array(fs.Coordinates.CoordList)
+    ps = ifcopenshell.util.element.get_psets(g)["CPset_Gelaende"]
+    assert ps["Lizenz"] == "dl-de/zero-2.0" and 30 < ps["Abstand_m"] <= 100
+    # jeder Randknoten des Modells (mit seiner Oberkante) ist Knoten des Gelaendes: keine Fuge
+    rand = np.unique(m.rand)
+    innen = np.c_[m.punkte[rand], m.flaechen[0][rand]]
+    from scipy.spatial import cKDTree
+    assert cKDTree(knoten).query(innen)[0].max() < 1e-9
+    assert "DGM Test-DGM" in ifcopenshell.util.element.get_psets(f.by_type("IfcGeomodel")[0])["CPset_Baugrundmodell"]["Gelaende"]
+    # Dreiecke von oben gegen den Uhrzeigersinn (Normale nach oben)
+    d = np.array(fs.CoordIndex) - 1
+    a, b, c = knoten[d[:, 0]], knoten[d[:, 1]], knoten[d[:, 2]]
+    assert np.all((b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (b[:, 1] - a[:, 1]) * (c[:, 0] - a[:, 0]) > 0)
+
+
+def test_ohne_dgm_kein_gelaende_im_ifc(tmp_path):
+    import ifcopenshell
+    m, docs = modell(syn.demo())
+    assert not ifc_schreiben(m, tmp_path / "ohne.ifc", docs)["gelaende"]
+    assert len(ifcopenshell.open(str(tmp_path / "ohne.ifc")).by_type("IfcGeographicElement")) == 0

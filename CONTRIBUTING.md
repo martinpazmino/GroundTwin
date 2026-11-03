@@ -19,11 +19,11 @@ cd apps/web && npm ci                                # only if you change the pa
 2. **Page or viewer changed** (`apps/web/src`):
    - `cd apps/web && npm run build` and **commit `apps/web/dist`**: the server uses it without Node.
    - Check with `scripts/check_app.mjs` (see the [README](README.md#tests)).
-3. **Extraction changed** (`spikes/extraktion_v2/prototyp_v4.py`): regression on real PDFs, stress
+3. **Extraction changed** (`services/extractor/prototyp_v4.py`): regression on real PDFs, stress
    cases and synthetic ones. The figures must not get worse:
    ```bash
-   python spikes/korpus/regression.py --module spikes/extraktion_v2/prototyp_v4.py \
-     --real <pdfs> --stress <folder> --synth <folder> --baseline spikes/korpus/baseline_v4.json
+   python benchmark/regression.py --module services/extractor/prototyp_v4.py \
+     --real <pdfs> --stress <folder> --synth <folder> --baseline benchmark/baseline_v4.json
    ```
    If a rule is touched, `ablation.py` shows which case it protects.
 4. **Modeler changed:**
@@ -40,15 +40,15 @@ GitHub runs points 1, 2 (build) and the container image on every push
 ## Project rules
 
 - **Blind test with every new PDF:**
-  1. Freeze the predictions with `spikes/korpus/blind_test.py freeze`.
+  1. Freeze the predictions with `benchmark/blind_test.py freeze`.
   2. Push them to the repository **before** opening the PDF.
-  3. Afterwards, transcribe the ground truth in `spikes/korpus/groundtruth/`.
+  3. Afterwards, transcribe the ground truth in `benchmark/groundtruth/`.
 
   Blind figures and training figures are always kept apart.
 - **General rules** based on features of the drawing, never exceptions for one PDF or one office.
 - **What is doubtful is marked** (issue, low confidence, unclassified Schicht), never hidden.
 - **No third-party PDFs in the repository:** only URL, `sha256` and factual data
-  (`spikes/korpus/manifest.tsv`).
+  (`benchmark/manifest.tsv`).
 - **Standards:** do not copy texts of DIN standards. The norms database stores abbreviations and
   colours with the evidence for every value. The app proposes and never applies a norm silently.
 - **Languages:**

@@ -26,6 +26,7 @@ python -m baugrundmodell.synthetisch demo demo.json        # cases: geneigt ausk
 | [`einheiten.py`](baugrundmodell/einheiten.py) | Preparation of the Bohrungen (exclusions with the reason), correlation of the Schichtfolgen by dynamic programming, exact / free / censored / unknown contacts |
 | [`flaechen.py`](baugrundmodell/flaechen.py) | Domain (hull + buffer), TIN mesh with the Bohrungen as nodes, exact IDW/TPS, lenses, censoring, trimming, extent of partial Einheiten |
 | [`koerper.py`](baugrundmodell/koerper.py) | Closed solid per Einheit, closure and volume check |
+| [`umgebung.py`](baugrundmodell/umgebung.py) | Terrain from a DGM: top of the model pulled onto the GOK at the Bohrungen, terrain around the model (IfcGeographicElement TERRAIN) ([18 §3](../../docs/18_layer_modeler.md#3-surfaces-and-solids)) |
 | [`ifc4x3.py`](baugrundmodell/ifc4x3.py) | IFC 4.3 writer (N1 columns and N3 model), colours, Psets |
 | [`modell.py`](baugrundmodell/modell.py) | Orchestration, JSON report |
 | [`synthetisch.py`](baugrundmodell/synthetisch.py) | Cases with known ground truth (tests and viewer demo) |
@@ -36,4 +37,4 @@ See the result: [`apps/web` viewer](../../apps/web/README.md) or the step app (`
 
 Up: [Documentation index](../../docs/README.md)
 
-Related: [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §7](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#7-baugrundmodell-generating-the-geometry) · [IFC spike](../../spikes/ifc_thatopen/README.md)
+Related: [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §7](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#7-baugrundmodell-generating-the-geometry) · [IFC spike (history)](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen)

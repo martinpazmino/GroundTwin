@@ -174,7 +174,8 @@ def _vorbereiten(b: dict, dokument: str) -> Bohrung:
         else:
             abschnitte.append(Abschnitt(klasse, gok - oben, gok - unten, list(idx)))
     lage = b.get("coord_source") or ("georeferenziert" if b.get("crs_epsg") else "lokal")
-    hoehe = {"manuell": "manuell (m NHN)", "relativ": "relativ (GOK unbekannt, 0 m gesetzt)"}.get(
+    hoehe = {"manuell": "manuell (m NHN)", "DGM": "aus dem DGM (m NHN)",
+             "relativ": "relativ (GOK unbekannt, 0 m gesetzt)"}.get(
         b.get("gok_source") or "", "m NHN")
     schichten = [{"von": float(ly["top_depth"]), "bis": float(ly["bottom_depth"]), "bodenart": ly.get("soil_class"),
                   "beschreibung": ly.get("description_raw") or ""} for ly in b["layers"]]

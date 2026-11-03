@@ -6,6 +6,8 @@ Laengsschnitt: sechs Bohrungen in einer Reihe mit Stationen 0/10/25/45/60/80 m, 
 Ausgabe je Fall: <name>.pdf, <name>.png (ueber ui.pipeline.unterlage_rendern wie in der App), args_<name>.json
 (Viewer-Argumente wie aus der App), <name>_extraktion.json (zum Hochladen in die App) und wahrheit_<name>.json;
 dazu plan_ohne_lage_extraktion.json (gleicher Plan, keine Bohrung mit Koordinaten, GOK + 300 m bzw. ohne GOK).
+Gelaende (docs/23): dgm_berlin.xyz (Ebene durch die GOK des Berliner Beispiels, 2 m Raster), dgm_berlin_hoch.xyz
+(dasselbe 3 m hoeher) und berlin_ohne_gok_extraktion.json (eine Bohrung ohne GOK) fuer scripts/check_app.mjs.
 
     python scripts/testplan.py <ausgabeordner> [--ifc-plan modelle/demo.ifc]
 """
@@ -145,9 +147,30 @@ def viewer_args(doc: dict, art: str, bild: dict, png: str, name: str, modus: str
                           "hoehe": bild["hoehe"], "mm_pro_px": bild["mm_pro_px"], "kalibrierung": None}}
 
 
+def gelaende(aus: Path) -> None:
+    """DGM zum Berliner Beispiel: Ebene durch die GOK der Bohrungen mit Koordinaten (kleinste Quadrate)."""
+    import numpy as np
+    doc = json.loads((REPO / "data" / "beispiele" / "berlin_v67b.json").read_text(encoding="utf-8"))
+    pts = [(b["x"], b["y"], b["gok_nhn"]) for b in doc["boreholes"] if b.get("x") is not None]
+    x0, y0 = 394800.0, 5818400.0
+    a = np.array([[1.0, x - x0, y - y0] for x, y, _ in pts])
+    k, *_ = np.linalg.lstsq(a, np.array([z for *_, z in pts]), rcond=None)
+    for name, versatz in (("dgm_berlin.xyz", 0.0), ("dgm_berlin_hoch.xyz", 3.0)):
+        zeilen = [f"{x:.1f} {y:.1f} {k[0] + k[1] * (x - x0) + k[2] * (y - y0) + versatz:.3f}"
+                  for y in np.arange(5818300.0, 5818501.0, 2.0) for x in np.arange(394700.0, 394951.0, 2.0)]
+        (aus / name).write_text("\n".join(zeilen) + "\n", encoding="utf-8")
+    ohne = copy.deepcopy(doc)
+    ohne["document"]["file"] = "berlin_ohne_gok.pdf"
+    for b in ohne["boreholes"]:
+        if b["code"] == "422C-5527":
+            b["gok_nhn"] = None
+    (aus / "berlin_ohne_gok_extraktion.json").write_text(json.dumps(ohne, ensure_ascii=False), encoding="utf-8")
+
+
 if __name__ == "__main__":
     ziel = Path(sys.argv[1])
     ziel.mkdir(parents=True, exist_ok=True)
     lageplan(ziel)
     laengsschnitt(ziel)
+    gelaende(ziel)
     print("geschrieben:", sorted(p.name for p in ziel.iterdir()))

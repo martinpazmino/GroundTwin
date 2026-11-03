@@ -20,8 +20,9 @@ import { tipp } from "./tipp";
 import { ausSzene, hoeheAusSzene, koordinatenText, rahmen } from "./rahmen";
 import { ereignis, empfaengerSetzen, mitApp, projektSetzen, protokoll, type Args, type Nadel } from "./kanal";
 
-// Geotechnik-Klassen: der IfcImporter verwirft sie sonst (Architektur 8.2)
-const GEOTECHNIK = [WEBIFC.IFCBOREHOLE, WEBIFC.IFCGEOMODEL, WEBIFC.IFCGEOSLICE, WEBIFC.IFCGEOTECHNICALSTRATUM];
+// Geotechnik-Klassen und Gelaende: der IfcImporter verwirft sie sonst (Architektur 8.2)
+const GEOTECHNIK = [WEBIFC.IFCBOREHOLE, WEBIFC.IFCGEOMODEL, WEBIFC.IFCGEOSLICE, WEBIFC.IFCGEOTECHNICALSTRATUM,
+                    WEBIFC.IFCGEOGRAPHICELEMENT];
 const GRUEN = "#a2c513";                              // W&F-Gruen (Auswahl), wie TwinBimM
 const FAKTOREN = [1, 2, 5, 10, 20];
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -75,6 +76,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   // Status fuer automatische Pruefungen (scripts/check.mjs, scripts/check_app.mjs)
   const status = {
     geladen: false, ladungen: 0, einheiten: [] as string[], bohrsaeulen: 0, marken: 0, fehler: "", auswahl: "",
+    gelaende: 0, gelaendeSichtbar: true,
     kamera: {} as Record<string, unknown>, lage: {} as Record<string, unknown>,
     ereignisse: protokoll, renders: 0,
     instanz: Math.random().toString(36).slice(2, 8),
@@ -283,10 +285,12 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       sichtbar.clear();
       if (!nadelnVonApp) await nadelnAusIfc();
       await bohrsaeulenSichtbarkeit();
+      await gelaendeSichtbarkeit();
       editor.setSchnittTiefe(Math.max(-modell.box.min.z, modell.box.max.z) + 1);
       modell.object.visible = !editor.aktiv;
       if (durchscheinend) for (const mat of fragments.core.models.materials.list.values()) transparent(mat, true);
       seitenleisteNeu();
+      leisteNeu();                                        // Knopf "Gelände" nach dem Inhalt des neuen Modells
       KAMERA.szeneAktualisieren();
       if (!kameraBehalten) await kameraStart();
       await fragments.core.update(true);
@@ -295,6 +299,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       status.ladungen += 1;
       status.einheiten = daten.einheiten.map((e) => e.name);
       status.bohrsaeulen = daten.bohrsaeulen.length;
+      status.gelaende = daten.gelaende.length;
       status.marken = editor.nadeln.size;
       $("leer").hidden = true;
       if (!kameraBehalten) meldung(`${name}: ${daten.einheiten.length} Einheiten, ${daten.bohrungen.length} Bohrungen`);
@@ -474,6 +479,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     nurEinheit = null;
     for (const id of sichtbar.keys()) sichtbar.set(id, true);
     await bohrsaeulenSichtbarkeit();
+    await gelaendeSichtbarkeit();
     seitenleisteNeu();
   }
 
@@ -507,6 +513,21 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     editor.waehlenNadel(null);
     $("eigenschaften").hidden = true;
     status.auswahl = "";
+  }
+
+  /** Gelaende um das Modell (IfcGeographicElement aus dem DGM): mit dem Knopf ein- und ausblenden. */
+  let gelaendeAn = true;
+  async function gelaendeSichtbarkeit() {
+    status.gelaendeSichtbar = gelaendeAn;
+    if (!modell || !daten?.gelaende.length) return;
+    await modell.setVisible(daten.gelaende, gelaendeAn);
+    await fragments.core.update(true);
+  }
+
+  async function gelaendeUmschalten() {
+    gelaendeAn = !gelaendeAn;
+    await gelaendeSichtbarkeit();
+    leisteNeu();
   }
 
   let bohrungenAn = true;
@@ -578,7 +599,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       rahmen.modus === "reihe" ? `Station ${formatiere(n.x)} m` : `R ${formatiere(n.x)} · H ${formatiere(n.y)}`;
     const kopf: Record<string, unknown> = {
       Lage: lage, Lage_aus: n.quelle || "–",
-      GOK: n.gok_bekannt ? `${formatiere(n.gok)} m NHN${n.gok_pdf ? " (PDF)" : ""}` : "unbekannt (relativ 0 m)",
+      GOK: n.gok_bekannt ? `${formatiere(n.gok)} m NHN${n.gok_pdf ? " (PDF)" : n.gok_quelle === "DGM" ? " (DGM)" : ""}` : "unbekannt (relativ 0 m)",
       Endteufe: `${formatiere(n.ende)} m`,
       Schichten_geprueft: `${n.schichten_geprueft}/${n.schichten_n}`,
       Nicht_klassifiziert: n.unklassifiziert ?? "–",
@@ -734,6 +755,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
         ${knopf("Alle anzeigen", "mdi:eye", () => alleZeigen(), "Alle einblenden", "Alle ausgeblendeten Elemente wieder einblenden.")}
         ${knopf("Transparenz", "mdi:ghost", () => durchscheinen(!durchscheinend), "Transparenz", "Einheiten durchscheinend: Bohrungen und Auswahl im Inneren sichtbar.", durchscheinend)}
         ${knopf("Bohrungen", "mdi:map-marker-radius", () => bohrungenUmschalten(), "Bohrungen ein/aus", "", bohrungenAn)}
+        ${knopf("Gelände", "mdi:terrain", () => gelaendeUmschalten(), "Gelände ein/aus", "Gelände um das Modell aus dem DGM (IfcGeographicElement).", gelaendeAn && !!daten?.gelaende.length, !daten?.gelaende.length)}
       </div>
       <div class="leisten-gruppe" role="group" aria-label="Auswahl">
         ${knopf("Fokus", "mdi:fit-to-screen-outline", () => fokus(), "Fokus", "Kamera auf die Auswahl; ohne Auswahl die ganze Szene.")}

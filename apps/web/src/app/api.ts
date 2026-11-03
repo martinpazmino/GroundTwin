@@ -42,7 +42,46 @@ export interface Pruefstand {
 
 export interface ReiheZeile { id: string; nr: number; code: string; abstand: number | null; station: number; quelle: string; quelle_text: string }
 
-export interface Einstellungen { methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean }
+export interface GelaendeZeile {
+  id: string; code: string; gok: number | null; dgm: number | null; differenz: number | null;
+  status: "ok" | "abweichung" | "ohne_gok" | "aus_dgm" | "ausserhalb" | "ohne_lage" | "anderes_system";
+}
+
+/** Dienst des Landes, von dem das DGM stammt (docs/23 §2.4): Lizenz und Namensnennung gehen ins IFC. */
+export interface DgmQuelle {
+  dienst: string; land: string; titel: string; anbieter: string; lizenz: string; lizenz_url: string;
+  namensnennung: string; beleg: string; abgerufen: string; ausschnitt: [number, number, number, number]; raster_m: number;
+}
+
+/** Gelaendemodell (DGM aus Dateien des Nutzers oder vom Dienst des Landes, docs/23) und Vergleich GOK - DGM. */
+export interface Gelaende {
+  info: { name: string; dateien: string[]; epsg: number | null; dx: number; dy: number; zeilen: number; spalten: number;
+          ausdehnung: [number, number, number, number]; zmin: number | null; zmax: number | null; abdeckung: number; geladen: string;
+          quelle: DgmQuelle | null };
+  pruefung: { zeilen: GelaendeZeile[]; verglichen: number; median: number | null; max: number | null; vorschlaege: number;
+              warnungen: string[]; toleranz: number } | null;
+  fehler: string;
+}
+
+/** Bohrung eines Landes aus der Abfrage (docs/23 §2.2). */
+export interface SgdTreffer {
+  dienst: string; id: string; name: string; x: number; y: number; gok: number | null; teufe: number | null;
+  datum: string | null; schichten: "boreholeml" | "grafik" | "keine" | "ohne Petrographie"; schichten_n: number | null;
+  profil: string | null; abstand: number; gutachten?: string; abweichung_lage?: number; abweichung_gok?: number | null;
+  uebernommen: boolean; uebernehmbar: boolean;
+}
+
+export interface Sgd {
+  mitte: [number, number]; epsg: number; radius: number; zeit: string; dienste: string[]; treffer: SgdTreffer[];
+  fehler: { dienst: string; fehler: string }[];
+  quellen: { dienst: string; titel: string; land: string; lizenz: string; namensnennung: string; beleg: string }[];
+  gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
+}
+
+export interface Einstellungen {
+  methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
+  gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
+}
 
 export interface Zustand {
   signatur: string; name: string; version: number; schritt: string;
@@ -58,6 +97,8 @@ export interface Zustand {
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
   modell: { schluessel: string; aktuell: boolean; ifc: string | null };
   punkte: Punkt[];                                    // freie Punkte auf dem Plan (noch keiner Bohrung zugeordnet)
+  gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
+  sgd: Sgd | null;                                    // letzte Abfrage der Bohrungen der Länder
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -142,6 +183,18 @@ export const api = {
   },
   unterlageSeite: (sig: string, seite: number, art: string) => anfrage<Zustand>(`/api/projekt/${sig}/unterlage/seite`, json({ seite, art })),
   unterlageEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/unterlage`, { method: "DELETE" }),
+  dgm(sig: string, dateien: File[], epsg: number | null) {
+    const f = new FormData();
+    for (const d of dateien) f.append("dateien", d, d.name);
+    f.append("epsg", epsg === null ? "" : String(epsg));
+    return anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "POST", body: f });
+  },
+  dgmAbruf: (sig: string, rand: number) => anfrage<Zustand>(`/api/projekt/${sig}/dgm/abruf`, json({ rand })),
+  dgmEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "DELETE" }),
+  sgdAbfrage: (sig: string, radius: number) => anfrage<Zustand>(`/api/projekt/${sig}/sgd/abfrage`, json({ radius })),
+  sgdUebernehmen: (sig: string, auswahl: { dienst: string; id: string }[]) =>
+    anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/sgd/uebernehmen`, json({ auswahl })),
+  sgdVerwerfen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/sgd`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,

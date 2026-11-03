@@ -126,8 +126,17 @@ and how to update the versions.
    - The Bohrungen are placed with points or dragged in x/y only. In the section the station moves;
      the height only if the PDF has no GOK.
    - The diameter of the columns is adjustable.
+   - Gelände (DGM): load the DGM tiles of the Land (open data) or fetch them from the service of the
+     Land with a click. The GOK of every Bohrung is compared with the terrain, a missing GOK can be
+     taken from it with a click, and the top of the model follows the terrain
+     ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)).
+   - Bohrungen der Länder: the Bohrungen of the state databases around the site (on a click), a
+     Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
+   - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
+     and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
-   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres.
+   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM, the
+   terrain around the model.
 6. **That Open viewer** ([apps/web](apps/web/README.md)): compact toolbar, help on every setting and
    the Lage editor. With every change, the model is recomputed.
 
@@ -142,14 +151,16 @@ server/                     Baugrundmodell app: FastAPI + projects, background e
 ui/                         project state (projekt.py), pipeline without UI, Excel v1 page
 app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
-spikes/extraktion_v2/       extraction v4 (reference of the regression, docs/17)
+services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
 services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
+services/geodaten/          DGM, GOK check, BoreholeML, Bohrungen der Länder (open data plan, docs/23)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)
 tests/  scripts/            tests of the app and the API; end-to-end test (Playwright); synthetic plans; online.py
+benchmark/                  public corpus, ground truth, blind test, regression, ablation
+supabase/                   PostGIS migration and loader of the canonical JSON (not used by the app yet)
 docs/                       linked notes (English, German technical terms): index in docs/README.md
-spikes/                     corpus, regression, IFC, Supabase
 Dockerfile  docker/         container (docs/22); render.yaml: Render blueprint
 .github/workflows/          tests on every push (Prüfungen)
 requirements*.txt           dependencies; constraints.txt pins the tested versions
@@ -176,6 +187,9 @@ The end-to-end test is started by hand (*Run workflow*).
 - [`docs/README.md`](docs/README.md): architecture, decisions, lessons and results.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): project rules (blind test, regression, no third-party PDFs in
   the repository, documentation in English and code in German).
+- [`CHANGELOG.md`](CHANGELOG.md): notable changes per version.
+- [`SECURITY.md`](SECURITY.md): how to report a vulnerability privately.
+- [`CLAUDE.md`](CLAUDE.md): the same rules, condensed for coding assistants (Claude Code).
 
 ## License
 

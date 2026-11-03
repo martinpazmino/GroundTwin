@@ -65,4 +65,4 @@ Notes:
 
 Up: [Documentation index](../../docs/README.md)
 
-Related: [21 Step app and norms](../../docs/21_app_schritte_normen.md) · [20 Lage and Prüfstand](../../docs/20_lage_pruefung_viewer.md) · [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §8.3](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#83-frontend-integration-sketch-api-v36) · [IFC spike](../../spikes/ifc_thatopen/README.md)
+Related: [21 Step app and norms](../../docs/21_app_schritte_normen.md) · [20 Lage and Prüfstand](../../docs/20_lage_pruefung_viewer.md) · [18 Layer modeler](../../docs/18_layer_modeler.md) · [Architecture §8.3](../../docs/ARCHITECTURE_BAUGRUNDMODELL.md#83-frontend-integration-sketch-api-v36) · [IFC spike (history)](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen)

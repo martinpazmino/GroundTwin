@@ -10,7 +10,7 @@ aliases: [Algorithm v4, Extraction specification]
 **What this note is for:** describe the algorithm precisely enough to reimplement it in
 `geo_agent/` without reading the prototype. Each stage says what it receives, what it delivers,
 which parameters it uses and **why** (lesson from [16](16_lessons_learned.md)). Reference
-implementation: [`prototyp_v4.py`](../spikes/extraktion_v2/prototyp_v4.py). The rules can be
+implementation: [`prototyp_v4.py`](../services/extractor/prototyp_v4.py). The rules can be
 switched off one by one (`RULES`) to measure their effect.
 
 **Guiding principle (goal):** every value that comes out goes to the Baugrundmodell with
@@ -213,12 +213,12 @@ label, L3):
 
 ## How it is tested
 
-[`regression.py`](../spikes/korpus/regression.py) runs the full set: 13 real PDFs with ground truth
+[`regression.py`](../benchmark/regression.py) runs the full set: 13 real PDFs with ground truth
 (9 German, 4 Swiss), 17 stress cases (one per lesson,
-[`stress_cases.py`](../spikes/extraktion_v2/stress_cases.py)) and 6 synthetic layouts, and compares
-with a baseline (`baseline_v4.json`); [`ablation.py`](../spikes/korpus/ablation.py) switches off each
+[`stress_cases.py`](../services/extractor/stress_cases.py)) and 6 synthetic layouts, and compares
+with a baseline (`baseline_v4.json`); [`ablation.py`](../benchmark/ablation.py) switches off each
 rule and lists which cases get worse (22 of 28 rules protected,
-[table](../spikes/korpus/ablation_v4.md)). Results: [15 §8](15_results_real_pdfs.md).
+[table](../benchmark/ablation_v4.md)). Results: [15 §8](15_results_real_pdfs.md).
 
 ## Known limits
 

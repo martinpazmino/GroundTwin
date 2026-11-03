@@ -88,7 +88,13 @@ base 28.55), Kies 2, Sand 3 (censored).
    present = 1 / missing = 0 (unknown does not count), interpolated; where it is < 0.5 the Einheit
    collapses to its middle (the upper one to its top, the lower one to its base). At the Bohrungen
    nothing changes.
-6. **Closed solid** per Einheit: top TIN + base TIN + walls at the edge. Where the Einheit pinches
+6. **Terrain from a DGM** (optional, [`umgebung.py`](../services/modeler/baugrundmodell/umgebung.py), D92): the top
+   surface is the DGM, pulled onto the GOK at each Bohrung. The correction GOK − DGM is interpolated
+   (IDW, exact) and fades out with the distance to the nearest Bohrung, `(1 − (d/R)²)²`, with
+   R = max(2 × mesh, min(25 m, ½ × spacing)). Without a full cover, in another EPSG or with a schematic
+   Lage, the top is interpolated from the GOK as before (with a note). Relief over 1 m between the
+   Bohrungen is marked: the top Einheit is not explored there.
+7. **Closed solid** per Einheit: top TIN + base TIN + walls at the edge. Where the Einheit pinches
    out, top and base share a vertex and flat triangles are removed; a closure check (each edge used
    equally often in both directions) and a volume check (mesh = Σ area × mean thickness).
 
@@ -104,6 +110,9 @@ base 28.55), Kies 2, Sand 3 (censored).
 - `IfcBorehole` ⊃ strata of the Bohrung (prisms, `Description = "Bohrsaeule"`) with the usual
   provenance (`CPset_Schichtenverzeichnis`, `CPset_Herkunft`). The spike's N1 exporter now uses the
   same writer.
+- With a DGM: `IfcGeographicElement` TERRAIN, the terrain around the model (rings along the outward normals
+  of the edge, up to 100 m and the edge of the DGM; open `IfcTriangulatedFaceSet` that shares the edge nodes
+  of the model), `CPset_Gelaende` with source, license and attribution.
 - Georeferencing `IfcMapConversion` + EPSG from the JSON, origin = rounded centroid (or the fixed
   project origin passed by the app). **Explicit length unit METRE** (formerly mm by ifcopenshell's
   default: the model came out 1000× too small, [M17](16_lessons_learned.md#m-model-ifc-and-that-open)).

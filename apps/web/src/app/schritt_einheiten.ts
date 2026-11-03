@@ -13,6 +13,12 @@ let gewaehlt = "";
 let vorgabe: { name: string; bodenarten: string }[] | null = null;   // Bearbeitung (vor dem Uebernehmen)
 let vorgabeFuer = "";
 
+/** Woher die Oberkante kommt: DGM (an den Bohrungen auf die GOK) oder aus den GOK der Bohrungen. */
+function gelaendeText(g: Record<string, unknown> | undefined) {
+  if (!g || g.quelle !== "DGM") return "aus den GOK der Bohrungen";
+  return `aus dem DGM (an den Bohrungen auf die GOK, GOK − DGM bis ${zahl(Number(g.gok_minus_dgm_max_m), 2)} m)`;
+}
+
 function einstellungen() {
   const e = S.z!.einstellungen;
   const setzen = (feld: string, w: unknown) => aendern([{ op: "einstellungen", [feld]: w }]);
@@ -42,8 +48,13 @@ function einstellungen() {
         <label class="inline"><input type="checkbox" .checked=${e.gok_relativ} @change=${(ev: Event) =>
           setzen("gok_relativ", (ev.target as HTMLInputElement).checked)}> fehlende GOK: Gelände = 0 m</label>${hilfe("gok_relativ")}
       </div>
+      ${S.z!.gelaende ? html`<div class="einstellung">
+        <label class="inline"><input type="checkbox" .checked=${e.gelaende_dgm} @change=${(ev: Event) =>
+          setzen("gelaende_dgm", (ev.target as HTMLInputElement).checked)}> Gelände aus dem DGM</label>${hilfe("gelaende_dgm")}
+      </div>` : nothing}
       ${p.raster_m !== undefined ? html`<p class="leise klein">gerechnet: Puffer ${zahl(Number(p.puffer_m), 0)} m · Raster ${zahl(Number(p.raster_m))} m ·
-        Basis ${zahl(Number(p.basis_nhn), 2)} m NHN · Fläche ${zahl(Number(p.flaeche_m2) / 1e4, 2)} ha</p>` : nothing}
+        Basis ${zahl(Number(p.basis_nhn), 2)} m NHN · Fläche ${zahl(Number(p.flaeche_m2) / 1e4, 2)} ha ·
+        Gelände ${gelaendeText(p.gelaende as unknown as Record<string, unknown> | undefined)}</p>` : nothing}
     </section>`;
 }
 

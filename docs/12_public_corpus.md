@@ -11,14 +11,14 @@ aliases: [Public corpus, Test Gutachten]
 Baugrundgutachten, with DIN 4023 Bohrprofile, Rammsondierungen and a Lageplan, are published in the
 public participation for **Bebauungspläne**, in **Planfeststellungen** (UVP-Verbund) and on
 **transparency** portals (e.g. Hamburg). There are 16 candidates from 8 Länder in
-[`spikes/korpus/manifest.tsv`](../spikes/korpus/manifest.tsv) and a script that downloads, filters
+[`benchmark/manifest.tsv`](../benchmark/manifest.tsv) and a script that downloads, filters
 and evaluates them.
 
 **Status (2026-10-25):** the automatic download is blocked by the network of Claude's environment
 (403 on `www.dresden.de`, `daten.transparenz.hamburg.de`, `www.ditzingen.de`, …). The team uploaded
 **5 PDFs** by hand: 3 for training (Wachenroth, Talheim, Halle) and 2 for the **blind test**
 (Hausham, Rednitzhembach). The ground truth is transcribed in
-[`spikes/korpus/groundtruth/`](../spikes/korpus/groundtruth/talheim.json) and the results are in
+[`benchmark/groundtruth/`](../benchmark/groundtruth/talheim.json) and the results are in
 [15](15_results_real_pdfs.md). For the next blind round: GGU-STRATIG, WinBohr, another scanned one
 and one with a coordinate table.
 
@@ -84,7 +84,7 @@ chosen and the **semi-automatic ground truth** is created (v2 → human correcti
   Hamburg or Berlin). They are usually **scans** of Schichtenverzeichnisse: useful for the OCR
   route, not for the vector one.
 - Shareable synthetic examples: the generator
-  [`synth_bohrprofil.py`](../spikes/extraktion_v2/synth_bohrprofil.py) has no restrictions and
+  [`synth_bohrprofil.py`](../services/extractor/synth_bohrprofil.py) has no restrictions and
   can reproduce errors for third parties, e.g. swisstopo ([13](13_swisstopo_collaboration.md)).
 
 Up: [Index](README.md)

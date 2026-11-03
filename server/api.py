@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 from ui import pipeline as pl
 
-from .arbeitsplatz import BEISPIELE, Arbeitsplatz
+from .arbeitsplatz import BEISPIELE, Arbeitsplatz, bohrdaten
 
 DIST = Path(__file__).resolve().parents[1] / "apps" / "web" / "dist"
 VERSION = "3.0"
@@ -52,6 +52,18 @@ class Kommentar(BaseModel):
 class Beispiel(BaseModel):
     name: str
     ocr: bool = False
+
+
+class SgdAbfrage(BaseModel):
+    radius: float | None = None
+
+
+class DgmAbruf(BaseModel):
+    rand: float | None = None
+
+
+class SgdAuswahl(BaseModel):
+    auswahl: list[dict]
 
 
 class Seite(BaseModel):
@@ -90,6 +102,11 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     async def ungueltig(_: Request, err: ValueError):
         return JSONResponse({"detail": str(err)}, status_code=400)
 
+    @app.exception_handler(bohrdaten.DienstFehler)
+    async def dienst_fehler(_: Request, err: Exception):
+        """Ein Dienst des Landes antwortet nicht oder mit Fehler: Meldung an die Oberflaeche statt Serverfehler."""
+        return JSONResponse({"detail": f"Dienst des Landes: {err}"}, status_code=502)
+
     # ------------------------------------------------------------ Start
     @app.get("/gesund")
     def gesund():
@@ -108,8 +125,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.post("/api/gutachten")
     async def gutachten(dateien: list[UploadFile] = File(...), ocr: bool = Form(True)):
         inhalt = [(f.filename or "dokument.pdf", await f.read()) for f in dateien]
-        if not inhalt or not all(d[:5] == b"%PDF-" or n.lower().endswith(".json") for n, d in inhalt):
-            raise ValueError("bitte PDF-Dateien hochladen (oder eine Extraktion als JSON)")
+        if not inhalt or not all(d[:5] == b"%PDF-" or n.lower().endswith((".json", ".xml")) for n, d in inhalt):
+            raise ValueError("bitte PDF-Dateien hochladen (oder eine Extraktion als JSON, Bohrungen als BoreholeML)")
         return ap.extrahieren(inhalt, ocr and pl.ocr_verfuegbar()).als_dict()
 
     @app.get("/api/auftrag/{aid}")
@@ -168,6 +185,40 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         ap.unterlage_entfernen(sig)
         return ap.zustand(sig)
 
+    @app.post("/api/projekt/{sig}/dgm")
+    async def dgm(sig: str, dateien: list[UploadFile] = File(...), epsg: str = Form("")):
+        inhalt = [(f.filename or "dgm", await f.read()) for f in dateien]
+        code = epsg.strip()
+        if code and not code.isdigit():
+            raise ValueError("EPSG als Zahl (z. B. 25832)")
+        ap.dgm_setzen(sig, inhalt, int(code) if code else None)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/dgm/abruf")
+    def dgm_abruf(sig: str, a: DgmAbruf):
+        ap.dgm_abrufen(sig, a.rand)
+        return ap.zustand(sig)
+
+    @app.delete("/api/projekt/{sig}/dgm")
+    def dgm_entfernen(sig: str):
+        ap.dgm_entfernen(sig)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/sgd/abfrage")
+    def sgd_abfrage(sig: str, a: SgdAbfrage):
+        ap.sgd_abfragen(sig, a.radius)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/sgd/uebernehmen")
+    def sgd_uebernehmen(sig: str, a: SgdAuswahl):
+        meldung = ap.sgd_uebernehmen(sig, a.auswahl)
+        return {"meldungen": [meldung], "zustand": ap.zustand(sig)}
+
+    @app.delete("/api/projekt/{sig}/sgd")
+    def sgd_verwerfen(sig: str):
+        ap.sgd_verwerfen(sig)
+        return ap.zustand(sig)
+
     @app.post("/api/projekt/{sig}/modell")
     def modell(sig: str):
         erg = ap.modell(sig)
@@ -179,8 +230,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         return {"eintrag": eintrag, "zustand": ap.zustand(sig)}
 
     @app.get("/api/projekt/{sig}/export/{art}")
-    def export(sig: str, art: str):
-        inhalt, name, typ = ap.export(sig, art)
+    def export(sig: str, art: str, organisation: str = ""):
+        inhalt, name, typ = ap.export(sig, art, organisation)
         return Response(inhalt, media_type=typ, headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
     # ------------------------------------------------------------ Dateien und Oberflaeche

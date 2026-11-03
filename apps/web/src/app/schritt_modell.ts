@@ -16,6 +16,27 @@ async function einchecken() {
   }
 }
 
+// BoreholeML (docs/23 §2.1): nur vollstaendig gepruefte Bohrungen mit ETRS89/UTM und GOK; Organisation des Absenders
+const UTM = new Set([25831, 25832, 25833, 4647, 5650]);
+let organisation = (() => { try { return localStorage.getItem("groundtwin.organisation") ?? ""; } catch { return ""; } })();
+
+function boreholemlTeil() {
+  const z = S.z!;
+  const imModell = z.bohrungen.filter((b) => b.modell);
+  const bereit = imModell.filter((b) => b.schichten_n > 0 && b.schichten_geprueft === b.schichten_n && b.x !== null && b.y !== null &&
+    b.epsg !== null && UTM.has(b.epsg) && b.gok !== null && z.lage_modus === "koordinaten");
+  const url = `${api.exportUrl(S.sig, "boreholeml")}?organisation=${encodeURIComponent(organisation)}`;
+  return html`
+    <label class="feld breit"><span>Organisation (Absender) ${hilfe("boreholeml")}</span>
+      <input type="text" aria-label="Organisation für BoreholeML" placeholder="z. B. Ingenieurbüro …" .value=${organisation}
+        @input=${(ev: Event) => { organisation = (ev.target as HTMLInputElement).value;
+                                  try { localStorage.setItem("groundtwin.organisation", organisation); } catch { /* ohne Speicher */ }
+                                  neu(); }}></label>
+    ${bereit.length ? html`<a class="knopf" href=${url} download>Bohrungen für den Geologischen Dienst (BoreholeML 3.2)</a>`
+      : html`<span class="knopf aus" title="Erst alle Schichten prüfen; Lage in ETRS89/UTM und GOK nötig">Bohrungen für den Geologischen Dienst (BoreholeML 3.2)</span>`}
+    <p class="leise klein">${bereit.length} von ${imModell.length} Bohrungen exportierbar (vollständig geprüft, ETRS89/UTM, GOK).</p>`;
+}
+
 export function schrittModell() {
   const z = S.z!;
   const m = S.modell;
@@ -83,6 +104,7 @@ export function schrittModell() {
         <div class="export-liste">
           ${exporte.map(([art, titel]) => html`<a class=${`knopf ${art === "ifc" ? "primaer" : ""}`} href=${api.exportUrl(S.sig, art)}
             download>${titel}</a>`)}
+          ${boreholemlTeil()}
         </div>
       </section>
 

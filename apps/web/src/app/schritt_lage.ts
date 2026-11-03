@@ -1,9 +1,10 @@
 // Schritt 3 · Lage: Unterlage (Lageplan oder Laengsschnitt) hochladen, kalibrieren (Strecke messen -> Massstab,
 // Bezugspunkt mit Koordinate, Drehung bzw. Hoehenmassstab), sperren, dann die Bohrungen im Viewer daraufziehen.
-// Ohne Koordinaten: Reihe mit Abstaenden oder Stationen. Dazu der Durchmesser der Bohrsaeulen.
+// Ohne Koordinaten: Reihe mit Abstaenden oder Stationen. Dazu der Durchmesser der Bohrsaeulen und das Gelaende
+// (DGM-Dateien des Nutzers): Vergleich GOK - DGM und fehlende GOK auf Klick (docs/23 §2.4).
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { api, type Zustand } from "./api";
+import { api, type GelaendeZeile, type SgdTreffer, type Zustand } from "./api";
 import { hilfe } from "./hilfe";
 import { epsgAuswahl, lagePruefen, systemText } from "./epsg";
 import { S, aendern, melden, naechsteOhneLage, neu, versuchen, viewerAktualisieren, zustandUebernehmen } from "./store";
@@ -31,6 +32,10 @@ interface Entwurf {
 let e: Entwurf | null = null;
 let waehlt = "";                              // welcher Punkt gerade im Plan gewaehlt wird
 let neueArt: "plan" | "schnitt" = "plan";
+let dgmEpsg: number | null | undefined;               // System der DGM-Dateien (undefined = das des Projekts)
+let sgdRadius = 250;                                  // m um die Mitte des Projekts
+let dgmRand = 100;                                    // m um die Bohrungen (DGM vom Land)
+const sgdWahl = new Set<string>();                    // "dienst/id" der Bohrungen, die übernommen werden sollen
 
 function schluessel(z: Zustand) {
   const u = z.unterlage;
@@ -428,6 +433,193 @@ function reiheTeil(z: Zustand) {
     </table>`;
 }
 
+// ------------------------------------------------------------------ Gelaende (DGM)
+async function dgmHochladen(ev: Event) {
+  const input = ev.target as HTMLInputElement;
+  const dateien = [...(input.files ?? [])];
+  input.value = "";
+  if (!dateien.length) return;
+  const epsg = dgmEpsg === undefined ? S.z?.viewer.epsg ?? null : dgmEpsg;
+  const z = await versuchen(() => api.dgm(S.sig, dateien, epsg), "DGM wird gelesen …");
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+    const warnungen = z.gelaende?.pruefung?.warnungen.length ?? 0;
+    melden(warnungen ? "DGM geladen – Hinweise zum Vergleich beachten." : "DGM geladen.", warnungen ? "warn" : "ok");
+  }
+}
+
+async function dgmAbrufen() {
+  const z = await versuchen(() => api.dgmAbruf(S.sig, dgmRand), "DGM wird beim Land abgerufen …");
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+    const warnungen = z.gelaende?.pruefung?.warnungen.length ?? 0;
+    melden(warnungen ? "DGM vom Land geladen – Hinweise zum Vergleich beachten." : "DGM vom Land geladen.", warnungen ? "warn" : "ok");
+  }
+}
+
+/** Abruf beim Land: nur auf Klick, der Knopf sagt, was gesendet wird (D88). */
+function dgmVomLand(z: Zustand) {
+  if (z.lage_modus !== "koordinaten") return nothing;
+  return html`
+    <div class="zeile">
+      <label class="inline">Rand <input type="number" min="0" max="1000" step="25" class="kurz" aria-label="Rand um die Bohrungen"
+        .value=${live(String(dgmRand))} @change=${(ev: Event) => { dgmRand = eingabe(ev) ?? 100; }}> m</label>
+      <button @click=${dgmAbrufen} title="Sendet den Ausschnitt um die Bohrungen an den Dienst des Landes">
+        DGM vom Land abrufen</button>${hilfe("dgm_land")}
+    </div>
+    <p class="leise klein">Brandenburg mit Berlin und NRW (DGM1, WCS). Sendet den Ausschnitt um die Bohrungen an den Dienst.</p>`;
+}
+
+async function dgmEntfernen() {
+  if (!confirm("DGM aus dem Projekt entfernen? Übernommene GOK bleiben (Quelle DGM).")) return;
+  const z = await versuchen(() => api.dgmEntfernen(S.sig));
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+  }
+}
+
+const STATUS: Record<GelaendeZeile["status"], [string, string]> = {
+  ok: ["✓", "ok"], abweichung: ["⚠ weicht ab", "warn"], ohne_gok: ["GOK fehlt", ""], aus_dgm: ["aus dem DGM", "leise"],
+  ausserhalb: ["außerhalb", "leise"], ohne_lage: ["ohne Lage", "leise"], anderes_system: ["anderes EPSG", "warn"],
+};
+
+const mitVorzeichen = (v: number | null) =>
+  v === null ? "" : Math.abs(v) < 0.005 ? zahl(0) : `${v > 0 ? "+" : ""}${zahl(v)}`;   // kein "-0,00"
+
+function gelaendeTeil(z: Zustand) {
+  const g = z.gelaende;
+  const datei = (text: string) => html`<label class="datei-knopf"><input type="file" multiple aria-label="DGM-Dateien"
+    accept=".xyz,.txt,.csv,.asc,.tif,.tiff,.zip,.gz" @change=${dgmHochladen}>${text}</label>`;
+  const system = dgmEpsg === undefined ? z.viewer.epsg ?? null : dgmEpsg;
+  const wahl = html`<label class="feld breit"><span>System der Datei (XYZ, ASCII) ${hilfe("dgm_epsg")}</span>
+    ${epsgAuswahl(system, (c) => { dgmEpsg = c; neu(); }, "System der DGM-Datei")}</label>`;
+  if (!g) {
+    return html`
+      <p class="leise klein">DGM-Kachel(n) des Landes (Open Data, z. B. DGM1) als XYZ, ASCII-Raster oder GeoTIFF, auch als
+        ZIP – Höhen in m NHN. Damit prüft die App die GOK, schlägt fehlende vor und legt das Gelände ins Modell.</p>
+      ${dgmVomLand(z)}
+      ${wahl}
+      ${datei("DGM-Dateien wählen …")}`;
+  }
+  const i = g.info;
+  const pr = g.pruefung;
+  const q = i.quelle;
+  return html`
+    <p><b>${i.name}</b><br><span class="leise klein">${systemText(i.epsg)} · Raster ${zahl(i.dx, 1)} m ·
+      ${i.spalten.toLocaleString("de-DE")} × ${i.zeilen.toLocaleString("de-DE")} · ${zahl(i.zmin, 1)} – ${zahl(i.zmax, 1)} m NHN</span></p>
+    ${q ? html`<p class="leise klein">${q.anbieter} · <a href=${q.beleg} target="_blank" rel="noopener">${q.lizenz}</a> ·
+      ${q.namensnennung} · abgerufen ${q.abgerufen}</p>` : nothing}
+    ${g.fehler ? html`<p class="warnung klein">${g.fehler}</p>` : nothing}
+    ${pr ? html`
+      <table class="tabelle kompakt gelaende">
+        <thead><tr><th>Bohrung</th><th class="zahl">GOK</th><th class="zahl">DGM</th><th class="zahl">Δ [m]</th><th></th></tr></thead>
+        <tbody>
+          ${pr.zeilen.map((r) => html`
+            <tr class=${STATUS[r.status][1]}>
+              <td><button class="link" title="Im Viewer wählen" @click=${() => { void S.viewer?.nadelWaehlen(r.id); neu(); }}>${r.code}</button></td>
+              <td class="zahl">${zahl(r.gok)}</td>
+              <td class="zahl">${zahl(r.dgm)}</td>
+              <td class="zahl">${mitVorzeichen(r.differenz)}</td>
+              <td class=${`klein ${STATUS[r.status][1]}`}>${r.status === "ohne_gok"
+                ? html`<button class="klein" title="GOK aus dem DGM übernehmen (Quelle DGM)"
+                    @click=${() => aendern([{ op: "gok_aus_dgm", ids: [r.id] }])}>übernehmen</button>`
+                : STATUS[r.status][0]}</td>
+            </tr>`)}
+        </tbody>
+      </table>
+      ${pr.verglichen ? html`<p class="leise klein">${pr.verglichen} verglichen · Median ${mitVorzeichen(pr.median)} m ·
+        größte Abweichung ${zahl(pr.max)} m (unauffällig bis ${zahl(pr.toleranz, 1)} m)</p>` : nothing}
+      ${pr.warnungen.map((w) => html`<p class="warnung klein">⚠ ${w}</p>`)}
+      ${pr.vorschlaege > 1 ? html`<button @click=${() => aendern([{ op: "gok_aus_dgm" }])}>
+        Alle ${pr.vorschlaege} fehlenden GOK aus dem DGM übernehmen</button>` : nothing}` : nothing}
+    ${dgmVomLand(z)}
+    ${wahl}
+    <div class="zeile">${datei("Andere DGM-Dateien …")}
+      <button class="link klein" @click=${dgmEntfernen}>DGM entfernen</button></div>`;
+}
+
+// ------------------------------------------------------------------ Bohrungen der Laender (SGD)
+async function sgdAbfragen() {
+  const z = await versuchen(() => api.sgdAbfrage(S.sig, sgdRadius), "Dienste der Länder werden abgefragt …");
+  if (!z?.sgd) return;
+  zustandUebernehmen(z);
+  sgdWahl.clear();
+  neu();
+  const s = z.sgd;
+  melden(`${s.treffer.length} Bohrungen der Länder im Umkreis von ${zahl(s.radius, 0)} m` +
+         (s.fehler.length ? ` – ${s.fehler.length} Dienst(e) ohne Antwort` : ""), s.fehler.length ? "warn" : "ok");
+}
+
+async function sgdUebernehmen() {
+  const auswahl = [...sgdWahl].map((k) => ({ dienst: k.slice(0, k.indexOf("/")), id: k.slice(k.indexOf("/") + 1) }));
+  const r = await versuchen(() => api.sgdUebernehmen(S.sig, auswahl), "Schichtdaten werden beim Land geholt …");
+  if (!r) return;
+  zustandUebernehmen(r.zustand);
+  sgdWahl.clear();
+  for (const m of r.meldungen) melden(m, "ok");
+  await viewerAktualisieren();
+  neu();
+}
+
+function sgdSchichten(t: SgdTreffer) {
+  if (t.gutachten) return html`<span class="ok" title="Dieselbe Bohrung im Gutachten">= ${t.gutachten}</span>`;
+  if (t.uebernommen) return html`<span class="ok">✓ im Projekt</span>`;
+  if (t.schichten === "boreholeml") return html`${t.schichten_n} Schichten`;
+  if (t.schichten === "grafik" && t.profil) return html`<a href=${t.profil} target="_blank" rel="noopener">Profil ↗</a>`;
+  return html`<span class="leise">${t.schichten === "ohne Petrographie" ? "ohne Petrographie" : "keine Schichten"}</span>`;
+}
+
+function sgdTeil(z: Zustand) {
+  if (z.lage_modus === "reihe") return html`<p class="leise klein">Nur mit Lage nach Koordinaten.</p>`;
+  const s = z.sgd;
+  const kopf = html`
+    <p class="leise klein">Bohrungen aus den Datenbanken der Geologischen Dienste um die Mitte des Projekts.
+      <b>Die Abfrage sendet die Lage des Projekts an den Dienst des Landes.</b></p>
+    <div class="zeile">
+      <label class="inline">Umkreis <input type="number" min="10" max="2000" step="50" class="kurz" aria-label="Umkreis der Abfrage"
+        .value=${live(String(sgdRadius))} @change=${(ev: Event) => { sgdRadius = eingabe(ev) ?? 250; }}> m</label>
+      <button @click=${sgdAbfragen}>${s ? "Neu abfragen" : "Abfragen"}</button>
+    </div>`;
+  if (!s) return kopf;
+  const gp = s.gegenprobe;
+  const gpOk = gp.anzahl > 0 && (gp.lage_max ?? 0) <= 1 && (gp.gok_max ?? 0) <= 0.5;
+  const zeigen = s.treffer.slice(0, 60);
+  const waehlbar = s.treffer.filter((t) => t.uebernehmbar).length;
+  return html`
+    ${kopf}
+    <p class="klein">${s.treffer.length} Bohrungen im Umkreis von ${zahl(s.radius, 0)} m · ${s.zeit}</p>
+    ${gp.anzahl ? html`<p class=${`klein ${gpOk ? "ok" : "warnung"}`}>${gpOk ? "✓" : "⚠"} ${gp.anzahl} Bohrungen des Gutachtens auch
+      beim Land: Lage ≤ ${zahl(gp.lage_max)} m${gp.gok_max !== null ? html`, GOK ≤ ${zahl(gp.gok_max)} m` : nothing}${gpOk ? "" : " – Lage und GOK prüfen"}</p>` : nothing}
+    ${s.fehler.map((f) => html`<p class="warnung klein">${f.dienst}: ${f.fehler}</p>`)}
+    ${zeigen.length ? html`
+      <table class="tabelle kompakt sgd">
+        <thead><tr><th></th><th>Bohrung</th><th class="zahl">Abstand</th><th class="zahl">GOK</th><th class="zahl">Teufe</th><th>Schichten</th></tr></thead>
+        <tbody>
+          ${zeigen.map((t) => {
+            const k = `${t.dienst}/${t.id}`;
+            return html`<tr class=${t.gutachten ? "doppelt" : ""}>
+              <td>${t.uebernehmbar ? html`<input type="checkbox" aria-label=${`${t.name} übernehmen`} .checked=${sgdWahl.has(k)}
+                @change=${(ev: Event) => { if ((ev.target as HTMLInputElement).checked) sgdWahl.add(k); else sgdWahl.delete(k); neu(); }}>` : nothing}</td>
+              <td title=${`${t.dienst} · ID ${t.id}${t.datum ? ` · ${t.datum}` : ""}`}>${t.name}</td>
+              <td class="zahl">${zahl(t.abstand, 0)}</td>
+              <td class="zahl">${zahl(t.gok)}</td>
+              <td class="zahl">${zahl(t.teufe, 1)}</td>
+              <td class="klein">${sgdSchichten(t)}</td>
+            </tr>`;
+          })}
+        </tbody>
+      </table>
+      ${s.treffer.length > zeigen.length ? html`<p class="leise klein">… und ${s.treffer.length - zeigen.length} weitere (Umkreis verkleinern)</p>` : nothing}` : nothing}
+    ${waehlbar ? html`<button class="primaer" ?disabled=${!sgdWahl.size} @click=${sgdUebernehmen}>
+      Ausgewählte übernehmen (${sgdWahl.size})</button>
+      <p class="leise klein">Nur Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg); sie kommen mit Quelle und Lizenz ins Projekt.</p>` : nothing}
+    ${s.quellen.map((q) => html`<p class="leise klein">Quelle: ${q.namensnennung} · <a href=${q.beleg} target="_blank" rel="noopener">Dienst</a></p>`)}
+    <button class="link klein" @click=${async () => { const z2 = await versuchen(() => api.sgdVerwerfen(S.sig)); if (z2) { zustandUebernehmen(z2); neu(); } }}>Abfrage verwerfen</button>`;
+}
+
 /** Hilfsmarken (Strecke, Bezugspunkt) nur beim Kalibrieren; gesperrt zeigt der Plan nur die Bohrungen. */
 function hilfsmarkenNachziehen(z: Zustand) {
   const v = S.viewer;
@@ -464,6 +656,9 @@ export function schrittLage() {
       ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z))}
       ${z.unterlage ? abschnitt(html`Kalibrieren`, kalibrierenTeil(z)) : nothing}
       ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z))}
+      ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
+        gelaendeTeil(z), !!z.gelaende)}
+      ${abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z), !!z.sgd)}
       ${abschnitt(html`Darstellung`, html`
         <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}
           <input type="number" step="0.1" min="0" class="kurz" placeholder=${`auto ${zahl(z.durchmesser_auto, 1)}`}

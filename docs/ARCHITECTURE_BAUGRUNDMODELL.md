@@ -12,7 +12,8 @@ aliases: [Architecture, Baugrundmodell architecture]
 > IFC 4.3 / That Open Engine**.
 >
 > Statements marked **[verified]** were checked with a spike in this repo
-> ([`spikes/ifc_thatopen/`](../spikes/ifc_thatopen/README.md)). What is marked **[to be verified]**
+> ([`spikes/ifc_thatopen/`](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen), now in the git history;
+> [`services/modeler`](../services/modeler/README.md) replaced it). What is marked **[to be verified]**
 > are reasonable assumptions that must be confirmed during implementation.
 >
 > Detailed notes (diagnosis, generalisation, Schraffur, Sondierungen, Grundwasser, coordinates,
@@ -451,7 +452,7 @@ create policy boreholes_read on boreholes for select using (is_member(project_id
 ```
 
 > [!NOTE]
-> Verified on PostgreSQL 16 + PostGIS 3 ([Supabase spike](../spikes/supabase/README.md)): with
+> Verified on PostgreSQL 16 + PostGIS 3 ([`supabase/`](../supabase/README.md)): with
 > `create extension postgis with schema extensions` the types must be qualified
 > (`extensions.geometry`), otherwise the migration fails outside Supabase.
 
@@ -764,8 +765,9 @@ the midpoint between Bohrungen.
    with the solids → composition per station. It replaces the current computation of
    `Geo_Tunnel`/`Geo_Spec` (which is kept as a comparison).
 
-The spike (`spikes/ifc_thatopen/baugrund_ifc_spike.py`) implements steps 3–5 in a minimal version
-(IDW + trimming + solids) for 3 synthetic Bohrungen.
+The spike ([`baugrund_ifc_spike.py`](https://github.com/martinpazmino/GroundTwin/blob/03be932/spikes/ifc_thatopen/baugrund_ifc_spike.py), in the git history)
+implemented steps 3–5 in a minimal version (IDW + trimming + solids) for 3 synthetic Bohrungen;
+[`services/modeler`](../services/modeler/README.md) implements them today.
 
 > [!NOTE]
 > **Implemented (2026-10-27)** in [`services/modeler`](../services/modeler/README.md): steps 1–6 with
@@ -803,10 +805,11 @@ Environment: IfcOpenShell 0.9.0.post1, `@thatopen/fragments` 3.6.0, `@thatopen/c
 | That Open's `IfcImporter` **by default** | **0 elements with geometry** — the geotechnical classes are not in `classes.elements` and are discarded |
 | `IfcImporter` with `IFCBOREHOLE`, `IFCGEOMODEL`, `IFCGEOTECHNICALSTRATUM` added | **16** elements with geometry; categories `IFCBOREHOLE` (3), `IFCGEOMODEL` (1), `IFCGEOTECHNICALSTRATUM` (16) |
 
-Reproduce:
+Reproduce (the spike is in the git history; today [`services/modeler`](../services/modeler/README.md)
+writes the IFC):
 
 ```bash
-cd spikes/ifc_thatopen
+git checkout 03be932 && cd spikes/ifc_thatopen
 pip install ifcopenshell numpy && python baugrund_ifc_spike.py baugrund_spike.ifc
 npm install && npm run spike
 ```
@@ -852,7 +855,7 @@ ifcLoader.onIfcImporterInitialized.add((importer) => {
 ```
 
 In the backend (Node) the equivalent is `importer.classes.elements.add(...)` before
-`importer.process({ bytes })` (see `spikes/ifc_thatopen/thatopen_import_spike.mjs`).
+`importer.process({ bytes })` (see [`thatopen_import_spike.mjs`](https://github.com/martinpazmino/GroundTwin/blob/03be932/spikes/ifc_thatopen/thatopen_import_spike.mjs) in the git history).
 
 Viewer functions (existing components in 3.6): `Clipper` (cuts/sections), `Classifier` (group by
 Einheit/Bodenart), `Hider` (visibility), `Raycasters`, `Highlighter` and `LengthMeasurement`
@@ -901,7 +904,7 @@ cad_extract/
 ├─ services/modeler/              surfaces/solids (Python) + frag-converter (Node)
 ├─ supabase/                      config.toml, migrations/, seed.sql
 ├─ tests/                         fixtures/synthetic/, groundtruth/*.json, test_*.py
-├─ spikes/ifc_thatopen/           spike of this document
+├─ benchmark/                     corpus, ground truth, regression (today)
 ├─ app.py                         Streamlit (internal debugging during the migration)
 └─ docs/
 ```

@@ -16,6 +16,7 @@ from .flaechen import MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, netz, schicht
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe
 from .koerper import koerper, pruefen, volumen_prismen
 from .normen import deuten, farbinfo
+from .umgebung import UMGEBUNG_STANDARD, oberkante, ring
 
 
 @dataclass
@@ -39,6 +40,7 @@ class Modell:
     zensurpunkte: int = 0
     ausgeduennt: list[int] = field(default_factory=list)   # Knoten je Einheit, an denen die Ausdehnung endet
     zuordnung: dict[str, list[tuple]] = field(default_factory=dict)   # je Bohrung: (op, Abschnitt, Einheit)
+    dgm: object | None = None          # Raster des DGM, wenn das Gelaende daraus kommt (Umgebung im IFC)
 
 
 # Grosse Modelle (Trassen > 5 km): Knotenzahl begrenzen statt Raster fest; Puffer waechst mit dem Bohrabstand
@@ -63,8 +65,11 @@ def standard_raster(flaeche: float) -> float:
 
 def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str = "idw",
           raster: float | None = None, puffer: float | None = None, basis: float | None = None,
-          ursprung: tuple[float, float] | None = None) -> Modell:
-    """ursprung: fester lokaler Nullpunkt (App: bleibt beim Verschieben von Bohrungen stehen, die Ansicht springt nicht)."""
+          ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None) -> Modell:
+    """ursprung: fester lokaler Nullpunkt (App: bleibt beim Verschieben von Bohrungen stehen, die Ansicht springt nicht).
+
+    gelaende: DGM-Raster (x0, y0, dx, dy, z, epsg) fuer die Oberkante (umgebung.py); gelaende_info: Name und Quelle.
+    """
     bohrungen, ausgeschlossen, epsg = bohrungen_aus_extraktion(docs)
     if not bohrungen:
         raise ValueError("keine modellfaehige Bohrung (Koordinaten, GOK und Schichten noetig)")
@@ -103,16 +108,45 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
         basis = tiefste
     elif basis > tiefste:
         hinweise.append(f"Modellbasis {basis:.2f} m NHN ueber der tiefsten Endteufe {tiefste:.2f}: tiefere Daten abgeschnitten")
-    sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode)
+    oben, gel = None, {"quelle": "GOK"}
+    if gelaende is not None:
+        oben, gel = _gelaende(gelaende, bohrungen, epsg, punkte, ursprung, xy_b, raster, nn, methode)
+        gel.update(gelaende_info or {})
+        if gel.get("hinweis"):
+            hinweise.append(gel["hinweis"])
+    sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben)
     m = Modell(epsg, ursprung, bohrungen, ausgeschlossen, einheiten, ks, punkte, dreiecke, rand, sm["flaechen"],
                sm["abstand"], basis, {"methode": methode, "raster_m": raster, "puffer_m": puffer,
                                       "basis_nhn": basis, "flaeche_m2": float(flaeche), "ausdehnung_m": ausdehnung,
                                       "durchmesser_auto_m": standard_durchmesser(ausdehnung),
-                                      "praesenz_schwelle": PRAESENZ_SCHWELLE},
+                                      "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel},
                hinweise=hinweise, max_abweichung=sm["max_abweichung_bohrungen"],
                zensurpunkte=sum(len(z) for z in sm["zensur"]), ausgeduennt=sm["ausgeduennt"], zuordnung=zuordnung)
+    m.dgm = gelaende if oben is not None else None
     _koerper(m)
     return m
+
+
+def _gelaende(r, bohrungen: list[Bohrung], epsg: int | None, punkte: np.ndarray, ursprung: tuple[float, float],
+              xy_b: np.ndarray, raster: float, nn: float, methode: str) -> tuple[np.ndarray | None, dict]:
+    """Oberkante aus dem DGM, wenn System, Lage und Hoehen der Bohrungen dazu passen; sonst None mit Grund."""
+    if not epsg or not getattr(r, "epsg", None) or int(r.epsg) != int(epsg):
+        return None, {"quelle": "GOK", "hinweis": f"DGM in EPSG:{getattr(r, 'epsg', None)}, Modell in EPSG:{epsg} – "
+                                                  f"Gelände aus den GOK der Bohrungen interpoliert"}
+    fremd = [b.code for b in bohrungen if b.lage == "schematisch" or b.hoehe.startswith("relativ")]
+    if fremd:
+        return None, {"quelle": "GOK", "hinweis": f"Gelände aus den GOK der Bohrungen: schematische Lage oder "
+                                                  f"relative Höhe passt nicht zum DGM ({', '.join(fremd)})"}
+    return oberkante(r, punkte, ursprung, xy_b, np.array([b.gok for b in bohrungen]), raster, nn, methode)
+
+
+def gelaende_text(gel: dict) -> str:
+    """Herkunft des Gelaendes in einem Satz (IFC, Bericht)."""
+    if gel.get("quelle") != "DGM":
+        return "aus den GOK der Bohrungen interpoliert" + (f" ({gel['hinweis']})" if gel.get("hinweis") else "")
+    return (f"DGM {gel.get('name') or ''}".rstrip() + f", an den Bohrungen auf die GOK gezogen (Reichweite "
+            f"{gel['reichweite_m']:g} m; GOK - DGM bis {gel['gok_minus_dgm_max_m']:g} m, Median "
+            f"{gel['gok_minus_dgm_median_m']:g} m)")
 
 
 def _koerper(m: Modell) -> None:
@@ -175,11 +209,13 @@ def _benennungen(schichten: list[dict]) -> str:
 
 def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   projekt: str = "Baugrundmodell aus Gutachten", pruefstand: str | None = None,
-                  durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None) -> dict:
-    """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen).
+                  durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
+                  umgebung: float = UMGEBUNG_STANDARD) -> dict:
+    """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
     durchmesser: Saeulen aller Bohrungen in m (None = automatisch nach Modellgroesse); durchmesser_je: je Code.
+    umgebung: Gelaende aus dem DGM so weit um das Modellgebiet (m; 0 = keines), nur wenn die Oberkante aus dem DGM kommt.
     """
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
@@ -218,7 +254,21 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
         "Nicht_im_Modell": "; ".join(f"{a['code']} ({a['grund']})" for a in m.ausgeschlossen),
         "Quellen": ", ".join(quellen), "Modellierer": f"baugrundmodell {__version__}",
         "Ursprung_Rechtswert": m.ursprung[0], "Ursprung_Hochwert": m.ursprung[1],
+        "Gelaende": gelaende_text(p.get("gelaende") or {}),
         "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise)})
+    gelaende = None
+    if m.dgm is not None and umgebung > 0:
+        gelaende = ring(m.dgm, m.punkte, m.rand, m.flaechen[0], m.ursprung, umgebung, schritt=p["raster_m"])
+    if gelaende is not None:
+        gel = p.get("gelaende") or {}
+        quelle = gel.get("quelle_dienst") or {}
+        aus.gelaende(gelaende["knoten"], gelaende["dreiecke"], {
+            "DGM": gel.get("name"), "Raster_DGM_m": gel.get("raster_m"),
+            "Dienst": quelle.get("titel"), "Anbieter": quelle.get("anbieter"), "Lizenz": quelle.get("lizenz"),
+            "Namensnennung": quelle.get("namensnennung"), "Abgerufen": quelle.get("abgerufen"),
+            "Abstand_m": gelaende["abstand_m"], "Schrittweite_m": gelaende["schritt_m"],
+            "Hinweis": "Gelände um das Baugrundmodell; innerhalb bildet die Oberkante des Modells das Gelände "
+                       "(an den Bohrungen auf ihre GOK gezogen)"})
     if bohrsaeulen:
         codes = {b.code: b for b in m.bohrungen}
         auto = standard_durchmesser(m.parameter.get("ausdehnung_m", 100.0))
@@ -235,7 +285,7 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                     aus.bohrung(d["document"], b, (vb.x - m.ursprung[0], vb.y - m.ursprung[1]), vb.lage, vb.hoehe,
                                 durchmesser=dm, durchmesser_quelle=quelle)
     aus.schreiben(pfad)
-    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen)}
+    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen), "gelaende": gelaende is not None}
 
 
 def bericht(m: Modell) -> dict:

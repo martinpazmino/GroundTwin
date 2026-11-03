@@ -40,8 +40,8 @@ async function beispiel(name: string) {
 }
 
 function dateienSetzen(liste: FileList | null | undefined) {
-  gewaehlt = [...(liste ?? [])].filter((f) => /\.(pdf|json)$/i.test(f.name));
-  if (liste?.length && !gewaehlt.length) melden("Bitte PDF-Dateien wählen (oder eine Extraktion als JSON).", "warn");
+  gewaehlt = [...(liste ?? [])].filter((f) => /\.(pdf|json|xml)$/i.test(f.name));
+  if (liste?.length && !gewaehlt.length) melden("Bitte PDF-Dateien wählen (oder eine Extraktion als JSON, Bohrungen als BoreholeML).", "warn");
   neu();
 }
 
@@ -74,10 +74,10 @@ export function schrittGutachten() {
             @dragover=${(e: DragEvent) => { e.preventDefault(); ziehen = true; neu(); }}
             @dragleave=${() => { ziehen = false; neu(); }}
             @drop=${(e: DragEvent) => { e.preventDefault(); ziehen = false; dateienSetzen(e.dataTransfer?.files); }}>
-            <input type="file" accept=".pdf,application/pdf,.json,application/json" multiple @change=${(e: Event) => dateienSetzen((e.target as HTMLInputElement).files)}>
+            <input type="file" accept=".pdf,application/pdf,.json,application/json,.xml,application/xml,text/xml" multiple @change=${(e: Event) => dateienSetzen((e.target as HTMLInputElement).files)}>
             <span class="ablage-icon">⇪</span>
             <strong>${gewaehlt.length ? gewaehlt.map((f) => f.name).join(", ") : "PDF hierher ziehen oder klicken"}</strong>
-            <span class="leise">${gewaehlt.length ? `${gewaehlt.length} Datei(en) bereit` : "mehrere Dateien möglich (z. B. Anlagen 2–4) · auch eine Extraktion als JSON"}</span>
+            <span class="leise">${gewaehlt.length ? `${gewaehlt.length} Datei(en) bereit` : "mehrere Dateien möglich (z. B. Anlagen 2–4) · auch eine Extraktion als JSON oder Bohrungen als BoreholeML (XML)"}</span>
           </label>
           <div class="zeile">
             <label class="schalter" title=${ocrDa ? "" : "nicht installiert: pip install -r requirements-ocr.txt"}>

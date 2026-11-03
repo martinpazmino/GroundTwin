@@ -39,6 +39,7 @@ class Einstellungen:
     raster: float | None = None
     basis: float | None = None
     gok_relativ: bool = True                # fehlt die GOK bei allen: 0 m (relativ, markiert)
+    gelaende_dgm: bool = True               # mit DGM: Oberkante aus dem DGM, an den Bohrungen auf die GOK (docs/21 §4.4)
 
 
 @dataclass
@@ -58,6 +59,7 @@ class Projekt:
     schicht: dict[str, dict] = field(default_factory=dict)   # "id/k" -> {oben, unten, bodenart, geprueft}
     reihe: dict = field(default_factory=lambda: {"standard": 20.0, "reihenfolge": [], "abstand": {}, "station": {}})
     unterlage: dict | None = None
+    dgm: dict | None = None                # Gelaendemodell aus Dateien (Kopf; Raster liegt im Projektordner)
     punkte: list[dict] = field(default_factory=list)          # freie Punkte auf dem Plan: {id, x, y} (noch ohne Bohrung)
     punkt_zaehler: int = 0
     ursprung: tuple[float, float] | None = None
@@ -197,7 +199,7 @@ def wirksame_docs(docs: list[dict], p: Projekt) -> list[dict]:
     for bid, d, b in bohrungen(neu):
         o = p.bohrung.get(bid, {})
         if "gok" in o:
-            b["gok_nhn"], b["gok_source"] = zahl(o["gok"]), "manuell"
+            b["gok_nhn"], b["gok_source"] = zahl(o["gok"]), o.get("gok_quelle") or "manuell"
         if any(s in o for s in ("x", "y", "epsg")):
             b["x"], b["y"] = zahl(wert(p, bid, b, "x")), zahl(wert(p, bid, b, "y"))
             epsg = zahl(wert(p, bid, b, "epsg"))
@@ -240,7 +242,7 @@ def bohrungen_liste(docs: list[dict], p: Projekt) -> list[dict]:
             "seite": int((b.get("provenance") or [{}])[0].get("page", 0) or 0) + 1,
             "modell": modell, "entfernt": not modell, "geprueft": bool(wert(p, bid, b, "geprueft")),
             "gok": gok, "gok_pdf": b.get("gok_nhn") is not None,
-            "gok_quelle": "manuell" if "gok" in p.bohrung.get(bid, {}) else ("PDF" if b.get("gok_nhn") is not None else ""),
+            "gok_quelle": gok_quelle(p, bid, b),
             "endteufe": max((zahl(schicht_wert(p, bid, k, ly, "unten")) or 0.0 for k, ly in enumerate(schichten)),
                             default=b.get("end_depth")),
             "x": zahl(wert(p, bid, b, "x")), "y": zahl(wert(p, bid, b, "y")), "epsg": zahl(wert(p, bid, b, "epsg")),
@@ -302,6 +304,7 @@ def _bohrung_setzen(docs: list[dict], p: Projekt, bid: str, feld: str, w) -> boo
         else:
             o[feld] = bool(w)
     elif feld == "gok":
+        o.pop("gok_quelle", None)                       # von Hand eingetragen: nicht mehr aus dem DGM
         if w is None or _gleich(w, b.get("gok_nhn")):
             o.pop("gok", None)
         else:
@@ -391,6 +394,69 @@ def _gok_aus_pdf(docs: list[dict] | None, bid: str) -> bool:
         return _bohrung(docs, bid).get("gok_nhn") is not None
     except KeyError:
         return False
+
+
+def gok_quelle(p: Projekt, bid: str, b: dict) -> str:
+    """Woher die wirksame GOK kommt: PDF, manuell, DGM oder '' (fehlt)."""
+    o = p.bohrung.get(bid, {})
+    if "gok" in o:
+        return o.get("gok_quelle") or "manuell"
+    return (b.get("gok_source") or "PDF") if b.get("gok_nhn") is not None else ""   # PDF oder BoreholeML (Import)
+
+
+def gelaende_eingabe(docs: list[dict], p: Projekt) -> list[dict]:
+    """Bohrungen im Modell mit Lage und GOK fuer den Vergleich mit dem DGM (nur Lage nach Koordinaten)."""
+    if p.lage_modus != LAGE_KOORDINATEN:
+        return []
+    doppelt = doppelte(docs)
+    out = []
+    for bid, _, b in bohrungen(docs):
+        if not wert(p, bid, b, "modell", doppelt):
+            continue
+        epsg = zahl(wert(p, bid, b, "epsg"))
+        out.append({"id": bid, "code": b["code"], "x": zahl(wert(p, bid, b, "x")), "y": zahl(wert(p, bid, b, "y")),
+                    "epsg": int(epsg) if epsg else None, "gok": zahl(wert(p, bid, b, "gok")),
+                    "gok_quelle": gok_quelle(p, bid, b)})
+    return out
+
+
+def projekt_punkte(docs: list[dict], p: Projekt) -> tuple[list[tuple[float, float]], int]:
+    """Lage der Bohrungen im haeufigsten EPSG, sonst der Bezugspunkt eines kalibrierten Lageplans (Dienste der Laender)."""
+    if p.lage_modus != LAGE_KOORDINATEN:
+        raise ValueError("Dienste der Länder nur mit Lage nach Koordinaten")
+    mit = [b for b in gelaende_eingabe(docs, p) if b["x"] is not None and b["y"] is not None and b["epsg"]]
+    if mit:
+        epsg = max({b["epsg"] for b in mit}, key=lambda e: sum(b["epsg"] == e for b in mit))
+        return [(b["x"], b["y"]) for b in mit if b["epsg"] == epsg], int(epsg)
+    kal = (p.unterlage or {}).get("kalibrierung") or {}
+    if kal.get("bezug") and kal.get("epsg"):
+        return [(float(kal["bezug"]["x"]), float(kal["bezug"]["y"]))], int(kal["epsg"])
+    raise ValueError("erst Lage setzen: Bohrungen mit Koordinaten (EPSG) oder einen kalibrierten Lageplan")
+
+
+def projekt_mitte(docs: list[dict], p: Projekt) -> tuple[float, float, int]:
+    """Mitte der Bohrungen mit Lage (haeufigstes EPSG), sonst der Bezugspunkt eines kalibrierten Lageplans."""
+    punkte, epsg = projekt_punkte(docs, p)
+    return sum(x for x, _ in punkte) / len(punkte), sum(y for _, y in punkte) / len(punkte), epsg
+
+
+def gok_aus_dgm(docs: list[dict], p: Projekt, werte: dict | None) -> str:
+    """Vorgeschlagene GOK aus dem DGM uebernehmen (nur Bohrungen ohne GOK; markiert als Quelle DGM)."""
+    if not p.dgm:
+        raise ValueError("kein DGM geladen")
+    if not werte:
+        raise ValueError("keine Bohrung ohne GOK im DGM")
+    codes = {bid: b for bid, _, b in bohrungen(docs)}
+    neu = []
+    for bid, h in werte.items():
+        b = codes.get(bid)
+        if b is None or zahl(h) is None:
+            raise ValueError(f"Bohrung {bid} gibt es nicht")
+        if zahl(wert(p, bid, b, "gok")) is not None:
+            raise ValueError(f"{b['code']}: hat schon eine GOK – nur fehlende werden übernommen")
+        p.bohrung.setdefault(bid, {}).update(gok=round(float(h), 2), gok_quelle="DGM")
+        neu.append(b["code"])
+    return f"GOK aus dem DGM: {', '.join(neu)}"
 
 
 # ---------------------------------------------------------------- Punkte auf dem Plan (setzen, zuordnen, loeschen)
@@ -549,8 +615,12 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
     elif art == "gok":                                   # Ansatzhoehe im Schnitt gezogen: nur ohne GOK aus dem PDF
         if _gok_aus_pdf(docs, bid):
             raise ValueError(f"{code}: GOK steht im PDF – Höhe nur in der Tabelle änderbar")
-        p.bohrung.setdefault(bid, {})["gok"] = float(op["gok"])
+        o = p.bohrung.setdefault(bid, {})
+        o["gok"] = float(op["gok"])
+        o.pop("gok_quelle", None)
         meldung = f"{code}: GOK {de(op['gok'])} m NHN"
+    elif art == "gok_aus_dgm":                          # Vorschlaege aus dem DGM (der Server rechnet sie aus)
+        meldung = gok_aus_dgm(docs, p, op.get("werte"))
     elif art == "geprueft":
         _bohrung_setzen(docs, p, bid, "geprueft", bool(op["wert"]))
         meldung = f"{code}: {'als geprüft markiert' if op['wert'] else 'Prüfung zurückgenommen'}"
@@ -767,7 +837,8 @@ def modell_eingabe(docs: list[dict], p: Projekt, e: Einstellungen | None = None)
             b["gok_nhn"], b["gok_source"] = 0.0, "relativ"
         hinweise.append("Keine Ansatzhoehen (GOK) im PDF: Hoehen relativ, Gelaende = 0 m.")
     elif ohne_gok:
-        hinweise.append(f"{len(ohne_gok)} Bohrungen ohne GOK bleiben draussen (GOK in der Tabelle eintragen).")
+        hinweise.append(f"{len(ohne_gok)} Bohrungen ohne GOK bleiben draussen (GOK in der Tabelle eintragen"
+                        f"{' oder im Schritt Lage aus dem DGM übernehmen' if p.dgm else ''}).")
 
     lage: dict[str, tuple] = {}
     if p.lage_modus == LAGE_REIHE:
@@ -858,7 +929,8 @@ def viewer_bohrungen(docs: list[dict], p: Projekt, vorb: Vorbereitung, bericht: 
         offen = sum(not ly.get("soil_class") and not ly.get("geprueft") for ly in schichten)
         out.append({"id": bid, "code": b["code"], "x": x, "y": y, "quelle": quelle,
                     "gok": 0.0 if gok is None else float(gok), "gok_bekannt": gok is not None,
-                    "gok_pdf": b0.get("gok_nhn") is not None,
+                    "gok_pdf": b0.get("gok_nhn") is not None, "gok_quelle": gok_quelle(p, bid, b0),
+                    "herkunft": b0.get("herkunft") or "",
                     "ende": float(b.get("end_depth") or (schichten[-1]["bottom_depth"] if schichten else 0.0)),
                     "geprueft": bool(b.get("geprueft")),
                     "schichten_geprueft": sum(bool(ly.get("geprueft")) for ly in schichten), "schichten_n": len(schichten),
@@ -912,7 +984,9 @@ def ereignis_anwenden(p: Projekt, ereignis: dict | None, docs: list[dict] | None
         p.reihe["station"][ereignis["id"]] = float(ereignis["station"])
         p.reihe["abstand"].pop(ereignis["id"], None)
     elif typ == "gok":
-        p.bohrung.setdefault(ereignis["id"], {})["gok"] = float(ereignis["gok"])
+        o = p.bohrung.setdefault(ereignis["id"], {})
+        o["gok"] = float(ereignis["gok"])
+        o.pop("gok_quelle", None)
     elif typ == "kalibrierung" and p.unterlage is not None:
         wert_ = ereignis.get("wert")
         if wert_ is None and "punkte" in ereignis:

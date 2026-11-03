@@ -42,13 +42,14 @@ scanned PDF.
 | Halle (B-Plan 152, ST) | Word | Only the report text, **without the Bohrprofil annexes** | Table of Grundwasser levels (26 KRB), parameter tables and Homogenbereiche |
 
 Reference ground truth transcribed by hand and checked against the images:
-[`spikes/korpus/groundtruth/`](../spikes/korpus/groundtruth/wachenroth.json) (factual data only:
+[`benchmark/groundtruth/`](../benchmark/groundtruth/wachenroth.json) (factual data only:
 codes, elevations, depths, soil class, water; with the URL and `sha256` of the PDF).
 
 ## 2. Results of round 1
 
 Boundary tolerance 5 cm (at M 1:75, 1 pt = 2.6 cm); 1:1 matching.
-Reproduce: `python spikes/korpus/eval_real.py <pdfs> [<swissgeol output>]`.
+Reproduce: `python benchmark/eval_real.py <pdfs> [<swissgeol output>]` (today it runs v4; the code
+of this table is in the git history).
 
 | | current v1 | **v3 prototype** | swissgeol (unchanged) |
 |---|---|---|---|
@@ -99,7 +100,7 @@ In addition, the real Grundwasser confirms two details: the triangle can sit nex
 ### 6.1 Blind result
 
 Protocol: predictions frozen with the code of commit `d35e3d4` **before** looking at the PDFs; then,
-transcription of the ground truth and scoring ([`blind_test.py`](../spikes/korpus/blind_test.py)).
+transcription of the ground truth and scoring ([`blind_test.py`](../benchmark/blind_test.py)).
 
 | PDF | What it is | v1 | **v3 (blind)** | swissgeol (blind) |
 |---|---|---|---|---|
@@ -146,7 +147,7 @@ and stay **marked for review**. That is the intended behaviour.
 
 Strengthened protocol: the predictions of v3 (commit `36e3554`) and of swissgeol were frozen and
 **pushed to the repo before the PDFs were opened** (commits `5325ead` and `2d4d5e7`,
-[`spikes/korpus/frozen/runde3/`](../spikes/korpus/frozen/runde3/marl_251.json), with the `sha256` of
+[`frozen/runde3/`](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/korpus/frozen/runde3) in the git history, with the `sha256` of
 the PDF); the ground truth came afterwards (`acc5cd5`). That way the order is proven by the git
 history.
 
@@ -184,7 +185,7 @@ depths where v3 did not, at the price of many false ones and no elevation.
 | Bodenart (Schichten with ground truth) | — | **119/132** | (does not classify) |
 | False Bohrungen | 0 | **0** | **55** |
 
-The synthetic ones do not change (102/102). Reproduce: `python spikes/korpus/eval_real.py <pdfs>`.
+The synthetic ones do not change (102/102). Reproduce: `python benchmark/eval_real.py <pdfs>` (today with v4).
 
 ### 7.4 What we learned
 
@@ -207,11 +208,11 @@ Everything in this section is **training** except §8.2 (round 4, blind). Algori
 
 | Layer | What it is | Tool |
 |---|---|---|
-| Real | 13 PDFs with ground truth: 9 German Gutachten + 4 Swiss examples from swissgeol | [`regression.py`](../spikes/korpus/regression.py) |
-| Stress | 17 minimal PDFs, **one per lesson** (title with suffix, rotated page, DPH axis, column of samples, abbreviations, SHX + SV, raster, third-party code, contradictory scale, distant header…) | [`stress_cases.py`](../spikes/extraktion_v2/stress_cases.py) |
+| Real | 13 PDFs with ground truth: 9 German Gutachten + 4 Swiss examples from swissgeol | [`regression.py`](../benchmark/regression.py) |
+| Stress | 17 minimal PDFs, **one per lesson** (title with suffix, rotated page, DPH axis, column of samples, abbreviations, SHX + SV, raster, third-party code, contradictory scale, distant header…) | [`stress_cases.py`](../services/extractor/stress_cases.py) |
 | Synthetic | 6 layouts with Schraffur, water, DPH and coordinates | `synth_bohrprofil.py` |
-| Perturbation | the 13 real ones rotated 90°, reduced to 70 % and rasterised at 150 dpi without text, with the same ground truth | [`perturb.py`](../spikes/korpus/perturb.py) |
-| Ablation | each rule switched off separately | [`ablation.py`](../spikes/korpus/ablation.py) |
+| Perturbation | the 13 real ones rotated 90°, reduced to 70 % and rasterised at 150 dpi without text, with the same ground truth | [`perturb.py`](../benchmark/perturb.py) |
+| Ablation | each rule switched off separately | [`ablation.py`](../benchmark/ablation.py) |
 
 New metric: **exact boundaries** (to the centimetre, as printed) in addition to the 5 cm tolerance.
 
@@ -275,7 +276,7 @@ with oblique leader lines (Marl); "trocken" only in the text of the report (Trie
 ### 8.5 Ablation: which rule protects which case
 
 Each of the 28 rules in `RULES` was switched off separately on the full set
-([table](../spikes/korpus/ablation_v4.md)). **22 rules are protected by at least one case**: switching
+([table](../benchmark/ablation_v4.md)). **22 rules are protected by at least one case**: switching
 them off makes something measurable worse. The ones with the most effect:
 
 | Rule switched off | What breaks |
@@ -306,9 +307,9 @@ deleted a Bohrung in Berlin. None reached the final result (P5).
 ### 8.7 Full chain with real data (the goal)
 
 PDF → `prototyp_v4` → canonical JSON (provenance and confidence per Schicht) →
-[PostGIS with the Supabase schema](../spikes/supabase/README.md) (56 Bohrungen, 383 Schichten from 10
+[PostGIS with the Supabase schema](../supabase/README.md) (56 Bohrungen, 383 Schichten from 10
 Gutachten; Berlin in EPSG:25833 with correct distances; Swiss LV03 transformed to LV95) →
-[IFC 4.3](../spikes/ifc_thatopen/README.md) (0 schema errors) → That Open (69 strata with geometry,
+[IFC 4.3](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen) (0 schema errors) → That Open (69 strata with geometry,
 7 Bohrungen from Berlin). The Schichten with confidence < 0.6 (9 of 383) stay marked for review.
 
 ## 9. Next steps

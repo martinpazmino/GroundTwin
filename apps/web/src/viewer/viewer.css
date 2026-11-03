@@ -216,6 +216,8 @@ bim-toolbar.kompakt .faktor { position: relative; }
 .nadel.geprueft i { background: var(--wf-green); }
 .nadel.offen i { background: var(--warn); }
 .nadel.raus i { background: var(--raus); border-style: dashed; }
+.nadel.fremd i { border-radius: 2px; transform: rotate(45deg); }   /* Bohrung eines Landes: Raute statt Kreis */
+.nadel.fremd span { font-style: italic; }
 .nadel.raus span { color: #c5c8ce; font-style: italic; }
 .nadel.gewaehlt i { box-shadow: 0 0 0 3px var(--wf-green); }
 .nadel.gewaehlt span { border-color: var(--wf-green); }

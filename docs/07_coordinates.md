@@ -13,7 +13,7 @@ Aufschlüsse, the Lageplan or the project alignment. Without coordinates there i
 so this is the extraction that unlocks the Baugrundmodell.
 
 **Status:** table tested in the prototype (`coordinate_table` in
-[`prototyp_v2.py`](../spikes/extraktion_v2/prototyp_v2.py)): **17/17** Bohrungen with exact
+[`prototyp_v2.py`](../services/extractor/prototyp_v2.py)): **17/17** Bohrungen with exact
 Ost-/Nordwert. Lageplan and alignment: design. swissgeol unchanged: **0/14** (it only validates
 Swiss CRSs). **With a real PDF** (Halle): the table of Grundwasser levels is read **26/26** with the
 same cell-based method. None of the three real Gutachten contains a coordinate table
@@ -66,7 +66,8 @@ near the keyword and choosing the best match per page. The validators (`LV95Coor
 
 `boreholes.collar geometry(PointZ)` with the project SRID (Z = GOK), plus `coord_source` and
 `confidence` in `provenance`. In IFC: `IfcMapConversion` + `IfcProjectedCRS` (verified in the
-[IFC spike](../spikes/ifc_thatopen/README.md)).
+[IFC spike](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen); today written by the
+[modeler](../services/modeler/README.md)).
 
 Up: [Index](README.md)
 

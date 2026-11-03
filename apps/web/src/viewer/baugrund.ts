@@ -1,5 +1,6 @@
 // Inhalt eines Baugrundmodells (IFC4X3 aus services/modeler) in einem Fragments-Modell finden.
-// Description unterscheidet die Ebenen: "Modelleinheit k/n" (IfcGeomodel) und "Bohrsaeule" (IfcBorehole).
+// Description unterscheidet die Ebenen: "Modelleinheit k/n" (IfcGeomodel) und "Bohrsaeule" (IfcBorehole);
+// das Gelaende um das Modell (aus dem DGM) ist ein IfcGeographicElement TERRAIN.
 import type { FragmentsModel } from "@thatopen/fragments";
 
 export type Psets = Record<string, Record<string, unknown>>;
@@ -16,6 +17,7 @@ export interface Inhalt {
   einheiten: Einheit[];
   bohrsaeulen: number[];
   bohrungen: number[];
+  gelaende: number[];
   modellname: string;
   modell: Record<string, unknown>;
 }
@@ -39,7 +41,7 @@ export function psets(d: Datensatz): Psets {
 }
 
 export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
-  const kat = await model.getItemsOfCategories([/GEOTECHNICALSTRATUM/, /BOREHOLE/, /GEOMODEL/]);
+  const kat = await model.getItemsOfCategories([/GEOTECHNICALSTRATUM/, /BOREHOLE/, /GEOMODEL/, /GEOGRAPHICELEMENT/]);
   const strata = kat.IFCGEOTECHNICALSTRATUM ?? [];
   const kurz = strata.length
     ? await model.getItemsData(strata, { attributesDefault: false, attributes: ["Name", "Description"] })
@@ -69,6 +71,7 @@ export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
     einheiten,
     bohrsaeulen,
     bohrungen: kat.IFCBOREHOLE ?? [],
+    gelaende: kat.IFCGEOGRAPHICELEMENT ?? [],
     modellname: gm ? String(wert(gm as Datensatz, "Name")) : "",
     modell: gm ? (psets(gm as Datensatz).CPset_Baugrundmodell ?? {}) : {},
   };

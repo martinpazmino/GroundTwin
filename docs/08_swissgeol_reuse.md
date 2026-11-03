@@ -63,7 +63,7 @@ the benchmark and **propose contributions** upstream; do not fork it or depend o
 
 Installed in an isolated environment and run with `boreholes-extract-all` on 5 of the synthetic
 layouts (A–A4 and B; A5 only differs in the Schraffur, which swissgeol does not read) from
-[`spikes/extraktion_v2`](../spikes/extraktion_v2/README.md); evaluated with the same metric as v1
+[`services/extractor`](../services/extractor/README.md); evaluated with the same metric as v1
 and v2 (`score_swissgeol.py`):
 
 | Layout | Bohrungen | Boundaries | Bodenart (text) | Water | Elevation | Coordinates |
