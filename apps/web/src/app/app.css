@@ -91,6 +91,15 @@ h3 { font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: cent
 .schritt-knopf.aktiv .nr { background: var(--gruen); color: #10210a; border-color: var(--gruen); }
 .projekt { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
 .projektname { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--leise); font-size: 0.85rem; }
+/* Reifegrad (docs/23 §2.3): Vorerkundung und gemischt sichtbar, nie versteckt */
+.abzeichen { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 3px; font-size: 0.72rem; font-weight: 600; margin-right: 0.4rem; }
+.abzeichen.vorerkundung { background: #b45309; color: #fff; }
+.abzeichen.gemischt { background: #a16207; color: #fff; }
+.reife { padding: 0.45rem 0.6rem; border-radius: 4px; font-size: 0.82rem; line-height: 1.35; }
+.reife.vorerkundung { background: rgba(180, 83, 9, 0.18); border-left: 3px solid #b45309; }
+.reife.gemischt { background: rgba(161, 98, 7, 0.16); border-left: 3px solid #a16207; }
+.hinweis-standort { padding: 0.45rem 0.6rem; border-left: 3px solid #b45309; background: rgba(180, 83, 9, 0.12); font-size: 0.85rem; }
+.raster-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 0.8rem; margin-bottom: 0.6rem; }
 .menue { position: relative; }
 .menue summary { list-style: none; cursor: pointer; padding: 0.2rem 0.55rem; border-radius: 4px; border: 1px solid var(--linie); }
 .menue summary::-webkit-details-marker { display: none; }

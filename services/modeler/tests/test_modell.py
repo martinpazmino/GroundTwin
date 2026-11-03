@@ -512,3 +512,31 @@ def test_ifc_mit_lod2_gebaeuden(tmp_path):
     k = np.array(items[1].Coordinates.CoordList)
     assert np.allclose(k[:, 2], 39.5) and len(k) == 4
     assert k[:, 0].min() == pytest.approx(syn.URSPRUNG[0] - 40 - m.ursprung[0])
+
+
+# ---------------------------------------------------------------- Reifegrad (docs/23 §2.3, P5)
+def test_reifegrad_gutachten_vorerkundung_gemischt(tmp_path):
+    """Herkunft je Bohrung: nur Gutachten, nur Datenbank des Landes (Vorerkundung) oder gemischt - sichtbar im
+    Bericht, in den Hinweisen und im IFC (CPset_Baugrundmodell, CPset_Herkunft der Bohrung)."""
+    import ifcopenshell
+    import ifcopenshell.util.element
+    fall = syn.demo()
+    m, _ = modell(fall)
+    assert bericht(m)["reifegrad"] == "Gutachten" and not any("Vorerkundung" in h for h in m.hinweise)
+    sgd = syn.dokument(fall)
+    for b in sgd["boreholes"]:
+        b.update(herkunft="SGD", lizenz="dl-de/by-2.0", namensnennung="© Test-Land", abgerufen="2026-11-03")
+    m = bauen([sgd])
+    assert bericht(m)["reifegrad"] == "Vorerkundung" and any(h.startswith("Vorerkundung") for h in m.hinweise)
+    pfad = tmp_path / "vorerkundung.ifc"
+    ifc_schreiben(m, pfad, [sgd])
+    f = ifcopenshell.open(str(pfad))
+    gm = ifcopenshell.util.element.get_psets(f.by_type("IfcGeomodel")[0])["CPset_Baugrundmodell"]
+    assert gm["Reifegrad"] == "Vorerkundung" and gm["Herkunft_Bohrungen"] == f"SGD {len(m.bohrungen)}"
+    hk = ifcopenshell.util.element.get_psets(f.by_type("IfcBorehole")[0])["CPset_Herkunft"]
+    assert hk["Herkunft"] == "SGD" and hk["Lizenz"] == "dl-de/by-2.0" and hk["Datenquelle"] == "© Test-Land"
+    gemischt = syn.dokument(fall)
+    for b in gemischt["boreholes"][:3]:
+        b["herkunft"] = "SGD"
+    m = bauen([gemischt])
+    assert bericht(m)["reifegrad"] == "gemischt" and m.parameter["herkunft"] == {"Gutachten": len(m.bohrungen) - 3, "SGD": 3}

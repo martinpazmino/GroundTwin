@@ -50,7 +50,10 @@ switching to pypdfium2): [docs/14](docs/14_licensing.md).
 - Bohrungen der Länder are fetched at runtime by the user (nothing is shipped). The app shows the
   attribution of every service (`services/geodaten/geodaten/dienste.json`): Berlin dl-de/zero-2.0,
   Brandenburg and NRW dl-de/by-2.0. Baden-Württemberg names no license in its service; check it
-  before passing data on.
+  before passing data on. An imported Bohrung keeps its source, license and date in the IFC
+  (`CPset_Herkunft`). The screenshot `docs/img/21_standort_vorerkundung.jpg` shows a model from
+  Bohrungen NRW: „© Geowissenschaftliche Daten: Bohrungen NRW @ Geologischer Dienst NRW, 2026“,
+  dl-de/by-2.0.
 - The norms database (`services/modeler/baugrundmodell/normen.json`) does **not** reproduce texts of
   DIN 4023, DIN EN ISO 14688-1 or DIN 18196: it collects abbreviations and colours with the evidence
   for every value.

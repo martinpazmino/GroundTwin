@@ -51,6 +51,8 @@ function kopf() {
         })}
       </nav>
       <div class="projekt">
+        ${z && z.reifegrad.stufe !== "Gutachten" ? html`<span class=${`abzeichen ${z.reifegrad.stufe === "Vorerkundung" ? "vorerkundung" : "gemischt"}`}
+          title=${z.reifegrad.stufe === "Vorerkundung" ? "Bohrungen aus Datenbanken der Länder, kein Gutachten" : "Gutachten und Bohrungen der Länder"}>${z.reifegrad.stufe}</span>` : nothing}
         ${z ? html`<span class="projektname" title=${z.dokumente.map((d) => d.datei).join(", ")}>${z.name}</span>
           <details class="menue">
             <summary title="Projekt">⋯</summary>

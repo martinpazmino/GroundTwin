@@ -7,6 +7,9 @@ import { S, melden, neu, oeffnen, projekteLaden, versuchen } from "./store";
 let gewaehlt: File[] = [];
 let ocr = true;
 let ziehen = false;
+const ort = { x: "", y: "", epsg: 25832, name: "" };      // Standort ohne Gutachten (docs/23 §2.3)
+const UTM: [number, string][] = [[25832, "ETRS89 / UTM 32N"], [25833, "ETRS89 / UTM 33N"],
+  [4647, "ETRS89 / UTM 32N (zE-N)"], [5650, "ETRS89 / UTM 33N (zE-N)"]];
 
 async function warten(aid: string) {
   for (;;) {
@@ -27,10 +30,45 @@ async function warten(aid: string) {
   }
 }
 
+/** Offenes Standort-Projekt: ein Gutachten dazu nimmt dessen Bohrungen der Länder, DGM und Gebäude mit. */
+const zumStandort = () => (S.z?.standort ? S.sig : "");
+
 async function auswerten() {
   if (!gewaehlt.length) return;
-  const a = await versuchen(() => api.gutachten(gewaehlt, ocr && !!S.info?.ocr));
+  const a = await versuchen(() => api.gutachten(gewaehlt, ocr && !!S.info?.ocr, zumStandort()));
   if (a) await warten(a.id);
+}
+
+async function standortAnlegen() {
+  const x = Number(ort.x.replace(",", ".")), y = Number(ort.y.replace(",", "."));
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !ort.x || !ort.y) {
+    melden("Rechtswert und Hochwert als Zahlen eingeben.", "warn");
+    return;
+  }
+  const r = await versuchen(() => api.standort(x, y, ort.epsg, ort.name), "Standort wird angelegt …");
+  if (r) await oeffnen(r.projekt, "lage");
+}
+
+function standortKarte() {
+  const feld = (k: "x" | "y" | "name", titel: string, platz: string) => html`
+    <label class="feld"><span>${titel}</span><input type="text" inputmode=${k === "name" ? "text" : "decimal"}
+      aria-label=${titel} placeholder=${platz} .value=${ort[k]} @input=${(e: Event) => { ort[k] = (e.target as HTMLInputElement).value; }}></label>`;
+  return html`
+    <section class="karte">
+      <h3>Standort ohne Gutachten ${hilfe("standort")}</h3>
+      <p class="leise klein">Ein Punkt statt eines PDFs: Bohrungen der Länder, DGM und Gebäude um den Standort. Das Modell
+        ist eine <b>Vorerkundung</b> – kein Ersatz für das Gutachten.</p>
+      <div class="raster-2">
+        ${feld("x", "Rechtswert", "z. B. 368130")}
+        ${feld("y", "Hochwert", "z. B. 5724400")}
+        <label class="feld"><span>System</span>
+          <select aria-label="System des Standorts" @change=${(e: Event) => { ort.epsg = Number((e.target as HTMLSelectElement).value); }}>
+            ${UTM.map(([c, n]) => html`<option value=${c} ?selected=${ort.epsg === c}>${c} · ${n}</option>`)}
+          </select></label>
+        ${feld("name", "Name (frei)", "z. B. Marl Nord")}
+      </div>
+      <button class="primaer" @click=${standortAnlegen}>Projekt am Standort anlegen →</button>
+    </section>`;
 }
 
 async function beispiel(name: string) {
@@ -60,6 +98,8 @@ export function schrittGutachten() {
         <h2>Bodengutachten auswerten</h2>
         <p class="leise">Bohrprofile, Schichtenverzeichnisse oder ganze Gutachten als PDF – Vektor oder Scan. Die Bohrungen
           werden erkannt; im nächsten Schritt prüfen und korrigieren Sie sie.</p>
+        ${zumStandort() ? html`<p class="hinweis-standort">Zum Standort <b>${S.z!.name}</b>: Bohrungen der Länder (mit Prüfstand),
+          DGM und Gebäude kommen in das neue Projekt mit – es ist dann <b>gemischt</b>, beide Quellen bleiben getrennt.</p>` : nothing}
         ${a ? html`
           <div class="fortschritt-karte" aria-live="polite">
             <div class="kreisel klein"></div>
@@ -89,6 +129,8 @@ export function schrittGutachten() {
           </div>`}
       </section>
 
+      ${standortKarte()}
+
       <div class="zwei-spalten">
         <section class="karte">
           <h3>Beispiele ${hilfe("beispiele")}</h3>
@@ -105,9 +147,10 @@ export function schrittGutachten() {
               <tbody>
                 ${S.projekte.map((p) => html`
                   <tr>
-                    <td><button class="link" @click=${() => oeffnen(p.signatur)}>${p.name}</button>
+                    <td><button class="link" @click=${() => oeffnen(p.signatur)}>${p.name}</button>${p.standort
+                      ? html` <span class="abzeichen vorerkundung" title="Standort ohne Gutachten">Standort</span>` : nothing}
                       <div class="leise klein">${p.dokumente.join(", ")}</div></td>
-                    <td class="zahl">${p.bohrungen}</td>
+                    <td class="zahl" title=${p.fremd ? `davon ${p.fremd} aus den Datenbanken der Länder` : ""}>${p.bohrungen}</td>
                     <td class="zahl">${p.geprueft}${p.eincheckungen ? html` · <span title="eingecheckt">✓${p.eincheckungen}</span>` : nothing}</td>
                     <td class="leise klein">${p.geaendert}</td>
                     <td><button class="symbol" title="Projekt löschen" aria-label="Projekt löschen" @click=${() => entfernen(p.signatur, p.name)}>🗑</button></td>

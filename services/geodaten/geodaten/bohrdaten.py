@@ -28,6 +28,7 @@ ANZAHL_MAX = 200                                # Bohrungen je Dienst und Abfrag
 ZEIT_KOPF, ZEIT_BML = 30, 120                   # s; der BoreholeML-Dienst von NRW braucht fuer grosse Flaechen lange
 DOPPELT_ABSTAND = 3.0                           # m: naeher = dieselbe Bohrung (auch ohne gleichen Namen)
 NAME_ABSTAND = 50.0                             # m: gleicher Name zaehlt nur so nah als dieselbe Bohrung
+KONFIDENZ_ARCHIV = 0.5                          # Schichten aus der Datenbank eines Landes: nicht gegen ein PDF geprueft
 AGENT = "GroundTwin (+https://github.com/martinpazmino/GroundTwin)"
 VERSUCHE = 3                                    # Verbindungsabbrueche (Brandenburg: 2 von 3 an manchen Tagen)
 _UTM = {25831: (31, 0.0), 25832: (32, 0.0), 25833: (33, 0.0), 4647: (32, 32_000_000.0), 5650: (33, 33_000_000.0)}
@@ -233,6 +234,9 @@ def holen(dienst_id: str, ids: list[str], holer=None, heute: date | None = None)
                  code=f"{d['id']}-{b['code']}")            # Kurzname mit Land: "14" gibt es auch im Gutachten
         b["issues"] = [f"aus {d['titel']} ({d['land']}), ID {b.get('fremd_id') or b['code']}, {d['lizenz']}, abgerufen "
                        f"{heute.strftime('%d.%m.%Y')} – nicht aus dem Gutachten"] + list(b.get("issues") or [])[1:]
+        for ly in b.get("layers") or []:                      # Archivdaten: feste, niedrige Konfidenz (docs/23 §2.3)
+            if ly.get("confidence") is None:
+                ly["confidence"] = KONFIDENZ_ARCHIV
     fehlen = set(ids) - {b.get("fremd_id") for b in doc["boreholes"]}
     if fehlen:
         doc["fehlen"] = sorted(fehlen)

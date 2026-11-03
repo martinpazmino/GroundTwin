@@ -120,6 +120,8 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 - The middle of the project goes to longitude/latitude (Snyder series, < 1 mm against PROJ) to pick the
   services. Then a WFS 2.0 GetFeature runs with a box in the project's UTM system.
 - Errors of one service, including an `ExceptionReport` with HTTP 200, only mark that service.
+- Imported Schichten get a fixed confidence of 0.5 (`KONFIDENZ_ARCHIV`): archive data, not checked against a PDF.
+  A model only from them is a Vorerkundung ([docs/21 §4.7](../../docs/21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
 
 Tests: `python -m pytest tests/test_bohrdaten.py tests/test_bohrdaten_app.py` (a dummy replaces the services;
 two tests ask the real ones).

@@ -55,6 +55,7 @@ class Bohrung:
     lage: str = "georeferenziert"      # Herkunft der Lage: Koordinatenquelle der Extraktion, manuell, schematisch
     hoehe: str = "m NHN"               # Herkunft der Ansatzhoehe: m NHN, manuell, relativ
     schichten: list[dict] = field(default_factory=list)   # Schichten des PDFs (Index wie in Abschnitt.schichten)
+    herkunft: str = "Gutachten"        # Gutachten, SGD (Datenbank eines Landes) oder BoreholeML (Datei)
 
     @property
     def ende(self) -> float:
@@ -179,7 +180,8 @@ def _vorbereiten(b: dict, dokument: str) -> Bohrung:
         b.get("gok_source") or "", "m NHN")
     schichten = [{"von": float(ly["top_depth"]), "bis": float(ly["bottom_depth"]), "bodenart": ly.get("soil_class"),
                   "beschreibung": ly.get("description_raw") or ""} for ly in b["layers"]]
-    return Bohrung(b["code"], float(b["x"]), float(b["y"]), gok, abschnitte, dokument, hinweise, lage, hoehe, schichten)
+    return Bohrung(b["code"], float(b["x"]), float(b["y"]), gok, abschnitte, dokument, hinweise, lage, hoehe, schichten,
+                   herkunft=b.get("herkunft") or "Gutachten")
 
 
 # ---------------------------------------------------------------- Ausrichtung

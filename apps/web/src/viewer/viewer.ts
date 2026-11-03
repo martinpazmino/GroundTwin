@@ -47,6 +47,7 @@ const GERUEST = `
       <div id="auswahl-inhalt"></div>
     </section>
     <div id="meldung" hidden></div>
+    <div id="reifegrad" class="reifegrad" hidden></div>
   </bim-viewport>`;
 
 export interface ViewerOptionen {
@@ -76,7 +77,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   // Status fuer automatische Pruefungen (scripts/check.mjs, scripts/check_app.mjs)
   const status = {
     geladen: false, ladungen: 0, einheiten: [] as string[], bohrsaeulen: 0, marken: 0, fehler: "", auswahl: "",
-    gelaende: 0, gelaendeSichtbar: true, gebaeude: 0, gebaeudeSichtbar: true,
+    gelaende: 0, gelaendeSichtbar: true, gebaeude: 0, gebaeudeSichtbar: true, reifegrad: "",
     kamera: {} as Record<string, unknown>, lage: {} as Record<string, unknown>,
     ereignisse: protokoll, renders: 0,
     instanz: Math.random().toString(36).slice(2, 8),
@@ -233,6 +234,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   let bezugGesetzt = false;
   let nadelnVonApp = false;
   let kameraVorLage: ReturnType<typeof KAMERA.kameraZustand> | null = null;
+  let modellImProjekt = false;                         // schon ein Modell dieses Projekts geladen (Kamera darauf)
   const sichtbar = new Map<number, boolean>();
   let nurEinheit: number | null = null;
 
@@ -295,7 +297,13 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       leisteNeu();                                        // Knopf "Gelände" nach dem Inhalt des neuen Modells
       KAMERA.szeneAktualisieren();
       if (!kameraBehalten) await kameraStart();
-      else if (!hatteGebaeude && daten.gebaeude.length) await KAMERA.ansicht("iso", false);   // sonst Kamera evtl. in einem Gebaeude
+      else if (!modellImProjekt || (!hatteGebaeude && daten.gebaeude.length)) {
+        // erstes Modell des Projekts (die Kamera zeigte nur Bohrungen) oder erste Gebaeude (Kamera evtl. in einem):
+        // ganze Szene. Im Lage-Editor erst beim Verlassen - die vorher gemerkte Ansicht passt nicht mehr dazu.
+        if (editor.aktiv) kameraVorLage = null;
+        else await KAMERA.ansicht("iso", false);
+      }
+      modellImProjekt = true;
       await fragments.core.update(true);
       neuZeichnen(10);
       status.geladen = true;
@@ -303,6 +311,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       status.einheiten = daten.einheiten.map((e) => e.name);
       status.bohrsaeulen = daten.bohrsaeulen.length;
       status.gelaende = daten.gelaende.length;
+      reifegradZeigen(String(daten.modell.Reifegrad ?? ""));
       status.gebaeude = daten.gebaeude.length;
       status.marken = editor.nadeln.size;
       $("leer").hidden = true;
@@ -518,6 +527,17 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     editor.waehlenNadel(null);
     $("eigenschaften").hidden = true;
     status.auswahl = "";
+  }
+
+  /** Reifegrad aus dem IFC (CPset_Baugrundmodell): Vorerkundung und gemischt als Band oben - nie versteckt. */
+  function reifegradZeigen(stufe: string) {
+    status.reifegrad = stufe;
+    const band = $("reifegrad");
+    band.hidden = !stufe || stufe === "Gutachten";
+    band.className = `reifegrad ${stufe === "Vorerkundung" ? "vorerkundung" : "gemischt"}`;
+    band.textContent = stufe === "Vorerkundung"
+      ? "Vorerkundung – Bohrungen aus Datenbanken der Länder, kein Gutachten"
+      : "gemischt – Gutachten und Bohrungen der Länder";
   }
 
   /** Gelaende um das Modell (IfcGeographicElement aus dem DGM): mit dem Knopf ein- und ausblenden. */
@@ -898,7 +918,9 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       return;
     }
     if (an) {
-      kameraVorLage = KAMERA.kameraZustand();
+      // nur eine Ansicht merken, die etwas zeigt: ein Standort ohne Modell und Bohrungen haette sonst die leere
+      // Startansicht am Nullpunkt, und das spaeter geladene Modell laege um die Kamera herum (nur Raster zu sehen)
+      kameraVorLage = modell || editor.nadeln.size ? KAMERA.kameraZustand() : null;
       await auswahlAufheben();
     }
     highlighter.enabled = !an;
@@ -911,12 +933,15 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     if (an) {
       await world.camera.projection.set("Orthographic");
       await KAMERA.ansicht(rahmen.modus === "reihe" ? "sued" : "oben");
-      world.camera.set("Plan");                          // linke Taste verschiebt, kein Drehen: die Draufsicht bleibt
+      await KAMERA.modus("Plan");                        // linke Taste verschiebt, kein Drehen: die Draufsicht bleibt
     } else {
-      world.camera.set("Orbit");
+      await KAMERA.modus("Orbit");
       if (kameraVorLage) {
         if (!kameraVorLage.ortho) await world.camera.projection.set("Perspective");
         await KAMERA.kameraSetzen(kameraVorLage);
+      } else {                                           // nichts gemerkt (neues Projekt): ganze Szene schraeg
+        await world.camera.projection.set("Perspective");
+        await KAMERA.ansicht("iso", false);
       }
       await fragments.core.update(true);
     }
@@ -993,7 +1018,10 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       projekt = a.projekt ?? "";
       projektSetzen(projekt);
       bezugGesetzt = false;
+      kameraVorLage = null;                              // gemerkte Modellansicht gehoert zum vorigen Projekt
+      modellImProjekt = false;
     }
+    const leerVorher = KAMERA.szeneLeer();
     nadelnVonApp = Array.isArray(a.bohrungen);
     rahmen.modus = a.modus ?? "koordinaten";
     rahmen.epsg = a.epsg ?? null;
@@ -1032,6 +1060,10 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     $("leer").hidden = !!modell || editor.nadeln.size > 0;
     KAMERA.szeneAktualisieren();
     if (neu && !modell) await kameraStart();
+    else if (leerVorher && !KAMERA.szeneLeer() && !modell) {
+      // erster Inhalt einer leeren Szene (Standort: Bohrungen der Laender uebernommen): ganz zeigen
+      await KAMERA.ansicht(editor.aktiv ? (rahmen.modus === "reihe" ? "sued" : "oben") : "iso", false);
+    }
     letzte = a;
     seitenleisteNeu();
     leisteNeu();

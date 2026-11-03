@@ -136,6 +136,9 @@ and how to update the versions.
      IFC and the viewer ([docs/21 §4.6](docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
      and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
+   - Standort ohne Gutachten: a point instead of a PDF gives a first model from the Bohrungen of the Länder,
+     marked as **Vorerkundung** in the app, the viewer, the report and the IFC; a Gutachten added later keeps
+     both sources apart ([docs/21 §4.7](docs/21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
    surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM and the
    LoD2 of the Land, the terrain and the buildings around the model.

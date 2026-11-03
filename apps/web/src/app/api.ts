@@ -110,6 +110,8 @@ export interface Zustand {
   gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
   sgd: Sgd | null;                                    // letzte Abfrage der Bohrungen der Länder
   gebaeude: Gebaeude | null;                          // LoD2-Gebäude der Länder um das Projekt (Kopf)
+  standort: { x: number; y: number; epsg: number } | null;   // Projekt an einem Punkt, ohne Gutachten
+  reifegrad: Reifegrad;
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -144,8 +146,12 @@ export interface Auftrag {
 
 export interface ProjektKurz {
   signatur: string; name: string; dokumente: string[]; bohrungen: number; geprueft: number; eincheckungen: number;
-  geaendert: string; schritt: string;
+  geaendert: string; schritt: string; standort: boolean;
+  fremd?: number;                                        // davon Bohrungen der Laender (fremd.json)
 }
+
+/** Reife des Projekts (docs/23 §2.3): Gutachten, Vorerkundung (nur Daten der Länder) oder gemischt. */
+export interface Reifegrad { stufe: "Gutachten" | "Vorerkundung" | "gemischt"; anzahl: Record<string, number> }
 
 export type Op = Record<string, unknown> & { op: string };
 export type { Kalibrierung };
@@ -170,12 +176,15 @@ export const api = {
                         beispiele: { name: string; titel: string }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
   beispiel: (name: string) => anfrage<{ projekt?: string; auftrag?: string }>("/api/beispiel", json({ name })),
-  gutachten(dateien: File[], ocr: boolean) {
+  gutachten(dateien: File[], ocr: boolean, standort = "") {
     const f = new FormData();
     for (const d of dateien) f.append("dateien", d, d.name);
     f.append("ocr", String(ocr));
+    if (standort) f.append("standort", standort);     // Bohrungen der Länder, DGM und Gebäude des Standorts kommen mit
     return anfrage<Auftrag>("/api/gutachten", { method: "POST", body: f });
   },
+  standort: (x: number, y: number, epsg: number, name: string) =>
+    anfrage<{ projekt: string }>("/api/standort", json({ x, y, epsg, name })),
   auftrag: (id: string) => anfrage<Auftrag>(`/api/auftrag/${id}`),
   zustand: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}`),
   aendern: (sig: string, ops: Op[]) => anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/aendern`, json({ ops })),

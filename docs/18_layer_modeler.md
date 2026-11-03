@@ -106,9 +106,11 @@ base 28.55), Kies 2, Sand 3 (censored).
   colour, volume, max./mean thickness, maximum distance to a Bohrung (uncertainty), Bohrungen with
   the Einheit present / absent / unknown, closed, warnings.
 - `CPset_Baugrundmodell` on the `IfcGeomodel`: method, mesh, buffer, base, Bohrungen inside and
-  outside the model (with the reason), sources, version.
+  outside the model (with the reason), sources, version, the **Reifegrad** (Gutachten / Vorerkundung /
+  gemischt) and the Bohrungen per origin (`Herkunft_Bohrungen`, [21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
 - `IfcBorehole` ⊃ strata of the Bohrung (prisms, `Description = "Bohrsaeule"`) with the usual
-  provenance (`CPset_Schichtenverzeichnis`, `CPset_Herkunft`). The spike's N1 exporter now uses the
+  provenance (`CPset_Schichtenverzeichnis`, `CPset_Herkunft`; for a Bohrung of the Länder also *Herkunft*,
+  *Datenquelle*, *Lizenz* and *Abgerufen*). The spike's N1 exporter now uses the
   same writer.
 - With a DGM: `IfcGeographicElement` TERRAIN, the terrain around the model (rings along the outward normals
   of the edge, up to 100 m and the edge of the DGM; open `IfcTriangulatedFaceSet` that shares the edge nodes

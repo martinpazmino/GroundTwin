@@ -147,7 +147,10 @@ class IfcAusgabe:
             "Abgleich_SV": (b.get("checks") or {}).get("schichtenverzeichnis"),
             "Labelbestaetigung": float((b.get("checks") or {}).get("label_support") or 0.0),
             # Pruefung durch den Nutzer (App): nur wenn der Schluessel gesetzt ist
-            "Geprueft": bool(b["geprueft"]) if "geprueft" in b else None})
+            "Geprueft": bool(b["geprueft"]) if "geprueft" in b else None,
+            # Bohrungen aus der Datenbank eines Landes (docs/23 §2.3): Herkunft, Quelle und Lizenz bleiben sichtbar
+            "Herkunft": b.get("herkunft") or "Gutachten", "Datenquelle": b.get("namensnennung"),
+            "Lizenz": b.get("lizenz"), "Abgerufen": b.get("abgerufen")})
         self._pset(ent, "CPset_Darstellung", {"Durchmesser_m": round(float(durchmesser), 3),
                                                "Durchmesser_Quelle": durchmesser_quelle})
         z0 = b["gok_nhn"] if b.get("gok_nhn") is not None else 0.0

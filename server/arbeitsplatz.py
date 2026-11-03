@@ -192,6 +192,61 @@ class Arbeitsplatz:
             self._projekte.pop(sig, None)
             shutil.rmtree(self.ordner(sig), ignore_errors=True)
 
+    # ------------------------------------------------------------ Standort (ohne Gutachten, docs/23 §2.3, P5)
+    def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> str:
+        """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender."""
+        xn, yn, _ = bohrdaten.utm_normal(float(x), float(y), int(epsg))          # ValueError ausser ETRS89/UTM
+        if not (150_000 <= xn <= 850_000 and 5_200_000 <= yn <= 6_150_000):
+            raise ValueError(f"Rechtswert {x:.0f} / Hochwert {y:.0f} liegen nicht in Deutschland (EPSG:{epsg})")
+        punkt = {"x": round(float(x), 2), "y": round(float(y), 2), "epsg": int(epsg)}
+        kennung = hashlib.sha256(json.dumps(punkt, sort_keys=True).encode()).hexdigest()
+        docs = [{"document": {"file": f"Standort {punkt['x']:.0f} / {punkt['y']:.0f} (EPSG:{epsg})", "sha256": kennung,
+                              "parser_version": "standort", "pages": None, "standort": punkt},
+                 "boreholes": [], "soundings": {}}]
+        sig = self.anlegen(docs)
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            if name.strip():
+                p.name = name.strip()[:120]
+            p.lage_modus = pj.LAGE_KOORDINATEN
+            p.schritt = "lage"
+            self.sichern(sig)
+        return sig
+
+    def _standort_uebernehmen(self, von: str, nach: str) -> None:
+        """Gutachten zu einem Standort: Bohrungen der Laender (mit Pruefstand), Abfrage, DGM und Gebaeude uebernehmen.
+
+        Die Fremdbohrungen bleiben ein eigenes Dokument hinter dem Gutachten; ihre Kennungen wandern von "n_von:k"
+        nach "n_nach:k". Die Gegenprobe rechnet gegen die Bohrungen des Gutachtens neu (ohne Netz).
+        """
+        with self.sperre(von):
+            _, pv = self.laden(von)
+            n_von = len(self._gutachten(von))
+        quelle, ziel = self.ordner(von), self.ordner(nach)
+        with self.sperre(nach):
+            for datei in ("fremd.json", "sgd.json", "dgm.npy", "gebaeude.json"):
+                if (quelle / datei).exists() and not (ziel / datei).exists():
+                    shutil.copy2(quelle / datei, ziel / datei)
+            self._projekte.pop(nach, None)                   # neu laden: fremd.json gehoert jetzt dazu
+            docs, p = self.laden(nach)
+            n_nach = len(self._gutachten(nach))
+            p.dgm = p.dgm or (dict(pv.dgm) if pv.dgm else None)
+            p.gebaeude = p.gebaeude or (dict(pv.gebaeude) if pv.gebaeude else None)
+            alt, neu = f"{n_von}:", f"{n_nach}:"
+            for quelle_d, ziel_d in ((pv.bohrung, p.bohrung), (pv.schicht, p.schicht)):
+                for k, o in quelle_d.items():
+                    if k.startswith(alt):
+                        ziel_d.setdefault(neu + k[len(alt):], dict(o))
+            sgd = ziel / "sgd.json"
+            if sgd.exists():
+                erg = json.loads(sgd.read_text(encoding="utf-8"))
+                eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(neu)]
+                erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+                json_schreiben(sgd, erg)
+            p.lage_modus = pj.LAGE_KOORDINATEN
+            p.version += 1
+            self.sichern(nach)
+
     def liste(self) -> list[dict]:
         """Zuletzt bearbeitete Projekte (neueste zuerst)."""
         out = []
@@ -201,12 +256,16 @@ class Arbeitsplatz:
                 docs = json.loads((ordner.parent / "docs.json").read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 continue
-            n = sum(len(x["boreholes"]) for x in docs)
+            try:                                          # uebernommene Bohrungen der Laender zaehlen mit
+                fremd = len(json.loads((ordner.parent / "fremd.json").read_text(encoding="utf-8"))["boreholes"])
+            except (OSError, ValueError, KeyError):
+                fremd = 0
+            n = sum(len(x["boreholes"]) for x in docs) + fremd
             gep = sum(1 for o in d.get("bohrung", {}).values() if o.get("geprueft"))
             out.append({"signatur": ordner.parent.name, "name": d.get("name") or ordner.parent.name,
-                        "dokumente": [x["document"]["file"] for x in docs], "bohrungen": n, "geprueft": gep,
+                        "dokumente": [x["document"]["file"] for x in docs], "bohrungen": n, "fremd": fremd, "geprueft": gep,
                         "eincheckungen": len(d.get("eincheckungen") or []), "geaendert": d.get("geaendert") or "",
-                        "schritt": d.get("schritt") or "bohrungen"})
+                        "schritt": d.get("schritt") or "bohrungen", "standort": pj.standort_von(docs) is not None})
         return sorted(out, key=lambda x: x["geaendert"], reverse=True)
 
     # ------------------------------------------------------------ Aenderungen
@@ -232,7 +291,7 @@ class Arbeitsplatz:
     # ------------------------------------------------------------ Zustand fuer die Oberflaeche
     def vorbereitung(self, docs: list[dict], p: pj.Projekt) -> tuple[pj.Vorbereitung, tuple[float, float], str]:
         vorb = pj.modell_eingabe(docs, p)
-        ursprung = pj.ursprung(p, vorb)
+        ursprung = pj.ursprung(p, vorb, pj.standort_von(docs))
         return vorb, ursprung, self._schluessel(vorb, p, ursprung)
 
     def _schluessel(self, vorb: pj.Vorbereitung, p: pj.Projekt, ursprung) -> str:
@@ -252,6 +311,7 @@ class Arbeitsplatz:
             epsgs = Counter(b.get("crs_epsg") for d in vorb.docs for b in d["boreholes"] if b.get("crs_epsg"))
             u = dict(p.unterlage) if p.unterlage else None
             kal_epsg = ((u or {}).get("kalibrierung") or {}).get("epsg")      # Plan kalibriert, noch keine Bohrung gesetzt
+            standort = pj.standort_von(docs)
             if u:
                 u["url"] = f"/dateien/unterlagen/{Path(u['datei']).name}"
                 u.pop("datei", None)
@@ -262,6 +322,7 @@ class Arbeitsplatz:
                 "dokumente": [{"index": i, "datei": d["document"]["file"], "seiten": d["document"].get("pages"),
                                "pdf": pl.pdf_pfad(d["document"]) is not None} for i, d in enumerate(docs)],
                 "lage_modus": p.lage_modus, "erzeugt": p.erzeugt, "auto": p.auto,
+                "standort": standort, "reifegrad": pj.reifegrad(docs, p),
                 "durchmesser": p.durchmesser, "durchmesser_auto": pj.durchmesser_auto(vorb),
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
@@ -280,7 +341,8 @@ class Arbeitsplatz:
                 "gebaeude": p.gebaeude,                           # LoD2 der Laender (Kopf, ohne Geometrie)
                 "sgd": self._sgd(sig, docs),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
-                           "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg, "modus": p.lage_modus,
+                           "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
+                           "modus": p.lage_modus,
                            "punkte": p.punkte},
             }
 
@@ -629,13 +691,16 @@ class Arbeitsplatz:
                 "seite": seite, "seiten": docs[dokument]["document"].get("pages")}
 
     # ------------------------------------------------------------ Extraktion im Hintergrund
-    def extrahieren(self, dateien: list[tuple[str, bytes]], ocr: bool) -> Auftrag:
+    def extrahieren(self, dateien: list[tuple[str, bytes]], ocr: bool, standort: str | None = None) -> Auftrag:
+        """standort: Signatur eines Standort-Projekts, dessen Bohrungen der Laender, DGM und Gebaeude mitkommen."""
+        if standort:
+            self.laden(standort)                                 # KeyError, wenn es das Projekt nicht gibt
         a = Auftrag(uuid.uuid4().hex[:12], [n for n, _ in dateien])
         self._auftraege[a.id] = a
-        threading.Thread(target=self._extrahieren, args=(a, dateien, ocr), daemon=True).start()
+        threading.Thread(target=self._extrahieren, args=(a, dateien, ocr, standort), daemon=True).start()
         return a
 
-    def _extrahieren(self, a: Auftrag, dateien: list[tuple[str, bytes]], ocr: bool) -> None:
+    def _extrahieren(self, a: Auftrag, dateien: list[tuple[str, bytes]], ocr: bool, standort: str | None = None) -> None:
         docs = []
         with self._extraktion:
             for nr, (name, daten) in enumerate(dateien, start=1):
@@ -656,6 +721,12 @@ class Arbeitsplatz:
                     traceback.print_exc()
         if docs and any(d["boreholes"] for d in docs):
             a.projekt = self.anlegen(docs)
+            if standort:
+                try:
+                    self._standort_uebernehmen(standort, a.projekt)
+                except Exception as err:                       # das Gutachten-Projekt bleibt in jedem Fall
+                    a.fehler.append(f"Standort nicht übernommen: {type(err).__name__}: {err}")
+                    traceback.print_exc()
         elif docs:
             a.fehler.append("In den Dokumenten wurde keine Bohrung erkannt. Ist eine Seite mit Bohrprofilen dabei? "
                             "Bei Scans OCR einschalten.")

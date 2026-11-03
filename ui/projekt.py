@@ -142,9 +142,41 @@ def bodenart_farbe(klasse: str | None) -> str:
     return farbinfo(klasse if bekannt(klasse) else None)["hex"]
 
 
+def standort_von(docs: list[dict]) -> dict | None:
+    """Punkt eines Standort-Projekts (ohne Gutachten angelegt, docs/23 §2.3): {x, y, epsg} oder None."""
+    for d in docs:
+        s = d["document"].get("standort")
+        if s:
+            return s
+    return None
+
+
+FREMD = ("SGD", "BoreholeML")             # Herkunft ohne Gutachten-PDF (wie baugrundmodell.modell.FREMD)
+
+
+def reifegrad(docs: list[dict], p: Projekt) -> dict:
+    """Reife des Projekts aus der Herkunft der Bohrungen im Modell: Gutachten, Vorerkundung oder gemischt."""
+    doppelt = doppelte(docs)
+    anzahl: dict[str, int] = {}
+    for bid, _, b in bohrungen(docs):
+        if wert(p, bid, b, "modell", doppelt):
+            h = b.get("herkunft") or "Gutachten"
+            anzahl[h] = anzahl.get(h, 0) + 1
+    fremd = sum(n for h, n in anzahl.items() if h in FREMD)
+    gutachten = sum(anzahl.values()) - fremd
+    if gutachten and fremd:
+        stufe = "gemischt"
+    elif fremd or (not gutachten and standort_von(docs)):
+        stufe = "Vorerkundung"
+    else:
+        stufe = "Gutachten"
+    return {"stufe": stufe, "anzahl": anzahl}
+
+
 def neues_projekt(docs: list[dict], signatur: str) -> Projekt:
     p = Projekt(signatur)
-    hat_lage = any(b.get("x") is not None and b.get("y") is not None for _, _, b in bohrungen(docs))
+    hat_lage = standort_von(docs) is not None or any(
+        b.get("x") is not None and b.get("y") is not None for _, _, b in bohrungen(docs))
     p.lage_modus = LAGE_KOORDINATEN if hat_lage else LAGE_REIHE
     p.reihe["reihenfolge"] = [bid for bid, _, b in sorted(bohrungen(docs), key=lambda t: natuerlich(t[2]["code"]))]
     p.name = Path(docs[0]["document"]["file"]).stem if len(docs) == 1 else f"{len(docs)} Dokumente"
@@ -426,6 +458,10 @@ def projekt_punkte(docs: list[dict], p: Projekt) -> tuple[list[tuple[float, floa
     if p.lage_modus != LAGE_KOORDINATEN:
         raise ValueError("Dienste der Länder nur mit Lage nach Koordinaten")
     mit = [b for b in gelaende_eingabe(docs, p) if b["x"] is not None and b["y"] is not None and b["epsg"]]
+    s = standort_von(docs)
+    if s:                                     # Standort-Projekt: der Punkt und die Bohrungen in seinem System
+        epsg = int(s["epsg"])
+        return [(float(s["x"]), float(s["y"]))] + [(b["x"], b["y"]) for b in mit if b["epsg"] == epsg], epsg
     if mit:
         epsg = max({b["epsg"] for b in mit}, key=lambda e: sum(b["epsg"] == e for b in mit))
         return [(b["x"], b["y"]) for b in mit if b["epsg"] == epsg], int(epsg)
@@ -438,6 +474,8 @@ def projekt_punkte(docs: list[dict], p: Projekt) -> tuple[list[tuple[float, floa
 def projekt_mitte(docs: list[dict], p: Projekt) -> tuple[float, float, int]:
     """Mitte der Bohrungen mit Lage (haeufigstes EPSG), sonst der Bezugspunkt eines kalibrierten Lageplans."""
     punkte, epsg = projekt_punkte(docs, p)
+    if standort_von(docs):                    # der gewaehlte Punkt bleibt die Mitte der Abfragen
+        return punkte[0][0], punkte[0][1], epsg
     return sum(x for x, _ in punkte) / len(punkte), sum(y for _, y in punkte) / len(punkte), epsg
 
 
@@ -870,13 +908,16 @@ def modell_eingabe(docs: list[dict], p: Projekt, e: Einstellungen | None = None)
     return Vorbereitung(neu, hinweise, raus, lage)
 
 
-def ursprung(p: Projekt, vorb: Vorbereitung) -> tuple[float, float]:
+def ursprung(p: Projekt, vorb: Vorbereitung, standort: dict | None = None) -> tuple[float, float]:
     """Fester lokaler Nullpunkt des Projekts: verschiebt sich nur, wenn die Bohrungen weit davon entfernt liegen.
     Hat noch keine Bohrung eine Lage, gilt der Bezugspunkt eines kalibrierten Lageplans: sonst laege der Plan
-    Millionen Meter vom Nullpunkt der Szene (Gleitkomma der Grafikkarte, docs/16 M31)."""
+    Millionen Meter vom Nullpunkt der Szene (Gleitkomma der Grafikkarte, docs/16 M31). Ein Standort-Projekt
+    (docs/23 §2.3) nimmt seinen Punkt: die Bohrungen der Laender kommen um ihn herum dazu, ohne dass der Nullpunkt
+    springt (sonst schaute die Kamera nach der Uebernahme Millionen Meter neben die Bohrungen)."""
     if not vorb.lage:
         kal = (p.unterlage or {}).get("kalibrierung") or {}
         bezug = kal.get("bezug") if (p.unterlage or {}).get("art", "plan") == "plan" else None
+        bezug = bezug or standort
         if p.lage_modus == LAGE_KOORDINATEN and bezug:
             mitte = (float(bezug["x"]), float(bezug["y"]))
             if p.ursprung is None or math.hypot(mitte[0] - p.ursprung[0], mitte[1] - p.ursprung[1]) > 20000:
