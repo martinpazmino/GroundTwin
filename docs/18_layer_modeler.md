@@ -106,13 +106,18 @@ base 28.55), Kies 2, Sand 3 (censored).
   colour, volume, max./mean thickness, maximum distance to a Bohrung (uncertainty), Bohrungen with
   the Einheit present / absent / unknown, closed, warnings.
 - `CPset_Baugrundmodell` on the `IfcGeomodel`: method, mesh, buffer, base, Bohrungen inside and
-  outside the model (with the reason), sources, version.
+  outside the model (with the reason), sources, version, the **Reifegrad** (Gutachten / Vorerkundung /
+  gemischt) and the Bohrungen per origin (`Herkunft_Bohrungen`, [21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
 - `IfcBorehole` ⊃ strata of the Bohrung (prisms, `Description = "Bohrsaeule"`) with the usual
-  provenance (`CPset_Schichtenverzeichnis`, `CPset_Herkunft`). The spike's N1 exporter now uses the
+  provenance (`CPset_Schichtenverzeichnis`, `CPset_Herkunft`; for a Bohrung of the Länder also *Herkunft*,
+  *Datenquelle*, *Lizenz* and *Abgerufen*). The spike's N1 exporter now uses the
   same writer.
 - With a DGM: `IfcGeographicElement` TERRAIN, the terrain around the model (rings along the outward normals
   of the edge, up to 100 m and the edge of the DGM; open `IfcTriangulatedFaceSet` that shares the edge nodes
   of the model), `CPset_Gelaende` with source, license and attribution.
+- With the LoD2 buildings of the Land: one `IfcBuildingElementProxy` per building (`USERDEFINED` "LoD2-Gebäude
+  (Umgebung)"), two open `IfcPolygonalFaceSet` (walls and ground, roof) with openings as
+  `IfcIndexedPolygonalFaceWithVoids`, `CPset_Gebaeude` with the license of its service (D93).
 - Georeferencing `IfcMapConversion` + EPSG from the JSON, origin = rounded centroid (or the fixed
   project origin passed by the app). **Explicit length unit METRE** (formerly mm by ifcopenshell's
   default: the model came out 1000× too small, [M17](16_lessons_learned.md#m-model-ifc-and-that-open)).

@@ -141,6 +141,14 @@ bim-toolbar.kompakt .faktor { position: relative; }
   background: rgba(0, 63, 119, 0.95); color: #fff; font-size: 0.85rem; pointer-events: none;
 }
 
+/* Reifegrad des Modells (docs/23 §2.3) */
+.reifegrad {
+  position: absolute; top: 0.6rem; left: 3.2rem; z-index: 80; padding: 0.3rem 0.7rem; border-radius: 4px;
+  font-size: 0.8rem; font-weight: 600; color: #fff; pointer-events: none;
+}
+.reifegrad.vorerkundung { background: rgba(180, 83, 9, 0.92); }
+.reifegrad.gemischt { background: rgba(161, 98, 7, 0.92); }
+
 /* ---------------------------------------------------------------- Eigenschaften (rechts) */
 #eigenschaften {
   position: absolute; right: 0.75rem; top: 10rem; bottom: 3.6rem; z-index: 55;

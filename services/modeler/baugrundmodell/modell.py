@@ -49,6 +49,18 @@ RASTER_GRENZEN = (0.5, 10.0)          # m, solange die Knotenzahl reicht
 PUFFER_GRENZEN = (5.0, 100.0)         # m
 
 
+FREMD = ("SGD", "BoreholeML")          # Bohrungen, die nicht aus einem Gutachten-PDF stammen
+
+
+def reifegrad(bohrungen: list[Bohrung]) -> tuple[str, dict[str, int]]:
+    """Reife des Modells (docs/23 §2.3): Gutachten, Vorerkundung (nur Fremddaten) oder gemischt; Anzahl je Herkunft."""
+    anzahl: dict[str, int] = {}
+    for b in bohrungen:
+        anzahl[b.herkunft] = anzahl.get(b.herkunft, 0) + 1
+    fremd = sum(n for h, n in anzahl.items() if h in FREMD)
+    return ("Gutachten" if fremd == 0 else "Vorerkundung" if fremd == len(bohrungen) else "gemischt"), anzahl
+
+
 def standard_durchmesser(ausdehnung: float) -> float:
     """Durchmesser der Bohrsaeulen zur Darstellung: mit der Modellgroesse, damit sie auf Trassen sichtbar bleiben."""
     return round(float(np.clip(ausdehnung / 300.0, 0.8, 12.0)), 1)
@@ -108,6 +120,13 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
         basis = tiefste
     elif basis > tiefste:
         hinweise.append(f"Modellbasis {basis:.2f} m NHN ueber der tiefsten Endteufe {tiefste:.2f}: tiefere Daten abgeschnitten")
+    grad, je_herkunft = reifegrad(bohrungen)
+    if grad == "Vorerkundung":
+        hinweise.append("Vorerkundung: nur Bohrungen aus Datenbanken der Länder bzw. BoreholeML-Dateien, kein Gutachten – "
+                        "Schichten nicht gegen ein PDF geprüft")
+    elif grad == "gemischt":
+        hinweise.append("gemischt: " + ", ".join(f"{n} {h}" for h, n in sorted(je_herkunft.items()))
+                        + " – Bohrungen ohne Gutachten sind nicht gegen ein PDF geprüft")
     oben, gel = None, {"quelle": "GOK"}
     if gelaende is not None:
         oben, gel = _gelaende(gelaende, bohrungen, epsg, punkte, ursprung, xy_b, raster, nn, methode)
@@ -119,7 +138,8 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
                sm["abstand"], basis, {"methode": methode, "raster_m": raster, "puffer_m": puffer,
                                       "basis_nhn": basis, "flaeche_m2": float(flaeche), "ausdehnung_m": ausdehnung,
                                       "durchmesser_auto_m": standard_durchmesser(ausdehnung),
-                                      "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel},
+                                      "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel,
+                                      "reifegrad": grad, "herkunft": je_herkunft},
                hinweise=hinweise, max_abweichung=sm["max_abweichung_bohrungen"],
                zensurpunkte=sum(len(z) for z in sm["zensur"]), ausgeduennt=sm["ausgeduennt"], zuordnung=zuordnung)
     m.dgm = gelaende if oben is not None else None
@@ -210,12 +230,14 @@ def _benennungen(schichten: list[dict]) -> str:
 def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   projekt: str = "Baugrundmodell aus Gutachten", pruefstand: str | None = None,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
-                  umgebung: float = UMGEBUNG_STANDARD) -> dict:
+                  umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
+                  gebaeude_info: dict | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
     durchmesser: Saeulen aller Bohrungen in m (None = automatisch nach Modellgroesse); durchmesser_je: je Code.
     umgebung: Gelaende aus dem DGM so weit um das Modellgebiet (m; 0 = keines), nur wenn die Oberkante aus dem DGM kommt.
+    gebaeude: LoD2-Gebaeude der Umgebung im System des Modells (geodaten.gebaeude), gebaeude_info: Quelle und Lizenz.
     """
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
@@ -255,6 +277,8 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
         "Quellen": ", ".join(quellen), "Modellierer": f"baugrundmodell {__version__}",
         "Ursprung_Rechtswert": m.ursprung[0], "Ursprung_Hochwert": m.ursprung[1],
         "Gelaende": gelaende_text(p.get("gelaende") or {}),
+        "Reifegrad": p.get("reifegrad"),
+        "Herkunft_Bohrungen": ", ".join(f"{h} {n}" for h, n in sorted((p.get("herkunft") or {}).items())),
         "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise)})
     gelaende = None
     if m.dgm is not None and umgebung > 0:
@@ -284,8 +308,18 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                         dm, quelle = auto, "automatisch (Darstellung nach Modellgroesse)"
                     aus.bohrung(d["document"], b, (vb.x - m.ursprung[0], vb.y - m.ursprung[1]), vb.lage, vb.hoehe,
                                 durchmesser=dm, durchmesser_quelle=quelle)
+    n_gebaeude = 0
+    if gebaeude:
+        e0, n0 = m.ursprung
+        lokal = [{**b, "flaechen": [{"art": fl["art"], "ring": [(p[0] - e0, p[1] - n0, p[2]) for p in fl["ring"]],
+                                     "loecher": [[(p[0] - e0, p[1] - n0, p[2]) for p in r] for r in fl.get("loecher") or []]}
+                                    for fl in b["flaechen"]]} for b in gebaeude]
+        info = gebaeude_info or {}
+        n_gebaeude = aus.gebaeude(lokal, {k: v for k, v in info.items() if isinstance(v, (str, int, float))},
+                                  info.get("dienste") or {})
     aus.schreiben(pfad)
-    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen), "gelaende": gelaende is not None}
+    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen), "gelaende": gelaende is not None,
+            "gebaeude": n_gebaeude}
 
 
 def bericht(m: Modell) -> dict:
@@ -304,6 +338,7 @@ def bericht(m: Modell) -> dict:
                      "einheiten": zeilen, "hinweise": b.hinweise})
     return {
         "modellierer": __version__, "epsg": m.epsg, "ursprung": m.ursprung, "parameter": m.parameter,
+        "reifegrad": m.parameter.get("reifegrad", "Gutachten"),
         "einheiten": [{"name": k["name"], "bodenarten": k["bodenarten"], "farbe": hexfarbe(k["rgb"]),
                        "volumen_m3": round(k["volumen_m3"], 1), "maechtigkeit_max_m": round(k["maechtigkeit_max"], 2),
                        "geschlossen": bool(k["pruefung"]["geschlossen"]), "bohrungen": k["bohrungen"],

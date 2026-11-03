@@ -67,6 +67,36 @@
    "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
    "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
    "beleg": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "BE-LOD2", "land": "Berlin", "titel": "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)",
+   "anbieter": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
+   "art": "lod2-kacheln", "url": "https://gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip", "format": "zip",
+   "system": 25833, "kachel_km": 1, "gebiet_wgs84": [13.0815, 52.3334, 13.7581, 52.6724],
+   "gebiet_beleg": "wie die Bohrdaten Berlin; Kacheln 1 x 1 km nach der Blattschnittübersicht 1X1_EPSG_25833.pdf des Feeds",
+   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "3D-Gebäudemodelle LoD2 Berlin, SenSBW (dl-de/zero-2.0)",
+   "beleg": "https://gdi.berlin.de/data/a_lod2/atom/0.atom"
+  },
+  {
+   "id": "BB-LOD2", "land": "Brandenburg", "titel": "3D-Gebäudemodelle LoD2",
+   "anbieter": "Landesvermessung und Geobasisinformation Brandenburg (LGB)",
+   "art": "lod2-kacheln", "url": "https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/lod2_gml/lod2_33{e}-{n}.zip", "format": "zip",
+   "system": 25833, "kachel_km": 1, "gebiet_wgs84": [11.2419, 51.3157, 14.7637, 53.5429],
+   "gebiet_beleg": "wie die Bohrdaten Brandenburg; Berlin ist nicht enthalten (Kacheln 404)",
+   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© GeoBasis-DE/LGB, dl-de/by-2-0 (Daten geändert)",
+   "beleg": "https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/lod2_gml/"
+  },
+  {
+   "id": "NW-LOD2", "land": "Nordrhein-Westfalen", "titel": "3D-Gebäudemodell LoD2 (CityGML), Einzelkacheln",
+   "anbieter": "Geobasis NRW",
+   "art": "lod2-kacheln", "url": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/LoD2_32_{e}_{n}_1_NW.gml", "format": "gml",
+   "system": 25832, "kachel_km": 1, "gebiet_wgs84": [5.725, 50.151, 9.532, 52.601],
+   "gebiet_beleg": "wie das DGM NRW; die OGC API Features (ogc-api.nrw.de/3dg/v1) lehnt Parameter crs und bbox-crs mit HTTP 400 ab, Höhen in CRS84h sind ellipsoidisch",
+   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
+   "beleg": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/index.json"
   }
  ],
  "geprueft_nicht_aufgenommen": [

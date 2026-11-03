@@ -1,7 +1,7 @@
 ---
 title: "21 Step app, norms for the description and new calibration"
 date: 2026-10-28
-updated: 2026-10-29
+updated: 2026-11-03
 tags: [app, norms, din4023, iso14688, din18196, calibration, ifc, thatopen, fastapi]
 aliases: [Schritt-App, Normen-DB, App v3]
 ---
@@ -424,6 +424,113 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
 
 ![Bohrungen der Länder: Berlin, 37 Bohrungen within 250 m; the five of the Gutachten found at the Land within 0.05 m](img/21_lage_laender.jpg)
 
+### 4.6 Gebäude (LoD2): buildings around the site
+
+Phase P4 of the open data plan ([23](23_open_data_integration.md), D86, D93): the Umgebungsmodell with
+the terrain of §4.4.
+
+**Fetching:**
+
+- Section *Gebäude (LoD2)* in the *Lage* step. *Gebäude vom Land abrufen* loads the 3D building models
+  LoD2 of the Land for the cut-out around the Bohrungen (plus a margin, 100 m by default).
+- Berlin, Brandenburg and NRW publish them in the same way: CityGML tiles of 1 × 1 km in the AdV profile,
+  in ETRS89/UTM with heights in DHHN2016. That is the frame of the model, so no quasigeoid and no
+  meridian convergence are needed ([`dienste.json`](../services/geodaten/geodaten/dienste.json)).
+  - Berlin: dl-de/zero-2.0.
+  - Brandenburg: dl-de/by-2.0.
+  - NRW: dl-de/zero-2.0.
+- **Only on a click.** The tile numbers reveal the site to about 1 km.
+- Each tile comes from the first service that has it. In Berlin, the Brandenburg service answers 404.
+- A dropped connection is retried, up to three attempts.
+- Berlin example: 2 tiles, 39 buildings and 2,463 faces in about 11 s.
+
+**In the model:**
+
+- **Selection:** a building counts when its footprint touches the cut-out. It is taken whole, not clipped.
+- **Faces:** walls, roof and ground are read, with openings. The virtual closure surfaces are left out.
+- **IFC:** one `IfcBuildingElementProxy` per building (`USERDEFINED`, "LoD2-Gebäude (Umgebung)").
+  - Its geometry is two open `IfcPolygonalFaceSet`: walls and ground in light grey, the roof in tile red.
+  - Faces with openings are `IfcIndexedPolygonalFaceWithVoids`.
+  - `CPset_Gebaeude` holds source, license and attribution of its own service, the GML id, function,
+    roof type and height.
+- **Viewer:** the *Gebäude* button shows or hides them.
+- **Removing:** *Gebäude entfernen* takes them out of the next IFC.
+
+**Heights in place:**
+
+- In the AdV profile, the ground of a building is the lowest point of the DGM at its footprint.
+- Measured against the DGM1 of the Land, with a median of 0.00 m in both places:
+  - Berlin: 97 % of the buildings within 0.5 m.
+  - Marl (NRW): 100 % within 0.5 m.
+- The mean of the DGM at the footprint differs by metres on slopes: a flat ground plate on sloping terrain.
+
+![Berlin example with the DGM1 and the LoD2 buildings of Berlin around the model, without vertical exaggeration: 39 buildings from two tiles](img/21_modell_gebaeude.jpg)
+
+### 4.7 Standort ohne Gutachten: a Vorerkundung from a point
+
+Phase P5 of the open data plan ([23 §2.3](23_open_data_integration.md#23-a-baugrundmodell-from-a-point-standort-start),
+D85, D94): a first Baugrundmodell before there is a Gutachten, built only from the Bohrungen of the Länder.
+
+**Starting:**
+
+- Card *Standort ohne Gutachten* in the *Gutachten* step: Rechtswert, Hochwert, the system (ETRS89/UTM 32N or 33N,
+  also with the zone prefix: 25832, 25833, 4647, 5650) and a free name. *Projekt am Standort anlegen →*.
+- The point is checked: only ETRS89/UTM, and it must lie in Germany. Gauß-Krüger or a typo of one digit gives a
+  message, not a project.
+- The project is an empty document *Standort x / y (EPSG)*. The same point opens the same project.
+- It opens in the *Lage* step with the Lage by coordinates. The point is:
+  - the centre of every query: Bohrungen der Länder (§4.5), DGM (§4.4) and Gebäude (§4.6);
+  - the origin of the scene, rounded to 100 m. The imported Bohrungen come in around it, so the origin does not
+    jump and the plan shows all of them at once.
+- The project list marks it as *Standort*. It counts the imported Bohrungen of the Länder with the others.
+
+**Bohrungen:**
+
+- Only services with Schichtdaten give a model: NRW and Baden-Württemberg (BoreholeML).
+- Berlin and Brandenburg publish only the header and a profile image. A Standort there gets DGM and buildings,
+  but no model (§4.5).
+- The Schichten of an archive Bohrung get a fixed confidence of 0.5. In the Prüfstand they are reviewed like the
+  others; with no PDF behind them, a tick means "accepted", and the Reifegrad keeps that visible.
+
+**Reifegrad (maturity), marked everywhere:**
+
+- From the origin of the Bohrungen in the model: **Gutachten** (only from PDFs), **Vorerkundung** (only Bohrungen
+  of the Länder or BoreholeML files) or **gemischt**.
+- App: badge in the header and a banner in the *Modell* step.
+- Viewer: a band at the top, taken from the IFC.
+- Report: `reifegrad` and a hint ("Vorerkundung: … Schichten nicht gegen ein PDF geprüft").
+- IFC: `CPset_Baugrundmodell.Reifegrad` and `Herkunft_Bohrungen` (count per origin). Every Bohrung carries
+  `CPset_Herkunft` with *Herkunft*, *Datenquelle*, *Lizenz* and *Abgerufen*.
+
+**A Gutachten later:**
+
+- With a Standort project open, the *Gutachten* step says that the PDF goes to this Standort.
+- The PDF becomes a **new** project that takes over:
+  - the Bohrungen der Länder with their Prüfstand (their keys move behind the Gutachten);
+  - the query, with the Gegenprobe recomputed against the Bohrungen of the Gutachten (no network);
+  - the DGM and the buildings.
+- Both sources stay apart: Gutachten codes next to `NW-…`, *Herkunft* per Bohrung, Reifegrad *gemischt*. The Standort
+  project stays as it was.
+
+**Measured in Marl (NRW, real service):**
+
+- A point at 368300 / 5724500 (EPSG:25832): 11 Bohrungen within 250 m, all with Schichtdaten.
+- Query 7 s, import 7 s, model 1 s: **15 s** from the point to a model with 15 Einheiten.
+- The end-to-end check (F) does the same at 368130 / 5724400 with 10 Bohrungen and checks the Reifegrad in the
+  header, the report, the *Modell* step and the viewer.
+
+**Limits (marked):**
+
+- Archive Bohrungen are often old, very deep (water wells) or very shallow, and their quality is unknown.
+- There are no Sondierungen and no soil parameters.
+- Einheiten correlated across hundreds of metres can invent continuity.
+- In Marl, 10 Schichten stay unklassifiziert (warning in the *Bohrungen* step).
+- Not built yet: a map of the distance to the nearest Bohrung in the viewer
+  ([23 §2.3](23_open_data_integration.md#23-a-baugrundmodell-from-a-point-standort-start)). Per Einheit, the IFC
+  already carries the maximum distance to a Bohrung (`CPset_Modelleinheit`).
+
+![Standort in Marl without a Gutachten: Vorerkundung from 10 Bohrungen of the Geologischer Dienst NRW, with the band in the viewer, the badge in the header and the note in the Modell step. Data: © Geowissenschaftliche Daten: Bohrungen NRW @ Geologischer Dienst NRW, 2026, dl-de/by-2.0](img/21_standort_vorerkundung.jpg)
+
 ## 5. Einheiten and Modell
 
 **Einheiten**:
@@ -495,15 +602,22 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 - **Postproduction** (shadows, D73): a plain image while the camera moves, fragments load or something
   is dragged; once still, one frame with shadows; never in *Lage*. At rest nothing is drawn (0 frames
   measured with the 6 km Trasse).
+- **Camera across the steps** (lessons M37, M38):
+  - Switching between *Lage* (plan mode) and *Modell* (orbit) keeps the camera and its distance limit. That Open's
+    orbit mode set the limit to 300 m and moved the target, so models over 300 m were never fully in view after the
+    *Lage* step.
+  - Leaving *Lage* restores the view from before, unless the scene got its first model or its first buildings in
+    the meantime: then the whole scene is shown at an angle (otherwise the camera could stand inside a building).
+  - The first content of an empty scene (the imported Bohrungen of a Standort) is fitted into view.
 
 ## 8. Tests
 
 | Test | Result |
 |---|---|
-| Modeler (`cd services/modeler && python -m pytest tests`) | 61 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM) |
-| App and API (`python -m pytest tests`) | 92: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 7 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 4 for the online script |
+| Modeler (`cd services/modeler && python -m pytest tests`) | 63 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM, 1 for the LoD2 buildings, 1 for the Reifegrad) |
+| App and API (`python -m pytest tests`) | 105: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 4 for the Standort project (Vorerkundung, wrong coordinates, a Gutachten added later is gemischt, unknown Standort), 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 37/37 and no page error: Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 45/45 and no page error: **Standort ohne Gutachten** (real NRW service in Marl: 10 Bohrungen imported, all in the plan, origin at the Standort, Vorerkundung in the header, the report, the *Modell* step and the viewer, the whole model in view with the camera outside; left out only when the service cannot be reached), Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, everything in view with the camera outside, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

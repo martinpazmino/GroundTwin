@@ -27,8 +27,8 @@ python -m baugrundmodell.synthetisch demo demo.json        # cases: geneigt ausk
 | [`flaechen.py`](baugrundmodell/flaechen.py) | Domain (hull + buffer), TIN mesh with the Bohrungen as nodes, exact IDW/TPS, lenses, censoring, trimming, extent of partial Einheiten |
 | [`koerper.py`](baugrundmodell/koerper.py) | Closed solid per Einheit, closure and volume check |
 | [`umgebung.py`](baugrundmodell/umgebung.py) | Terrain from a DGM: top of the model pulled onto the GOK at the Bohrungen, terrain around the model (IfcGeographicElement TERRAIN) ([18 §3](../../docs/18_layer_modeler.md#3-surfaces-and-solids)) |
-| [`ifc4x3.py`](baugrundmodell/ifc4x3.py) | IFC 4.3 writer (N1 columns and N3 model), colours, Psets |
-| [`modell.py`](baugrundmodell/modell.py) | Orchestration, JSON report |
+| [`ifc4x3.py`](baugrundmodell/ifc4x3.py) | IFC 4.3 writer (N1 columns and N3 model, terrain, LoD2 buildings as context), colours, Psets |
+| [`modell.py`](baugrundmodell/modell.py) | Orchestration, JSON report, Reifegrad (Gutachten / Vorerkundung / gemischt) from the `herkunft` of the Bohrungen ([21 §4.7](../../docs/21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)) |
 | [`synthetisch.py`](baugrundmodell/synthetisch.py) | Cases with known ground truth (tests and viewer demo) |
 | [`normen.py`](baugrundmodell/normen.py) + [`normen.json`](baugrundmodell/normen.json) | Mini database of norms (DIN 4023, EN ISO 14688-1, DIN 18196) and reading of the descriptions ([21 §3](../../docs/21_app_schritte_normen.md#3-mini-database-of-norms)) |
 

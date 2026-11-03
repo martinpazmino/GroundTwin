@@ -50,6 +50,11 @@ export function schrittModell() {
     <div class="app-panel rechts">
       <section class="abschnitt-flach">
         <h3>Modell</h3>
+        ${z.reifegrad.stufe !== "Gutachten" ? html`<p class=${`reife ${z.reifegrad.stufe === "Vorerkundung" ? "vorerkundung" : "gemischt"}`}>
+          <b>${z.reifegrad.stufe}</b> – ${z.reifegrad.stufe === "Vorerkundung"
+            ? "Bohrungen aus Datenbanken der Länder, kein Gutachten: eine erste Vorstellung für die Planung der Erkundung."
+            : Object.entries(z.reifegrad.anzahl).map(([h, n]) => `${n} ${h}`).join(", ") + ": Bohrungen ohne Gutachten sind nicht gegen ein PDF geprüft."}
+          ${hilfe("reifegrad")}</p>` : nothing}
         ${S.rechnet ? html`<p><span class="kreisel klein"></span> wird gerechnet …</p>` : nothing}
         ${m?.fehler ? html`<p class="warnung">Noch kein Modell: ${m.fehler}</p>
           <button class="link" @click=${() => gehe("lage")}>→ Lage setzen</button>` : nothing}

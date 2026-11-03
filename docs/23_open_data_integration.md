@@ -31,7 +31,12 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
 - **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
-- **Status (2026-11-02):** P0, P1, P2 and P3 are done.
+- **Status (2026-11-03):** P0 to P5 are done.
+  - A Baugrundmodell from a point (Standort start, P5), marked as Vorerkundung in the app, the viewer, the
+    report and the IFC; a Gutachten added later keeps both sources apart
+    ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
+  - The LoD2 buildings of Berlin, Brandenburg and NRW around the site, in the IFC and the viewer
+    ([21 §4.6](21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)).
   - The DGM of the Land by WCS on a click (Brandenburg with Berlin, NRW), the top of the model
     from the DGM and the terrain around it in the IFC
     ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)).
@@ -349,15 +354,18 @@ Rules:
 | **P5 Standort start** | Step 1 accepts a point; the project uses P2 and P3; `reifegrad = Vorerkundung` in the app, the IFC and the report; a PDF can be added later | From a point in Berlin, a model with ≥ 3 SGD Bohrungen in under a minute; Vorerkundung visible everywhere; with the PDF added, both sources stay apart | 1 week |
 | **P6 Optional** | 3D Tiles export for Cesium; GeolDG help (prefilled BoreholeML / SEP3 for the SGD); swissgeol boreholes for Switzerland; OSM fallback; 3DCityDB if a project database is needed | Per item | Per item |
 
-**Status (2026-11-02):**
+**Status (2026-11-03):**
 
 | Phase | State |
 |---|---|
-| P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)), 21 tests + 4 end-to-end checks |
-| P1: BoreholeML export and import | **Done.** [`boreholeml.py`](../services/geodaten/geodaten/boreholeml.py), code table from the official codelists v2 with the official names as evidence, export valid against the official XSD 3.2, import of the official examples and round trip; *Modell* and *Gutachten* steps ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)); 11 tests + 1 end-to-end check |
-| P3b: DGM through WCS, terrain surface in the model and the IFC | **Done.** [`dgm_dienst.py`](../services/geodaten/geodaten/dgm_dienst.py) (WCS 2.0.1 of Brandenburg with Berlin and NRW; Baden-Württemberg delivers whole metres, Bayern has no free WCS), top of the model from the DGM and `IfcGeographicElement` TERRAIN ([`umgebung.py`](../services/modeler/baugrundmodell/umgebung.py), [21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)); 13 tests + 3 end-to-end checks |
 | P0: service registry | **Done for four Länder.** [`dienste.json`](../services/geodaten/geodaten/dienste.json): Berlin, Brandenburg, NRW, Baden-Württemberg with license, attribution and evidence; area per service (NRW from its OGC API: its capabilities name a wrong area). Open: Bayern; the BGR GBL has no feature service (its WFS answers 404, only the WMS map exists) |
+| P1: BoreholeML export and import | **Done.** [`boreholeml.py`](../services/geodaten/geodaten/boreholeml.py), code table from the official codelists v2 with the official names as evidence, export valid against the official XSD 3.2, import of the official examples and round trip; *Modell* and *Gutachten* steps ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)); 11 tests + 1 end-to-end check |
 | P2: Bohrungen of the state services | **Done.** [`bohrdaten.py`](../services/geodaten/geodaten/bohrdaten.py), *Lage* step ([21 §4.5](21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)): query only on a click, Gegenprobe (Berlin example: 5 of 5 found, ≤ 0.05 m), import of the BoreholeML Schichtdaten of NRW and Baden-Württemberg; 13 tests + 1 end-to-end check. The GBL is not queried: as a WMS it gives a map, not data |
+| P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)), 21 tests + 4 end-to-end checks |
+| P3b: DGM through WCS, terrain surface in the model and the IFC | **Done.** [`dgm_dienst.py`](../services/geodaten/geodaten/dgm_dienst.py) (WCS 2.0.1 of Brandenburg with Berlin and NRW; Baden-Württemberg delivers whole metres, Bayern has no free WCS), top of the model from the DGM and `IfcGeographicElement` TERRAIN ([`umgebung.py`](../services/modeler/baugrundmodell/umgebung.py), [21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)); 13 tests + 3 end-to-end checks |
+| P4: Umgebungsmodell (buildings) | **Done with the LoD2 of the Länder.** [`gebaeude.py`](../services/geodaten/geodaten/gebaeude.py): CityGML tiles of 1 × 1 km of Berlin, Brandenburg and NRW in ETRS89/UTM + DHHN2016, so no ζ and no convergence; `IfcBuildingElementProxy` per building with its license ([21 §4.6](21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)). Heights in place: the ground of each building is the lowest DGM point of its footprint, median 0.00 m in Berlin and Marl. The basemap.de 3D Tiles (way a) are not needed for these Länder; they stay an option for the others |
+| P5: Standort start (a Baugrundmodell from a point, Vorerkundung) | **Done, in NRW.** Card *Standort ohne Gutachten* in step 1, the point is the centre of the queries and the origin of the scene; Reifegrad Gutachten / Vorerkundung / gemischt from the *Herkunft* of the Bohrungen in the header, the *Modell* step, the viewer, the report and the IFC (`CPset_Baugrundmodell.Reifegrad`, `CPset_Herkunft` per Bohrung); archive Schichten with confidence 0.5; a PDF added later becomes a new project that takes the Bohrungen der Länder, the query, DGM and buildings with it ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point), D94). Acceptance in **Marl instead of Berlin**: Berlin publishes only the header of its Bohrungen, no Schichtdaten, so no model can come from there. In Marl: 11 SGD Bohrungen within 250 m, model in 15 s; 4 tests + 5 end-to-end checks. Open: a map of the distance to the nearest Bohrung in the viewer (per Einheit the IFC carries its maximum distance) |
+| P6: Optional (3D Tiles export, GeolDG help, swissgeol, OSM fallback, 3DCityDB) | Open |
 
 **Why this order:**
 

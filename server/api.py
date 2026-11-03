@@ -54,11 +54,22 @@ class Beispiel(BaseModel):
     ocr: bool = False
 
 
+class Standort(BaseModel):
+    x: float
+    y: float
+    epsg: int
+    name: str = ""
+
+
 class SgdAbfrage(BaseModel):
     radius: float | None = None
 
 
 class DgmAbruf(BaseModel):
+    rand: float | None = None
+
+
+class GebaeudeAbruf(BaseModel):
     rand: float | None = None
 
 
@@ -123,11 +134,16 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         return ap.liste()
 
     @app.post("/api/gutachten")
-    async def gutachten(dateien: list[UploadFile] = File(...), ocr: bool = Form(True)):
+    async def gutachten(dateien: list[UploadFile] = File(...), ocr: bool = Form(True), standort: str = Form("")):
         inhalt = [(f.filename or "dokument.pdf", await f.read()) for f in dateien]
         if not inhalt or not all(d[:5] == b"%PDF-" or n.lower().endswith((".json", ".xml")) for n, d in inhalt):
             raise ValueError("bitte PDF-Dateien hochladen (oder eine Extraktion als JSON, Bohrungen als BoreholeML)")
-        return ap.extrahieren(inhalt, ocr and pl.ocr_verfuegbar()).als_dict()
+        return ap.extrahieren(inhalt, ocr and pl.ocr_verfuegbar(), standort.strip() or None).als_dict()
+
+    @app.post("/api/standort")
+    def standort(s: Standort):
+        """Projekt an einem Punkt ohne Gutachten (Vorerkundung, docs/23 §2.3)."""
+        return {"projekt": ap.standort_anlegen(s.x, s.y, s.epsg, s.name)}
 
     @app.get("/api/auftrag/{aid}")
     def auftrag(aid: str):
@@ -197,6 +213,16 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.post("/api/projekt/{sig}/dgm/abruf")
     def dgm_abruf(sig: str, a: DgmAbruf):
         ap.dgm_abrufen(sig, a.rand)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/gebaeude/abruf")
+    def gebaeude_abruf(sig: str, a: GebaeudeAbruf):
+        ap.gebaeude_abrufen(sig, a.rand)
+        return ap.zustand(sig)
+
+    @app.delete("/api/projekt/{sig}/gebaeude")
+    def gebaeude_entfernen(sig: str):
+        ap.gebaeude_entfernen(sig)
         return ap.zustand(sig)
 
     @app.delete("/api/projekt/{sig}/dgm")

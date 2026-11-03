@@ -4,7 +4,8 @@
 //   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen; B2 Gelaende (DGM-Datei): Vergleich
 //      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen; B3 Bohrungen der Laender: echte
 //      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens; B4 DGM vom Land (echter
-//      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus
+//      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus; B5 Gebaeude (LoD2) vom
+//      Land (echte Kacheln Berlin, Netz): im IFC und im Viewer (alles im Bild, Kamera ausserhalb), ein/aus
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -12,6 +13,9 @@
 //      PDF bleibt), Einheit umbenennen, Modell im Viewer, einchecken, IFC mit Bodenansprache; BoreholeML ohne
 //      Koordinaten gesperrt
 //   E  PDF-Beispiel: Extraktion mit Fortschritt, Quelle der Schicht im PDF
+//   F  Standort ohne Gutachten (echter Dienst NRW, Netz): Projekt am Punkt, Bohrungen der Laender uebernehmen (ganz
+//      im Lageplan, Nullpunkt bleibt am Standort), Modell als Vorerkundung in Kopf, Modell-Schritt, Bericht und
+//      Viewer, Modell ganz im Bild mit der Kamera ausserhalb
 //
 //   python -m server --port 8511 --kein-browser --arbeit <leerer-ordner>     (in einem zweiten Terminal)
 //   python scripts/testplan.py <plaene>
@@ -38,6 +42,13 @@ page.on("pageerror", (e) => fehler.push(String(e.stack || e)));
 page.on("console", (m) => m.type() === "error" && !/favicon/.test(m.text()) && fehler.push(m.text()));
 page.on("dialog", (d) => d.accept());
 
+/** Pruefung ausgelassen, weil ein Dienst des Landes nicht erreichbar war: die erwartete 502 des Servers ist kein Seitenfehler. */
+function ausgelassen(text) {
+  console.log(`AUS  ${text}`);
+  const i = fehler.findLastIndex((f) => /status of 502/.test(f));
+  if (i >= 0) fehler.splice(i, 1);
+}
+
 function pruefe(name, ok, info = "") {
   pruefungen.push({ name, ok: !!ok });
   console.log(`${ok ? "OK  " : "FEHL"} ${name}${info ? ` – ${info}` : ""}`);
@@ -50,6 +61,24 @@ const stand = () => page.evaluate(() => {
 const ruhe = (ms = 800) => page.waitForTimeout(ms);
 const bohrung = async (code) => (await stand()).z.bohrungen.find((b) => b.code === code);
 const warte = (f, arg, timeout = 120000) => page.waitForFunction(f, arg, { timeout, polling: 250 });
+/** Huelle ganz im Bild (alle Ecken in NDC)? "modell": das Modell, die Kamera ausserhalb; "lage": die Bohrungen im
+ *  Lage-Editor. Mit nurOk nur wahr/falsch (fuer warte). */
+const huelleImBild = ([welche, nurOk]) => {
+  const v = window.viewer;
+  const m = v.modell();
+  const box = welche === "modell" ? (m && m.object.visible ? m.box : null) : v.editor.kiste();
+  if (!box || box.isEmpty()) return nurOk ? false : { ok: false, rand: null };
+  const kam = v.world.camera.three;
+  kam.updateMatrixWorld();
+  let rand = 0;
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    const ecke = box.min.clone().set(x, y, z).project(kam);
+    rand = Math.max(rand, Math.abs(ecke.x), Math.abs(ecke.y));
+  }
+  const innen = box.containsPoint(kam.position);
+  const ok = rand <= 1.02 && (welche !== "modell" || !innen);
+  return nurOk ? ok : { ok, rand: Math.round(rand * 100) / 100, innen };
+};
 const schirm = (px) => page.evaluate(([u, v]) => window.viewer.editor.bildZuSchirm(u, v), px);
 const markenPunkt = (code) => page.evaluate((c) => {
   const e = window.viewer.editor;
@@ -221,7 +250,7 @@ try {
   gz = (await stand()).z.gelaende;
   const fehlerLand = (await page.evaluate(() => window.app.meldungen.filter((m) => m.art === "fehler").map((m) => m.text))).join("; ");
   if (!gz?.info?.quelle && /Dienst des Landes: .*(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(fehlerLand)) {
-    console.log(`AUS  DGM vom Land: Dienst nicht erreichbar (${fehlerLand}) – Prüfungen ausgelassen`);
+    ausgelassen(`DGM vom Land: Dienst nicht erreichbar (${fehlerLand}) – Prüfungen ausgelassen`);
   } else {
     const st = Object.fromEntries((gz?.pruefung?.zeilen ?? []).map((r) => [r.code, r.status]));
     pruefe("DGM vom Land (WCS Brandenburg mit Berlin, 1 m): GOK-Vergleich markiert 422C-5526 (1 m unter dem DGM)",
@@ -241,6 +270,41 @@ try {
     await page.locator('bim-button[label="Gelände"]').click();
     await warte(() => window.baugrund.gelaendeSichtbar === false, null, 10000).catch(() => {});
     pruefe("Gelände im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gelaendeSichtbar === false));
+  }
+
+  // ---------------------------------------------------------------- B5: Gebaeude (LoD2) vom Land (echte Kacheln Berlin)
+  if ((await page.evaluate(() => window.app.schritt)) !== "lage") {
+    await page.locator("nav.schritte button", { hasText: "Lage" }).click();
+    await warte(() => window.app.schritt === "lage", null, 60000);
+  }
+  const gebaeudeTeil = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Gebäude (LoD2)" }) });
+  if (!(await gebaeudeTeil.evaluate((d) => d.open))) await gebaeudeTeil.locator("summary").click();
+  const letzteMeldung = await page.evaluate(() => Math.max(0, ...window.app.meldungen.map((m) => m.id)));
+  await page.getByRole("button", { name: "Gebäude vom Land abrufen" }).click();
+  await warte((n) => window.app.z.gebaeude || window.app.meldungen.some((m) => m.id > n && m.art === "fehler"), letzteMeldung, 240000);
+  const zg = (await stand()).z.gebaeude;
+  const fehlerGeb = (await page.evaluate((n) => window.app.meldungen.filter((m) => m.id > n && m.art === "fehler").map((m) => m.text),
+    letzteMeldung)).join("; ");
+  if (!zg && /Dienst des Landes: .*(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(fehlerGeb)) {
+    ausgelassen(`Gebäude vom Land: Dienst nicht erreichbar (${fehlerGeb}) – Prüfungen ausgelassen`);
+  } else {
+    pruefe("Gebäude (LoD2) vom Land: Kacheln Berlin, Lizenz dl-de/zero-2.0",
+      zg?.anzahl > 10 && zg.quelle.dienste[0]?.dienst === "BE-LOD2" && zg.quelle.dienste[0]?.lizenz === "dl-de/zero-2.0",
+      `${zg?.anzahl} Gebäude · ${zg?.quelle?.kacheln} Kacheln ${fehlerGeb}`);
+    const ladungenG = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
+    await page.locator("nav.schritte button", { hasText: "Modell" }).click();
+    await warte((n) => window.baugrund?.ladungen > n && !window.app.rechnet, ladungenG, 240000);
+    await ruhe(2000);
+    const vg = await page.evaluate(() => ({ gebaeude: window.baugrund.gebaeude, gelaende: window.baugrund.gelaende }));
+    pruefe("Gebäude im Modell und im Viewer (IfcBuildingElementProxy)", vg.gebaeude === zg.anzahl, JSON.stringify(vg));
+    // die Gebaeude kamen im Lage-Schritt dazu: die dort gemerkte Ansicht stand mitten in einem (fuenffach hoch)
+    await warte(huelleImBild, ["modell", true], 20000).catch(() => null);
+    const bg = await page.evaluate(huelleImBild, ["modell", false]);
+    pruefe("Gebäude: Modell mit Umgebung ganz im Bild, Kamera außerhalb", bg.ok, JSON.stringify(bg));
+    await page.screenshot({ path: `${aus}/B5_gebaeude.png` });
+    await page.locator('bim-button[label="Gebäude"]').click();
+    await warte(() => window.baugrund.gebaeudeSichtbar === false, null, 10000).catch(() => {});
+    pruefe("Gebäude im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gebaeudeSichtbar === false));
   }
 
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen
@@ -496,6 +560,55 @@ try {
   }, null, 60000).then(() => true).catch(() => false);
   pruefe("PDF ausgewertet (Fortschritt) und Schicht im PDF markiert", bild, `Fortschritt sichtbar: ${fortschritt}`);
   await page.screenshot({ path: `${aus}/E1_quelle.png` });
+
+  // ---------------------------------------------------------------- F: Standort ohne Gutachten (echter Dienst NRW, Marl)
+  await startseite();
+  await page.getByLabel("Rechtswert").fill("368130");
+  await page.getByLabel("Hochwert").fill("5724400");
+  await page.getByLabel("System des Standorts").selectOption("25832");
+  await page.getByLabel("Name (frei)").fill("E2E Standort Marl");
+  await page.getByRole("button", { name: /Projekt am Standort anlegen/ }).click();
+  await warte(() => window.app.schritt === "lage" && window.app.z?.standort, null, 60000);
+  const kopfAbzeichen = await page.locator(".kopf .abzeichen.vorerkundung").count();
+  const teilSgd = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Bohrungen der Länder" }) });
+  if (!(await teilSgd.evaluate((d) => d.open))) await teilSgd.locator("summary").click();
+  await page.getByRole("button", { name: "Abfragen" }).click();
+  await warte(() => window.app.z.sgd, null, 180000);
+  const sgdF = (await stand()).z.sgd;
+  const netzNrw = sgdF.fehler.find((f) => f.dienst === "NW" && /^(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(f.fehler));
+  if (netzNrw) {
+    ausgelassen(`Standort: Dienst NRW nicht erreichbar (${netzNrw.fehler}) – Prüfungen ausgelassen`);
+  } else {
+    const kaestchen = page.locator("table.sgd tbody input[type=checkbox]");
+    const n = await kaestchen.count();
+    for (let i = 0; i < n; i++) await kaestchen.nth(i).check();
+    await page.getByRole("button", { name: /Ausgewählte übernehmen/ }).click();
+    await warte(() => window.app.z.bohrungen.length >= 3, null, 180000);
+    const zf = (await stand()).z;
+    pruefe("Standort ohne Gutachten: Projekt am Punkt, Bohrungen der Länder übernommen, Vorerkundung im Kopf",
+      kopfAbzeichen === 1 && zf.reifegrad.stufe === "Vorerkundung" && zf.bohrungen.every((b) => b.code.startsWith("NW-")),
+      `${zf.bohrungen.length} Bohrungen · ${n} übernehmbar`);
+    // Nullpunkt am Standort (auf 100 m), die Kamera passt auf den ersten Inhalt: alle Bohrungen im Lageplan
+    await warte(huelleImBild, ["lage", true], 20000).catch(() => null);
+    const bl = await page.evaluate(huelleImBild, ["lage", false]);
+    pruefe("Standort: übernommene Bohrungen ganz im Lageplan, Nullpunkt bleibt am Standort",
+      bl.ok && zf.viewer.ursprung[0] === 368100 && zf.viewer.ursprung[1] === 5724400,
+      `${JSON.stringify(bl)} · Nullpunkt ${zf.viewer.ursprung}`);
+    const ladungenF = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
+    await page.locator("nav.schritte button", { hasText: "Modell" }).click();
+    await warte((k) => window.baugrund?.ladungen > k && !window.app.rechnet, ladungenF, 240000);
+    await ruhe(1500);
+    const vf = await page.evaluate(() => ({ viewer: window.baugrund.reifegrad, bericht: window.app.modell?.bericht?.reifegrad,
+                                            band: !document.querySelector("#reifegrad")?.hidden,
+                                            panel: !!document.querySelector(".app-panel .reife.vorerkundung") }));
+    pruefe("Modell aus Bohrungen der Länder: Vorerkundung im Bericht, im Modell-Schritt und als Band im Viewer",
+      vf.viewer === "Vorerkundung" && vf.bericht === "Vorerkundung" && vf.band && vf.panel, JSON.stringify(vf));
+    // nach dem Lage-Schritt: ganzes Modell schraeg, die Kamera nicht darin (That Opens Orbit setzte 300 m als Grenze)
+    await warte(huelleImBild, ["modell", true], 20000).catch(() => null);
+    const bm = await page.evaluate(huelleImBild, ["modell", false]);
+    pruefe("Standort: Modell ganz im Bild, Kamera außerhalb", bm.ok, JSON.stringify(bm));
+    await page.screenshot({ path: `${aus}/F_standort.png` });
+  }
 } finally {
   const fehlgeschlagen = pruefungen.filter((p) => !p.ok);
   console.log(`\n${pruefungen.length - fehlgeschlagen.length}/${pruefungen.length} Pruefungen bestanden`);

@@ -47,6 +47,7 @@ const GERUEST = `
       <div id="auswahl-inhalt"></div>
     </section>
     <div id="meldung" hidden></div>
+    <div id="reifegrad" class="reifegrad" hidden></div>
   </bim-viewport>`;
 
 export interface ViewerOptionen {
@@ -76,7 +77,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   // Status fuer automatische Pruefungen (scripts/check.mjs, scripts/check_app.mjs)
   const status = {
     geladen: false, ladungen: 0, einheiten: [] as string[], bohrsaeulen: 0, marken: 0, fehler: "", auswahl: "",
-    gelaende: 0, gelaendeSichtbar: true,
+    gelaende: 0, gelaendeSichtbar: true, gebaeude: 0, gebaeudeSichtbar: true, reifegrad: "",
     kamera: {} as Record<string, unknown>, lage: {} as Record<string, unknown>,
     ereignisse: protokoll, renders: 0,
     instanz: Math.random().toString(36).slice(2, 8),
@@ -233,6 +234,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   let bezugGesetzt = false;
   let nadelnVonApp = false;
   let kameraVorLage: ReturnType<typeof KAMERA.kameraZustand> | null = null;
+  let modellImProjekt = false;                         // schon ein Modell dieses Projekts geladen (Kamera darauf)
   const sichtbar = new Map<number, boolean>();
   let nurEinheit: number | null = null;
 
@@ -267,6 +269,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       for (const id of [...fragments.list.keys()]) await fragments.core.disposeModel(id);
       clipper.deleteAll();
       modell = await ifcLoader.load(bytes, false, name);
+      const hatteGebaeude = (daten?.gebaeude.length ?? 0) > 0;
       daten = await inhalt(modell);
       bohrungNachCode = await bohrungsnamen(modell, daten);
       const m = daten.modell;
@@ -286,6 +289,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       if (!nadelnVonApp) await nadelnAusIfc();
       await bohrsaeulenSichtbarkeit();
       await gelaendeSichtbarkeit();
+      await gebaeudeSichtbarkeit();
       editor.setSchnittTiefe(Math.max(-modell.box.min.z, modell.box.max.z) + 1);
       modell.object.visible = !editor.aktiv;
       if (durchscheinend) for (const mat of fragments.core.models.materials.list.values()) transparent(mat, true);
@@ -293,6 +297,13 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       leisteNeu();                                        // Knopf "Gelände" nach dem Inhalt des neuen Modells
       KAMERA.szeneAktualisieren();
       if (!kameraBehalten) await kameraStart();
+      else if (!modellImProjekt || (!hatteGebaeude && daten.gebaeude.length)) {
+        // erstes Modell des Projekts (die Kamera zeigte nur Bohrungen) oder erste Gebaeude (Kamera evtl. in einem):
+        // ganze Szene. Im Lage-Editor erst beim Verlassen - die vorher gemerkte Ansicht passt nicht mehr dazu.
+        if (editor.aktiv) kameraVorLage = null;
+        else await KAMERA.ansicht("iso", false);
+      }
+      modellImProjekt = true;
       await fragments.core.update(true);
       neuZeichnen(10);
       status.geladen = true;
@@ -300,6 +311,8 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       status.einheiten = daten.einheiten.map((e) => e.name);
       status.bohrsaeulen = daten.bohrsaeulen.length;
       status.gelaende = daten.gelaende.length;
+      reifegradZeigen(String(daten.modell.Reifegrad ?? ""));
+      status.gebaeude = daten.gebaeude.length;
       status.marken = editor.nadeln.size;
       $("leer").hidden = true;
       if (!kameraBehalten) meldung(`${name}: ${daten.einheiten.length} Einheiten, ${daten.bohrungen.length} Bohrungen`);
@@ -480,6 +493,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     for (const id of sichtbar.keys()) sichtbar.set(id, true);
     await bohrsaeulenSichtbarkeit();
     await gelaendeSichtbarkeit();
+    await gebaeudeSichtbarkeit();
     seitenleisteNeu();
   }
 
@@ -515,6 +529,17 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     status.auswahl = "";
   }
 
+  /** Reifegrad aus dem IFC (CPset_Baugrundmodell): Vorerkundung und gemischt als Band oben - nie versteckt. */
+  function reifegradZeigen(stufe: string) {
+    status.reifegrad = stufe;
+    const band = $("reifegrad");
+    band.hidden = !stufe || stufe === "Gutachten";
+    band.className = `reifegrad ${stufe === "Vorerkundung" ? "vorerkundung" : "gemischt"}`;
+    band.textContent = stufe === "Vorerkundung"
+      ? "Vorerkundung – Bohrungen aus Datenbanken der Länder, kein Gutachten"
+      : "gemischt – Gutachten und Bohrungen der Länder";
+  }
+
   /** Gelaende um das Modell (IfcGeographicElement aus dem DGM): mit dem Knopf ein- und ausblenden. */
   let gelaendeAn = true;
   async function gelaendeSichtbarkeit() {
@@ -527,6 +552,21 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   async function gelaendeUmschalten() {
     gelaendeAn = !gelaendeAn;
     await gelaendeSichtbarkeit();
+    leisteNeu();
+  }
+
+  /** LoD2-Gebaeude der Umgebung (IfcBuildingElementProxy): mit dem Knopf ein- und ausblenden. */
+  let gebaeudeAn = true;
+  async function gebaeudeSichtbarkeit() {
+    status.gebaeudeSichtbar = gebaeudeAn;
+    if (!modell || !daten?.gebaeude.length) return;
+    await modell.setVisible(daten.gebaeude, gebaeudeAn);
+    await fragments.core.update(true);
+  }
+
+  async function gebaeudeUmschalten() {
+    gebaeudeAn = !gebaeudeAn;
+    await gebaeudeSichtbarkeit();
     leisteNeu();
   }
 
@@ -756,6 +796,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
         ${knopf("Transparenz", "mdi:ghost", () => durchscheinen(!durchscheinend), "Transparenz", "Einheiten durchscheinend: Bohrungen und Auswahl im Inneren sichtbar.", durchscheinend)}
         ${knopf("Bohrungen", "mdi:map-marker-radius", () => bohrungenUmschalten(), "Bohrungen ein/aus", "", bohrungenAn)}
         ${knopf("Gelände", "mdi:terrain", () => gelaendeUmschalten(), "Gelände ein/aus", "Gelände um das Modell aus dem DGM (IfcGeographicElement).", gelaendeAn && !!daten?.gelaende.length, !daten?.gelaende.length)}
+        ${knopf("Gebäude", "mdi:office-building-outline", () => gebaeudeUmschalten(), "Gebäude ein/aus", "LoD2-Gebäude der Länder um das Modell (IfcBuildingElementProxy).", gebaeudeAn && !!daten?.gebaeude.length, !daten?.gebaeude.length)}
       </div>
       <div class="leisten-gruppe" role="group" aria-label="Auswahl">
         ${knopf("Fokus", "mdi:fit-to-screen-outline", () => fokus(), "Fokus", "Kamera auf die Auswahl; ohne Auswahl die ganze Szene.")}
@@ -877,7 +918,9 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       return;
     }
     if (an) {
-      kameraVorLage = KAMERA.kameraZustand();
+      // nur eine Ansicht merken, die etwas zeigt: ein Standort ohne Modell und Bohrungen haette sonst die leere
+      // Startansicht am Nullpunkt, und das spaeter geladene Modell laege um die Kamera herum (nur Raster zu sehen)
+      kameraVorLage = modell || editor.nadeln.size ? KAMERA.kameraZustand() : null;
       await auswahlAufheben();
     }
     highlighter.enabled = !an;
@@ -890,12 +933,15 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     if (an) {
       await world.camera.projection.set("Orthographic");
       await KAMERA.ansicht(rahmen.modus === "reihe" ? "sued" : "oben");
-      world.camera.set("Plan");                          // linke Taste verschiebt, kein Drehen: die Draufsicht bleibt
+      await KAMERA.modus("Plan");                        // linke Taste verschiebt, kein Drehen: die Draufsicht bleibt
     } else {
-      world.camera.set("Orbit");
+      await KAMERA.modus("Orbit");
       if (kameraVorLage) {
         if (!kameraVorLage.ortho) await world.camera.projection.set("Perspective");
         await KAMERA.kameraSetzen(kameraVorLage);
+      } else {                                           // nichts gemerkt (neues Projekt): ganze Szene schraeg
+        await world.camera.projection.set("Perspective");
+        await KAMERA.ansicht("iso", false);
       }
       await fragments.core.update(true);
     }
@@ -972,7 +1018,10 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       projekt = a.projekt ?? "";
       projektSetzen(projekt);
       bezugGesetzt = false;
+      kameraVorLage = null;                              // gemerkte Modellansicht gehoert zum vorigen Projekt
+      modellImProjekt = false;
     }
+    const leerVorher = KAMERA.szeneLeer();
     nadelnVonApp = Array.isArray(a.bohrungen);
     rahmen.modus = a.modus ?? "koordinaten";
     rahmen.epsg = a.epsg ?? null;
@@ -1011,6 +1060,10 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     $("leer").hidden = !!modell || editor.nadeln.size > 0;
     KAMERA.szeneAktualisieren();
     if (neu && !modell) await kameraStart();
+    else if (leerVorher && !KAMERA.szeneLeer() && !modell) {
+      // erster Inhalt einer leeren Szene (Standort: Bohrungen der Laender uebernommen): ganz zeigen
+      await KAMERA.ansicht(editor.aktiv ? (rahmen.modus === "reihe" ? "sued" : "oben") : "iso", false);
+    }
     letzte = a;
     seitenleisteNeu();
     leisteNeu();

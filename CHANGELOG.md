@@ -6,6 +6,18 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Standort ohne Gutachten: a Baugrundmodell from a point, marked as **Vorerkundung** (decisions D85, D94).
+  - *Gutachten* step: a point in ETRS89/UTM starts a project; the Bohrungen der Länder, the DGM and the buildings
+    come from around it.
+  - Reifegrad Gutachten / Vorerkundung / gemischt from the origin of the Bohrungen: in the header, the *Modell*
+    step, the viewer, the report and the IFC (`CPset_Baugrundmodell.Reifegrad`, `CPset_Herkunft` per Bohrung).
+  - Archive Schichten get a fixed confidence of 0.5.
+  - A Gutachten added to a Standort becomes a new project that takes the Bohrungen der Länder, the query, the
+    DGM and the buildings with it; both sources stay apart (gemischt).
+- *Lage* step: LoD2 buildings of Berlin, Brandenburg and NRW around the site (decisions D86, D93).
+  - Fetched on a click from the CityGML tiles of the Länder (1 × 1 km, UTM + DHHN2016).
+  - In the IFC as context, one `IfcBuildingElementProxy` per building with the license of its service.
+  - A *Gebäude* button in the viewer shows or hides them.
 - Gelände from the DGM of the Land (decision D92).
   - *Lage* step: the DGM1 of the cut-out around the Bohrungen from the WCS of Brandenburg with Berlin
     and NRW, only on a click, with source, license and attribution.
@@ -33,13 +45,21 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed
+- The project list counts the imported Bohrungen der Länder.
 - A service of the Land that does not answer gives a message (HTTP 502) instead of a server error.
+- A dropped connection to a service of the Land is retried (up to three attempts).
 - Repository layout: the extraction moved from `spikes/extraktion_v2` to `services/extractor`, the
   test bench from `spikes/korpus` to `benchmark`, the Supabase migration from `spikes/supabase` to
   `supabase`. The extraction code is unchanged (identical regression results).
 - The benchmark tools (`eval_real.py`, `blind_test.py`, `screen_corpus.py`) use the current
   extraction v4; a new blind test freezes v4 predictions.
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
+
+### Fixed
+- Viewer: after the *Lage* step a model over 300 m was never fully in view (That Open's orbit mode limited the
+  distance to 300 m and moved the target); the camera now keeps its limit and its target when the mode changes.
+- Viewer: the camera no longer stands inside the model or a building when the first model or the first LoD2
+  buildings arrive during the *Lage* step, and the first Bohrungen of an empty Standort are fitted into view.
 
 ### Removed
 - Old experiments, kept in the git history and linked from the docs: prototype v3, the spike

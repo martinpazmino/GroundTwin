@@ -10,6 +10,8 @@ type Welt = OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.Bas
 const quellen = new Set<() => THREE.Box3 | null>();
 const kugel = new THREE.Sphere(new THREE.Vector3(), 50);
 const kiste = new THREE.Box3();
+let leer = true;                                        // nichts in der Szene (Kugel = Platzhalter am Nullpunkt)
+const MAX_ABSTAND = 200000;                             // Kamera bis 200 km vom Ziel: Trassen ueber 10 km ganz zeigen
 let welt: Welt;
 let raster: OBC.SimpleGrid | undefined;
 
@@ -22,6 +24,11 @@ export function szeneKugel() {
   return kugel;
 }
 
+/** Zeigt die Szene noch nichts (Standort ohne Bohrungen)? Stand der letzten szeneAktualisieren(). */
+export function szeneLeer() {
+  return leer;
+}
+
 /** Huelle neu bestimmen (nach Laden, Ziehen, Ueberhoehung); passt Raster und near/far an. */
 export function szeneAktualisieren() {
   kiste.makeEmpty();
@@ -29,7 +36,8 @@ export function szeneAktualisieren() {
     const b = q();
     if (b && !b.isEmpty()) kiste.union(b);
   }
-  if (kiste.isEmpty()) kiste.setFromCenterAndSize(new THREE.Vector3(), new THREE.Vector3(100, 20, 100));
+  leer = kiste.isEmpty();
+  if (leer) kiste.setFromCenterAndSize(new THREE.Vector3(), new THREE.Vector3(100, 20, 100));
   kiste.getBoundingSphere(kugel);
   kugel.radius = Math.max(kugel.radius, 5);
   rasterAnpassen();
@@ -142,7 +150,7 @@ export function einrichten(w: Welt, r: OBC.SimpleGrid | undefined) {
   new ResizeObserver(nachholen).observe(w.renderer!.three.domElement);
   const controls = w.camera.controls;
   controls.addEventListener("update", grenzenAnpassen);
-  controls.maxDistance = 200000;
+  controls.maxDistance = MAX_ABSTAND;
   controls.minZoom = 1e-4;                              // orthografisch: auch Trassen ueber 10 km einpassen
   controls.dollySpeed = 1.2;
   w.camera.projection.onChanged.add(() => {
@@ -230,6 +238,22 @@ function grenzenFuer(s: THREE.Sphere) {
     kam.far = Math.max(kam.far, s.center.distanceTo(kam.position) + s.radius * 4);
     kam.updateProjectionMatrix();
   }
+}
+
+/** Navigationsmodus (Orbit, Plan) wechseln, ohne dass That Open die Kamera verstellt: sein OrbitMode setzt
+ *  maxDistance auf 300 m und den Abstand zum Ziel auf den Abstand der Kamera vom Nullpunkt der Szene. Nach dem
+ *  Lage-Schritt klemmten Einpassen und Mausrad dann bei 300 m (Modelle ueber 300 m nie ganz im Bild), und stand die
+ *  Kamera fern vom Nullpunkt, sprang das Ziel Millionen Meter weit (docs/16 M37). */
+export async function modus(art: "Orbit" | "Plan") {
+  const c = welt.camera.controls;
+  const pos = c.getPosition(new THREE.Vector3());
+  const ziel = c.getTarget(new THREE.Vector3());
+  welt.camera.set(art);
+  c.maxDistance = MAX_ABSTAND;
+  if ([pos.x, pos.y, pos.z, ziel.x, ziel.y, ziel.z].every(Number.isFinite)) {
+    await c.setLookAt(pos.x, pos.y, pos.z, ziel.x, ziel.y, ziel.z, false);
+  }
+  grenzenAnpassen();
 }
 
 /** Kamera um einen Weg in der Szene mitnehmen: Nullpunkt verschoben (rahmen.ts) oder die Unterlage springt beim
