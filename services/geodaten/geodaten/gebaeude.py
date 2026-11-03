@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import io
 import math
-import time
 import urllib.error
-import urllib.request
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime
 
-from .bohrdaten import AGENT, VERSUCHE, DienstFehler, dienste_am_ort, namensnennung, utm_normal
+from .bohrdaten import dienste_am_ort, namensnennung, utm_normal
+from . import netz
+from .netz import DienstFehler
 
 ZEIT = 120                     # s je Kachel (NRW: 25 MB GML ohne Kompression)
 MAX_KACHELN = 9                # 3 x 3 km; mehr ist kein Umfeld mehr
@@ -36,26 +36,13 @@ class KeineKachel(DienstFehler):
     """Der Dienst hat diese Kachel nicht (HTTP 404): naechster Dienst oder keine Gebaeude dort."""
 
 
+def _kachel_fehler(err: urllib.error.HTTPError) -> None:
+    if err.code == 404:
+        raise KeineKachel("Kachel nicht vorhanden") from None
+
+
 def _holen(url: str, zeit: float) -> bytes:
-    anfrage = urllib.request.Request(url, headers={"User-Agent": AGENT})
-    for versuch in range(1, VERSUCHE + 1):
-        try:
-            with urllib.request.urlopen(anfrage, timeout=zeit) as antwort:
-                return antwort.read()
-        except TimeoutError:
-            raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
-        except urllib.error.HTTPError as err:
-            if err.code == 404:
-                raise KeineKachel("Kachel nicht vorhanden") from None
-            raise DienstFehler(f"HTTP {err.code}") from None
-        except (urllib.error.URLError, OSError) as err:
-            if isinstance(getattr(err, "reason", None), TimeoutError):   # Zeitueberschreitung beim Verbinden: nicht neu
-                raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
-            if versuch < VERSUCHE:                         # Verbindung abgebrochen (z. B. reset by peer): kurz warten, neu
-                time.sleep(versuch)
-                continue
-            raise DienstFehler(f"nicht erreichbar ({getattr(err, 'reason', err)})") from None
-    raise AssertionError("unerreichbar")
+    return netz.holen(url, zeit, bei_http=_kachel_fehler)  # netz.py: Kennung, Wiederholung, TLS (Tests ersetzen _holen)
 
 
 def kacheln(x0: float, y0: float, x1: float, y1: float, km: int = 1) -> list[tuple[int, int]]:

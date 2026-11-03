@@ -14,6 +14,7 @@ and the web-ifc WASM); everything else is installed with `pip` / `npm`.
 | Starlette, Uvicorn | web server | BSD-3-Clause |
 | python-multipart, Streamlit | file upload, Excel v1 app | Apache-2.0 |
 | Pillow | images | MIT-CMU (HPND) |
+| [certifi](https://github.com/certifi/python-certifi) | root certificates (Mozilla) for the services of the Länder | MPL-2.0 |
 | RapidOCR, OpenCV (optional, `requirements-ocr.txt`) | OCR of scans | Apache-2.0 |
 | [That Open Engine](https://github.com/ThatOpen) (`@thatopen/components`, `-front`, `fragments`, `ui`, `ui-obc`) | 3D viewer and BIM interface | MIT |
 | three.js, camera-controls, iconify-icon | 3D, camera, icons | MIT |

@@ -56,6 +56,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
 
 ### Fixed
+- Services of the Länder on Windows: Berlin failed with `CERTIFICATE_VERIFY_FAILED` (its new Telekom root was not
+  yet in the Windows store). TLS now checks against the system store and the Mozilla roots (certifi); a certificate
+  error is reported clearly and not retried. `scripts/dienste_pruefen.py` checks every service from this computer.
 - Viewer: after the *Lage* step a model over 300 m was never fully in view (That Open's orbit mode limited the
   distance to 300 m and moved the target); the camera now keeps its limit and its target when the mode changes.
 - Viewer: the camera no longer stands inside the model or a building when the first model or the first LoD2

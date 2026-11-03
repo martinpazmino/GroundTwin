@@ -60,7 +60,9 @@ license **AGPL-3.0-or-later** (D79).
 - Bohrungen der Länder (D91, docs/21 §4.5): `geodaten/bohrdaten.py` + `dienste.json` (services with license and
   evidence); query **only on a click**; Gegenprobe against the Gutachten; import only BoreholeML with Schichtdaten into
   `fremd.json` (codes `NW-…`, `herkunft` SGD, never exported back). Tests use the service dummy of
-  `tests/test_bohrdaten.py`; two tests ask the real services (skip offline).
+  `tests/test_bohrdaten.py`; two tests ask the real services (skip offline). Every request goes through
+  `geodaten/netz.py` (TLS: system store + certifi, X33); `scripts/dienste_pruefen.py` checks all services from the
+  user's machine.
 - Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (1 × 1 km, AdV profile, UTM +
   DHHN2016) of Berlin, Brandenburg and NRW on a click (`dienste.json`, per tile the first service that has it) into
   `gebaeude.json`; IFC context as `IfcBuildingElementProxy` with the license of its service, viewer button *Gebäude*.

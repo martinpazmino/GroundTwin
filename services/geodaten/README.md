@@ -25,6 +25,7 @@ network: nothing reveals the site of the project, and they work in every Land.
 | [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
 | [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten |
 | [`geodaten/gebaeude.py`](geodaten/gebaeude.py) | LoD2 buildings from the CityGML tiles of the Länder (1 × 1 km), streamed; walls, roof and ground with openings; cut-out, zone prefix |
+| [`geodaten/netz.py`](geodaten/netz.py) | One way to every service of the Länder: user agent, up to three attempts after a dropped connection, TLS against the root certificates of the system **and** of Mozilla (certifi); a certificate error is reported clearly and not retried (lesson X33) |
 | [`geodaten/dgm_dienst.py`](geodaten/dgm_dienst.py) | DGM1 of the cut-out around the Bohrungen from the WCS 2.0.1 of the Land (GeoTIFF, read by `gelaende.py`), coarser grid for large cut-outs, ExceptionReport and NoData as messages |
 
 **Formats:**
@@ -125,6 +126,12 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 
 Tests: `python -m pytest tests/test_bohrdaten.py tests/test_bohrdaten_app.py` (a dummy replaces the services;
 two tests ask the real ones).
+
+**Checking the services from this computer:** `python scripts/dienste_pruefen.py` (Windows:
+`.venv\Scripts\python scripts\dienste_pruefen.py`) asks every service of `dienste.json` for its capabilities (tile
+services: their server only) and prints one line per service: reachable, or why not (certificate, HTTP, timeout).
+It sends no Lage of a project. Tests of the network layer: `python -m pytest tests/test_netz.py` (a local HTTPS
+server with its own root).
 
 
 ## Gebäude der Länder (LoD2)
