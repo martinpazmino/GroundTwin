@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- *Lage* step: LoD2 buildings of Berlin, Brandenburg and NRW around the site (decisions D86, D93).
+  - Fetched on a click from the CityGML tiles of the Länder (1 × 1 km, UTM + DHHN2016).
+  - In the IFC as context, one `IfcBuildingElementProxy` per building with the license of its service.
+  - A *Gebäude* button in the viewer shows or hides them.
 - Gelände from the DGM of the Land (decision D92).
   - *Lage* step: the DGM1 of the cut-out around the Bohrungen from the WCS of Brandenburg with Berlin
     and NRW, only on a click, with source, license and attribution.
@@ -34,6 +38,7 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 
 ### Changed
 - A service of the Land that does not answer gives a message (HTTP 502) instead of a server error.
+- A dropped connection to a service of the Land is retried (up to three attempts).
 - Repository layout: the extraction moved from `spikes/extraktion_v2` to `services/extractor`, the
   test bench from `spikes/korpus` to `benchmark`, the Supabase migration from `spikes/supabase` to
   `supabase`. The extraction code is unchanged (identical regression results).

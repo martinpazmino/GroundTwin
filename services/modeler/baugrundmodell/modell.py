@@ -210,12 +210,14 @@ def _benennungen(schichten: list[dict]) -> str:
 def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   projekt: str = "Baugrundmodell aus Gutachten", pruefstand: str | None = None,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
-                  umgebung: float = UMGEBUNG_STANDARD) -> dict:
+                  umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
+                  gebaeude_info: dict | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
     durchmesser: Saeulen aller Bohrungen in m (None = automatisch nach Modellgroesse); durchmesser_je: je Code.
     umgebung: Gelaende aus dem DGM so weit um das Modellgebiet (m; 0 = keines), nur wenn die Oberkante aus dem DGM kommt.
+    gebaeude: LoD2-Gebaeude der Umgebung im System des Modells (geodaten.gebaeude), gebaeude_info: Quelle und Lizenz.
     """
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
@@ -284,8 +286,18 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                         dm, quelle = auto, "automatisch (Darstellung nach Modellgroesse)"
                     aus.bohrung(d["document"], b, (vb.x - m.ursprung[0], vb.y - m.ursprung[1]), vb.lage, vb.hoehe,
                                 durchmesser=dm, durchmesser_quelle=quelle)
+    n_gebaeude = 0
+    if gebaeude:
+        e0, n0 = m.ursprung
+        lokal = [{**b, "flaechen": [{"art": fl["art"], "ring": [(p[0] - e0, p[1] - n0, p[2]) for p in fl["ring"]],
+                                     "loecher": [[(p[0] - e0, p[1] - n0, p[2]) for p in r] for r in fl.get("loecher") or []]}
+                                    for fl in b["flaechen"]]} for b in gebaeude]
+        info = gebaeude_info or {}
+        n_gebaeude = aus.gebaeude(lokal, {k: v for k, v in info.items() if isinstance(v, (str, int, float))},
+                                  info.get("dienste") or {})
     aus.schreiben(pfad)
-    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen), "gelaende": gelaende is not None}
+    return {"einheiten": len(einheiten), "bohrungen": len(m.bohrungen), "gelaende": gelaende is not None,
+            "gebaeude": n_gebaeude}
 
 
 def bericht(m: Modell) -> dict:

@@ -128,12 +128,14 @@ def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: s
 
 
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,
-              durchmesser_je: dict[str, float] | None = None) -> bytes:
+              durchmesser_je: dict[str, float] | None = None, gebaeude: list[dict] | None = None,
+              gebaeude_info: dict | None = None) -> bytes:
     ARBEIT.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".ifc", dir=ARBEIT, delete=False) as fh:
         pfad = Path(fh.name)
     try:
-        ifc_schreiben(m, pfad, docs, pruefstand=pruefstand, durchmesser=durchmesser, durchmesser_je=durchmesser_je)
+        ifc_schreiben(m, pfad, docs, pruefstand=pruefstand, durchmesser=durchmesser, durchmesser_je=durchmesser_je,
+                      gebaeude=gebaeude, gebaeude_info=gebaeude_info)
         return pfad.read_bytes()
     finally:
         pfad.unlink(missing_ok=True)

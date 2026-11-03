@@ -8,8 +8,8 @@ aliases: [Geodaten, DGM, BoreholeML export]
 # Geodaten: DGM, BoreholeML and the services of the Länder
 
 Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM from files and
-from the services of the Länder (phase P3), BoreholeML (phase P1) and the Bohrungen der Länder (phases P0
-and P2), below.
+from the services of the Länder (phase P3), BoreholeML (phase P1), the Bohrungen der Länder (phases P0
+and P2) and their LoD2 buildings (phase P4), below.
 
 The user downloads the DGM tiles of their Land (open data, usually DGM1) and loads them in the
 *Lage* step, or fetches the cut-out around the Bohrungen from the service of the Land with a click. The
@@ -24,6 +24,7 @@ network: nothing reveals the site of the project, and they work in every Land.
 | [`werkzeuge/boreholeml_codes.py`](werkzeuge/boreholeml_codes.py) | Generates the JSON from the official codelists; stops if a name is missing or ambiguous |
 | [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
 | [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten |
+| [`geodaten/gebaeude.py`](geodaten/gebaeude.py) | LoD2 buildings from the CityGML tiles of the Länder (1 × 1 km), streamed; walls, roof and ground with openings; cut-out, zone prefix |
 | [`geodaten/dgm_dienst.py`](geodaten/dgm_dienst.py) | DGM1 of the cut-out around the Bohrungen from the WCS 2.0.1 of the Land (GeoTIFF, read by `gelaende.py`), coarser grid for large cut-outs, ExceptionReport and NoData as messages |
 
 **Formats:**
@@ -122,6 +123,24 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 
 Tests: `python -m pytest tests/test_bohrdaten.py tests/test_bohrdaten_app.py` (a dummy replaces the services;
 two tests ask the real ones).
+
+
+## Gebäude der Länder (LoD2)
+
+Details: [docs/21 §4.6](../../docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site).
+
+| Land | Tiles | Format | License |
+|---|---|---|---|
+| Berlin | `gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip` (ATOM feed) | ZIP with CityGML 1.0, EPSG:25833 + DHHN2016 | dl-de/zero-2.0 |
+| Brandenburg | `data.geobasis-bb.de/…/lod2_gml/lod2_33{e}-{n}.zip` | ZIP with CityGML 1.0, EPSG:25833 + DHHN2016 | dl-de/by-2.0 |
+| NRW | `www.opengeodata.nrw.de/…/lod2_gml/LoD2_32_{e}_{n}_1_NW.gml` | CityGML 1.0, EPSG:25832 + DHHN2016 | dl-de/zero-2.0 |
+
+- Tiles of 1 × 1 km (`{e}`, `{n}` in km), at most 9 per request; per tile the first service that has it.
+- Streamed with `iterparse`: an urban tile is 20–25 MB of GML.
+- The NRW OGC API for 3D buildings rejects `crs`, so the tiles are used.
+
+Tests: `python -m pytest tests/test_gebaeude.py tests/test_gebaeude_app.py` (a dummy replaces the tiles; one test
+loads a real tile of Berlin).
 
 Up: [Documentation index](../../docs/README.md)
 

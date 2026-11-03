@@ -11,6 +11,7 @@ Ablage unter ARBEIT (ui/pipeline.py, mit GEO_AGENT_ARBEIT festlegbar):
   projekte/<signatur>/sgd.json       letzte Abfrage der Bohrungen der Laender (Treffer, Gegenprobe, Quellen)
   projekte/<signatur>/fremd.json     uebernommene Bohrungen der Laender: weiteres Dokument hinter docs.json (die
                                      Signatur bleibt die der Gutachten; die Kennungen "Dokument:Bohrung" bleiben fest)
+  projekte/<signatur>/gebaeude.json  LoD2-Gebaeude der Laender um das Projekt (Kopf in projekt.json, docs/23 P4)
 """
 from __future__ import annotations
 
@@ -32,6 +33,7 @@ _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
 from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende  # noqa: E402
+from geodaten import gebaeude as lod2  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -179,7 +181,7 @@ class Arbeitsplatz:
         """Alle Korrekturen, Lagen, Pruefhaken und Eincheckungen verwerfen."""
         with self.sperre(sig):
             self.laden(sig)
-            for datei in ("fremd.json", "sgd.json", "dgm.npy"):           # Uebernommenes und Abfragen gehoeren dazu
+            for datei in ("fremd.json", "sgd.json", "dgm.npy", "gebaeude.json"):   # Uebernommenes und Abfragen gehoeren dazu
                 (self.ordner(sig) / datei).unlink(missing_ok=True)
             docs = json.loads((self.ordner(sig) / "docs.json").read_text(encoding="utf-8"))
             self._projekte[sig] = (docs, pj.neues_projekt(docs, sig))
@@ -275,6 +277,7 @@ class Arbeitsplatz:
                            if gecacht and (self.web / "modelle" / self._ifc_name(schluessel, docs, p)).exists() else None},
                 "punkte": p.punkte,
                 "gelaende": self._gelaende(sig, docs, p),
+                "gebaeude": p.gebaeude,                           # LoD2 der Laender (Kopf, ohne Geometrie)
                 "sgd": self._sgd(sig, docs),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg, "modus": p.lage_modus,
@@ -291,8 +294,8 @@ class Arbeitsplatz:
 
     # ------------------------------------------------------------ Modell
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:
-        """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser (die Saeulen gehoeren zum IFC, nicht zur Geometrie)."""
-        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p)], sort_keys=True)
+        """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser und Gebaeude (gehoeren zum IFC, nicht zur Geometrie)."""
+        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand")], sort_keys=True)
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
 
     def modell(self, sig: str) -> dict:
@@ -326,7 +329,8 @@ class Arbeitsplatz:
             ziel = self.web / "modelle" / name
             if not ziel.exists():
                 ziel.write_bytes(pl.ifc_bytes(m, vorb.docs, durchmesser=p.durchmesser,
-                                              durchmesser_je=pj.durchmesser_je_code(docs, p)))
+                                              durchmesser_je=pj.durchmesser_je_code(docs, p),
+                                              **self._gebaeude_fuer_ifc(sig, p, m)))
                 alte = sorted((self.web / "modelle").glob("*.ifc"), key=lambda f: f.stat().st_mtime)[:-20]
                 for f in alte:
                     f.unlink(missing_ok=True)
@@ -371,7 +375,8 @@ class Arbeitsplatz:
             if art == "ifc":
                 letzter = p.eincheckungen[-1] if p.eincheckungen else None
                 inhalt = pl.ifc_bytes(m, vorb.docs, pruefstand=pj.stand_text(letzter) if letzter else "nicht eingecheckt",
-                                      durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p))
+                                      durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p),
+                                      **self._gebaeude_fuer_ifc(sig, p, m))
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
 
@@ -465,6 +470,48 @@ class Arbeitsplatz:
                     self._dgm.popitem(last=False)
             self._dgm.move_to_end(schluessel)
             return self._dgm[schluessel]
+
+    # ------------------------------------------------------------ Gebaeude der Laender (LoD2, docs/23 P4, nur auf Klick)
+    def gebaeude_abrufen(self, sig: str, rand: float | None = None, holer=None) -> None:
+        """LoD2-Gebaeude im Ausschnitt um die Bohrungen aus den Kacheln der Laender; ersetzt vorhandene."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            punkte, epsg = pj.projekt_punkte(docs, p)
+        box = lod2.ausschnitt(punkte, lod2.RAND_STANDARD if rand is None else rand)
+        liste, quelle = lod2.abrufen(*box, epsg, holer=holer)                 # Netz: ohne Sperre
+        if not liste:
+            raise ValueError("keine LoD2-Gebäude im Ausschnitt"
+                             + (f" (keine Kachel: {', '.join(quelle['ohne_kachel'])})" if quelle["ohne_kachel"] else ""))
+        daten = {"epsg": epsg, "quelle": quelle, "gebaeude": liste}
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            json_schreiben(self.ordner(sig) / "gebaeude.json", daten)
+            p.gebaeude = {"anzahl": len(liste), "flaechen": sum(len(b["flaechen"]) for b in liste), "epsg": epsg,
+                          "quelle": quelle, "geladen": pj.jetzt(),
+                          "stand": hashlib.sha256(json.dumps(daten, sort_keys=True).encode()).hexdigest()[:12]}
+            p.version += 1
+            self.sichern(sig)
+
+    def gebaeude_entfernen(self, sig: str) -> None:
+        with self.sperre(sig):
+            _, p = self.laden(sig)
+            p.gebaeude = None
+            (self.ordner(sig) / "gebaeude.json").unlink(missing_ok=True)
+            p.version += 1
+            self.sichern(sig)
+
+    def _gebaeude_fuer_ifc(self, sig: str, p: pj.Projekt, m) -> dict:
+        """Gebaeude und Angaben je Dienst fuer ifc_schreiben (nur im System des Modells)."""
+        pfad = self.ordner(sig) / "gebaeude.json"
+        if not p.gebaeude or not pfad.exists() or p.gebaeude.get("epsg") != m.epsg:
+            return {}
+        daten = json.loads(pfad.read_text(encoding="utf-8"))
+        q = daten["quelle"]
+        return {"gebaeude": daten["gebaeude"],
+                "gebaeude_info": {"Abgerufen": q["abgerufen"], "Hinweis": "Bestand aus dem LoD2 des Landes (Umgebung)",
+                                  "dienste": {d["dienst"]: {"Quelle": f"{d['titel']} ({d['land']})", "Anbieter": d["anbieter"],
+                                                            "Lizenz": d["lizenz"], "Namensnennung": d["namensnennung"]}
+                                              for d in q["dienste"]}}}
 
     @staticmethod
     def _mit_dgm(p: pj.Projekt) -> bool:

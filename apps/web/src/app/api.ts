@@ -47,6 +47,16 @@ export interface GelaendeZeile {
   status: "ok" | "abweichung" | "ohne_gok" | "aus_dgm" | "ausserhalb" | "ohne_lage" | "anderes_system";
 }
 
+/** LoD2-Gebäude der Länder (docs/23 P4): Kacheln, Dienste mit Lizenz; die Geometrie liegt nur im IFC. */
+export interface Gebaeude {
+  anzahl: number; flaechen: number; epsg: number; geladen: string; stand: string;
+  quelle: {
+    dienste: { dienst: string; land: string; titel: string; anbieter: string; lizenz: string; lizenz_url: string;
+               namensnennung: string; beleg: string }[];
+    abgerufen: string; ausschnitt: [number, number, number, number]; kacheln: number; ohne_kachel: string[]; fehler: string[];
+  };
+}
+
 /** Dienst des Landes, von dem das DGM stammt (docs/23 §2.4): Lizenz und Namensnennung gehen ins IFC. */
 export interface DgmQuelle {
   dienst: string; land: string; titel: string; anbieter: string; lizenz: string; lizenz_url: string;
@@ -99,6 +109,7 @@ export interface Zustand {
   punkte: Punkt[];                                    // freie Punkte auf dem Plan (noch keiner Bohrung zugeordnet)
   gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
   sgd: Sgd | null;                                    // letzte Abfrage der Bohrungen der Länder
+  gebaeude: Gebaeude | null;                          // LoD2-Gebäude der Länder um das Projekt (Kopf)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -191,6 +202,8 @@ export const api = {
   },
   dgmAbruf: (sig: string, rand: number) => anfrage<Zustand>(`/api/projekt/${sig}/dgm/abruf`, json({ rand })),
   dgmEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/dgm`, { method: "DELETE" }),
+  gebaeudeAbruf: (sig: string, rand: number) => anfrage<Zustand>(`/api/projekt/${sig}/gebaeude/abruf`, json({ rand })),
+  gebaeudeEntfernen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/gebaeude`, { method: "DELETE" }),
   sgdAbfrage: (sig: string, radius: number) => anfrage<Zustand>(`/api/projekt/${sig}/sgd/abfrage`, json({ radius })),
   sgdUebernehmen: (sig: string, auswahl: { dienst: string; id: string }[]) =>
     anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/sgd/uebernehmen`, json({ auswahl })),

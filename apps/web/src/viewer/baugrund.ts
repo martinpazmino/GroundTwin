@@ -18,6 +18,7 @@ export interface Inhalt {
   bohrsaeulen: number[];
   bohrungen: number[];
   gelaende: number[];
+  gebaeude: number[];
   modellname: string;
   modell: Record<string, unknown>;
 }
@@ -41,7 +42,8 @@ export function psets(d: Datensatz): Psets {
 }
 
 export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
-  const kat = await model.getItemsOfCategories([/GEOTECHNICALSTRATUM/, /BOREHOLE/, /GEOMODEL/, /GEOGRAPHICELEMENT/]);
+  const kat = await model.getItemsOfCategories([/GEOTECHNICALSTRATUM/, /BOREHOLE/, /GEOMODEL/, /GEOGRAPHICELEMENT/,
+                                                 /BUILDINGELEMENTPROXY/]);
   const strata = kat.IFCGEOTECHNICALSTRATUM ?? [];
   const kurz = strata.length
     ? await model.getItemsData(strata, { attributesDefault: false, attributes: ["Name", "Description"] })
@@ -72,6 +74,7 @@ export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
     bohrsaeulen,
     bohrungen: kat.IFCBOREHOLE ?? [],
     gelaende: kat.IFCGEOGRAPHICELEMENT ?? [],
+    gebaeude: kat.IFCBUILDINGELEMENTPROXY ?? [],                 // LoD2-Gebaeude der Umgebung
     modellname: gm ? String(wert(gm as Datensatz, "Name")) : "",
     modell: gm ? (psets(gm as Datensatz).CPset_Baugrundmodell ?? {}) : {},
   };

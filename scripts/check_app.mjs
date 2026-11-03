@@ -4,7 +4,8 @@
 //   B  Berlin: Vorschlag nach Norm fuer eine unklassifizierte Schicht uebernehmen; B2 Gelaende (DGM-Datei): Vergleich
 //      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen; B3 Bohrungen der Laender: echte
 //      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens; B4 DGM vom Land (echter
-//      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus
+//      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus; B5 Gebaeude (LoD2) vom
+//      Land (echte Kacheln Berlin, Netz): im IFC und im Viewer, ein/aus
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -37,6 +38,13 @@ const pruefungen = [];
 page.on("pageerror", (e) => fehler.push(String(e.stack || e)));
 page.on("console", (m) => m.type() === "error" && !/favicon/.test(m.text()) && fehler.push(m.text()));
 page.on("dialog", (d) => d.accept());
+
+/** Pruefung ausgelassen, weil ein Dienst des Landes nicht erreichbar war: die erwartete 502 des Servers ist kein Seitenfehler. */
+function ausgelassen(text) {
+  console.log(`AUS  ${text}`);
+  const i = fehler.findLastIndex((f) => /status of 502/.test(f));
+  if (i >= 0) fehler.splice(i, 1);
+}
 
 function pruefe(name, ok, info = "") {
   pruefungen.push({ name, ok: !!ok });
@@ -221,7 +229,7 @@ try {
   gz = (await stand()).z.gelaende;
   const fehlerLand = (await page.evaluate(() => window.app.meldungen.filter((m) => m.art === "fehler").map((m) => m.text))).join("; ");
   if (!gz?.info?.quelle && /Dienst des Landes: .*(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(fehlerLand)) {
-    console.log(`AUS  DGM vom Land: Dienst nicht erreichbar (${fehlerLand}) – Prüfungen ausgelassen`);
+    ausgelassen(`DGM vom Land: Dienst nicht erreichbar (${fehlerLand}) – Prüfungen ausgelassen`);
   } else {
     const st = Object.fromEntries((gz?.pruefung?.zeilen ?? []).map((r) => [r.code, r.status]));
     pruefe("DGM vom Land (WCS Brandenburg mit Berlin, 1 m): GOK-Vergleich markiert 422C-5526 (1 m unter dem DGM)",
@@ -241,6 +249,37 @@ try {
     await page.locator('bim-button[label="Gelände"]').click();
     await warte(() => window.baugrund.gelaendeSichtbar === false, null, 10000).catch(() => {});
     pruefe("Gelände im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gelaendeSichtbar === false));
+  }
+
+  // ---------------------------------------------------------------- B5: Gebaeude (LoD2) vom Land (echte Kacheln Berlin)
+  if ((await page.evaluate(() => window.app.schritt)) !== "lage") {
+    await page.locator("nav.schritte button", { hasText: "Lage" }).click();
+    await warte(() => window.app.schritt === "lage", null, 60000);
+  }
+  const gebaeudeTeil = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Gebäude (LoD2)" }) });
+  if (!(await gebaeudeTeil.evaluate((d) => d.open))) await gebaeudeTeil.locator("summary").click();
+  const letzteMeldung = await page.evaluate(() => Math.max(0, ...window.app.meldungen.map((m) => m.id)));
+  await page.getByRole("button", { name: "Gebäude vom Land abrufen" }).click();
+  await warte((n) => window.app.z.gebaeude || window.app.meldungen.some((m) => m.id > n && m.art === "fehler"), letzteMeldung, 240000);
+  const zg = (await stand()).z.gebaeude;
+  const fehlerGeb = (await page.evaluate((n) => window.app.meldungen.filter((m) => m.id > n && m.art === "fehler").map((m) => m.text),
+    letzteMeldung)).join("; ");
+  if (!zg && /Dienst des Landes: .*(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(fehlerGeb)) {
+    ausgelassen(`Gebäude vom Land: Dienst nicht erreichbar (${fehlerGeb}) – Prüfungen ausgelassen`);
+  } else {
+    pruefe("Gebäude (LoD2) vom Land: Kacheln Berlin, Lizenz dl-de/zero-2.0",
+      zg?.anzahl > 10 && zg.quelle.dienste[0]?.dienst === "BE-LOD2" && zg.quelle.dienste[0]?.lizenz === "dl-de/zero-2.0",
+      `${zg?.anzahl} Gebäude · ${zg?.quelle?.kacheln} Kacheln ${fehlerGeb}`);
+    const ladungenG = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
+    await page.locator("nav.schritte button", { hasText: "Modell" }).click();
+    await warte((n) => window.baugrund?.ladungen > n && !window.app.rechnet, ladungenG, 240000);
+    await ruhe(2000);
+    const vg = await page.evaluate(() => ({ gebaeude: window.baugrund.gebaeude, gelaende: window.baugrund.gelaende }));
+    pruefe("Gebäude im Modell und im Viewer (IfcBuildingElementProxy)", vg.gebaeude === zg.anzahl, JSON.stringify(vg));
+    await page.screenshot({ path: `${aus}/B5_gebaeude.png` });
+    await page.locator('bim-button[label="Gebäude"]').click();
+    await warte(() => window.baugrund.gebaeudeSichtbar === false, null, 10000).catch(() => {});
+    pruefe("Gebäude im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gebaeudeSichtbar === false));
   }
 
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen

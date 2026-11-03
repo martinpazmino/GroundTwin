@@ -424,6 +424,48 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
 
 ![Bohrungen der Länder: Berlin, 37 Bohrungen within 250 m; the five of the Gutachten found at the Land within 0.05 m](img/21_lage_laender.jpg)
 
+### 4.6 Gebäude (LoD2): buildings around the site
+
+Phase P4 of the open data plan ([23](23_open_data_integration.md), D86, D93): the Umgebungsmodell with
+the terrain of §4.4.
+
+**Fetching:**
+
+- Section *Gebäude (LoD2)* in the *Lage* step. *Gebäude vom Land abrufen* loads the 3D building models
+  LoD2 of the Land for the cut-out around the Bohrungen (plus a margin, 100 m by default).
+- Berlin, Brandenburg and NRW publish them in the same way: CityGML tiles of 1 × 1 km in the AdV profile,
+  in ETRS89/UTM with heights in DHHN2016. That is the frame of the model, so no quasigeoid and no
+  meridian convergence are needed ([`dienste.json`](../services/geodaten/geodaten/dienste.json)).
+  - Berlin: dl-de/zero-2.0.
+  - Brandenburg: dl-de/by-2.0.
+  - NRW: dl-de/zero-2.0.
+- **Only on a click.** The tile numbers reveal the site to about 1 km.
+- Each tile comes from the first service that has it. In Berlin, the Brandenburg service answers 404.
+- A dropped connection is retried, up to three attempts.
+- Berlin example: 2 tiles, 39 buildings and 2,463 faces in about 11 s.
+
+**In the model:**
+
+- **Selection:** a building counts when its footprint touches the cut-out. It is taken whole, not clipped.
+- **Faces:** walls, roof and ground are read, with openings. The virtual closure surfaces are left out.
+- **IFC:** one `IfcBuildingElementProxy` per building (`USERDEFINED`, "LoD2-Gebäude (Umgebung)").
+  - Its geometry is two open `IfcPolygonalFaceSet`: walls and ground in light grey, the roof in tile red.
+  - Faces with openings are `IfcIndexedPolygonalFaceWithVoids`.
+  - `CPset_Gebaeude` holds source, license and attribution of its own service, the GML id, function,
+    roof type and height.
+- **Viewer:** the *Gebäude* button shows or hides them.
+- **Removing:** *Gebäude entfernen* takes them out of the next IFC.
+
+**Heights in place:**
+
+- In the AdV profile, the ground of a building is the lowest point of the DGM at its footprint.
+- Measured against the DGM1 of the Land, with a median of 0.00 m in both places:
+  - Berlin: 97 % of the buildings within 0.5 m.
+  - Marl (NRW): 100 % within 0.5 m.
+- The mean of the DGM at the footprint differs by metres on slopes: a flat ground plate on sloping terrain.
+
+![Berlin example with the DGM1 and the LoD2 buildings of Berlin around the model, without vertical exaggeration: 39 buildings from two tiles](img/21_modell_gebaeude.jpg)
+
 ## 5. Einheiten and Modell
 
 **Einheiten**:
@@ -500,10 +542,10 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 
 | Test | Result |
 |---|---|
-| Modeler (`cd services/modeler && python -m pytest tests`) | 61 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM) |
-| App and API (`python -m pytest tests`) | 92: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 7 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 4 for the online script |
+| Modeler (`cd services/modeler && python -m pytest tests`) | 62 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM, 1 for the LoD2 buildings) |
+| App and API (`python -m pytest tests`) | 101: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 4 for the online script |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 37/37 and no page error: Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 40/40 and no page error: Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 

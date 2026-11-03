@@ -466,3 +466,49 @@ def test_ohne_dgm_kein_gelaende_im_ifc(tmp_path):
     m, docs = modell(syn.demo())
     assert not ifc_schreiben(m, tmp_path / "ohne.ifc", docs)["gelaende"]
     assert len(ifcopenshell.open(str(tmp_path / "ohne.ifc")).by_type("IfcGeographicElement")) == 0
+
+
+# ---------------------------------------------------------------- LoD2-Gebaeude der Umgebung (ifc4x3.gebaeude, docs/23 P4)
+def quader(x, y, b, t, z0, h, loch=False):
+    """Gebaeude als Quader (Boden, vier Waende, Dach) im System des Falls; eine Wand mit Fensterloch."""
+    e0, n0 = syn.URSPRUNG
+    p = [(e0 + x, n0 + y), (e0 + x + b, n0 + y), (e0 + x + b, n0 + y + t), (e0 + x, n0 + y + t)]
+    fl = [{"art": "Boden", "ring": [(*q, z0) for q in reversed(p)], "loecher": []},
+          {"art": "Dach", "ring": [(*q, z0 + h) for q in p], "loecher": []}]
+    for k in range(4):
+        a, c = p[k], p[(k + 1) % 4]
+        ring = [(*a, z0), (*c, z0), (*c, z0 + h), (*a, z0 + h), (*a, z0)]       # geschlossen wie im GML
+        loecher = []
+        if loch and k == 0:
+            loecher = [[(a[0] + 1, a[1], z0 + 1), (a[0] + 2, a[1], z0 + 1), (a[0] + 2, a[1], z0 + 2), (a[0] + 1, a[1], z0 + 2)]]
+        fl.append({"art": "Wand", "ring": ring, "loecher": loecher})
+    return {"id": f"DEBE_TEST_{x:g}", "funktion": "31001_1000", "dachform": "1000", "hoehe": h, "flaechen": fl}
+
+
+def test_ifc_mit_lod2_gebaeuden(tmp_path):
+    """IfcBuildingElementProxy je Gebaeude: Waende/Boden und Dach mit eigener Farbe, Loch als FaceWithVoids, Lizenz."""
+    import ifcopenshell
+    import ifcopenshell.util.element
+    import ifcopenshell.util.unit
+    import ifcopenshell.validate
+    m, docs = modell(syn.demo())
+    geb = [quader(-40, -30, 12, 8, 30.0, 9.5, loch=True), quader(170, 40, 6, 6, 31.0, 4.0)]
+    pfad = tmp_path / "gebaeude.ifc"
+    erg = ifc_schreiben(m, pfad, docs, gebaeude=geb, gebaeude_info={"Lizenz": "dl-de/zero-2.0", "Quelle": "Test"})
+    assert erg["gebaeude"] == 2
+    f = ifcopenshell.open(str(pfad))
+    log = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(f, log)
+    assert log.statements == []
+    assert ifcopenshell.util.unit.calculate_unit_scale(f) == 1.0
+    proxies = f.by_type("IfcBuildingElementProxy")
+    assert len(proxies) == 2 and all(p.ObjectType == "LoD2-Gebäude (Umgebung)" for p in proxies)
+    ps = ifcopenshell.util.element.get_psets(proxies[0])["CPset_Gebaeude"]
+    assert ps["Lizenz"] == "dl-de/zero-2.0" and ps["GML_ID"] == "DEBE_TEST_-40" and ps["Hoehe_m"] == 9.5
+    items = proxies[0].Representation.Representations[0].Items
+    assert [len(i.Faces) for i in items] == [5, 1] and not any(i.Closed for i in items)
+    assert len(f.by_type("IfcIndexedPolygonalFaceWithVoids")) == 1
+    # lokal zum Ursprung, Hoehen unveraendert (m NHN), geschlossene Ringe ohne doppelten Punkt
+    k = np.array(items[1].Coordinates.CoordList)
+    assert np.allclose(k[:, 2], 39.5) and len(k) == 4
+    assert k[:, 0].min() == pytest.approx(syn.URSPRUNG[0] - 40 - m.ursprung[0])

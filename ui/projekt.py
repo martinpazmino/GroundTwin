@@ -60,6 +60,7 @@ class Projekt:
     reihe: dict = field(default_factory=lambda: {"standard": 20.0, "reihenfolge": [], "abstand": {}, "station": {}})
     unterlage: dict | None = None
     dgm: dict | None = None                # Gelaendemodell aus Dateien (Kopf; Raster liegt im Projektordner)
+    gebaeude: dict | None = None           # LoD2-Gebaeude der Laender (Kopf; Daten in gebaeude.json)
     punkte: list[dict] = field(default_factory=list)          # freie Punkte auf dem Plan: {id, x, y} (noch ohne Bohrung)
     punkt_zaehler: int = 0
     ursprung: tuple[float, float] | None = None

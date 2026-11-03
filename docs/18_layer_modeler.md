@@ -113,6 +113,9 @@ base 28.55), Kies 2, Sand 3 (censored).
 - With a DGM: `IfcGeographicElement` TERRAIN, the terrain around the model (rings along the outward normals
   of the edge, up to 100 m and the edge of the DGM; open `IfcTriangulatedFaceSet` that shares the edge nodes
   of the model), `CPset_Gelaende` with source, license and attribution.
+- With the LoD2 buildings of the Land: one `IfcBuildingElementProxy` per building (`USERDEFINED` "LoD2-Gebäude
+  (Umgebung)"), two open `IfcPolygonalFaceSet` (walls and ground, roof) with openings as
+  `IfcIndexedPolygonalFaceWithVoids`, `CPset_Gebaeude` with the license of its service (D93).
 - Georeferencing `IfcMapConversion` + EPSG from the JSON, origin = rounded centroid (or the fixed
   project origin passed by the app). **Explicit length unit METRE** (formerly mm by ifcopenshell's
   default: the model came out 1000× too small, [M17](16_lessons_learned.md#m-model-ifc-and-that-open)).

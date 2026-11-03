@@ -132,11 +132,13 @@ and how to update the versions.
      ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)).
    - Bohrungen der Länder: the Bohrungen of the state databases around the site (on a click), a
      Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
+   - Gebäude (LoD2): the 3D buildings of Berlin, Brandenburg and NRW around the site (on a click), in the
+     IFC and the viewer ([docs/21 §4.6](docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
      and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
 5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
-   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM, the
-   terrain around the model.
+   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM and the
+   LoD2 of the Land, the terrain and the buildings around the model.
 6. **That Open viewer** ([apps/web](apps/web/README.md)): compact toolbar, help on every setting and
    the Lage editor. With every change, the model is recomputed.
 
@@ -153,7 +155,7 @@ app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
 services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
 services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
-services/geodaten/          DGM, GOK check, BoreholeML, Bohrungen der Länder (open data plan, docs/23)
+services/geodaten/          DGM, GOK check, BoreholeML, Bohrungen und Gebäude der Länder (open data plan, docs/23)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)

@@ -35,6 +35,7 @@ let neueArt: "plan" | "schnitt" = "plan";
 let dgmEpsg: number | null | undefined;               // System der DGM-Dateien (undefined = das des Projekts)
 let sgdRadius = 250;                                  // m um die Mitte des Projekts
 let dgmRand = 100;                                    // m um die Bohrungen (DGM vom Land)
+let gebaeudeRand = 100;                               // m um die Bohrungen (LoD2-Gebäude)
 const sgdWahl = new Set<string>();                    // "dienst/id" der Bohrungen, die übernommen werden sollen
 
 function schluessel(z: Zustand) {
@@ -572,6 +573,54 @@ function sgdSchichten(t: SgdTreffer) {
   return html`<span class="leise">${t.schichten === "ohne Petrographie" ? "ohne Petrographie" : "keine Schichten"}</span>`;
 }
 
+// ------------------------------------------------------------------ Gebaeude der Laender (LoD2)
+async function gebaeudeAbrufen() {
+  const z = await versuchen(() => api.gebaeudeAbruf(S.sig, gebaeudeRand), "Gebäude werden beim Land abgerufen …");
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+    melden(`${z.gebaeude?.anzahl ?? 0} Gebäude geladen – im Modell als Umgebung.`, "ok");
+  }
+}
+
+async function gebaeudeEntfernen() {
+  const z = await versuchen(() => api.gebaeudeEntfernen(S.sig));
+  if (z) {
+    zustandUebernehmen(z);
+    neu();
+  }
+}
+
+/** LoD2 der Länder: Kacheln 1 × 1 km, nur auf Klick; der Knopf sagt, was gesendet wird (D88). */
+function gebaeudeTeil(z: Zustand) {
+  if (z.lage_modus !== "koordinaten") return html`<p class="leise klein">Nur mit Lage nach Koordinaten.</p>`;
+  const g = z.gebaeude;
+  const abruf = html`
+    <div class="zeile">
+      <label class="inline">Rand <input type="number" min="0" max="1000" step="25" class="kurz" aria-label="Rand der Gebäude"
+        .value=${live(String(gebaeudeRand))} @change=${(ev: Event) => { gebaeudeRand = eingabe(ev) ?? 100; }}> m</label>
+      <button @click=${gebaeudeAbrufen} title="Lädt die Kacheln (1 × 1 km) um die Bohrungen beim Land">
+        ${g ? "Gebäude neu abrufen" : "Gebäude vom Land abrufen"}</button>${hilfe("gebaeude")}
+    </div>`;
+  if (!g) {
+    return html`
+      <p class="leise klein">3D-Gebäudemodelle LoD2 von Berlin, Brandenburg und NRW (CityGML, m NHN) als Umgebung im Modell und
+        im IFC. Lädt die Kacheln von 1 × 1 km um die Bohrungen – das verrät die Lage des Projekts auf etwa 1 km.</p>
+      ${abruf}`;
+  }
+  const q = g.quelle;
+  return html`
+    <p><b>${g.anzahl.toLocaleString("de-DE")} Gebäude</b> · ${g.flaechen.toLocaleString("de-DE")} Flächen ·
+      ${q.kacheln} Kachel${q.kacheln === 1 ? "" : "n"} <span class="leise klein">· abgerufen ${q.abgerufen}</span></p>
+    ${q.dienste.map((d) => html`<p class="leise klein">${d.anbieter} · <a href=${d.beleg} target="_blank" rel="noopener">${d.lizenz}</a> ·
+      ${d.namensnennung}</p>`)}
+    ${q.ohne_kachel.length ? html`<p class="leise klein">ohne Kachel beim Land: ${q.ohne_kachel.join(", ")}</p>` : nothing}
+    ${q.fehler.map((f) => html`<p class="warnung klein">⚠ ${f}</p>`)}
+    <p class="leise klein">Im Viewer mit dem Knopf „Gebäude“ ein- und ausblendbar.</p>
+    ${abruf}
+    <button class="link klein" @click=${gebaeudeEntfernen}>Gebäude entfernen</button>`;
+}
+
 function sgdTeil(z: Zustand) {
   if (z.lage_modus === "reihe") return html`<p class="leise klein">Nur mit Lage nach Koordinaten.</p>`;
   const s = z.sgd;
@@ -659,6 +708,7 @@ export function schrittLage() {
       ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
         gelaendeTeil(z), !!z.gelaende)}
       ${abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z), !!z.sgd)}
+      ${abschnitt(html`Gebäude (LoD2)${z.gebaeude ? " ✓" : ""} ${hilfe("gebaeude")}`, gebaeudeTeil(z), !!z.gebaeude)}
       ${abschnitt(html`Darstellung`, html`
         <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}
           <input type="number" step="0.1" min="0" class="kurz" placeholder=${`auto ${zahl(z.durchmesser_auto, 1)}`}

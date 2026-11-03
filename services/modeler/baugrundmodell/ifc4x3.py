@@ -24,6 +24,8 @@ from .koerper import dreiecke_aus
 from .normen import KLASSEN, UNKLASSIFIZIERT, bekannt, deuten, farbinfo, ifc_eigenschaften
 
 GELAENDE_RGB = (0.55, 0.66, 0.44)          # Gelaende: gedecktes Gruen, hebt sich von den Bodenfarben (Auffuellung grau) ab
+WAND_RGB = (0.88, 0.86, 0.82)              # LoD2-Gebaeude: helle Waende ...
+DACH_RGB = (0.66, 0.36, 0.30)              # ... und ziegelrote Daecher
 
 
 def rgb_aus(hexwert: str) -> tuple[float, float, float]:
@@ -53,6 +55,14 @@ def farbe(klasse: str | None, nummer: int = 1) -> tuple[float, float, float]:
 
 def hexfarbe(rgb: tuple[float, float, float]) -> str:
     return "#" + "".join(f"{round(c * 255):02x}" for c in rgb)
+
+
+def _ohne_doppelte(idx: list[int]) -> list[int]:
+    """Aufeinanderfolgende gleiche Punkte (auch erster = letzter) entfernen."""
+    out = [i for k, i in enumerate(idx) if k == 0 or i != idx[k - 1]]
+    while len(out) > 1 and out[0] == out[-1]:
+        out.pop()
+    return out
 
 
 def prisma(cx: float, cy: float, z_oben: float, z_unten: float, r: float = 0.5, n: int = 12):
@@ -201,6 +211,70 @@ class IfcAusgabe:
         self._geometrie(g, knoten, np.asarray(dreiecke, dtype=np.int64), GELAENDE_RGB, "Gelaende", geschlossen=False)
         self._pset(g, "CPset_Gelaende", eigenschaften)
         return g
+
+    def gebaeude(self, gebaeude: list[dict], eigenschaften: dict, je_dienst: dict[str, dict] | None = None) -> int:
+        """LoD2-Gebaeude der Umgebung: je Gebaeude ein IfcBuildingElementProxy (USERDEFINED "LoD2-Gebäude (Umgebung)")
+        mit zwei offenen IfcPolygonalFaceSet (Waende und Boden, Dach) - Flaechen mit Loechern als FaceWithVoids.
+
+        gebaeude: [{id, funktion, dachform, hoehe, dienst, flaechen [{art, ring, loecher}]}] lokal (m NHN);
+        je_dienst: Quelle, Lizenz und Namensnennung je Dienst (Berlin und Brandenburg koennen gemischt sein).
+        """
+        f = self.f
+        wand, dach = self._stil(WAND_RGB, "Gebaeude Wand"), self._stil(DACH_RGB, "Gebaeude Dach")
+        n = 0
+        for b in gebaeude:
+            items, stile = [], []
+            for arten, stil in ((("Wand", "Boden"), wand), (("Dach",), dach)):
+                fs = self._facetten([fl for fl in b["flaechen"] if fl["art"] in arten])
+                if fs is not None:
+                    items.append(fs)
+                    stile.append(stil)
+            if not items:
+                continue
+            g = api.root.create_entity(f, ifc_class="IfcBuildingElementProxy", name=f"Gebäude {b.get('id') or n + 1}",
+                                       predefined_type="USERDEFINED")
+            g.ObjectType = "LoD2-Gebäude (Umgebung)"
+            g.Description = "Bestand aus dem LoD2 des Landes"
+            api.spatial.assign_container(f, products=[g], relating_structure=self.site)
+            rep = f.create_entity("IfcShapeRepresentation", ContextOfItems=self.body, RepresentationIdentifier="Body",
+                                  RepresentationType="Tessellation", Items=items)
+            api.style.assign_representation_styles(f, shape_representation=rep, styles=stile)
+            api.geometry.assign_representation(f, product=g, representation=rep)
+            api.geometry.edit_object_placement(f, product=g)
+            self._pset(g, "CPset_Gebaeude", {**eigenschaften, **(je_dienst or {}).get(b.get("dienst"), {}),
+                                             "GML_ID": b.get("id"), "Funktion": b.get("funktion"),
+                                             "Dachform": b.get("dachform"),
+                                             "Hoehe_m": round(float(b["hoehe"]), 2) if b.get("hoehe") is not None else None})
+            n += 1
+        return n
+
+    def _facetten(self, flaechen: list[dict]):
+        """Offenes IfcPolygonalFaceSet aus Ringen (Punkte je Gebaeude auf mm zusammengefasst, Indizes ab 1)."""
+        if not flaechen:
+            return None
+        index: dict[tuple, int] = {}
+
+        def nr(p) -> int:
+            k = (round(float(p[0]), 3), round(float(p[1]), 3), round(float(p[2]), 3))
+            if k not in index:
+                index[k] = len(index) + 1
+            return index[k]
+
+        faces = []
+        for fl in flaechen:
+            aussen = _ohne_doppelte([nr(p) for p in fl["ring"]])
+            if len(aussen) < 3:
+                continue
+            innen = [r for r in (_ohne_doppelte([nr(p) for p in ring]) for ring in fl.get("loecher") or []) if len(r) >= 3]
+            if innen:
+                faces.append(self.f.create_entity("IfcIndexedPolygonalFaceWithVoids", CoordIndex=tuple(aussen),
+                                                  InnerCoordIndices=[tuple(r) for r in innen]))
+            else:
+                faces.append(self.f.create_entity("IfcIndexedPolygonalFace", CoordIndex=tuple(aussen)))
+        if not faces:
+            return None
+        punkte = self.f.create_entity("IfcCartesianPointList3D", CoordList=[k for k, _ in sorted(index.items(), key=lambda t: t[1])])
+        return self.f.create_entity("IfcPolygonalFaceSet", Coordinates=punkte, Closed=False, Faces=faces)
 
     def schreiben(self, pfad) -> None:
         self.f.write(str(pfad))

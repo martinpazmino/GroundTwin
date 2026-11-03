@@ -62,6 +62,10 @@ class DgmAbruf(BaseModel):
     rand: float | None = None
 
 
+class GebaeudeAbruf(BaseModel):
+    rand: float | None = None
+
+
 class SgdAuswahl(BaseModel):
     auswahl: list[dict]
 
@@ -197,6 +201,16 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.post("/api/projekt/{sig}/dgm/abruf")
     def dgm_abruf(sig: str, a: DgmAbruf):
         ap.dgm_abrufen(sig, a.rand)
+        return ap.zustand(sig)
+
+    @app.post("/api/projekt/{sig}/gebaeude/abruf")
+    def gebaeude_abruf(sig: str, a: GebaeudeAbruf):
+        ap.gebaeude_abrufen(sig, a.rand)
+        return ap.zustand(sig)
+
+    @app.delete("/api/projekt/{sig}/gebaeude")
+    def gebaeude_entfernen(sig: str):
+        ap.gebaeude_entfernen(sig)
         return ap.zustand(sig)
 
     @app.delete("/api/projekt/{sig}/dgm")

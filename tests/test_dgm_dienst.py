@@ -105,3 +105,48 @@ def test_live_berlin_und_nrw():
     assert q["dienst"] == "BB-DGM1" and r.dx == 1.0 and 30 < r.hoehe(394774.3, 5818338.1) < 40
     r, q = _live(368000, 5724300, 368300, 5724500, 25832)
     assert q["dienst"] == "NW-DGM1" and r.dx == 1.0 and 50 < float(np.nanmean(r.z)) < 70
+
+
+def test_verbindungsabbruch_wird_wiederholt(monkeypatch):
+    """Connection reset by peer: bis zu dreimal versuchen (mit kurzer Pause); Zeitueberschreitung nicht."""
+    import urllib.error
+    import urllib.request
+    aufrufe = []
+    monkeypatch.setattr(dd.time, "sleep", lambda s: None)
+
+    class Antwort:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b"daten"
+
+    def urlopen(anfrage, timeout):
+        aufrufe.append(anfrage.full_url)
+        if len(aufrufe) == 1:
+            raise urllib.error.URLError(ConnectionResetError(104, "Connection reset by peer"))
+        return Antwort()
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert dd._holen("https://beispiel/wcs", 5) == b"daten" and len(aufrufe) == 2
+
+    def immer_reset(anfrage, timeout):
+        aufrufe.append(1)
+        raise urllib.error.URLError(ConnectionResetError(104, "Connection reset by peer"))
+    aufrufe.clear()
+    monkeypatch.setattr(urllib.request, "urlopen", immer_reset)
+    with pytest.raises(DienstFehler, match="nicht erreichbar"):
+        dd._holen("https://beispiel/wcs", 5)
+    assert len(aufrufe) == dd.VERSUCHE == 3
+
+    for fehler in (TimeoutError(), urllib.error.URLError(TimeoutError("timed out"))):     # auch beim Verbinden
+        def zeit(anfrage, timeout, fehler=fehler):
+            aufrufe.append(1)
+            raise fehler
+        aufrufe.clear()
+        monkeypatch.setattr(urllib.request, "urlopen", zeit)
+        with pytest.raises(DienstFehler, match="keine Antwort"):
+            dd._holen("https://beispiel/wcs", 5)
+        assert len(aufrufe) == 1

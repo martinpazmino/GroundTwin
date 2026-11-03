@@ -8,6 +8,7 @@ einer Datei des Nutzers: GOK-Pruefung, fehlende GOK und Gelaende im Modell arbei
 from __future__ import annotations
 
 import math
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,7 +18,7 @@ from datetime import date, datetime
 import numpy as np
 
 from . import gelaende
-from .bohrdaten import AGENT, DienstFehler, dienste_am_ort, namensnennung, utm_normal
+from .bohrdaten import AGENT, VERSUCHE, DienstFehler, dienste_am_ort, namensnennung, utm_normal
 
 ZEIT = 120                     # s je Abruf (1 km2 bei 1 m: ca. 4 MB)
 MAX_PIXEL = 3000               # je Richtung; groessere Ausschnitte mit groeberem Raster (SCALEFACTOR, ganzzahlig)
@@ -28,16 +29,23 @@ _PRAEFIX = {4647: 32_000_000.0, 5650: 33_000_000.0}       # Zonenkennung im Rech
 
 def _holen(url: str, zeit: float) -> bytes:
     anfrage = urllib.request.Request(url, headers={"User-Agent": AGENT})
-    try:
-        with urllib.request.urlopen(anfrage, timeout=zeit) as antwort:
-            return antwort.read()
-    except TimeoutError:
-        raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
-    except urllib.error.HTTPError as err:
-        text = _ausnahme(err.read())                       # WCS: Fehler als ExceptionReport mit HTTP 400
-        raise DienstFehler(f"HTTP {err.code}" + (f": {text}" if text else "")) from None
-    except (urllib.error.URLError, OSError) as err:
-        raise DienstFehler(f"nicht erreichbar ({getattr(err, 'reason', err)})") from None
+    for versuch in range(1, VERSUCHE + 1):
+        try:
+            with urllib.request.urlopen(anfrage, timeout=zeit) as antwort:
+                return antwort.read()
+        except TimeoutError:
+            raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
+        except urllib.error.HTTPError as err:
+            text = _ausnahme(err.read())                   # WCS: Fehler als ExceptionReport mit HTTP 400
+            raise DienstFehler(f"HTTP {err.code}" + (f": {text}" if text else "")) from None
+        except (urllib.error.URLError, OSError) as err:
+            if isinstance(getattr(err, "reason", None), TimeoutError):   # Zeitueberschreitung beim Verbinden: nicht neu
+                raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
+            if versuch < VERSUCHE:                         # Verbindung abgebrochen (z. B. reset by peer): kurz warten, neu
+                time.sleep(versuch)
+                continue
+            raise DienstFehler(f"nicht erreichbar ({getattr(err, 'reason', err)})") from None
+    raise AssertionError("unerreichbar")
 
 
 def _ausnahme(daten: bytes) -> str:
