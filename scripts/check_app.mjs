@@ -568,7 +568,11 @@ try {
   await page.getByLabel("System des Standorts").selectOption("25832");
   await page.getByLabel("Name (frei)").fill("E2E Standort Marl");
   await page.getByRole("button", { name: /Projekt am Standort anlegen/ }).click();
-  await warte(() => window.app.schritt === "lage" && window.app.z?.standort, null, 60000);
+  await warte(() => window.app.z?.standort && window.app.schritt !== "gutachten", null, 60000);
+  // gibt es den Standort schon (zweiter Lauf), oeffnet er sich nur: verwerfen, dann wie neu im Schritt Lage
+  await page.locator(".menue summary").click();
+  await page.getByRole("button", { name: /Alle Korrekturen verwerfen/ }).click();
+  await warte(() => window.app?.z?.version === 0 && window.app.schritt === "lage" && !window.app.z.bohrungen.length, null, 60000);
   const kopfAbzeichen = await page.locator(".kopf .abzeichen.vorerkundung").count();
   const teilSgd = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Bohrungen der Länder" }) });
   if (!(await teilSgd.evaluate((d) => d.open))) await teilSgd.locator("summary").click();

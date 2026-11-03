@@ -51,6 +51,8 @@ def pruefen(d: dict) -> tuple[bool, str]:
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):          # Windows-Konsole oder Umleitung in cp1252/cp850: nie abbrechen
+        sys.stdout.reconfigure(errors="replace")
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--nur", nargs="*", help="Kennungen der Dienste (z. B. BE NW BB-DGM1)")
     a = ap.parse_args()

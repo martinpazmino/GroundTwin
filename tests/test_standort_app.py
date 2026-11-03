@@ -117,3 +117,86 @@ def test_unbekannter_standort_beim_hochladen(client):
     r = client.post("/api/gutachten", files=[("dateien", ("m.json", json.dumps(MARL).encode(), "application/json"))],
                     data={"standort": "gibtsnicht"})
     assert r.status_code == 404
+
+
+def test_standort_vorhanden_zuruecksetzen_und_leer(client):
+    """Derselbe Punkt nochmal: nur oeffnen (Name und Schritt bleiben). Zuruecksetzen: Name bleibt, Schritt Lage.
+    Ohne Bohrungen sagen Modell und Export, was fehlt."""
+    sig = standort(client)
+    client.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "schritt", "wert": "modell"}]})
+    r = client.post("/api/standort", json={"x": 368130.0, "y": 5724400.0, "epsg": 25832, "name": "Anders"}).json()
+    assert r == {"projekt": sig, "vorhanden": True}
+    z = client.get(f"/api/projekt/{sig}").json()
+    assert z["name"] == "Marl Nord" and z["schritt"] == "modell"
+    client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250})
+    client.post(f"/api/projekt/{sig}/sgd/uebernehmen", json={"auswahl": [{"dienst": "NW", "id": "DABO_1"}]})
+    z = client.post(f"/api/projekt/{sig}/zuruecksetzen").json()
+    assert z["name"] == "Marl Nord" and z["schritt"] == "lage" and z["bohrungen"] == [] and z["sgd"] is None
+    m = client.post(f"/api/projekt/{sig}/modell").json()
+    assert m["fehler"].startswith("noch keine Bohrung – im Schritt Lage die Bohrungen der Länder abfragen")
+    r = client.get(f"/api/projekt/{sig}/export/boreholeml")
+    assert r.status_code == 400 and r.json()["detail"] == "keine exportierbare Bohrung: keine Bohrung im Projekt"
+    # ohne Namen angelegt: Name aus dem Punkt, auch nach dem Zuruecksetzen (kein Pfad aus "x / y")
+    sig2 = client.post("/api/standort", json={"x": 368600.0, "y": 5724700.0, "epsg": 25832}).json()["projekt"]
+    assert client.post(f"/api/projekt/{sig2}/zuruecksetzen").json()["name"] == "Standort 368600 / 5724700 (EPSG:25832)"
+
+
+def test_standort_ohne_dienst_des_landes(client):
+    """Bayern: kein Dienst fuer Bohrungen und DGM - gesagt statt still "0 Bohrungen"."""
+    sig = client.post("/api/standort", json={"x": 691000.0, "y": 5334000.0, "epsg": 25832}).json()["projekt"]
+    s = client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250}).json()["sgd"]
+    assert s["treffer"] == [] and s["dienste"] == []
+    assert s["fehler"] == [{"dienst": "Länder", "fehler": "kein Dienst für diesen Ort (bisher Baden-Württemberg, Berlin, "
+                                                          "Brandenburg, Nordrhein-Westfalen)"}]
+    r = client.post(f"/api/projekt/{sig}/dgm/abruf", json={})
+    assert r.status_code == 400 and "kein DGM-Dienst für diesen Ort" in r.json()["detail"]
+
+
+def test_standort_mit_zonenkennung_und_gutachten_ohne(client):
+    """Standort in EPSG 4647 (Zonenkennung), der Dienst liefert 25832: Bohrungen der Laender kommen ins System des
+    Standorts. Kommt ein Gutachten in 25832 dazu, gehen Bohrungen der Laender, DGM und Gebaeude in dessen System."""
+    ap = client.app.state.arbeitsplatz
+    sig = client.post("/api/standort", json={"x": 32368130.0, "y": 5724400.0, "epsg": 4647, "name": "Marl Zone"}).json()["projekt"]
+    client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250})
+    z = client.post(f"/api/projekt/{sig}/sgd/uebernehmen", json={"auswahl": [{"dienst": "NW", "id": "DABO_1"}]}).json()["zustand"]
+    nw1 = next(b for b in z["viewer"]["bohrungen"] if b["code"] == "NW-1")
+    assert nw1["x"] == pytest.approx(32_368_100.0) and z["viewer"]["epsg"] == 4647
+    assert z["viewer"]["ursprung"] == [32_368_100.0, 5_724_400.0]
+    zeilen = [f"{x + 32_000_000:.1f} {y:.1f} 60.000" for y in range(5724200, 5724601, 5) for x in range(367900, 368401, 5)]
+    r = client.post(f"/api/projekt/{sig}/dgm", files=[("dateien", ("marl.xyz", ("\n".join(zeilen) + "\n").encode(), "text/plain"))],
+                    data={"epsg": "4647"})
+    assert r.status_code == 200, r.text
+    _, p = ap.laden(sig)                                   # Gebaeude wie vom Land (im System des Standorts)
+    ring = [[32_368_120.0, 5_724_380.0, 60.0], [32_368_130.0, 5_724_380.0, 60.0], [32_368_130.0, 5_724_390.0, 60.0]]
+    (ap.ordner(sig) / "gebaeude.json").write_text(json.dumps({"epsg": 4647, "quelle": {}, "gebaeude": [
+        {"id": "G1", "dienst": "NW-LOD2", "funktion": None, "dachform": None, "hoehe": None,
+         "flaechen": [{"art": "Boden", "ring": ring, "loecher": []}]}]}), encoding="utf-8")
+    p.gebaeude = {"anzahl": 1, "flaechen": 1, "epsg": 4647, "geladen": "2026-11-03 17:00", "stand": "abc",
+                  "quelle": {"ausschnitt": [32_368_030.0, 5_724_300.0, 32_368_230.0, 5_724_500.0], "dienste": []}}
+    ap.sichern(sig)
+    assert "hinweis" not in client.get(f"/api/projekt/{sig}").json()["gebaeude"]
+    a = client.post("/api/gutachten", files=[("dateien", ("marl_gutachten.json", json.dumps(MARL).encode(), "application/json"))],
+                    data={"ocr": "false", "standort": sig}).json()
+    for _ in range(200):
+        a = client.get(f"/api/auftrag/{a['id']}").json()
+        if a["fertig"]:
+            break
+        time.sleep(0.05)
+    neu = a["projekt"]
+    z = client.get(f"/api/projekt/{neu}").json()
+    nw1 = next(b for b in z["viewer"]["bohrungen"] if b["code"] == "NW-1")
+    assert nw1["x"] == pytest.approx(368_100.0) and z["viewer"]["epsg"] == 25832 and z["reifegrad"]["stufe"] == "gemischt"
+    assert z["gelaende"]["info"]["epsg"] == 25832 and z["gelaende"]["info"]["x0"] == pytest.approx(367_900.0)
+    assert all(zeile["status"] != "anderes_system" for zeile in z["gelaende"]["pruefung"]["zeilen"])
+    assert z["gebaeude"]["epsg"] == 25832 and "hinweis" not in z["gebaeude"]
+    g = json.loads((ap.ordner(neu) / "gebaeude.json").read_text(encoding="utf-8"))
+    assert g["epsg"] == 25832 and g["gebaeude"][0]["flaechen"][0]["ring"][0][0] == pytest.approx(368_120.0)
+    # das Standort-Projekt bleibt in seinem System (Datei und Kopf im Speicher)
+    assert json.loads((ap.ordner(sig) / "gebaeude.json").read_text(encoding="utf-8"))["epsg"] == 4647
+    _, ps = ap.laden(sig)
+    assert ps.dgm["epsg"] == 4647 and ps.dgm["ausdehnung"][0] == pytest.approx(32_367_900.0)
+    assert ps.gebaeude["quelle"]["ausschnitt"][0] == pytest.approx(32_368_030.0)
+    # passen Gebaeude und Bohrungen nicht zusammen, wird es gesagt (nicht still aus dem IFC gelassen)
+    _, p = ap.laden(neu)
+    p.gebaeude["epsg"] = 25833
+    assert "nicht ins Modell" in client.get(f"/api/projekt/{neu}").json()["gebaeude"]["hinweis"]

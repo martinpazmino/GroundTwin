@@ -616,6 +616,7 @@ function gebaeudeTeil(z: Zustand) {
       ${d.namensnennung}</p>`)}
     ${q.ohne_kachel.length ? html`<p class="leise klein">ohne Kachel beim Land: ${q.ohne_kachel.join(", ")}</p>` : nothing}
     ${q.fehler.map((f) => html`<p class="warnung klein">⚠ ${f}</p>`)}
+    ${g.hinweis ? html`<p class="warnung klein">⚠ ${g.hinweis}</p>` : nothing}
     <p class="leise klein">Im Viewer mit dem Knopf „Gebäude“ ein- und ausblendbar.</p>
     ${abruf}
     <button class="link klein" @click=${gebaeudeEntfernen}>Gebäude entfernen</button>`;

@@ -179,7 +179,11 @@ def neues_projekt(docs: list[dict], signatur: str) -> Projekt:
         b.get("x") is not None and b.get("y") is not None for _, _, b in bohrungen(docs))
     p.lage_modus = LAGE_KOORDINATEN if hat_lage else LAGE_REIHE
     p.reihe["reihenfolge"] = [bid for bid, _, b in sorted(bohrungen(docs), key=lambda t: natuerlich(t[2]["code"]))]
-    p.name = Path(docs[0]["document"]["file"]).stem if len(docs) == 1 else f"{len(docs)} Dokumente"
+    erstes = docs[0]["document"]
+    if erstes.get("standort"):                       # "Standort 368130 / 5724400 (EPSG:25832)": kein Pfad
+        p.name = erstes["file"]
+    else:
+        p.name = Path(erstes["file"]).stem if len(docs) == 1 else f"{len(docs)} Dokumente"
     p.angelegt = p.geaendert = jetzt()
     return p
 

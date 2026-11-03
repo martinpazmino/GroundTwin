@@ -21,6 +21,7 @@ from pathlib import Path
 from . import boreholeml
 from . import netz
 from .netz import AGENT, VERSUCHE, DienstFehler  # noqa: F401  (AGENT, VERSUCHE: wie bisher von hier lesbar)
+from .utm import utm_normal
 
 DIENSTE: list[dict] = json.loads(Path(__file__).with_name("dienste.json").read_text(encoding="utf-8"))["dienste"]
 RADIUS_STANDARD, RADIUS_MAX = 250.0, 2000.0     # m um die Mitte des Projekts
@@ -29,19 +30,9 @@ ZEIT_KOPF, ZEIT_BML = 30, 120                   # s; der BoreholeML-Dienst von N
 DOPPELT_ABSTAND = 3.0                           # m: naeher = dieselbe Bohrung (auch ohne gleichen Namen)
 NAME_ABSTAND = 50.0                             # m: gleicher Name zaehlt nur so nah als dieselbe Bohrung
 KONFIDENZ_ARCHIV = 0.5                          # Schichten aus der Datenbank eines Landes: nicht gegen ein PDF geprueft
-_UTM = {25831: (31, 0.0), 25832: (32, 0.0), 25833: (33, 0.0), 4647: (32, 32_000_000.0), 5650: (33, 33_000_000.0)}
-_NORMAL = {31: 25831, 32: 25832, 33: 25833}
 
 
 # ---------------------------------------------------------------- Lage
-def utm_normal(x: float, y: float, epsg: int) -> tuple[float, float, int]:
-    """ETRS89/UTM ohne Zonenkennung im Rechtswert (4647 -> 25832, 5650 -> 25833)."""
-    if int(epsg) not in _UTM:
-        raise ValueError(f"EPSG:{epsg} – für die Abfrage der Länder ETRS89/UTM nötig (25832/25833)")
-    zone, abzug = _UTM[int(epsg)]
-    return float(x) - abzug, float(y), _NORMAL[zone]
-
-
 def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
     """UTM (GRS80, Nordhalbkugel) -> (Laenge, Breite) in Grad; Reihen nach Snyder (USGS 1987), Fehler << 1 m."""
     a, f, k0 = 6378137.0, 1 / 298.257222101, 0.9996
@@ -103,6 +94,9 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
     x, y, epsg = utm_normal(x, y, epsg)
     am_ort = dienste_am_ort(x, y, epsg)
     treffer, fehler = [], []
+    if not am_ort:                                  # Bayern, Hessen, ...: sagen statt still "0 Bohrungen"
+        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
+        fehler.append({"dienst": "Länder", "fehler": f"kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
     bbox = f"{x - radius:.1f},{y - radius:.1f},{x + radius:.1f},{y + radius:.1f},urn:ogc:def:crs:EPSG::{epsg}"
     for d in am_ort:
         if epsg not in d["systeme"]:

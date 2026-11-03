@@ -15,6 +15,7 @@ Ablage unter ARBEIT (ui/pipeline.py, mit GEO_AGENT_ARBEIT festlegbar):
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import shutil
@@ -32,7 +33,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende  # noqa: E402
+from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
 
 BEISPIELE = {
@@ -184,7 +185,12 @@ class Arbeitsplatz:
             for datei in ("fremd.json", "sgd.json", "dgm.npy", "gebaeude.json"):   # Uebernommenes und Abfragen gehoeren dazu
                 (self.ordner(sig) / datei).unlink(missing_ok=True)
             docs = json.loads((self.ordner(sig) / "docs.json").read_text(encoding="utf-8"))
-            self._projekte[sig] = (docs, pj.neues_projekt(docs, sig))
+            name = self._projekte[sig][1].name
+            p = pj.neues_projekt(docs, sig)
+            p.name = name or p.name                          # der Name ist keine Korrektur
+            if pj.standort_von(docs):                         # Standort: weiter mit den Diensten im Schritt Lage
+                p.schritt = "lage"
+            self._projekte[sig] = (docs, p)
             self.sichern(sig)
 
     def loeschen(self, sig: str) -> None:
@@ -193,8 +199,9 @@ class Arbeitsplatz:
             shutil.rmtree(self.ordner(sig), ignore_errors=True)
 
     # ------------------------------------------------------------ Standort (ohne Gutachten, docs/23 §2.3, P5)
-    def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> str:
-        """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender."""
+    def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> tuple[str, bool]:
+        """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender.
+        Gibt es den Standort schon, wird er nur geoeffnet (Name und Schritt bleiben). Rueckgabe (Signatur, vorhanden)."""
         xn, yn, _ = bohrdaten.utm_normal(float(x), float(y), int(epsg))          # ValueError ausser ETRS89/UTM
         if not (150_000 <= xn <= 850_000 and 5_200_000 <= yn <= 6_150_000):
             raise ValueError(f"Rechtswert {x:.0f} / Hochwert {y:.0f} liegen nicht in Deutschland (EPSG:{epsg})")
@@ -203,7 +210,10 @@ class Arbeitsplatz:
         docs = [{"document": {"file": f"Standort {punkt['x']:.0f} / {punkt['y']:.0f} (EPSG:{epsg})", "sha256": kennung,
                               "parser_version": "standort", "pages": None, "standort": punkt},
                  "boreholes": [], "soundings": {}}]
+        vorhanden = (self.ordner(signatur(docs)) / "projekt.json").exists()
         sig = self.anlegen(docs)
+        if vorhanden:
+            return sig, True
         with self.sperre(sig):
             _, p = self.laden(sig)
             if name.strip():
@@ -211,7 +221,7 @@ class Arbeitsplatz:
             p.lage_modus = pj.LAGE_KOORDINATEN
             p.schritt = "lage"
             self.sichern(sig)
-        return sig
+        return sig, False
 
     def _standort_uebernehmen(self, von: str, nach: str) -> None:
         """Gutachten zu einem Standort: Bohrungen der Laender (mit Pruefstand), Abfrage, DGM und Gebaeude uebernehmen.
@@ -230,22 +240,77 @@ class Arbeitsplatz:
             self._projekte.pop(nach, None)                   # neu laden: fremd.json gehoert jetzt dazu
             docs, p = self.laden(nach)
             n_nach = len(self._gutachten(nach))
-            p.dgm = p.dgm or (dict(pv.dgm) if pv.dgm else None)
-            p.gebaeude = p.gebaeude or (dict(pv.gebaeude) if pv.gebaeude else None)
+            p.dgm = p.dgm or copy.deepcopy(pv.dgm)          # tief: _ins_system aendert Listen darin (Ausdehnung)
+            p.gebaeude = p.gebaeude or copy.deepcopy(pv.gebaeude)
             alt, neu = f"{n_von}:", f"{n_nach}:"
             for quelle_d, ziel_d in ((pv.bohrung, p.bohrung), (pv.schicht, p.schicht)):
                 for k, o in quelle_d.items():
                     if k.startswith(alt):
                         ziel_d.setdefault(neu + k[len(alt):], dict(o))
+            epsgs = Counter(int(b["crs_epsg"]) for d in docs[:n_nach] for b in d["boreholes"]
+                            if b.get("x") is not None and b.get("crs_epsg"))
+            if epsgs:                                        # Gutachten mit Zonenkennung, Standort ohne (oder umgekehrt)
+                docs = self._ins_system(nach, docs, n_nach, p, epsgs.most_common(1)[0][0])
             sgd = ziel / "sgd.json"
             if sgd.exists():
                 erg = json.loads(sgd.read_text(encoding="utf-8"))
                 eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(neu)]
-                erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+                erg["gegenprobe"] = self._gegenprobe(erg, eigene)
                 json_schreiben(sgd, erg)
             p.lage_modus = pj.LAGE_KOORDINATEN
             p.version += 1
             self.sichern(nach)
+
+    def _ins_system(self, sig: str, docs: list[dict], n_gutachten: int, p: pj.Projekt, ziel: int) -> list[dict]:
+        """Bohrungen der Laender, DGM und Gebaeude eines Projekts ins System ziel derselben UTM-Zone umschreiben
+        (Zonenkennung hinzu oder weg, docs/16 S17); eine andere Zone bleibt, wie sie ist (die Pruefungen markieren)."""
+        if len(docs) > n_gutachten:
+            fremd = docs[n_gutachten]
+            for b in fremd["boreholes"]:
+                v = utm.versatz(b.get("crs_epsg"), ziel)
+                if v:
+                    b["x"], b["crs_epsg"] = float(b["x"]) + v, ziel
+            json_schreiben(self.ordner(sig) / "fremd.json", fremd)
+        for kopf in (p.dgm, p.gebaeude):
+            v = utm.versatz((kopf or {}).get("epsg"), ziel)
+            if not v:
+                continue
+            kopf["epsg"] = ziel
+            kopf["stand"] = hashlib.sha256(f"{kopf.get('stand')}:{ziel}".encode()).hexdigest()[:12]
+            for k in ("x0",):
+                if k in kopf:
+                    kopf[k] += v
+            for kasten in (kopf.get("ausdehnung"), (kopf.get("quelle") or {}).get("ausschnitt")):
+                if kasten:
+                    kasten[0] += v
+                    kasten[2] += v
+            if kopf is p.gebaeude and (self.ordner(sig) / "gebaeude.json").exists():
+                daten = json.loads((self.ordner(sig) / "gebaeude.json").read_text(encoding="utf-8"))
+                for g in daten["gebaeude"]:
+                    for f in g["flaechen"]:
+                        for ring in [f["ring"], *f.get("loecher", [])]:
+                            for punkt in ring:
+                                punkt[0] += v
+                daten["epsg"] = ziel
+                json_schreiben(self.ordner(sig) / "gebaeude.json", daten)
+        return docs
+
+    @staticmethod
+    def _gegenprobe(erg: dict, eigene: list[dict]) -> dict:
+        """Gegenprobe im System der Abfrage: Bohrungen des Gutachtens mit Zonenkennung (4647) gegen Treffer ohne."""
+        gleich = []
+        for b in eigene:
+            v = utm.versatz(b["epsg"], erg["epsg"]) if b.get("epsg") else 0.0
+            if v is not None:
+                gleich.append({**b, "x": b["x"] + v if b.get("x") is not None else None})
+        return bohrdaten.doppelte(erg["treffer"], gleich)
+
+    def _system(self, docs: list[dict], p: pj.Projekt) -> int | None:
+        """EPSG des Projekts (Standort, sonst das haeufigste der Bohrungen, sonst der kalibrierte Plan) oder None."""
+        try:
+            return int(pj.projekt_mitte(docs, p)[2])
+        except (ValueError, TypeError):
+            return None
 
     def liste(self) -> list[dict]:
         """Zuletzt bearbeitete Projekte (neueste zuerst)."""
@@ -338,7 +403,7 @@ class Arbeitsplatz:
                            if gecacht and (self.web / "modelle" / self._ifc_name(schluessel, docs, p)).exists() else None},
                 "punkte": p.punkte,
                 "gelaende": self._gelaende(sig, docs, p),
-                "gebaeude": p.gebaeude,                           # LoD2 der Laender (Kopf, ohne Geometrie)
+                "gebaeude": self._gebaeude_kopf(p, epsgs.most_common(1)[0][0] if epsgs else None),   # LoD2 (Kopf)
                 "sgd": self._sgd(sig, docs),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
@@ -370,7 +435,11 @@ class Arbeitsplatz:
                 self.sichern(sig)
             fehler = ""
             if schluessel not in self._modelle:
-                if not vorb.lage:
+                if not vorb.lage and not any(True for _ in pj.bohrungen(docs)):
+                    fehler = ("noch keine Bohrung – im Schritt Lage die Bohrungen der Länder abfragen und übernehmen "
+                              "(Schichtdaten bisher NRW und Baden-Württemberg)" if pj.standort_von(docs)
+                              else "keine Bohrung im Projekt")
+                elif not vorb.lage:
                     fehler = "keine Bohrung mit Lage – im Schritt Lage setzen oder 'Reihe' wählen"
                 else:
                     e = pj.einstellungen(p)
@@ -562,6 +631,18 @@ class Arbeitsplatz:
             p.version += 1
             self.sichern(sig)
 
+    @staticmethod
+    def _gebaeude_kopf(p: pj.Projekt, system: int | None) -> dict | None:
+        """Kopf der Gebaeude fuer die Oberflaeche; in einem anderen System als die Bohrungen kommen sie nicht ins IFC -
+        das wird gesagt, nicht still weggelassen."""
+        if not p.gebaeude:
+            return None
+        kopf = dict(p.gebaeude)
+        if system and kopf.get("epsg") and int(kopf["epsg"]) != int(system):
+            kopf["hinweis"] = (f"Gebäude in EPSG:{kopf['epsg']}, die Bohrungen in EPSG:{system} – sie kommen nicht ins "
+                               "Modell; neu abrufen")
+        return kopf
+
     def _gebaeude_fuer_ifc(self, sig: str, p: pj.Projekt, m) -> dict:
         """Gebaeude und Angaben je Dienst fuer ifc_schreiben (nur im System des Modells)."""
         pfad = self.ordner(sig) / "gebaeude.json"
@@ -615,7 +696,7 @@ class Arbeitsplatz:
         with self.sperre(sig):
             docs, p = self.laden(sig)
             eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(f"{len(self._gutachten(sig))}:")]
-            erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+            erg["gegenprobe"] = self._gegenprobe(erg, eigene)
             json_schreiben(self.ordner(sig) / "sgd.json", erg)
             p.version += 1
             self.sichern(sig)
@@ -637,6 +718,11 @@ class Arbeitsplatz:
             neu = [b for doc in geholt for b in doc["boreholes"] if (b.get("quelle"), b.get("fremd_id")) not in schon]
             if not neu:
                 raise ValueError("diese Bohrungen sind schon im Projekt")
+            system = self._system(docs, p)               # die Dienste liefern ohne Zonenkennung, das Projekt evtl. mit
+            for b in neu:
+                v = utm.versatz(b.get("crs_epsg"), system) if system else None
+                if v:
+                    b["x"], b["crs_epsg"] = float(b["x"]) + v, system
             fremd["boreholes"] += neu
             json_schreiben(self.ordner(sig) / "fremd.json", fremd)
             self._projekte[sig] = (gutachten + [fremd], p)

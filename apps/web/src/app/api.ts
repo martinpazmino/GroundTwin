@@ -55,6 +55,7 @@ export interface Gebaeude {
                namensnennung: string; beleg: string }[];
     abgerufen: string; ausschnitt: [number, number, number, number]; kacheln: number; ohne_kachel: string[]; fehler: string[];
   };
+  hinweis?: string;                                  // anderes System als die Bohrungen: nicht im Modell
 }
 
 /** Dienst des Landes, von dem das DGM stammt (docs/23 §2.4): Lizenz und Namensnennung gehen ins IFC. */
@@ -184,7 +185,7 @@ export const api = {
     return anfrage<Auftrag>("/api/gutachten", { method: "POST", body: f });
   },
   standort: (x: number, y: number, epsg: number, name: string) =>
-    anfrage<{ projekt: string }>("/api/standort", json({ x, y, epsg, name })),
+    anfrage<{ projekt: string; vorhanden: boolean }>("/api/standort", json({ x, y, epsg, name })),
   auftrag: (id: string) => anfrage<Auftrag>(`/api/auftrag/${id}`),
   zustand: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}`),
   aendern: (sig: string, ops: Op[]) => anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/aendern`, json({ ops })),

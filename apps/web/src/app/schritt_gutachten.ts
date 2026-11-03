@@ -46,7 +46,9 @@ async function standortAnlegen() {
     return;
   }
   const r = await versuchen(() => api.standort(x, y, ort.epsg, ort.name), "Standort wird angelegt …");
-  if (r) await oeffnen(r.projekt, "lage");
+  if (!r) return;
+  await oeffnen(r.projekt, r.vorhanden ? undefined : "lage");    // vorhanden: Name und Schritt bleiben
+  if (r.vorhanden) melden(`Den Standort gibt es schon: „${S.z?.name}“ geöffnet.`);
 }
 
 function standortKarte() {

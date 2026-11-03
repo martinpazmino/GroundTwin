@@ -56,6 +56,17 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
 
 ### Fixed
+- Exports with a project name containing characters outside latin-1 (for example "–" or "✓", common in file names of
+  Gutachten) failed; download names now go as UTF-8 with an ASCII fallback, without the characters Windows forbids.
+- Standort: the same point a second time opens the existing project (name and step stay) instead of renaming it;
+  resetting keeps the name and returns to the *Lage* step; the dialog says that imported Bohrungen der Länder, DGM
+  and buildings go too.
+- Zone prefix (EPSG 4647/5650): Bohrungen der Länder come into the system of the project, the Gegenprobe compares in
+  one system, and a Gutachten added to a Standort gets the Bohrungen, DGM and buildings in its own system. Buildings in
+  another system than the Bohrungen are now marked instead of silently left out of the IFC.
+- Clear messages: a site without a service of the Land, a model or a BoreholeML export without Bohrungen.
+- Viewer: after a reset the next model is fitted into view again, and the Reifegrad band of the previous project
+  disappears when the project changes.
 - Services of the Länder on Windows: Berlin failed with `CERTIFICATE_VERIFY_FAILED` (its new Telekom root was not
   yet in the Windows store). TLS now checks against the system store and the Mozilla roots (certifi); a certificate
   error is reported clearly and not retried. `scripts/dienste_pruefen.py` checks every service from this computer.
