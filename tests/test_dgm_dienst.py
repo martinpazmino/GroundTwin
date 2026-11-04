@@ -15,7 +15,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO / "services" / "geodaten"), str(REPO / "tests")]
-from geodaten import dgm_dienst as dd, gelaende  # noqa: E402
+from geodaten import dgm_dienst as dd, gelaende, netz  # noqa: E402
 from geodaten.bohrdaten import DienstFehler  # noqa: E402
 from test_gelaende import geotiff  # noqa: E402
 
@@ -112,7 +112,7 @@ def test_verbindungsabbruch_wird_wiederholt(monkeypatch):
     import urllib.error
     import urllib.request
     aufrufe = []
-    monkeypatch.setattr(dd.time, "sleep", lambda s: None)
+    monkeypatch.setattr(netz.time, "sleep", lambda s: None)
 
     class Antwort:
         def __enter__(self):
@@ -124,7 +124,7 @@ def test_verbindungsabbruch_wird_wiederholt(monkeypatch):
         def read(self):
             return b"daten"
 
-    def urlopen(anfrage, timeout):
+    def urlopen(anfrage, timeout, context=None):
         aufrufe.append(anfrage.full_url)
         if len(aufrufe) == 1:
             raise urllib.error.URLError(ConnectionResetError(104, "Connection reset by peer"))
@@ -132,17 +132,17 @@ def test_verbindungsabbruch_wird_wiederholt(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
     assert dd._holen("https://beispiel/wcs", 5) == b"daten" and len(aufrufe) == 2
 
-    def immer_reset(anfrage, timeout):
+    def immer_reset(anfrage, timeout, context=None):
         aufrufe.append(1)
         raise urllib.error.URLError(ConnectionResetError(104, "Connection reset by peer"))
     aufrufe.clear()
     monkeypatch.setattr(urllib.request, "urlopen", immer_reset)
     with pytest.raises(DienstFehler, match="nicht erreichbar"):
         dd._holen("https://beispiel/wcs", 5)
-    assert len(aufrufe) == dd.VERSUCHE == 3
+    assert len(aufrufe) == netz.VERSUCHE == 3
 
     for fehler in (TimeoutError(), urllib.error.URLError(TimeoutError("timed out"))):     # auch beim Verbinden
-        def zeit(anfrage, timeout, fehler=fehler):
+        def zeit(anfrage, timeout, context=None, fehler=fehler):
             aufrufe.append(1)
             raise fehler
         aufrufe.clear()

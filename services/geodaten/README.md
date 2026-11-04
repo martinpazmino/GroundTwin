@@ -1,7 +1,8 @@
 ---
 title: "Geodaten: DGM, BoreholeML and the services of the Länder"
 date: 2026-11-02
-tags: [open-data, dgm, wcs, gok, boreholeml]
+updated: 2026-11-04
+tags: [open-data, dgm, wcs, gok, boreholeml, 3d-tiles, geoldg]
 aliases: [Geodaten, DGM, BoreholeML export]
 ---
 
@@ -9,7 +10,7 @@ aliases: [Geodaten, DGM, BoreholeML export]
 
 Pieces of the open data integration ([23](../../docs/23_open_data_integration.md)): the DGM from files and
 from the services of the Länder (phase P3), BoreholeML (phase P1), the Bohrungen der Länder (phases P0
-and P2) and their LoD2 buildings (phase P4), below.
+and P2), their LoD2 buildings (phase P4), the 3D Tiles export and the GeolDG help (phase P6), below.
 
 The user downloads the DGM tiles of their Land (open data, usually DGM1) and loads them in the
 *Lage* step, or fetches the cut-out around the Bohrungen from the service of the Land with a click. The
@@ -23,8 +24,13 @@ network: nothing reveals the site of the project, and they work in every Land.
 | [`geodaten/boreholeml_codes.json`](geodaten/boreholeml_codes.json) | Codes of the official codelists v2 that GroundTwin uses, each with the official name as evidence, and the code hierarchies |
 | [`werkzeuge/boreholeml_codes.py`](werkzeuge/boreholeml_codes.py) | Generates the JSON from the official codelists; stops if a name is missing or ambiguous |
 | [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
-| [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten |
+| [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten; `am_ort`: what every service of the Länder delivers at a point (map and Standort) |
 | [`geodaten/gebaeude.py`](geodaten/gebaeude.py) | LoD2 buildings from the CityGML tiles of the Länder (1 × 1 km), streamed; walls, roof and ground with openings; cut-out, zone prefix |
+| [`geodaten/utm.py`](geodaten/utm.py) | ETRS89/UTM with and without zone prefix (25832/4647, 25833/5650): normal form for the services, the offset between the two forms of one zone (lesson S17); UTM ↔ geodetic (Krüger series both ways, below 1 mm against PROJ; the zone by longitude for a click in the map), geodetic → ECEF and the east-north-up frame (GRS80) |
+| [`geodaten/quasigeoid.py`](geodaten/quasigeoid.py) | Quasigeoid GCG2016 of the BKG (PROJ-data GeoTIFF, CC BY 4.0): fetched once into the work folder, checked by sha256, read without GDAL (tiles, Deflate, floating-point predictor), ζ bilinear like PROJ |
+| [`geodaten/tiles3d.py`](geodaten/tiles3d.py) | 3D Tiles 1.1 from the exported IFC: one GLB each for model, terrain and buildings with the IFC class and GlobalId per node, exact ENU frame per tileset, heights H + ζ, `LIESMICH.txt` with sources and how to load it in CesiumJS |
+| [`geodaten/geoldg.py`](geodaten/geoldg.py), [`geoldg.json`](geodaten/geoldg.json) | GeolDG help: deadlines of §§ 8–10, the checklist per Bohrung (what GroundTwin has, what comes from the Bohrprotokoll), the package for the Geologischer Dienst (Fachdaten, Bewertungsdaten, CSV, model documentation); every rule with its § and link |
+| [`geodaten/netz.py`](geodaten/netz.py) | One way to every service of the Länder: user agent, up to three attempts after a dropped connection, TLS against the root certificates of the system **and** of Mozilla (certifi); a certificate error is reported clearly and not retried (lesson X33) |
 | [`geodaten/dgm_dienst.py`](geodaten/dgm_dienst.py) | DGM1 of the cut-out around the Bohrungen from the WCS 2.0.1 of the Land (GeoTIFF, read by `gelaende.py`), coarser grid for large cut-outs, ExceptionReport and NoData as messages |
 
 **Formats:**
@@ -126,6 +132,12 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 Tests: `python -m pytest tests/test_bohrdaten.py tests/test_bohrdaten_app.py` (a dummy replaces the services;
 two tests ask the real ones).
 
+**Checking the services from this computer:** `python scripts/dienste_pruefen.py` (Windows:
+`.venv\Scripts\python scripts\dienste_pruefen.py`) asks every service of `dienste.json` for its capabilities (tile
+services: their server only) and prints one line per service: reachable, or why not (certificate, HTTP, timeout).
+It sends no Lage of a project. Tests of the network layer: `python -m pytest tests/test_netz.py` (a local HTTPS
+server with its own root).
+
 
 ## Gebäude der Länder (LoD2)
 
@@ -143,6 +155,17 @@ Details: [docs/21 §4.6](../../docs/21_app_schritte_normen.md#46-gebäude-lod2-b
 
 Tests: `python -m pytest tests/test_gebaeude.py tests/test_gebaeude_app.py` (a dummy replaces the tiles; one test
 loads a real tile of Berlin).
+
+## 3D Tiles and GeolDG (phase P6)
+
+- **3D Tiles** ([21 §5.2](../../docs/21_app_schritte_normen.md#52-3d-tiles-for-cesium)): the grid
+  `de_bkg_gcg2016.tif` (995,647 bytes, sha256 `598f1832…f7ac`) comes from `https://cdn.proj.org/` on the first export
+  and stays in `<arbeit>/cache`; offline, put it there by hand. Tests: `python -m pytest tests/test_tiles3d.py` (a
+  synthetic grid in the same TIFF format; one test fetches the real file). In Cesium:
+  `node scripts/check_tiles3d.mjs <export> <tools>`.
+- **GeolDG** ([21 §5.3](../../docs/21_app_schritte_normen.md#53-geoldg-what-goes-to-the-geologischer-dienst)): no
+  network; the rules are read from `geoldg.json`, each with its § and the link to gesetze-im-internet.de. Tests:
+  `python -m pytest tests/test_geoldg.py`.
 
 Up: [Documentation index](../../docs/README.md)
 

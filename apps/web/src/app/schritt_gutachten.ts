@@ -1,13 +1,15 @@
 // Schritt 1 · Gutachten: PDF hochladen (Fortschritt je Seite), Beispiel waehlen oder ein Projekt weiterfuehren.
 import { html, nothing } from "lit";
-import { api } from "./api";
+import { api, type DienstAmOrt } from "./api";
 import { hilfe } from "./hilfe";
+import { karteWaehlen } from "./karte";
 import { S, melden, neu, oeffnen, projekteLaden, versuchen } from "./store";
 
 let gewaehlt: File[] = [];
 let ocr = true;
 let ziehen = false;
 const ort = { x: "", y: "", epsg: 25832, name: "" };      // Standort ohne Gutachten (docs/23 §2.3)
+let ortDienste: DienstAmOrt[] | null = null;              // was die Laender am Punkt aus der Karte liefern
 const UTM: [number, string][] = [[25832, "ETRS89 / UTM 32N"], [25833, "ETRS89 / UTM 33N"],
   [4647, "ETRS89 / UTM 32N (zE-N)"], [5650, "ETRS89 / UTM 33N (zE-N)"]];
 
@@ -46,34 +48,59 @@ async function standortAnlegen() {
     return;
   }
   const r = await versuchen(() => api.standort(x, y, ort.epsg, ort.name), "Standort wird angelegt …");
-  if (r) await oeffnen(r.projekt, "lage");
+  if (!r) return;
+  await oeffnen(r.projekt, r.vorhanden ? undefined : "lage");    // vorhanden: Name und Schritt bleiben
+  if (r.vorhanden) melden(`Den Standort gibt es schon: „${S.z?.name}“ geöffnet.`);
+}
+
+async function ausDerKarte() {
+  let p = null;
+  try {
+    p = await karteWaehlen();
+  } catch (err) {
+    melden(`Karte: ${(err as Error).message}`, "fehler", 8000);
+  }
+  if (!p) return;
+  ort.x = String(p.x);
+  ort.y = String(p.y);
+  ort.epsg = p.epsg;
+  ortDienste = p.dienste;
+  neu();
 }
 
 function standortKarte() {
   const feld = (k: "x" | "y" | "name", titel: string, platz: string) => html`
     <label class="feld"><span>${titel}</span><input type="text" inputmode=${k === "name" ? "text" : "decimal"}
-      aria-label=${titel} placeholder=${platz} .value=${ort[k]} @input=${(e: Event) => { ort[k] = (e.target as HTMLInputElement).value; }}></label>`;
+      aria-label=${titel} placeholder=${platz} .value=${ort[k]} @input=${(e: Event) => {
+        ort[k] = (e.target as HTMLInputElement).value;
+        if (k !== "name" && ortDienste) { ortDienste = null; neu(); }       // die Liste galt dem Punkt aus der Karte
+      }}></label>`;
   return html`
     <section class="karte">
       <h3>Standort ohne Gutachten ${hilfe("standort")}</h3>
       <p class="leise klein">Ein Punkt statt eines PDFs: Bohrungen der Länder, DGM und Gebäude um den Standort. Das Modell
         ist eine <b>Vorerkundung</b> – kein Ersatz für das Gutachten.</p>
+      <div class="zeile"><button @click=${ausDerKarte}>🗺 Auf der Karte wählen</button>${hilfe("karte")}
+        <span class="leise klein">oder Rechts- und Hochwert eintragen</span></div>
       <div class="raster-2">
         ${feld("x", "Rechtswert", "z. B. 368130")}
         ${feld("y", "Hochwert", "z. B. 5724400")}
         <label class="feld"><span>System</span>
-          <select aria-label="System des Standorts" @change=${(e: Event) => { ort.epsg = Number((e.target as HTMLSelectElement).value); }}>
+          <select aria-label="System des Standorts" @change=${(e: Event) => { ort.epsg = Number((e.target as HTMLSelectElement).value);
+            ortDienste = null; neu(); }}>
             ${UTM.map(([c, n]) => html`<option value=${c} ?selected=${ort.epsg === c}>${c} · ${n}</option>`)}
           </select></label>
         ${feld("name", "Name (frei)", "z. B. Marl Nord")}
       </div>
+      ${ortDienste ? html`<ul class="dienste klein" aria-label="Dienste am Standort">
+        ${ortDienste.map((d) => html`<li class=${d.art}>${d.text}</li>`)}</ul>` : nothing}
       <button class="primaer" @click=${standortAnlegen}>Projekt am Standort anlegen →</button>
     </section>`;
 }
 
 async function beispiel(name: string) {
   const r = await versuchen(() => api.beispiel(name), "Beispiel wird geöffnet …");
-  if (r?.projekt) await oeffnen(r.projekt, "bohrungen");
+  if (r?.projekt) await oeffnen(r.projekt, r.schritt ?? "bohrungen");     // Standort: im Schritt Lage
   else if (r?.auftrag) await warten(r.auftrag);
 }
 
@@ -135,7 +162,12 @@ export function schrittGutachten() {
         <section class="karte">
           <h3>Beispiele ${hilfe("beispiele")}</h3>
           <ul class="auswahl-liste">
-            ${(S.info?.beispiele ?? []).map((b) => html`
+            ${(S.info?.beispiele ?? []).filter((b) => !b.standort).map((b) => html`
+              <li><button class="link" ?disabled=${!!a} @click=${() => beispiel(b.name)}>${b.titel}</button></li>`)}
+          </ul>
+          <h4 class="klein">Standort ohne Gutachten <span class="leise">(Bohrungen der Länder: Abfrage im Schritt Lage, mit Netz)</span></h4>
+          <ul class="auswahl-liste">
+            ${(S.info?.beispiele ?? []).filter((b) => b.standort).map((b) => html`
               <li><button class="link" ?disabled=${!!a} @click=${() => beispiel(b.name)}>${b.titel}</button></li>`)}
           </ul>
         </section>

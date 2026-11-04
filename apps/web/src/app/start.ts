@@ -79,9 +79,10 @@ document.addEventListener("click", (ev) => {
 });
 
 async function zuruecksetzen() {
-  if (!S.sig || !confirm("Alle Korrekturen, Lagen, Prüfhaken und Eincheckungen dieses Projekts verwerfen?")) return;
+  if (!S.sig || !confirm("Alle Korrekturen, Lagen, Prüfhaken und Eincheckungen dieses Projekts verwerfen – auch "
+    + "übernommene Bohrungen der Länder, DGM und Gebäude? Der Name bleibt.")) return;
   const z = await versuchen(() => api.zuruecksetzen(S.sig));
-  if (z) await oeffnen(S.sig, "bohrungen");
+  if (z) await oeffnen(S.sig, z.standort ? "lage" : "bohrungen");        // Standort: weiter mit den Diensten
 }
 
 function fuss() {

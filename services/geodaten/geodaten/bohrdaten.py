@@ -12,15 +12,17 @@ from __future__ import annotations
 import json
 import math
 import re
-import time
 import urllib.error
 import urllib.parse
-import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import date, datetime
 from pathlib import Path
 
 from . import boreholeml
+from . import netz
+from .netz import AGENT, VERSUCHE, DienstFehler  # noqa: F401  (AGENT, VERSUCHE: wie bisher von hier lesbar)
+from . import utm
+from .utm import utm_normal
 
 DIENSTE: list[dict] = json.loads(Path(__file__).with_name("dienste.json").read_text(encoding="utf-8"))["dienste"]
 RADIUS_STANDARD, RADIUS_MAX = 250.0, 2000.0     # m um die Mitte des Projekts
@@ -29,45 +31,13 @@ ZEIT_KOPF, ZEIT_BML = 30, 120                   # s; der BoreholeML-Dienst von N
 DOPPELT_ABSTAND = 3.0                           # m: naeher = dieselbe Bohrung (auch ohne gleichen Namen)
 NAME_ABSTAND = 50.0                             # m: gleicher Name zaehlt nur so nah als dieselbe Bohrung
 KONFIDENZ_ARCHIV = 0.5                          # Schichten aus der Datenbank eines Landes: nicht gegen ein PDF geprueft
-AGENT = "GroundTwin (+https://github.com/martinpazmino/GroundTwin)"
-VERSUCHE = 3                                    # Verbindungsabbrueche (Brandenburg: 2 von 3 an manchen Tagen)
-_UTM = {25831: (31, 0.0), 25832: (32, 0.0), 25833: (33, 0.0), 4647: (32, 32_000_000.0), 5650: (33, 33_000_000.0)}
-_NORMAL = {31: 25831, 32: 25832, 33: 25833}
-
-
-class DienstFehler(Exception):
-    """Ein Dienst antwortet nicht oder mit einer Fehlermeldung (betrifft nur diesen Dienst)."""
 
 
 # ---------------------------------------------------------------- Lage
-def utm_normal(x: float, y: float, epsg: int) -> tuple[float, float, int]:
-    """ETRS89/UTM ohne Zonenkennung im Rechtswert (4647 -> 25832, 5650 -> 25833)."""
-    if int(epsg) not in _UTM:
-        raise ValueError(f"EPSG:{epsg} – für die Abfrage der Länder ETRS89/UTM nötig (25832/25833)")
-    zone, abzug = _UTM[int(epsg)]
-    return float(x) - abzug, float(y), _NORMAL[zone]
-
-
 def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
-    """UTM (GRS80, Nordhalbkugel) -> (Laenge, Breite) in Grad; Reihen nach Snyder (USGS 1987), Fehler << 1 m."""
-    a, f, k0 = 6378137.0, 1 / 298.257222101, 0.9996
-    e2 = f * (2 - f)
-    ep2 = e2 / (1 - e2)
-    m = n / k0
-    mu = m / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
-    e1 = (1 - math.sqrt(1 - e2)) / (1 + math.sqrt(1 - e2))
-    phi1 = (mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32)
-            * math.sin(4 * mu) + 151 * e1 ** 3 / 96 * math.sin(6 * mu) + 1097 * e1 ** 4 / 512 * math.sin(8 * mu))
-    s, c, t = math.sin(phi1), math.cos(phi1), math.tan(phi1)
-    n1 = a / math.sqrt(1 - e2 * s * s)
-    t1, c1 = t * t, ep2 * c * c
-    r1 = a * (1 - e2) / (1 - e2 * s * s) ** 1.5
-    d = (e - 500000.0) / (n1 * k0)
-    breite = phi1 - (n1 * t / r1) * (d ** 2 / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * ep2) * d ** 4 / 24
-                                     + (61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * ep2 - 3 * c1 ** 2) * d ** 6 / 720)
-    laenge = (d - (1 + 2 * t1 + c1) * d ** 3 / 6
-              + (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * ep2 + 24 * t1 ** 2) * d ** 5 / 120) / c
-    return zone * 6 - 183 + math.degrees(laenge), math.degrees(breite)
+    """UTM (GRS80, Nordhalbkugel) -> (Laenge, Breite) in Grad (utm.zu_geo, Krueger-Reihen)."""
+    laenge, breite = utm.zu_geo(e, n, zone)
+    return float(laenge), float(breite)
 
 
 BOHRDIENSTE = ("wfs-kopf", "wfs-boreholeml")
@@ -79,6 +49,25 @@ def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRD
     lon, lat = utm_zu_geo(x, y, {25831: 31, 25832: 32, 25833: 33}[epsg])
     return [d for d in DIENSTE if d["art"] in arten and d["gebiet_wgs84"][0] <= lon <= d["gebiet_wgs84"][2]
             and d["gebiet_wgs84"][1] <= lat <= d["gebiet_wgs84"][3]]
+
+
+# Kurztext je Art fuer die Oberflaeche (Karte, Standort): was der Dienst an diesem Ort liefert
+ART_TEXT = {"wfs-kopf": ("bohrungen", "Bohrungen {land}: nur Kopfdaten, Schichtenverzeichnis als Bild – nicht ins Modell"),
+            "wfs-boreholeml": ("bohrungen", "Bohrungen {land}: mit Schichtdaten (BoreholeML) – Modell der Vorerkundung möglich"),
+            "wcs-dgm": ("dgm", "Gelände DGM1: {land}"),
+            "lod2-kacheln": ("gebaeude", "Gebäude LoD2: {land}")}
+
+
+def am_ort(x: float, y: float, epsg: int) -> list[dict]:
+    """Alle Dienste der Laender an einem Punkt (Gebiet als Rechteck, an Landesgrenzen auch mehrere):
+    [{dienst, art, land, text}]; ohne Bohrdienst ein Eintrag, der das sagt."""
+    out = [{"dienst": d["id"], "art": ART_TEXT[d["art"]][0], "land": d["land"],
+            "text": ART_TEXT[d["art"]][1].format(land=d["land"])} for d in dienste_am_ort(x, y, epsg, tuple(ART_TEXT))]
+    if not any(o["art"] == "bohrungen" for o in out):
+        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
+        out.insert(0, {"dienst": "", "art": "bohrungen", "land": "",
+                       "text": f"Bohrungen: kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
+    return out
 
 
 def dienst(dienst_id: str) -> dict:
@@ -94,23 +83,7 @@ def namensnennung(d: dict, heute: date | None = None) -> str:
 
 # ---------------------------------------------------------------- Abruf
 def _holen(url: str, zeit: float) -> bytes:
-    anfrage = urllib.request.Request(url, headers={"User-Agent": AGENT})
-    for versuch in range(1, VERSUCHE + 1):
-        try:
-            with urllib.request.urlopen(anfrage, timeout=zeit) as antwort:
-                return antwort.read()
-        except TimeoutError:
-            raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
-        except urllib.error.HTTPError as err:
-            raise DienstFehler(f"HTTP {err.code}") from None
-        except (urllib.error.URLError, OSError) as err:
-            if isinstance(getattr(err, "reason", None), TimeoutError):   # Zeitueberschreitung beim Verbinden: nicht neu
-                raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
-            if versuch < VERSUCHE:                         # Verbindung abgebrochen (z. B. reset by peer): kurz warten, neu
-                time.sleep(versuch)
-                continue
-            raise DienstFehler(f"nicht erreichbar ({getattr(err, 'reason', err)})") from None
-    raise AssertionError("unerreichbar")
+    return netz.holen(url, zeit)                    # netz.py: Kennung, Wiederholung, TLS (Tests ersetzen _holen)
 
 
 def _url(d: dict, **parameter) -> str:
@@ -125,6 +98,9 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
     x, y, epsg = utm_normal(x, y, epsg)
     am_ort = dienste_am_ort(x, y, epsg)
     treffer, fehler = [], []
+    if not am_ort:                                  # Bayern, Hessen, ...: sagen statt still "0 Bohrungen"
+        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
+        fehler.append({"dienst": "Länder", "fehler": f"kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
     bbox = f"{x - radius:.1f},{y - radius:.1f},{x + radius:.1f},{y + radius:.1f},urn:ogc:def:crs:EPSG::{epsg}"
     for d in am_ort:
         if epsg not in d["systeme"]:

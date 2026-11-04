@@ -344,6 +344,8 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     for (const id of [...fragments.list.keys()]) await fragments.core.disposeModel(id);
     modell = null;
     daten = null;
+    modellImProjekt = false;                           // das naechste Modell (nach Zuruecksetzen) wieder ganz zeigen
+    reifegradZeigen("");                               // das Band gehoert zum entfernten Modell
     bohrungNachCode.clear();
     status.geladen = false;
     seitenleisteNeu();
@@ -1020,6 +1022,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       bezugGesetzt = false;
       kameraVorLage = null;                              // gemerkte Modellansicht gehoert zum vorigen Projekt
       modellImProjekt = false;
+      reifegradZeigen("");                               // Band des vorigen Projekts weg, bis dessen Modell da ist
     }
     const leerVorher = KAMERA.szeneLeer();
     nadelnVonApp = Array.isArray(a.bohrungen);

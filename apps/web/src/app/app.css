@@ -332,6 +332,26 @@ select.epsg { width: 100%; max-width: 24rem; }
 .sgd tr.doppelt td { background: rgba(140, 180, 40, 0.08); }
 .sgd a, .abschnitt-inhalt p a { color: #8fc6ff; }                 /* Links auf dunklem Grund lesbar */
 
+/* Karte als Pop-up (Standort ohne Gutachten) und Dienste am Ort */
+.karte-dialog { width: min(960px, 94vw); height: min(700px, 88vh); margin: auto; padding: 0; border: 1px solid var(--linie); border-radius: 8px;
+  background: var(--flaeche); color: var(--text); overflow: hidden; }
+.karte-dialog[open] { display: flex; flex-direction: column; }
+.karte-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+.karte-dialog header { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--linie); }
+.karte-dialog footer { padding: 0.5rem 0.8rem; border-top: 1px solid var(--linie); display: flex; flex-direction: column; gap: 0.35rem; }
+.karte-flaeche { flex: 1; min-height: 0; background: #dfe3e8; }
+.karte-flaeche .leaflet-control-attribution a, .karte-flaeche .leaflet-control-layers { color: #1d3d5c; }
+ul.dienste { list-style: none; padding: 0; margin: 0.2rem 0; display: flex; flex-direction: column; gap: 0.15rem; }
+ul.dienste li::before { content: "• "; color: var(--leise); }
+ul.dienste li.bohrungen { color: var(--text); }
+p.sgd-warum { border-left: 2px solid var(--warn); padding-left: 0.5rem; }
+
+/* GeolDG: Fristen und Stand der Uebermittlung im Schritt Modell */
+.fristen { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; }
+.fristen li.warn { color: var(--warn); }
+.geoldg a:not(.knopf) { color: #8fc6ff; }
+.geoldg input[type="date"] { width: 9.2rem; }
+
 /* BoreholeML: Knopf ohne exportierbare Bohrung */
 .knopf.aus { opacity: 0.45; cursor: not-allowed; }
 .export-liste .feld { margin-top: 0.5rem; }

@@ -197,6 +197,30 @@ def test_extraktion_als_json_hochladen(client):
     assert a["projekt"] is None and "keine Extraktion" in a["fehler"][0]
 
 
+def test_export_mit_sonderzeichen_im_namen(client):
+    """Der Projektname kommt aus dem Dateinamen: mit "–" oder "✓" brach jeder Export ab (Kopfzeilen sind latin-1),
+    "/" und Anfuehrungszeichen zerlegten die Kopfzeile."""
+    import json
+    doc = json.loads((REPO / "data" / "beispiele" / "talheim.json").read_text(encoding="utf-8"))
+    doc["document"]["file"] = 'Gutachten – Talheim "B1" ✓.pdf'
+    a = client.post("/api/gutachten", files={"dateien": ("t.json", json.dumps(doc).encode(), "application/json")},
+                    data={"ocr": "false"}).json()
+    for _ in range(100):
+        a = client.get(f"/api/auftrag/{a['id']}").json()
+        if a["fertig"]:
+            break
+        time.sleep(0.05)
+    sig = a["projekt"]
+    for art in ("extraktion", "projekt", "eingabe"):
+        r = client.get(f"/api/projekt/{sig}/export/{art}")
+        kopf = r.headers["content-disposition"]
+        assert r.status_code == 200, (art, r.text)
+        kopf.encode("latin-1")
+        assert "filename*=UTF-8''" in kopf and "%E2%80%93" in kopf and "%E2%9C%93" in kopf      # – und ✓ im UTF-8-Namen
+        ersatz = kopf.split('filename="')[1].split('"')[0]
+        assert not set('<>:"/\\|?*') & set(ersatz) and ersatz.startswith("Gutachten  Talheim _B1_ _")
+
+
 def test_im_netz_anmeldung_lebenszeichen_und_upload_grenze(tmp_path, monkeypatch):
     """Online (docs/22): mit Passwort alles hinter HTTP-Basic ausser /gesund; zu grosse Uploads -> 413."""
     monkeypatch.setattr(pl, "ARBEIT", tmp_path)

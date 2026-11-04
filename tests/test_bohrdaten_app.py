@@ -83,3 +83,24 @@ def test_ohne_koordinaten_keine_abfrage(client):
     sig = client.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
     r = client.post(f"/api/projekt/{sig}/sgd/abfrage", json={})
     assert r.status_code == 400 and "Koordinaten" in r.json()["detail"]
+
+
+def test_gegenprobe_und_uebernahme_mit_zonenkennung(client):
+    """Gutachten mit Zonenkennung im Rechtswert (EPSG 4647, in NRW ueblich), der Dienst liefert ohne (25832): die
+    Gegenprobe vergleicht im selben System, uebernommene Bohrungen kommen ins System des Gutachtens (docs/16 S17)."""
+    import copy
+    gutachten = copy.deepcopy(MARL)
+    gutachten["document"]["sha256"] = "1" * 64
+    for b in gutachten["boreholes"]:
+        b["x"] += 32_000_000
+        b["crs_epsg"] = 4647
+    gutachten["boreholes"][0].update(code="1", x=32_368_100.5, y=5_724_420.5)            # DABO_1 auf 0,7 m
+    sig = client.app.state.arbeitsplatz.anlegen([gutachten])
+    s = client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250}).json()["sgd"]
+    assert s["gegenprobe"]["anzahl"] == 1 and s["gegenprobe"]["lage_max"] == pytest.approx(0.71, abs=0.01)
+    z = client.post(f"/api/projekt/{sig}/sgd/uebernehmen", json={"auswahl": [{"dienst": "NW", "id": "DABO_2"}]}).json()["zustand"]
+    nw2 = next(b for b in z["viewer"]["bohrungen"] if b["code"] == "NW-2")
+    assert nw2["x"] == pytest.approx(32_368_150.0) and z["viewer"]["epsg"] == 4647
+    assert z["viewer"]["ursprung"][0] == 32_368_100.0                                   # kein Sprung um 32 000 km
+    m = client.post(f"/api/projekt/{sig}/modell").json()
+    assert not m["fehler"] and "NW-2" in {x["code"] for x in m["bericht"]["bohrungen"]}

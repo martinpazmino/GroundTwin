@@ -9,3 +9,4 @@ scipy>=1.11
 ifcopenshell>=0.8
 openpyxl>=3.1
 pillow>=10.0
+certifi>=2024.2.2           # Wurzelzertifikate (Mozilla) zusaetzlich zum System: Windows hat neue erst nach Bedarf

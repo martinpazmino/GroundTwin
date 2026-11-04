@@ -15,6 +15,7 @@ Ablage unter ARBEIT (ui/pipeline.py, mit GEO_AGENT_ARBEIT festlegbar):
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import shutil
@@ -32,7 +33,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende  # noqa: E402
+from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
 
 BEISPIELE = {
@@ -41,6 +42,17 @@ BEISPIELE = {
     "demo": ("Demo – synthetisch, 12 Bohrungen mit Linse", "demo_synthetisch.json"),
     "trasse": ("Trasse – synthetisch, 6 km, 51 Bohrungen", "trasse_synthetisch.json"),
     "pdf": ("Synthetisches Bohrprofil-PDF (ganzer Ablauf mit Extraktion)", "synthetisch_bohrprofil.pdf"),
+}
+# Standort ohne Gutachten (docs/21 §4.7): je ein Ort, an dem die Dienste der Laender zeigen, was sie liefern (gegen
+# die echten Dienste geprueft, 250 m Umkreis): NRW mit Schichtdaten, Baden-Wuerttemberg oft ohne Petrographie, Berlin
+# nur Kopfdaten (Gelaende und Gebaeude ja, ein Schichtenmodell nein)
+STANDORT_BEISPIELE = {
+    "standort_dortmund": ("Standort Dortmund (NRW) – Vorerkundung aus 24 Bohrungen mit Schichtdaten",
+                          393507.0, 5708058.0, 25832, "Beispiel Dortmund"),
+    "standort_karlsruhe": ("Standort Karlsruhe (Baden-Württemberg) – Schichtdaten oft ohne Petrographie",
+                           456391.0, 5428394.0, 25832, "Beispiel Karlsruhe"),
+    "standort_berlin": ("Standort Berlin-Friedrichshain – nur Kopfdaten: Gelände und Gebäude, kein Schichtenmodell",
+                        394800.0, 5818400.0, 25833, "Beispiel Berlin"),
 }
 MODELLE_IM_SPEICHER = 6
 DGM_IM_SPEICHER = 2
@@ -184,7 +196,12 @@ class Arbeitsplatz:
             for datei in ("fremd.json", "sgd.json", "dgm.npy", "gebaeude.json"):   # Uebernommenes und Abfragen gehoeren dazu
                 (self.ordner(sig) / datei).unlink(missing_ok=True)
             docs = json.loads((self.ordner(sig) / "docs.json").read_text(encoding="utf-8"))
-            self._projekte[sig] = (docs, pj.neues_projekt(docs, sig))
+            name = self._projekte[sig][1].name
+            p = pj.neues_projekt(docs, sig)
+            p.name = name or p.name                          # der Name ist keine Korrektur
+            if pj.standort_von(docs):                         # Standort: weiter mit den Diensten im Schritt Lage
+                p.schritt = "lage"
+            self._projekte[sig] = (docs, p)
             self.sichern(sig)
 
     def loeschen(self, sig: str) -> None:
@@ -193,17 +210,39 @@ class Arbeitsplatz:
             shutil.rmtree(self.ordner(sig), ignore_errors=True)
 
     # ------------------------------------------------------------ Standort (ohne Gutachten, docs/23 §2.3, P5)
-    def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> str:
-        """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender."""
-        xn, yn, _ = bohrdaten.utm_normal(float(x), float(y), int(epsg))          # ValueError ausser ETRS89/UTM
-        if not (150_000 <= xn <= 850_000 and 5_200_000 <= yn <= 6_150_000):
+    @staticmethod
+    def _in_deutschland(x: float, y: float, epsg: int) -> None:
+        """ETRS89/UTM 32 oder 33 und im Rechteck um Deutschland (5,5-15,5 Grad Ost, 47,2-55,1 Grad Nord); die Bereiche
+        der UTM-Werte allein gelten in jeder Zone (ein Punkt in Paris hatte in Zone 31 passende Zahlen)."""
+        xn, yn, normal = bohrdaten.utm_normal(float(x), float(y), int(epsg))     # ValueError ausser ETRS89/UTM
+        laenge, breite = (float(v) for v in utm.zu_geo(xn, yn, utm.zone(normal)))
+        if utm.zone(normal) not in (32, 33) or not (5.5 <= laenge <= 15.5 and 47.2 <= breite <= 55.1):
             raise ValueError(f"Rechtswert {x:.0f} / Hochwert {y:.0f} liegen nicht in Deutschland (EPSG:{epsg})")
+
+    def standort_punkt(self, laenge: float, breite: float, epsg: int | None = None) -> dict:
+        """Klick in die Karte (Laenge/Breite, WGS84 ~ ETRS89 auf rund 1 m) -> ETRS89/UTM fuer den Standort: Zone nach der
+        Laenge (32 westlich von 12 Grad, sonst 33) oder wie gewaehlt; dazu, was die Dienste der Laender dort liefern."""
+        zone = utm.zone(epsg) if epsg else utm.zone_fuer(laenge)
+        x, y = (float(v) for v in utm.von_geo(laenge, breite, zone))
+        ziel = int(epsg) if epsg else 25800 + zone
+        x += utm.versatz(25800 + zone, ziel) or 0.0                              # 4647/5650: mit Zonenkennung
+        self._in_deutschland(x, y, ziel)
+        return {"x": round(x, 1), "y": round(y, 1), "epsg": ziel, "laenge": round(float(laenge), 6),
+                "breite": round(float(breite), 6), "dienste": bohrdaten.am_ort(x, y, ziel)}
+
+    def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> tuple[str, bool]:
+        """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender.
+        Gibt es den Standort schon, wird er nur geoeffnet (Name und Schritt bleiben). Rueckgabe (Signatur, vorhanden)."""
+        self._in_deutschland(x, y, epsg)
         punkt = {"x": round(float(x), 2), "y": round(float(y), 2), "epsg": int(epsg)}
         kennung = hashlib.sha256(json.dumps(punkt, sort_keys=True).encode()).hexdigest()
         docs = [{"document": {"file": f"Standort {punkt['x']:.0f} / {punkt['y']:.0f} (EPSG:{epsg})", "sha256": kennung,
                               "parser_version": "standort", "pages": None, "standort": punkt},
                  "boreholes": [], "soundings": {}}]
+        vorhanden = (self.ordner(signatur(docs)) / "projekt.json").exists()
         sig = self.anlegen(docs)
+        if vorhanden:
+            return sig, True
         with self.sperre(sig):
             _, p = self.laden(sig)
             if name.strip():
@@ -211,7 +250,7 @@ class Arbeitsplatz:
             p.lage_modus = pj.LAGE_KOORDINATEN
             p.schritt = "lage"
             self.sichern(sig)
-        return sig
+        return sig, False
 
     def _standort_uebernehmen(self, von: str, nach: str) -> None:
         """Gutachten zu einem Standort: Bohrungen der Laender (mit Pruefstand), Abfrage, DGM und Gebaeude uebernehmen.
@@ -230,22 +269,77 @@ class Arbeitsplatz:
             self._projekte.pop(nach, None)                   # neu laden: fremd.json gehoert jetzt dazu
             docs, p = self.laden(nach)
             n_nach = len(self._gutachten(nach))
-            p.dgm = p.dgm or (dict(pv.dgm) if pv.dgm else None)
-            p.gebaeude = p.gebaeude or (dict(pv.gebaeude) if pv.gebaeude else None)
+            p.dgm = p.dgm or copy.deepcopy(pv.dgm)          # tief: _ins_system aendert Listen darin (Ausdehnung)
+            p.gebaeude = p.gebaeude or copy.deepcopy(pv.gebaeude)
             alt, neu = f"{n_von}:", f"{n_nach}:"
             for quelle_d, ziel_d in ((pv.bohrung, p.bohrung), (pv.schicht, p.schicht)):
                 for k, o in quelle_d.items():
                     if k.startswith(alt):
                         ziel_d.setdefault(neu + k[len(alt):], dict(o))
+            epsgs = Counter(int(b["crs_epsg"]) for d in docs[:n_nach] for b in d["boreholes"]
+                            if b.get("x") is not None and b.get("crs_epsg"))
+            if epsgs:                                        # Gutachten mit Zonenkennung, Standort ohne (oder umgekehrt)
+                docs = self._ins_system(nach, docs, n_nach, p, epsgs.most_common(1)[0][0])
             sgd = ziel / "sgd.json"
             if sgd.exists():
                 erg = json.loads(sgd.read_text(encoding="utf-8"))
                 eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(neu)]
-                erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+                erg["gegenprobe"] = self._gegenprobe(erg, eigene)
                 json_schreiben(sgd, erg)
             p.lage_modus = pj.LAGE_KOORDINATEN
             p.version += 1
             self.sichern(nach)
+
+    def _ins_system(self, sig: str, docs: list[dict], n_gutachten: int, p: pj.Projekt, ziel: int) -> list[dict]:
+        """Bohrungen der Laender, DGM und Gebaeude eines Projekts ins System ziel derselben UTM-Zone umschreiben
+        (Zonenkennung hinzu oder weg, docs/16 S17); eine andere Zone bleibt, wie sie ist (die Pruefungen markieren)."""
+        if len(docs) > n_gutachten:
+            fremd = docs[n_gutachten]
+            for b in fremd["boreholes"]:
+                v = utm.versatz(b.get("crs_epsg"), ziel)
+                if v:
+                    b["x"], b["crs_epsg"] = float(b["x"]) + v, ziel
+            json_schreiben(self.ordner(sig) / "fremd.json", fremd)
+        for kopf in (p.dgm, p.gebaeude):
+            v = utm.versatz((kopf or {}).get("epsg"), ziel)
+            if not v:
+                continue
+            kopf["epsg"] = ziel
+            kopf["stand"] = hashlib.sha256(f"{kopf.get('stand')}:{ziel}".encode()).hexdigest()[:12]
+            for k in ("x0",):
+                if k in kopf:
+                    kopf[k] += v
+            for kasten in (kopf.get("ausdehnung"), (kopf.get("quelle") or {}).get("ausschnitt")):
+                if kasten:
+                    kasten[0] += v
+                    kasten[2] += v
+            if kopf is p.gebaeude and (self.ordner(sig) / "gebaeude.json").exists():
+                daten = json.loads((self.ordner(sig) / "gebaeude.json").read_text(encoding="utf-8"))
+                for g in daten["gebaeude"]:
+                    for f in g["flaechen"]:
+                        for ring in [f["ring"], *f.get("loecher", [])]:
+                            for punkt in ring:
+                                punkt[0] += v
+                daten["epsg"] = ziel
+                json_schreiben(self.ordner(sig) / "gebaeude.json", daten)
+        return docs
+
+    @staticmethod
+    def _gegenprobe(erg: dict, eigene: list[dict]) -> dict:
+        """Gegenprobe im System der Abfrage: Bohrungen des Gutachtens mit Zonenkennung (4647) gegen Treffer ohne."""
+        gleich = []
+        for b in eigene:
+            v = utm.versatz(b["epsg"], erg["epsg"]) if b.get("epsg") else 0.0
+            if v is not None:
+                gleich.append({**b, "x": b["x"] + v if b.get("x") is not None else None})
+        return bohrdaten.doppelte(erg["treffer"], gleich)
+
+    def _system(self, docs: list[dict], p: pj.Projekt) -> int | None:
+        """EPSG des Projekts (Standort, sonst das haeufigste der Bohrungen, sonst der kalibrierte Plan) oder None."""
+        try:
+            return int(pj.projekt_mitte(docs, p)[2])
+        except (ValueError, TypeError):
+            return None
 
     def liste(self) -> list[dict]:
         """Zuletzt bearbeitete Projekte (neueste zuerst)."""
@@ -322,7 +416,8 @@ class Arbeitsplatz:
                 "dokumente": [{"index": i, "datei": d["document"]["file"], "seiten": d["document"].get("pages"),
                                "pdf": pl.pdf_pfad(d["document"]) is not None} for i, d in enumerate(docs)],
                 "lage_modus": p.lage_modus, "erzeugt": p.erzeugt, "auto": p.auto,
-                "standort": standort, "reifegrad": pj.reifegrad(docs, p),
+                "standort": {**standort, "dienste": bohrdaten.am_ort(standort["x"], standort["y"], standort["epsg"])}
+                if standort else None, "reifegrad": pj.reifegrad(docs, p),
                 "durchmesser": p.durchmesser, "durchmesser_auto": pj.durchmesser_auto(vorb),
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
@@ -338,8 +433,9 @@ class Arbeitsplatz:
                            if gecacht and (self.web / "modelle" / self._ifc_name(schluessel, docs, p)).exists() else None},
                 "punkte": p.punkte,
                 "gelaende": self._gelaende(sig, docs, p),
-                "gebaeude": p.gebaeude,                           # LoD2 der Laender (Kopf, ohne Geometrie)
+                "gebaeude": self._gebaeude_kopf(p, epsgs.most_common(1)[0][0] if epsgs else None),   # LoD2 (Kopf)
                 "sgd": self._sgd(sig, docs),
+                "geoldg": self._geoldg(docs, p, vorb, standort),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
                            "modus": p.lage_modus,
@@ -370,7 +466,11 @@ class Arbeitsplatz:
                 self.sichern(sig)
             fehler = ""
             if schluessel not in self._modelle:
-                if not vorb.lage:
+                if not vorb.lage and not any(True for _ in pj.bohrungen(docs)):
+                    fehler = ("noch keine Bohrung – im Schritt Lage die Bohrungen der Länder abfragen und übernehmen "
+                              "(Schichtdaten bisher NRW und Baden-Württemberg)" if pj.standort_von(docs)
+                              else "keine Bohrung im Projekt")
+                elif not vorb.lage:
                     fehler = "keine Bohrung mit Lage – im Schritt Lage setzen oder 'Reihe' wählen"
                 else:
                     e = pj.einstellungen(p)
@@ -410,6 +510,10 @@ class Arbeitsplatz:
 
     def export(self, sig: str, art: str, organisation: str = "") -> tuple[bytes, str, str]:
         """(Inhalt, Dateiname, Medientyp) fuer den Download; organisation nur fuer BoreholeML."""
+        if art == "3dtiles":
+            return self._export_3dtiles(sig)
+        if art == "geoldg":
+            return self._export_geoldg(sig, organisation)
         with self.sperre(sig):
             docs, p = self.laden(sig)
             stamm = p.name or "baugrundmodell"
@@ -441,6 +545,81 @@ class Arbeitsplatz:
                                       **self._gebaeude_fuer_ifc(sig, p, m))
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
+
+    def _export_3dtiles(self, sig: str, holer=None) -> tuple[bytes, str, str]:
+        """Baugrundmodell als 3D Tiles 1.1 (Cesium, D87): ellipsoidische Hoehen mit dem Quasigeoid GCG2016."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            if p.lage_modus != pj.LAGE_KOORDINATEN:
+                raise ValueError("3D Tiles nur mit Lage nach Koordinaten (ETRS89/UTM)")
+        geoid = quasigeoid.laden(self.arbeit / "cache", holer=holer)      # Netz nur beim ersten Mal, ohne Sperre
+        ifc, _, _ = self.export(sig, "ifc")
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            m, bericht = self._modelle[self.vorbereitung(docs, p)[2]]
+            try:
+                utm.zone(m.epsg)
+            except (ValueError, TypeError):
+                raise ValueError(f"3D Tiles nur mit ETRS89/UTM (25832/25833, mit Zonenkennung 4647/5650), nicht "
+                                 f"EPSG:{m.epsg}") from None
+            info = {"projekt": p.name, "reifegrad": bericht.get("reifegrad"), "namensnennung": self._quellen(docs, p)}
+            stamm = p.name or "baugrundmodell"
+        inhalt, _ = tiles3d.exportieren(ifc, int(m.epsg), geoid, info)
+        return inhalt, f"{stamm}_3dtiles.zip", "application/zip"
+
+    @staticmethod
+    def _geoldg(docs: list[dict], p: pj.Projekt, vorb: pj.Vorbereitung, standort: dict | None) -> dict:
+        """Pruefliste nach GeolDG (docs/21 §5.3): eigene Bohrungen im Modell mit ihren wirksamen Werten, Fristen."""
+        sondierungen = sum(len(d.get("soundings") or {}) for d in docs)
+        return geoldg.pruefen([b for d in vorb.docs for b in d["boreholes"]], p.geoldg,
+                              reihe=p.lage_modus == pj.LAGE_REIHE, sondierungen=sondierungen, standort=bool(standort))
+
+    def _export_geoldg(self, sig: str, organisation: str = "") -> tuple[bytes, str, str]:
+        """Paket fuer den Geologischen Dienst: Fachdaten (BoreholeML), Bewertungsdaten (IFC, Pruefbericht,
+        Modelldokumentation) und die Pruefliste je Bohrung. Was nicht geht, steht mit Grund im LIESMICH."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            name, stamm = p.name, geoldg.dateiname(p.name or "baugrundmodell")
+            u = self._geoldg(docs, p, self.vorbereitung(docs, p)[0], pj.standort_von(docs))
+        if not u["bohrungen"]:                          # nur Bohrungen der Laender: liegen dem Land schon vor
+            raise ValueError("keine eigene Bohrung im Projekt – nichts an den Geologischen Dienst zu übermitteln "
+                             "(Bohrungen der Länder liegen dem Land vor)")
+        dateien: dict[str, bytes] = {}
+        fehlt: list[str] = []
+        try:
+            dateien[f"fachdaten_GeolDG_9/{stamm}_boreholeml.xml"] = self.export(sig, "boreholeml", organisation)[0]
+        except ValueError:
+            gruende = Counter(e["boreholeml"] for e in u["bohrungen"] if e["boreholeml"])
+            fehlt.append("BoreholeML (Fachdaten): keine exportierbare Bohrung ("
+                         + ", ".join(f"{n} × {g}" for g, n in gruende.most_common()) + "; je Bohrung in pruefliste.csv)")
+        try:
+            ifc = self.export(sig, "ifc")[0]
+        except ValueError as err:
+            fehlt.append(f"Baugrundmodell (Bewertungsdaten): {err}")
+        else:
+            with self.sperre(sig):
+                docs, p = self.laden(sig)
+                _, bericht = self._modelle[self.vorbereitung(docs, p)[2]]
+                letzter = p.eincheckungen[-1] if p.eincheckungen else None
+                doku = geoldg.modelldokumentation(bericht, name, pj.stand_text(letzter) if letzter else "nicht eingecheckt",
+                                                  self._quellen(docs, p))
+            dateien[f"bewertungsdaten_GeolDG_10/{stamm}.ifc"] = ifc
+            dateien[f"bewertungsdaten_GeolDG_10/{stamm}_pruefbericht.json"] = pl.json_bytes(bericht)
+            dateien["bewertungsdaten_GeolDG_10/modelldokumentation.txt"] = doku.encode("utf-8")
+        fehlt.append("das Gutachten selbst (PDF; Bewertungsdaten nach § 10 Abs. 2 Satz 1 Nr. 1) – liegt Ihnen vor")
+        return geoldg.paket(u, name, dateien, fehlt), f"{p.name or 'baugrundmodell'}_geoldg.zip", "application/zip"
+
+    @staticmethod
+    def _quellen(docs: list[dict], p: pj.Projekt) -> list[str]:
+        """Namensnennungen der Daten der Laender im Modell (DGM, Gebaeude, Bohrungen) fuer Exporte."""
+        quellen = []
+        if p.dgm:
+            q = p.dgm.get("quelle") or {}
+            quellen.append(q.get("namensnennung") or f"DGM: {p.dgm.get('name') or 'eigene Datei'}")
+        for d in ((p.gebaeude or {}).get("quelle") or {}).get("dienste", []):
+            quellen.append(d.get("namensnennung") or d.get("titel", ""))
+        quellen += [b["namensnennung"] for d in docs for b in d["boreholes"] if b.get("namensnennung")]
+        return list(dict.fromkeys(q for q in quellen if q))
 
     # ------------------------------------------------------------ Unterlage (Lageplan / Laengsschnitt)
     def unterlage_setzen(self, sig: str, name: str, daten: bytes | None, art: str, seite: int) -> None:
@@ -562,6 +741,18 @@ class Arbeitsplatz:
             p.version += 1
             self.sichern(sig)
 
+    @staticmethod
+    def _gebaeude_kopf(p: pj.Projekt, system: int | None) -> dict | None:
+        """Kopf der Gebaeude fuer die Oberflaeche; in einem anderen System als die Bohrungen kommen sie nicht ins IFC -
+        das wird gesagt, nicht still weggelassen."""
+        if not p.gebaeude:
+            return None
+        kopf = dict(p.gebaeude)
+        if system and kopf.get("epsg") and int(kopf["epsg"]) != int(system):
+            kopf["hinweis"] = (f"Gebäude in EPSG:{kopf['epsg']}, die Bohrungen in EPSG:{system} – sie kommen nicht ins "
+                               "Modell; neu abrufen")
+        return kopf
+
     def _gebaeude_fuer_ifc(self, sig: str, p: pj.Projekt, m) -> dict:
         """Gebaeude und Angaben je Dienst fuer ifc_schreiben (nur im System des Modells)."""
         pfad = self.ordner(sig) / "gebaeude.json"
@@ -615,7 +806,7 @@ class Arbeitsplatz:
         with self.sperre(sig):
             docs, p = self.laden(sig)
             eigene = [b for b in pj.gelaende_eingabe(docs, p) if not str(b["id"]).startswith(f"{len(self._gutachten(sig))}:")]
-            erg["gegenprobe"] = bohrdaten.doppelte(erg["treffer"], eigene)
+            erg["gegenprobe"] = self._gegenprobe(erg, eigene)
             json_schreiben(self.ordner(sig) / "sgd.json", erg)
             p.version += 1
             self.sichern(sig)
@@ -637,6 +828,11 @@ class Arbeitsplatz:
             neu = [b for doc in geholt for b in doc["boreholes"] if (b.get("quelle"), b.get("fremd_id")) not in schon]
             if not neu:
                 raise ValueError("diese Bohrungen sind schon im Projekt")
+            system = self._system(docs, p)               # die Dienste liefern ohne Zonenkennung, das Projekt evtl. mit
+            for b in neu:
+                v = utm.versatz(b.get("crs_epsg"), system) if system else None
+                if v:
+                    b["x"], b["crs_epsg"] = float(b["x"]) + v, system
             fremd["boreholes"] += neu
             json_schreiben(self.ordner(sig) / "fremd.json", fremd)
             self._projekte[sig] = (gutachten + [fremd], p)
@@ -736,7 +932,13 @@ class Arbeitsplatz:
         return self._auftraege[aid]
 
     def beispiel(self, schluessel: str, ocr: bool = False) -> dict:
-        """Beispiel oeffnen: JSON direkt als Projekt, das PDF ueber die Extraktion (Auftrag)."""
+        """Beispiel oeffnen: JSON direkt als Projekt, das PDF ueber die Extraktion (Auftrag), ein Standort als Projekt am
+        Punkt (im Schritt Lage; schon angelegt: wie zuletzt)."""
+        if schluessel in STANDORT_BEISPIELE:
+            _, x, y, epsg, name = STANDORT_BEISPIELE[schluessel]
+            sig, vorhanden = self.standort_anlegen(x, y, epsg, name)
+            with self.sperre(sig):
+                return {"projekt": sig, "schritt": self.laden(sig)[1].schritt if vorhanden else "lage"}
         _, datei = BEISPIELE[schluessel]
         pfad = pl.BEISPIELE / datei
         if pfad.suffix == ".pdf":

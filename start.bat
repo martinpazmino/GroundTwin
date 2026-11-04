@@ -16,6 +16,6 @@ if not exist ".venv\Scripts\python.exe" (
   ".venv\Scripts\python" -m pip install -r requirements-ocr.txt || echo OCR nicht installiert: Scans werden nicht gelesen.
 )
 REM fehlende Pakete einer neueren Version nachinstallieren (z. B. fastapi nach einem Update)
-".venv\Scripts\python" -c "import fastapi, uvicorn, multipart" 2>nul || ".venv\Scripts\python" -m pip install -r requirements.txt
+".venv\Scripts\python" -c "import fastapi, uvicorn, multipart, certifi" 2>nul || ".venv\Scripts\python" -m pip install -r requirements.txt
 ".venv\Scripts\python" -m server --port 8500
 pause

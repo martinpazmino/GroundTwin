@@ -55,6 +55,7 @@ export interface Gebaeude {
                namensnennung: string; beleg: string }[];
     abgerufen: string; ausschnitt: [number, number, number, number]; kacheln: number; ohne_kachel: string[]; fehler: string[];
   };
+  hinweis?: string;                                  // anderes System als die Bohrungen: nicht im Modell
 }
 
 /** Dienst des Landes, von dem das DGM stammt (docs/23 §2.4): Lizenz und Namensnennung gehen ins IFC. */
@@ -88,6 +89,31 @@ export interface Sgd {
   gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
 }
 
+/** Dienst eines Landes an einem Punkt (Karte, Standort): was er dort liefert. */
+export interface DienstAmOrt { dienst: string; art: "bohrungen" | "dgm" | "gebaeude"; land: string; text: string }
+
+/** Klick in die Karte: Punkt in ETRS89/UTM und die Dienste der Länder dort. */
+export interface StandortPunkt { x: number; y: number; epsg: number; laenge: number; breite: number; dienste: DienstAmOrt[] }
+
+/** Pruefliste nach GeolDG (docs/21 §5.3): Fristen, je eigene Bohrung was die App hat, Hinweise mit Beleg. */
+export type GeoldgStatus = "ok" | "markiert" | "offen";
+export interface GeoldgFrist {
+  id: "anzeige" | "fachdaten" | "bewertungsdaten"; titel: string; regel: string; beleg: string; url: string;
+  bezug: "beginn" | "abschluss"; bis: string | null; tage: number | null;
+}
+export interface Geoldg {
+  quelle: { titel: string; url: string; gelesen: string; hinweis: string };
+  angaben: { beginn: string; abschluss: string; behoerde: boolean };
+  heute: string; fristen: GeoldgFrist[]; abschluss: { text: string; beleg: string; url: string };
+  punkte: { id: string; titel: string; beleg: string; quelle: "app" | "protokoll" }[];
+  bohrungen: { code: string; art: string; punkte: Record<string, [GeoldgStatus, string]>; bereit: boolean; boreholeml: string }[];
+  fremd: { code: string; herkunft: string }[];
+  zusammenfassung: { eigene: number; bereit: number; boreholeml: number; fremd: number; offen: { code: string; was: string }[] };
+  vorerkundung: boolean;
+  anzeige_inhalt: { beleg: string; url: string; punkte: string[]; aus_der_app: string };
+  hinweise: { text: string; beleg: string; url: string }[];
+}
+
 export interface Einstellungen {
   methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
   gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
@@ -110,8 +136,9 @@ export interface Zustand {
   gelaende: Gelaende | null;                          // DGM und Vergleich mit der GOK (Schritt Lage)
   sgd: Sgd | null;                                    // letzte Abfrage der Bohrungen der Länder
   gebaeude: Gebaeude | null;                          // LoD2-Gebäude der Länder um das Projekt (Kopf)
-  standort: { x: number; y: number; epsg: number } | null;   // Projekt an einem Punkt, ohne Gutachten
+  standort: { x: number; y: number; epsg: number; dienste: DienstAmOrt[] } | null;   // Projekt an einem Punkt, ohne Gutachten
   reifegrad: Reifegrad;
+  geoldg: Geoldg;                                     // Übermittlung an den Geologischen Dienst (GeolDG)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }
@@ -173,9 +200,11 @@ const json = (daten: unknown): RequestInit => ({ method: "POST", headers: { "Con
 
 export const api = {
   info: () => anfrage<{ version: string; ocr: boolean; lizenz: string; quellcode: string;
-                        beispiele: { name: string; titel: string }[] }>("/api/info"),
+                        beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
-  beispiel: (name: string) => anfrage<{ projekt?: string; auftrag?: string }>("/api/beispiel", json({ name })),
+  beispiel: (name: string) =>
+    anfrage<{ projekt?: string; auftrag?: string; schritt?: "gutachten" | "bohrungen" | "lage" | "einheiten" | "modell" }>(
+      "/api/beispiel", json({ name })),
   gutachten(dateien: File[], ocr: boolean, standort = "") {
     const f = new FormData();
     for (const d of dateien) f.append("dateien", d, d.name);
@@ -184,7 +213,9 @@ export const api = {
     return anfrage<Auftrag>("/api/gutachten", { method: "POST", body: f });
   },
   standort: (x: number, y: number, epsg: number, name: string) =>
-    anfrage<{ projekt: string }>("/api/standort", json({ x, y, epsg, name })),
+    anfrage<{ projekt: string; vorhanden: boolean }>("/api/standort", json({ x, y, epsg, name })),
+  standortPunkt: (laenge: number, breite: number, epsg?: number) =>
+    anfrage<StandortPunkt>(`/api/standort/punkt?laenge=${laenge}&breite=${breite}${epsg ? `&epsg=${epsg}` : ""}`),
   auftrag: (id: string) => anfrage<Auftrag>(`/api/auftrag/${id}`),
   zustand: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}`),
   aendern: (sig: string, ops: Op[]) => anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/aendern`, json({ ops })),

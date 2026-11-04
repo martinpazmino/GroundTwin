@@ -565,6 +565,25 @@ async function sgdUebernehmen() {
   neu();
 }
 
+/** Warum eine Bohrung des Landes nicht ins Modell kann - sonst sieht man sie in der Liste und weiss nicht, warum. */
+function nichtUebernehmbar(s: NonNullable<Zustand["sgd"]>) {
+  const offen = s.treffer.filter((t) => !t.uebernehmbar && !t.uebernommen && !t.gutachten);
+  if (!offen.length) return nothing;
+  const land = (d: string) => s.quellen.find((q) => q.dienst === d)?.land ?? d;
+  const zahlen = (art: SgdTreffer["schichten"]) => {
+    const liste = offen.filter((t) => t.schichten === art);
+    return liste.length ? `${liste.length} (${[...new Set(liste.map((t) => land(t.dienst)))].join(", ")})` : "";
+  };
+  const teile = [
+    zahlen("grafik") && `${zahlen("grafik")} nur mit Kopfdaten: das Land gibt das Schichtenverzeichnis nur als Bild heraus (Profil ↗), nicht als Daten`,
+    zahlen("keine") && `${zahlen("keine")} ohne Schichtenverzeichnis`,
+    zahlen("ohne Petrographie") && `${zahlen("ohne Petrographie")} mit Schichten ohne Petrographie`,
+  ].filter(Boolean);
+  return html`<p class="leise klein sgd-warum">Nicht übernehmbar: ${teile.join("; ")}. Ohne Schichten entsteht kein Modell –
+    sie zu erfinden wäre falsch. Lage, GOK und Teufe sehen Sie hier; die Schichten im Profil des Landes. Übernehmbar sind
+    Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg).</p>`;
+}
+
 function sgdSchichten(t: SgdTreffer) {
   if (t.gutachten) return html`<span class="ok" title="Dieselbe Bohrung im Gutachten">= ${t.gutachten}</span>`;
   if (t.uebernommen) return html`<span class="ok">✓ im Projekt</span>`;
@@ -616,6 +635,7 @@ function gebaeudeTeil(z: Zustand) {
       ${d.namensnennung}</p>`)}
     ${q.ohne_kachel.length ? html`<p class="leise klein">ohne Kachel beim Land: ${q.ohne_kachel.join(", ")}</p>` : nothing}
     ${q.fehler.map((f) => html`<p class="warnung klein">⚠ ${f}</p>`)}
+    ${g.hinweis ? html`<p class="warnung klein">⚠ ${g.hinweis}</p>` : nothing}
     <p class="leise klein">Im Viewer mit dem Knopf „Gebäude“ ein- und ausblendbar.</p>
     ${abruf}
     <button class="link klein" @click=${gebaeudeEntfernen}>Gebäude entfernen</button>`;
@@ -665,6 +685,7 @@ function sgdTeil(z: Zustand) {
     ${waehlbar ? html`<button class="primaer" ?disabled=${!sgdWahl.size} @click=${sgdUebernehmen}>
       Ausgewählte übernehmen (${sgdWahl.size})</button>
       <p class="leise klein">Nur Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg); sie kommen mit Quelle und Lizenz ins Projekt.</p>` : nothing}
+    ${nichtUebernehmbar(s)}
     ${s.quellen.map((q) => html`<p class="leise klein">Quelle: ${q.namensnennung} · <a href=${q.beleg} target="_blank" rel="noopener">Dienst</a></p>`)}
     <button class="link klein" @click=${async () => { const z2 = await versuchen(() => api.sgdVerwerfen(S.sig)); if (z2) { zustandUebernehmen(z2); neu(); } }}>Abfrage verwerfen</button>`;
 }
@@ -679,6 +700,16 @@ function hilfsmarkenNachziehen(z: Zustand) {
 }
 
 let escGebunden = false;
+
+/** Projekt an einem Punkt (ohne Gutachten): georeferenziert über den Punkt - kein Lageplan, keine Kalibrierung. */
+function standortTeil(z: Zustand) {
+  const s = z.standort!;
+  return abschnitt(html`Standort ${hilfe("standort")}`, html`
+    <p class="klein"><b>${zahl(s.x, 1)} / ${zahl(s.y, 1)}</b> · EPSG:${s.epsg}</p>
+    <p class="leise klein">Georeferenziert über den Punkt: kein Lageplan, keine Kalibrierung – die Bohrungen der Länder
+      kommen mit ihren Koordinaten. Ein Gutachten dazu (Schritt Gutachten) wird ein neues Projekt mit Lageplan.</p>
+    <ul class="dienste klein" aria-label="Dienste am Standort">${s.dienste.map((d) => html`<li class=${d.art}>${d.text}</li>`)}</ul>`);
+}
 
 export function schrittLage() {
   const z = S.z!;
@@ -695,19 +726,21 @@ export function schrittLage() {
   }
   return html`
     <div class="app-panel links">
-      ${abschnitt(html`Lage der Bohrungen ${hilfe("lage_art")}`, html`
-        <div class="umschalter">
-          <label><input type="radio" name="lagemodus" .checked=${z.lage_modus === "koordinaten"}
-            @change=${() => aendern([{ op: "lage_modus", wert: "koordinaten" }])}> Koordinaten (Lageplan)</label>
-          <label><input type="radio" name="lagemodus" .checked=${z.lage_modus === "reihe"}
-            @change=${() => aendern([{ op: "lage_modus", wert: "reihe" }])}> Reihe (Längsschnitt)</label>
-        </div>`)}
-      ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z))}
-      ${z.unterlage ? abschnitt(html`Kalibrieren`, kalibrierenTeil(z)) : nothing}
-      ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z))}
+      ${z.standort ? standortTeil(z) : html`
+        ${abschnitt(html`Lage der Bohrungen ${hilfe("lage_art")}`, html`
+          <div class="umschalter">
+            <label><input type="radio" name="lagemodus" .checked=${z.lage_modus === "koordinaten"}
+              @change=${() => aendern([{ op: "lage_modus", wert: "koordinaten" }])}> Koordinaten (Lageplan)</label>
+            <label><input type="radio" name="lagemodus" .checked=${z.lage_modus === "reihe"}
+              @change=${() => aendern([{ op: "lage_modus", wert: "reihe" }])}> Reihe (Längsschnitt)</label>
+          </div>`)}
+        ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z))}
+        ${z.unterlage ? abschnitt(html`Kalibrieren`, kalibrierenTeil(z)) : nothing}
+        ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z))}`}
+      ${z.standort ? abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z)) : nothing}
       ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
         gelaendeTeil(z), !!z.gelaende)}
-      ${abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z), !!z.sgd)}
+      ${z.standort ? nothing : abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z), !!z.sgd)}
       ${abschnitt(html`Gebäude (LoD2)${z.gebaeude ? " ✓" : ""} ${hilfe("gebaeude")}`, gebaeudeTeil(z), !!z.gebaeude)}
       ${abschnitt(html`Darstellung`, html`
         <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}

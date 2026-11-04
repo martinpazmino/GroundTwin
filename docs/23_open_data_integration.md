@@ -1,6 +1,7 @@
 ---
 title: "23 Open data and open-source integration: evaluation and intervention plan"
 date: 2026-11-02
+updated: 2026-11-04
 tags: [open-data, boreholeml, bgr, geoportal, dgm, lod2, 3d-tiles, cesium, openstreetmap, plan]
 aliases: [Open data integration, Umgebungsmodell, BoreholeML, Bohrpunktkarte, Intervention plan]
 ---
@@ -31,7 +32,8 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
 - **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
-- **Status (2026-11-03):** P0 to P5 are done.
+- **Status (2026-11-04):** P0 to P5 are done; of the optional P6, the 3D Tiles export for Cesium and the
+  GeolDG help ([21 §5.2, §5.3](21_app_schritte_normen.md#52-3d-tiles-for-cesium)).
   - A Baugrundmodell from a point (Standort start, P5), marked as Vorerkundung in the app, the viewer, the
     report and the IFC; a Gutachten added later keeps both sources apart
     ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
@@ -85,7 +87,8 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - **Export:** the Gutachten that GroundTwin reads becomes the format of the SGD. Under the GeolDG
     a drilling is notified at least two weeks before it starts (§ 8). Its results, such as the
     Schichtenverzeichnis, are submitted at the latest three months after it ends (§ 9). A prefilled
-    file saves typing.
+    file saves typing. Done (P6): the package for the Geologischer Dienst with BoreholeML, the model
+    and its documentation and a checklist per Bohrung ([21 §5.3](21_app_schritte_normen.md#53-geoldg-what-goes-to-the-geologischer-dienst), D96).
   - Which SGD accept a BoreholeML upload from third parties is **[to be verified]**. Many accept
     SEP3 files (the LBEG offers free SEP3 software) or online forms.
 - **Mapping of the canonical JSON** (element names are taken from the XSD in P1; the schemas could
@@ -251,6 +254,10 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
 - **2D background** for the Standort card and the Lage step.
   - Choice: basemap.de Web Raster / Vektor (official) or OSM tiles.
   - A light map library would draw it: MapLibre GL JS (BSD-3-Clause) or Leaflet (BSD-2-Clause).
+  - Done for the Standort card (2026-11-04, D97): a pop-up with Leaflet and the basemap.de Web Raster (OSM as the
+    second layer); a click sets the point, converted to ETRS89/UTM on the server
+    ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)). Not in the Lage
+    step: there the viewer shows the plan.
   - It would also allow placing the Lageplan over the basemap by two points.
   - The OSM tile servers have a usage policy (no heavy use) and require "© OpenStreetMap
     contributors". For production, use basemap.de or your own tiles.
@@ -262,6 +269,10 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - What makes sense is **exporting the Baugrundmodell as 3D Tiles**: IFC → glTF (IfcOpenShell) →
     a tileset with one tile and its ECEF transform. Anyone can then load it in CesiumJS, Cesium for
     Unreal or QGIS 3D.
+  - Done (P6, D95): 3D Tiles 1.1 with one tile each for the model, the terrain and the buildings,
+    heights made ellipsoidal with the GCG2016 quasigeoid; valid for the official validator, and in
+    CesiumJS the top of the model lies within 1 mm of GOK + ζ
+    ([21 §5.2](21_app_schritte_normen.md#52-3d-tiles-for-cesium)).
 - **OSM as a fallback** for buildings where there is no LoD2 open data.
   - Footprints with `height` or `building:levels` become LoD1 blocks, fetched through the Overpass
     API under its usage policy.
@@ -354,7 +365,7 @@ Rules:
 | **P5 Standort start** | Step 1 accepts a point; the project uses P2 and P3; `reifegrad = Vorerkundung` in the app, the IFC and the report; a PDF can be added later | From a point in Berlin, a model with ≥ 3 SGD Bohrungen in under a minute; Vorerkundung visible everywhere; with the PDF added, both sources stay apart | 1 week |
 | **P6 Optional** | 3D Tiles export for Cesium; GeolDG help (prefilled BoreholeML / SEP3 for the SGD); swissgeol boreholes for Switzerland; OSM fallback; 3DCityDB if a project database is needed | Per item | Per item |
 
-**Status (2026-11-03):**
+**Status (2026-11-04):**
 
 | Phase | State |
 |---|---|
@@ -365,7 +376,7 @@ Rules:
 | P3b: DGM through WCS, terrain surface in the model and the IFC | **Done.** [`dgm_dienst.py`](../services/geodaten/geodaten/dgm_dienst.py) (WCS 2.0.1 of Brandenburg with Berlin and NRW; Baden-Württemberg delivers whole metres, Bayern has no free WCS), top of the model from the DGM and `IfcGeographicElement` TERRAIN ([`umgebung.py`](../services/modeler/baugrundmodell/umgebung.py), [21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)); 13 tests + 3 end-to-end checks |
 | P4: Umgebungsmodell (buildings) | **Done with the LoD2 of the Länder.** [`gebaeude.py`](../services/geodaten/geodaten/gebaeude.py): CityGML tiles of 1 × 1 km of Berlin, Brandenburg and NRW in ETRS89/UTM + DHHN2016, so no ζ and no convergence; `IfcBuildingElementProxy` per building with its license ([21 §4.6](21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)). Heights in place: the ground of each building is the lowest DGM point of its footprint, median 0.00 m in Berlin and Marl. The basemap.de 3D Tiles (way a) are not needed for these Länder; they stay an option for the others |
 | P5: Standort start (a Baugrundmodell from a point, Vorerkundung) | **Done, in NRW.** Card *Standort ohne Gutachten* in step 1, the point is the centre of the queries and the origin of the scene; Reifegrad Gutachten / Vorerkundung / gemischt from the *Herkunft* of the Bohrungen in the header, the *Modell* step, the viewer, the report and the IFC (`CPset_Baugrundmodell.Reifegrad`, `CPset_Herkunft` per Bohrung); archive Schichten with confidence 0.5; a PDF added later becomes a new project that takes the Bohrungen der Länder, the query, DGM and buildings with it ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point), D94). Acceptance in **Marl instead of Berlin**: Berlin publishes only the header of its Bohrungen, no Schichtdaten, so no model can come from there. In Marl: 11 SGD Bohrungen within 250 m, model in 15 s; 4 tests + 5 end-to-end checks. Open: a map of the distance to the nearest Bohrung in the viewer (per Einheit the IFC carries its maximum distance) |
-| P6: Optional (3D Tiles export, GeolDG help, swissgeol, OSM fallback, 3DCityDB) | Open |
+| P6: Optional (3D Tiles export, GeolDG help, swissgeol, OSM fallback, 3DCityDB) | **Two of five done.** **3D Tiles export** ([`tiles3d.py`](../services/geodaten/geodaten/tiles3d.py), [21 §5.2](21_app_schritte_normen.md#52-3d-tiles-for-cesium), D95): GLB from the IFC, exact UTM → ECEF, heights + ζ of the GCG2016 (fetched once from the PROJ CDN, sha256); official validator 0/0/0, CesiumJS heights within 1 mm; 10 tests + 1 end-to-end check. **GeolDG help** ([`geoldg.py`](../services/geodaten/geodaten/geoldg.py), [21 §5.3](21_app_schritte_normen.md#53-geoldg-what-goes-to-the-geologischer-dienst), D96): deadlines of §§ 8–10, a checklist per Bohrung (what GroundTwin has, what comes from the Bohrprotokoll), the package with Fachdaten and Bewertungsdaten; every rule with its § and link; 26 tests + 1 end-to-end check. **Left out:** swissgeol boreholes (Switzerland is outside the scope of Germany, and `api.boreholes.swissgeol.ch` cannot be reached from the session), the OSM fallback (`overpass-api.de` cannot be reached; the LoD2 of the three Länder cover the sites so far), 3DCityDB (no project database of city models is needed) |
 
 **Why this order:**
 
@@ -408,7 +419,8 @@ nothing. Blocked on 2026-11-02 (proxy 403 or not resolved, also for WebFetch), a
   - `ogc-api.nrw.de`, `www.bml3.nrw.de`, `www.wms.nrw.de`, `www.opengeodata.nrw.de`.
   - `services.lgrb-bw.de`.
   - `gdi.berlin.de`.
-- `tile.openstreetmap.org`, `overpass-api.de` (OSM fallback).
+- `tile.openstreetmap.org`, `overpass-api.de` (OSM fallback). On 2026-11-04 `overpass-api.de` and
+  `api.boreholes.swissgeol.ch` still gave no connection; `cdn.proj.org` (GCG2016 for 3D Tiles) answers.
 - `schemas.opengis.net` only answers over **https**: the BoreholeML XSD imports GML and ISO 19139 with
   `http://`, so the check maps them to `https://` (`xmlschema`, `uri_mapper`; X31).
 
@@ -428,7 +440,7 @@ Recorded in [11 Decisions](11_decisions.md) as **proposed**:
 - **D86:** The Umgebungsmodell comes from the official open data of the Länder (DGM1, LoD2) in
   ETRS89/UTM + DHHN2016. basemap.de 3D Tiles are for viewing; OSM is only a fallback.
 - **D87:** No Cesium engine and no Cesium ion inside the app. An optional 3D Tiles export serves
-  Cesium users.
+  Cesium users. (Implemented on 2026-11-04, D95.)
 - **D88:** External services are optional and can be switched off per project (confidentiality).
   The app keeps working offline.
 

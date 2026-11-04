@@ -117,8 +117,8 @@ def exportieren(dokumente: list[dict], *, projekt: str, organisation: str = "", 
                      dgm_zelle, deuten, UNKLASSIFIZIERT, nicht_kodiert)
             bericht["exportiert"].append(b["code"])
     if not bericht["exportiert"]:
-        raise ValueError("keine exportierbare Bohrung: " + "; ".join(f"{a['code']}: {a['grund']}"
-                                                                      for a in bericht["ausgelassen"][:8]))
+        gruende = "; ".join(f"{a['code']}: {a['grund']}" for a in bericht["ausgelassen"][:8])
+        raise ValueError("keine exportierbare Bohrung: " + (gruende or "keine Bohrung im Projekt"))
     bericht["hinweise"] = [
         "Höhen als DHHN92 gekennzeichnet (EPSG 5554/5555/5556 wie die amtlichen Beispiele; „m NHN“ im Gutachten, "
         "Unterschied zu DHHN2016 wenige cm).",

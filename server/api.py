@@ -11,22 +11,33 @@ from __future__ import annotations
 import base64
 import binascii
 import os
+import re
 import secrets
+import unicodedata
+import urllib.parse
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ui import pipeline as pl
 
-from .arbeitsplatz import BEISPIELE, Arbeitsplatz, bohrdaten
+from .arbeitsplatz import BEISPIELE, STANDORT_BEISPIELE, Arbeitsplatz, bohrdaten
 
 DIST = Path(__file__).resolve().parents[1] / "apps" / "web" / "dist"
 VERSION = "3.0"
 LIZENZ = "AGPL-3.0-or-later"
 QUELLCODE = "https://github.com/martinpazmino/GroundTwin"          # AGPL § 13: Quelltext fuer Nutzer im Netz
+
+
+def herunterladen(name: str) -> str:
+    """Content-Disposition eines Downloads: ohne die Zeichen, die Windows im Dateinamen verbietet, als ASCII-Ersatz und
+    voll als UTF-8 (RFC 6266). Mit "–" oder "✓" im Projektnamen brach sonst jeder Export ab (Kopfzeilen sind latin-1)."""
+    sauber = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", name).strip(" .") or "export"
+    ersatz = unicodedata.normalize("NFKD", sauber).encode("ascii", "ignore").decode("ascii").strip(" .") or "export"
+    return f"attachment; filename=\"{ersatz}\"; filename*=UTF-8''{urllib.parse.quote(sauber)}"
 
 
 def anmeldung_ok(kopf: str | None, passwort: str, benutzer: str = "") -> bool:
@@ -127,7 +138,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.get("/api/info")
     def info():
         return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "lizenz": LIZENZ, "quellcode": quellcode,
-                "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]}
+                "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]
+                + [{"name": k, "titel": v[0], "standort": True} for k, v in STANDORT_BEISPIELE.items()]}
 
     @app.get("/api/projekte")
     def projekte():
@@ -143,7 +155,13 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.post("/api/standort")
     def standort(s: Standort):
         """Projekt an einem Punkt ohne Gutachten (Vorerkundung, docs/23 §2.3)."""
-        return {"projekt": ap.standort_anlegen(s.x, s.y, s.epsg, s.name)}
+        sig, vorhanden = ap.standort_anlegen(s.x, s.y, s.epsg, s.name)
+        return {"projekt": sig, "vorhanden": vorhanden}
+
+    @app.get("/api/standort/punkt")
+    def standort_punkt(laenge: float, breite: float, epsg: int | None = None):
+        """Klick in die Karte -> Rechts-/Hochwert in ETRS89/UTM und die Dienste der Laender an diesem Ort."""
+        return ap.standort_punkt(laenge, breite, epsg)
 
     @app.get("/api/auftrag/{aid}")
     def auftrag(aid: str):
@@ -151,7 +169,7 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
 
     @app.post("/api/beispiel")
     def beispiel(b: Beispiel):
-        if b.name not in BEISPIELE:
+        if b.name not in BEISPIELE and b.name not in STANDORT_BEISPIELE:
             raise KeyError(b.name)
         return ap.beispiel(b.name, b.ocr and pl.ocr_verfuegbar())
 
@@ -258,7 +276,7 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.get("/api/projekt/{sig}/export/{art}")
     def export(sig: str, art: str, organisation: str = ""):
         inhalt, name, typ = ap.export(sig, art, organisation)
-        return Response(inhalt, media_type=typ, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+        return Response(inhalt, media_type=typ, headers={"Content-Disposition": herunterladen(name)})
 
     # ------------------------------------------------------------ Dateien und Oberflaeche
     app.mount("/dateien", StaticFiles(directory=ap.web), name="dateien")

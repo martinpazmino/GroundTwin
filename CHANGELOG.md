@@ -6,6 +6,27 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Standort ohne Gutachten **from a map** (decision D97): a pop-up with the basemap.de map of the BKG (or OpenStreetMap);
+  a click sets the point in ETRS89/UTM and shows what the services of the Länder deliver there.
+- Standort examples: Dortmund (NRW, Bohrungen with Schichtdaten), Karlsruhe (Baden-Württemberg, Schichten often
+  without petrography) and Berlin (header data only: terrain and buildings, no layer model).
+- *Lage* step of a Standort project: no Lageplan sections (the point is already georeferenced); a *Standort*
+  section with the point and the services there; *Bohrungen der Länder* first and open.
+- *Bohrungen der Länder*: a line says why a Bohrung cannot be taken over (Berlin and Brandenburg give the
+  Schichtenverzeichnis only as an image).
+- *Modell* step: the Baugrundmodell as **3D Tiles 1.1 for Cesium** (CesiumJS, Cesium for Unreal, QGIS 3D;
+  decisions D87, D95).
+  - One glTF tile each for the model, the terrain and the buildings, read from the exported IFC.
+  - Every vertex converted exactly from ETRS89/UTM; heights made ellipsoidal with the quasigeoid GCG2016 of the
+    BKG (CC BY 4.0, fetched once from the PROJ CDN and checked by sha256).
+  - Valid for the official 3d-tiles-validator; in CesiumJS the top of the model lies within 1 mm of the expected
+    height (`scripts/check_tiles3d.mjs`).
+- *Modell* step: **GeolDG help** for the transmission to the Geologischer Dienst (decision D96).
+  - Deadlines of §§ 8–10 from the dates of the investigation.
+  - Per Bohrung what GroundTwin delivers (Lage, Ansatzhöhe, Endteufe, reviewed Schichtenverzeichnis, marked when
+    not from the PDF) and what comes from the Bohrprotokoll.
+  - A package with the Fachdaten (BoreholeML), the Bewertungsdaten (IFC, report, model documentation) and a
+    checklist to fill in. Every rule with its § and a link to the law; a help, not legal advice.
 - Standort ohne Gutachten: a Baugrundmodell from a point, marked as **Vorerkundung** (decisions D85, D94).
   - *Gutachten* step: a point in ETRS89/UTM starts a project; the Bohrungen der Länder, the DGM and the buildings
     come from around it.
@@ -56,10 +77,29 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
 
 ### Fixed
+- Standort: a point in another UTM zone (for example Paris in zone 31) passed the check "in Germany"; the zone and the
+  longitude/latitude are checked now.
+- Exports with a project name containing characters outside latin-1 (for example "–" or "✓", common in file names of
+  Gutachten) failed; download names now go as UTF-8 with an ASCII fallback, without the characters Windows forbids.
+- Standort: the same point a second time opens the existing project (name and step stay) instead of renaming it;
+  resetting keeps the name and returns to the *Lage* step; the dialog says that imported Bohrungen der Länder, DGM
+  and buildings go too.
+- Zone prefix (EPSG 4647/5650): Bohrungen der Länder come into the system of the project, the Gegenprobe compares in
+  one system, and a Gutachten added to a Standort gets the Bohrungen, DGM and buildings in its own system. Buildings in
+  another system than the Bohrungen are now marked instead of silently left out of the IFC.
+- Clear messages: a site without a service of the Land, a model or a BoreholeML export without Bohrungen.
+- Viewer: after a reset the next model is fitted into view again, and the Reifegrad band of the previous project
+  disappears when the project changes.
+- Services of the Länder on Windows: Berlin failed with `CERTIFICATE_VERIFY_FAILED` (its new Telekom root was not
+  yet in the Windows store). TLS now checks against the system store and the Mozilla roots (certifi); a certificate
+  error is reported clearly and not retried. `scripts/dienste_pruefen.py` checks every service from this computer.
 - Viewer: after the *Lage* step a model over 300 m was never fully in view (That Open's orbit mode limited the
   distance to 300 m and moved the target); the camera now keeps its limit and its target when the mode changes.
 - Viewer: the camera no longer stands inside the model or a building when the first model or the first LoD2
   buildings arrive during the *Lage* step, and the first Bohrungen of an empty Standort are fitted into view.
+
+- End-to-end check: the BoreholeML check counted the switched-off 3D Tiles button too, and the waiter of the 3D
+  Tiles check kept polling into the next page (a page error); both fixed with the GeolDG check.
 
 ### Removed
 - Old experiments, kept in the git history and linked from the docs: prototype v3, the spike

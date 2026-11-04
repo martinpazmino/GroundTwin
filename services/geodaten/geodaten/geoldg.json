@@ -1,0 +1,68 @@
+{
+  "quelle": {
+    "titel": "Geologiedatengesetz (GeolDG) vom 19. Juni 2020 (BGBl. I S. 1387)",
+    "url": "https://www.gesetze-im-internet.de/geoldg/",
+    "gelesen": "2026-11-04",
+    "hinweis": "Hilfe zur Übermittlung, keine Rechtsberatung: maßgeblich sind das Gesetz, das Landesrecht (§ 37) und die zuständige Behörde."
+  },
+  "fristen": [
+    {"id": "anzeige", "titel": "Anzeige der Untersuchung mit Nachweisdaten",
+     "regel": "spätestens zwei Wochen vor Beginn", "bezug": "beginn", "tage": -14,
+     "beleg": "§ 8 Satz 1", "url": "https://www.gesetze-im-internet.de/geoldg/__8.html"},
+    {"id": "fachdaten", "titel": "Fachdaten (Schichtenverzeichnis, Bohrverfahren, Ausbau, Proben, Messungen, Labor)",
+     "regel": "spätestens drei Monate nach Abschluss", "bezug": "abschluss", "monate": 3,
+     "beleg": "§ 9 Abs. 1 Satz 1", "url": "https://www.gesetze-im-internet.de/geoldg/__9.html"},
+    {"id": "bewertungsdaten", "titel": "Bewertungsdaten (Gutachten, räumliche Modelle einschließlich Dokumentation)",
+     "regel": "auf Verlangen der zuständigen Behörde", "beleg": "§ 10 Abs. 2 Satz 1",
+     "regel_behoerde": "spätestens sechs Monate nach Abschluss – für verpflichtete Behörden und Personen nach § 3 Abs. 4 Satz 1 Nr. 2",
+     "beleg_behoerde": "§ 10 Abs. 2 Satz 2", "bezug": "abschluss", "monate": 6, "nur_behoerde": true,
+     "url": "https://www.gesetze-im-internet.de/geoldg/__10.html"}
+  ],
+  "abschluss": {"text": "Abschluss: mit Ablauf der in der Anzeige angegebenen Dauer, wenn keine Fortdauer rechtzeitig angezeigt wurde",
+                "beleg": "§ 15 Abs. 1", "url": "https://www.gesetze-im-internet.de/geoldg/__15.html"},
+  "punkte": [
+    {"id": "lage", "titel": "Lage der Bohrung", "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 a", "quelle": "app"},
+    {"id": "ansatzhoehe", "titel": "Ansatzhöhe (GOK)", "beleg": "§ 8 Satz 2 Nr. 4; § 9 Abs. 1 Satz 1 Nr. 3 a", "quelle": "app"},
+    {"id": "verlauf", "titel": "Verlauf der Bohrung", "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 a", "quelle": "app"},
+    {"id": "endteufe", "titel": "Endteufe", "beleg": "§ 8 Satz 2 Nr. 4; § 9 Abs. 1 Satz 1 Nr. 3 a", "quelle": "app"},
+    {"id": "schichtenverzeichnis", "titel": "Schichtenverzeichnis", "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 a", "quelle": "app"},
+    {"id": "bohrverfahren", "titel": "Bohrverfahren, Bohrtechnik, Ausbau und Verfüllung", "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 e",
+     "quelle": "protokoll"},
+    {"id": "proben", "titel": "Bohrkern und Proben (Lage, Art, Menge, Aufbewahrungsort und -dauer)",
+     "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 a, c und Nr. 4", "quelle": "protokoll"},
+    {"id": "bohrlochmessungen", "titel": "Bohrlochmessungen (Methoden und Ergebnisse), falls durchgeführt",
+     "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 b", "quelle": "protokoll"},
+    {"id": "hydraulik", "titel": "Pumpversuche und andere hydraulische Tests, falls durchgeführt",
+     "beleg": "§ 9 Abs. 1 Satz 1 Nr. 3 d", "quelle": "protokoll"},
+    {"id": "labor", "titel": "Ergebnisse der Test- und Laboranalysen, falls durchgeführt",
+     "beleg": "§ 9 Abs. 1 Satz 1 Nr. 5", "quelle": "protokoll"}
+  ],
+  "art": {
+    "rks": "Kürzel deutet auf eine Kleinbohrung (RKS, BS, KRB) – Verfahren angeben",
+    "gwm": "Kürzel deutet auf eine Grundwassermessstelle – Ausbau angeben",
+    "schurf": "Kürzel deutet auf einen Schurf – Beschreibung als Aufschluss (§ 9 Abs. 1 Satz 1 Nr. 2)"
+  },
+  "anzeige_inhalt": {
+    "beleg": "§ 8 Satz 2 Nr. 1, 2 und 4", "url": "https://www.gesetze-im-internet.de/geoldg/__8.html",
+    "punkte": [
+      "Bezeichnung und Zweck der Untersuchung; Name und Anschrift der anzeigenden Person und des Auftraggebers",
+      "Art, Methode, voraussichtlicher Umfang und geplante Dauer",
+      "je Bohrung: voraussichtliche Bezeichnung, geplante Lage und Ansatzhöhe, geplanter Bohrlochverlauf, geplante Endteufe, gegebenenfalls prognostizierte Gesteinsschichten, geplante Bohrlochmessungen, Bohrverfahren, künftiger Aufbewahrungsort und beabsichtigte Aufbewahrungsdauer von Bohrkernen und Proben"
+    ],
+    "aus_der_app": "Hilfe aus GroundTwin: das Gelände (DGM) für die Ansatzhöhe geplanter Bohrpunkte und das Modell der Vorerkundung (Bohrungen der Länder, Reifegrad Vorerkundung) als Prognose der Schichten."
+  },
+  "hinweise": [
+    {"text": "Zuständig ist die nach Landesrecht bestimmte Behörde, in der Regel der Staatliche Geologische Dienst des Landes.",
+     "beleg": "§ 37 Abs. 1", "url": "https://www.gesetze-im-internet.de/geoldg/__37.html"},
+    {"text": "Verpflichtet sind, wer die Untersuchung vornimmt (auch als Beauftragter), der Auftraggeber und deren Rechtsnachfolger; übermittelt einer, sind die anderen befreit – mit Bohrfirma und Auftraggeber abstimmen, wer übermittelt.",
+     "beleg": "§ 14", "url": "https://www.gesetze-im-internet.de/geoldg/__14.html"},
+    {"text": "Elektronisch in einem von der Behörde benannten interoperablen Format; BoreholeML 3.2 ist das Austauschformat der Staatlichen Geologischen Dienste – das Format vorher mit der Behörde klären.",
+     "beleg": "§ 16 Abs. 1", "url": "https://www.gesetze-im-internet.de/geoldg/__16.html"},
+    {"text": "Die Daten als Nachweis-, Fach- oder Bewertungsdaten kennzeichnen und angeben, ob die Fachdaten für eine gewerbliche Tätigkeit gewonnen wurden und ob Beschränkungen der öffentlichen Bereitstellung bestehen könnten.",
+     "beleg": "§ 17 Abs. 1 und 2", "url": "https://www.gesetze-im-internet.de/geoldg/__17.html"},
+    {"text": "Ist die Untersuchung nach anderen Gesetzen anzeige- oder genehmigungspflichtig, wahrt die fristgerechte und vollständige Übermittlung an die dafür zuständige Behörde auch diese Fristen.",
+     "beleg": "§ 15 Abs. 3", "url": "https://www.gesetze-im-internet.de/geoldg/__15.html"},
+    {"text": "Nichtstaatliche Fachdaten werden fünf Jahre nach Ablauf der Übermittlungsfrist öffentlich bereitgestellt (zehn Jahre bei den in Abs. 2 genannten gewerblichen Vorhaben); nichtstaatliche Bewertungsdaten werden nicht öffentlich bereitgestellt.",
+     "beleg": "§ 27 Abs. 1 und 2; § 28", "url": "https://www.gesetze-im-internet.de/geoldg/__27.html"}
+  ]
+}
