@@ -43,6 +43,17 @@ BEISPIELE = {
     "trasse": ("Trasse – synthetisch, 6 km, 51 Bohrungen", "trasse_synthetisch.json"),
     "pdf": ("Synthetisches Bohrprofil-PDF (ganzer Ablauf mit Extraktion)", "synthetisch_bohrprofil.pdf"),
 }
+# Standort ohne Gutachten (docs/21 §4.7): je ein Ort, an dem die Dienste der Laender zeigen, was sie liefern (gegen
+# die echten Dienste geprueft, 250 m Umkreis): NRW mit Schichtdaten, Baden-Wuerttemberg oft ohne Petrographie, Berlin
+# nur Kopfdaten (Gelaende und Gebaeude ja, ein Schichtenmodell nein)
+STANDORT_BEISPIELE = {
+    "standort_dortmund": ("Standort Dortmund (NRW) – Vorerkundung aus 24 Bohrungen mit Schichtdaten",
+                          393507.0, 5708058.0, 25832, "Beispiel Dortmund"),
+    "standort_karlsruhe": ("Standort Karlsruhe (Baden-Württemberg) – Schichtdaten oft ohne Petrographie",
+                           456391.0, 5428394.0, 25832, "Beispiel Karlsruhe"),
+    "standort_berlin": ("Standort Berlin-Friedrichshain – nur Kopfdaten: Gelände und Gebäude, kein Schichtenmodell",
+                        394800.0, 5818400.0, 25833, "Beispiel Berlin"),
+}
 MODELLE_IM_SPEICHER = 6
 DGM_IM_SPEICHER = 2
 
@@ -199,12 +210,30 @@ class Arbeitsplatz:
             shutil.rmtree(self.ordner(sig), ignore_errors=True)
 
     # ------------------------------------------------------------ Standort (ohne Gutachten, docs/23 §2.3, P5)
+    @staticmethod
+    def _in_deutschland(x: float, y: float, epsg: int) -> None:
+        """ETRS89/UTM 32 oder 33 und im Rechteck um Deutschland (5,5-15,5 Grad Ost, 47,2-55,1 Grad Nord); die Bereiche
+        der UTM-Werte allein gelten in jeder Zone (ein Punkt in Paris hatte in Zone 31 passende Zahlen)."""
+        xn, yn, normal = bohrdaten.utm_normal(float(x), float(y), int(epsg))     # ValueError ausser ETRS89/UTM
+        laenge, breite = (float(v) for v in utm.zu_geo(xn, yn, utm.zone(normal)))
+        if utm.zone(normal) not in (32, 33) or not (5.5 <= laenge <= 15.5 and 47.2 <= breite <= 55.1):
+            raise ValueError(f"Rechtswert {x:.0f} / Hochwert {y:.0f} liegen nicht in Deutschland (EPSG:{epsg})")
+
+    def standort_punkt(self, laenge: float, breite: float, epsg: int | None = None) -> dict:
+        """Klick in die Karte (Laenge/Breite, WGS84 ~ ETRS89 auf rund 1 m) -> ETRS89/UTM fuer den Standort: Zone nach der
+        Laenge (32 westlich von 12 Grad, sonst 33) oder wie gewaehlt; dazu, was die Dienste der Laender dort liefern."""
+        zone = utm.zone(epsg) if epsg else utm.zone_fuer(laenge)
+        x, y = (float(v) for v in utm.von_geo(laenge, breite, zone))
+        ziel = int(epsg) if epsg else 25800 + zone
+        x += utm.versatz(25800 + zone, ziel) or 0.0                              # 4647/5650: mit Zonenkennung
+        self._in_deutschland(x, y, ziel)
+        return {"x": round(x, 1), "y": round(y, 1), "epsg": ziel, "laenge": round(float(laenge), 6),
+                "breite": round(float(breite), 6), "dienste": bohrdaten.am_ort(x, y, ziel)}
+
     def standort_anlegen(self, x: float, y: float, epsg: int, name: str = "") -> tuple[str, bool]:
         """Projekt an einem Punkt (ETRS89/UTM): Bohrungen, DGM und Gebaeude kommen von den Diensten der Laender.
         Gibt es den Standort schon, wird er nur geoeffnet (Name und Schritt bleiben). Rueckgabe (Signatur, vorhanden)."""
-        xn, yn, _ = bohrdaten.utm_normal(float(x), float(y), int(epsg))          # ValueError ausser ETRS89/UTM
-        if not (150_000 <= xn <= 850_000 and 5_200_000 <= yn <= 6_150_000):
-            raise ValueError(f"Rechtswert {x:.0f} / Hochwert {y:.0f} liegen nicht in Deutschland (EPSG:{epsg})")
+        self._in_deutschland(x, y, epsg)
         punkt = {"x": round(float(x), 2), "y": round(float(y), 2), "epsg": int(epsg)}
         kennung = hashlib.sha256(json.dumps(punkt, sort_keys=True).encode()).hexdigest()
         docs = [{"document": {"file": f"Standort {punkt['x']:.0f} / {punkt['y']:.0f} (EPSG:{epsg})", "sha256": kennung,
@@ -387,7 +416,8 @@ class Arbeitsplatz:
                 "dokumente": [{"index": i, "datei": d["document"]["file"], "seiten": d["document"].get("pages"),
                                "pdf": pl.pdf_pfad(d["document"]) is not None} for i, d in enumerate(docs)],
                 "lage_modus": p.lage_modus, "erzeugt": p.erzeugt, "auto": p.auto,
-                "standort": standort, "reifegrad": pj.reifegrad(docs, p),
+                "standort": {**standort, "dienste": bohrdaten.am_ort(standort["x"], standort["y"], standort["epsg"])}
+                if standort else None, "reifegrad": pj.reifegrad(docs, p),
                 "durchmesser": p.durchmesser, "durchmesser_auto": pj.durchmesser_auto(vorb),
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
@@ -902,7 +932,13 @@ class Arbeitsplatz:
         return self._auftraege[aid]
 
     def beispiel(self, schluessel: str, ocr: bool = False) -> dict:
-        """Beispiel oeffnen: JSON direkt als Projekt, das PDF ueber die Extraktion (Auftrag)."""
+        """Beispiel oeffnen: JSON direkt als Projekt, das PDF ueber die Extraktion (Auftrag), ein Standort als Projekt am
+        Punkt (im Schritt Lage; schon angelegt: wie zuletzt)."""
+        if schluessel in STANDORT_BEISPIELE:
+            _, x, y, epsg, name = STANDORT_BEISPIELE[schluessel]
+            sig, vorhanden = self.standort_anlegen(x, y, epsg, name)
+            with self.sperre(sig):
+                return {"projekt": sig, "schritt": self.laden(sig)[1].schritt if vorhanden else "lage"}
         _, datei = BEISPIELE[schluessel]
         pfad = pl.BEISPIELE / datei
         if pfad.suffix == ".pdf":

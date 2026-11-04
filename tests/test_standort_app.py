@@ -48,7 +48,8 @@ def test_standort_bohrungen_der_laender_modell_vorerkundung(client):
     import ifcopenshell.util.element
     sig = standort(client)
     z = client.get(f"/api/projekt/{sig}").json()
-    assert z["standort"] == {"x": 368130.0, "y": 5724400.0, "epsg": 25832} and z["name"] == "Marl Nord"
+    assert {k: z["standort"][k] for k in ("x", "y", "epsg")} == {"x": 368130.0, "y": 5724400.0, "epsg": 25832}
+    assert z["name"] == "Marl Nord" and any(d["dienst"] == "NW" for d in z["standort"]["dienste"])   # Dienste am Ort
     assert z["lage_modus"] == "koordinaten" and z["schritt"] == "lage" and z["bohrungen"] == []
     assert z["reifegrad"]["stufe"] == "Vorerkundung"
     # Nullpunkt der Szene am Standort (auf 100 m): die Bohrungen der Laender kommen dazu, ohne dass er springt

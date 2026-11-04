@@ -193,7 +193,7 @@ try {
     `${z.pruefstand.bohrungen} · ${z.pruefstand.schichten}`);
 
   // ---------------------------------------------------------------- B: Berlin, Vorschlag nach Norm
-  await beispiel(/Berlin/);
+  await beispiel(/^Berlin V-67b/);
   await page.locator(".bliste li", { hasText: "S2a" }).first().click();
   await warte(() => [...document.querySelectorAll(".vorschlag")].length > 0, null, 30000);
   await page.locator(".vorschlag").first().click();
@@ -238,9 +238,16 @@ try {
   // jeder andere Fehler (HTTP 4xx, ExceptionReport, Lesefehler) faellt durch
   const netzBerlin = sgd.fehler.find((f) => f.dienst === "BE" && /^(keine Antwort|nicht erreichbar|HTTP 5\d\d)/.test(f.fehler));
   if (netzBerlin) console.log(`AUS  Bohrungen der Länder: Dienst Berlin nicht erreichbar (${netzBerlin.fehler}) – Prüfung ausgelassen`);
-  else pruefe("Bohrungen der Länder: Gegenprobe – die fünf Bohrungen des Gutachtens auch beim Land (≤ 0,1 m)",
-    sgd.gegenprobe.anzahl === 5 && sgd.gegenprobe.lage_max <= 0.1 && zeilenSgd > 5 && sgd.quellen.some((q) => q.lizenz === "dl-de/zero-2.0"),
-    `${sgd.treffer.length} Treffer · ${JSON.stringify(sgd.gegenprobe)} · Fehler ${JSON.stringify(sgd.fehler)}`);
+  else {
+    pruefe("Bohrungen der Länder: Gegenprobe – die fünf Bohrungen des Gutachtens auch beim Land (≤ 0,1 m)",
+      sgd.gegenprobe.anzahl === 5 && sgd.gegenprobe.lage_max <= 0.1 && zeilenSgd > 5 && sgd.quellen.some((q) => q.lizenz === "dl-de/zero-2.0"),
+      `${sgd.treffer.length} Treffer · ${JSON.stringify(sgd.gegenprobe)} · Fehler ${JSON.stringify(sgd.fehler)}`);
+    // Berlin gibt nur Kopfdaten und das Profil als Bild heraus: die Liste sagt, warum keine davon ins Modell kann
+    const warum = (await page.locator("p.sgd-warum").count()) ? await page.locator("p.sgd-warum").innerText() : "";
+    pruefe("Bohrungen der Länder: nicht übernehmbare mit Grund (Berlin: nur Kopfdaten, Profil als Bild)",
+      /\(Berlin\) nur mit Kopfdaten/.test(warum) && !(await page.locator("table.sgd tbody input[type=checkbox]").count()),
+      warum.replace(/\s+/g, " ").slice(0, 120));
+  }
   await page.screenshot({ path: `${aus}/B3_laender.png` });
 
   // ---------------------------------------------------------------- B4: DGM vom Land (echter WCS Brandenburg mit Berlin)
@@ -600,7 +607,32 @@ try {
   await page.screenshot({ path: `${aus}/E1_quelle.png` });
 
   // ---------------------------------------------------------------- F: Standort ohne Gutachten (echter Dienst NRW, Marl)
+  // Beispiel Dortmund: Projekt am Punkt im Schritt Lage, ohne Lageplan-Abschnitte (der Punkt ist georeferenziert)
   await startseite();
+  await page.getByRole("button", { name: /Standort Dortmund \(NRW\)/ }).click();
+  await warte(() => window.app.z?.standort && window.app.schritt === "lage", null, 60000);
+  await ruhe(800);
+  const titelF = (await page.locator(".app-panel details.abschnitt summary").allInnerTexts()).map((s) => s.replace(/[?\s]+$/u, "").trim());
+  const zd = (await stand()).z;
+  pruefe("Beispiel Standort Dortmund: im Schritt Lage, ohne Lageplan, NRW mit Schichtdaten",
+    titelF[0] === "Standort" && !titelF.some((s) => /Unterlage|Bohrungen setzen|Lage der Bohrungen/.test(s)) &&
+    zd.standort.epsg === 25832 && zd.standort.dienste.some((d) => d.dienst === "NW" && /Schichtdaten/.test(d.text)),
+    JSON.stringify(titelF));
+  // Karte als Pop-up: ein Klick in die Mitte (Deutschland) setzt Rechts-/Hochwert und System
+  await startseite();
+  await page.getByRole("button", { name: /Auf der Karte wählen/ }).click();
+  await page.waitForSelector(".karte-dialog .leaflet-container", { timeout: 60000 });
+  const karteBox = await page.locator(".karte-flaeche").boundingBox();
+  await page.mouse.click(karteBox.x + karteBox.width / 2, karteBox.y + karteBox.height / 2);
+  await warte(() => !document.querySelector(".karte-dialog .uebernehmen")?.disabled, null, 30000).catch(() => {});
+  const karteInfo = (await page.locator(".karte-info").innerText()).replace(/\s+/g, " ");
+  await page.getByRole("button", { name: "Punkt übernehmen" }).click();
+  await ruhe(400);
+  const rw = Number(await page.getByLabel("Rechtswert").inputValue());
+  const hw = Number(await page.getByLabel("Hochwert").inputValue());
+  pruefe("Karte als Pop-up: Klick setzt Rechts-/Hochwert (ETRS89/UTM) und zeigt die Dienste am Ort",
+    rw > 150000 && rw < 850000 && hw > 5200000 && hw < 6150000 && (await page.getByLabel("System des Standorts").inputValue()) === "25832" &&
+    !(await page.locator(".karte-dialog").count()) && /Bohrungen/.test(karteInfo), `${rw} / ${hw} · ${karteInfo.slice(0, 90)}`);
   await page.getByLabel("Rechtswert").fill("368130");
   await page.getByLabel("Hochwert").fill("5724400");
   await page.getByLabel("System des Standorts").selectOption("25832");

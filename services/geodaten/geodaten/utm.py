@@ -16,6 +16,7 @@ _A_REKT = A_GRS80 / (1 + _N) * (1 + _N ** 2 / 4 + _N ** 4 / 64)
 # Krueger-Reihen bis n^3 (Karney 2011): gegen PROJ unter 1 mm in der ganzen Zone
 _BETA = (_N / 2 - 2 * _N ** 2 / 3 + 37 * _N ** 3 / 96, _N ** 2 / 48 + _N ** 3 / 15, 17 * _N ** 3 / 480)
 _DELTA = (2 * _N - 2 * _N ** 2 / 3 - 2 * _N ** 3, 7 * _N ** 2 / 3 - 8 * _N ** 3 / 5, 56 * _N ** 3 / 15)
+_ALPHA = (_N / 2 - 2 * _N ** 2 / 3 + 5 * _N ** 3 / 16, 13 * _N ** 2 / 48 - 3 * _N ** 3 / 5, 61 * _N ** 3 / 240)
 K0 = 0.9996
 
 _UTM = {25831: (31, 0.0), 25832: (32, 0.0), 25833: (33, 0.0), 4647: (32, 32_000_000.0), 5650: (33, 33_000_000.0)}
@@ -60,6 +61,27 @@ def zu_geo(e, n, zone_nr: int) -> tuple[np.ndarray, np.ndarray]:
     phi = chi + sum(d * np.sin(2 * j * chi) for j, d in enumerate(_DELTA, start=1))
     lam = np.arctan2(np.sinh(eta1), np.cos(xi1))
     return np.degrees(lam) + (zone_nr * 6 - 183), np.degrees(phi)
+
+
+def zone_fuer(laenge: float) -> int:
+    """UTM-Zone nach der Laenge (Deutschland: 32 westlich von 12 Grad Ost, 33 oestlich)."""
+    return int((float(laenge) + 180.0) // 6.0) + 1
+
+
+def von_geo(laenge, breite, zone_nr: int) -> tuple[np.ndarray, np.ndarray]:
+    """(Laenge, Breite) in Grad -> ETRS89/UTM (Rechtswert ohne Zonenkennung, Hochwert), vektoriell. Umkehrung von
+    zu_geo (Krueger-Reihen, Karney 2011); gegen PROJ unter 1 mm (tests/test_karte.py)."""
+    phi = np.radians(np.asarray(breite, dtype=float))
+    lam = np.radians(np.asarray(laenge, dtype=float) - (zone_nr * 6 - 183))
+    e = np.sqrt(_E2)
+    t = np.sinh(np.arctanh(np.sin(phi)) - e * np.arctanh(e * np.sin(phi)))       # konforme Breite (tan)
+    xi1 = np.arctan2(t, np.cos(lam))
+    eta1 = np.arctanh(np.sin(lam) / np.sqrt(1 + t ** 2))
+    xi, eta = xi1.copy(), eta1.copy()
+    for j, a in enumerate(_ALPHA, start=1):
+        xi += a * np.sin(2 * j * xi1) * np.cosh(2 * j * eta1)
+        eta += a * np.cos(2 * j * xi1) * np.sinh(2 * j * eta1)
+    return 500000.0 + K0 * _A_REKT * eta, K0 * _A_REKT * xi
 
 
 def ecef(laenge, breite, h) -> np.ndarray:

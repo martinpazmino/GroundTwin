@@ -415,6 +415,15 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
 
 **Übernehmen:** only Bohrungen with Schichtdaten in BoreholeML.
 
+- **Why the others cannot be taken over, said in the list** (line *Nicht übernehmbar*, counted per Land):
+  - Berlin and Brandenburg give the Schichtenverzeichnis only as an **image** (*Profil ↗*), not as data. Without
+    Schichten no model can be built, and inventing them would be wrong (a doubtful value is marked, never invented).
+    Lage, GOK and Teufe are in the list; the Schichten are in the profile of the Land.
+  - Bohrungen without a Schichtenverzeichnis, and Schichten without petrography (often Baden-Württemberg), are
+    counted the same way.
+  - Before, the explanation only appeared when at least one Bohrung could be taken over: in Berlin the list showed
+    38 rows and no reason (user report 2026-11-04).
+
 - They come into the project as a further document (`fremd.json`; the project keeps its signature), in the system of
   the project: a Gutachten with the zone prefix (EPSG 4647/5650) gets them with the prefix, and the Gegenprobe compares
   in one system (lesson S17).
@@ -486,15 +495,45 @@ D85, D94): a first Baugrundmodell before there is a Gutachten, built only from t
 
 - Card *Standort ohne Gutachten* in the *Gutachten* step: Rechtswert, Hochwert, the system (ETRS89/UTM 32N or 33N,
   also with the zone prefix: 25832, 25833, 4647, 5650) and a free name. *Projekt am Standort anlegen →*.
-- The point is checked: only ETRS89/UTM, and it must lie in Germany. Gauß-Krüger or a typo of one digit gives a
-  message, not a project.
+- **Or on the map** (D97): *🗺 Auf der Karte wählen* opens a pop-up with a map, only to find the place; a click sets
+  the point.
+  - Background: basemap.de Web Raster of the BKG (official, „© GeoBasis-DE / BKG (2026) CC BY 4.0“) or
+    OpenStreetMap, switchable. Leaflet (BSD-2-Clause) and the tiles load only when the pop-up opens; the map area then
+    goes to that server (the help says so).
+  - The server converts the click (longitude/latitude) to ETRS89/UTM: zone 32 west of 12° east, otherwise 33
+    (`geodaten/utm.von_geo`, Krüger series, below 1 mm against PROJ). The map is in WGS84, about 1 m from ETRS89:
+    enough to place a Vorerkundung.
+  - Below the point it says what the services of the Länder deliver there (`bohrdaten.am_ort`), before the project
+    exists: for example *Bohrungen Nordrhein-Westfalen: mit Schichtdaten (BoreholeML)* or *Bohrungen Berlin: nur
+    Kopfdaten, Schichtenverzeichnis als Bild – nicht ins Modell*. The areas of the services are rectangles, so near a
+    border of a Land the list says it comes without guarantee.
+  - *Punkt übernehmen* fills Rechtswert, Hochwert and the system; typing another value clears the list.
+
+![The map pop-up of the Standort card: a click near Dortmund gives the point in ETRS89/UTM 32N and what NRW delivers there. Map: © GeoBasis-DE / BKG (2026) CC BY 4.0](img/21_standort_karte.jpg)
+
+- The point is checked: only ETRS89/UTM zone 32 or 33, and it must lie in Germany (a rectangle of 5.5–15.5° east,
+  47.2–55.1° north). Gauß-Krüger or a typo of one digit gives a message, not a project. The ranges of the UTM values
+  alone were not enough: a point in Paris in zone 31 has numbers in the same range and was accepted (lesson S18).
+- **Examples** (*Beispiele → Standort ohne Gutachten*), checked against the real services within 250 m; the query
+  stays a click in the *Lage* step (network):
+
+  | Example | What the Land delivers |
+  |---|---|
+  | Dortmund (NRW), 393507 / 5708058 (EPSG:25832) | 24 Bohrungen with Schichtdaten, 143 Schichten, 1 unklassifiziert: a model with 15 Einheiten in about 30 s |
+  | Karlsruhe (Baden-Württemberg), 456391 / 5428394 (EPSG:25832) | 15 Bohrungen, 10 with Schichtdaten; 66 of 112 Schichten without petrography (unklassifiziert, marked) |
+  | Berlin-Friedrichshain, 394800 / 5818400 (EPSG:25833) | 38 Bohrungen with header data and the profile as an image: terrain and buildings, no layer model |
+
 - The project is an empty document *Standort x / y (EPSG)*. The same point opens the same project again, at its
   step and with its name (a message says so); it is not renamed.
 - *Alle Korrekturen verwerfen* (menu) keeps the name and returns to the *Lage* step. Like for every project, it also
   removes the imported Bohrungen der Länder, the query, the DGM and the buildings; the dialog says so.
 - A point with the zone prefix (EPSG 4647 or 5650, often in NRW) stays in that form: the Bohrungen of the Länder, which
   come without the prefix, are imported into it (lesson S17).
-- It opens in the *Lage* step with the Lage by coordinates. The point is:
+- It opens in the *Lage* step with the Lage by coordinates, **without the Lageplan sections** (*Lage der Bohrungen*,
+  *Unterlage*, *Kalibrieren*, *Bohrungen setzen*): the point is already georeferenced, and the Bohrungen of the Länder
+  come with their coordinates, so nothing is georeferenced twice. A section *Standort* shows the point and the services
+  there; *Bohrungen der Länder* comes first and open. A Gutachten added later becomes a new project with a Lageplan.
+- The point is:
   - the centre of every query: Bohrungen der Länder (§4.5), DGM (§4.4) and Gebäude (§4.6);
   - the origin of the scene, rounded to 100 m. The imported Bohrungen come in around it, so the origin does not
     jump and the plan shows all of them at once.
@@ -744,10 +783,10 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 | Test | Result |
 |---|---|
 | Modeler (`cd services/modeler && python -m pytest tests`) | 63 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM, 1 for the LoD2 buildings, 1 for the Reifegrad) |
-| App and API (`python -m pytest tests`) | 150: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 7 for the Standort project (Vorerkundung, wrong coordinates, a Gutachten added later is gemischt, unknown Standort, the same point twice and reset, a site without a service, zone prefix with a Gutachten without it), 1 for the zone prefix in the Gegenprobe and the import, 1 for download names with special characters, 4 for the network layer (TLS against the system plus certifi with a local HTTPS server, a certificate error not retried, the service check), 4 for the online script, 10 for **3D Tiles** (UTM → geodetic → ECEF against PROJ, the quasigeoid reader on a synthetic grid and on the real file from the PROJ CDN, with network, the Berlin export within 1 cm in height, only UTM, outside the quasigeoid, a valid GLB), 26 for the **GeolDG help** (calendar months, deadlines, wrong dates, the status per Bohrung, the CSV, the package with BoreholeML, IFC, report and documentation, what is missing, a Standort without own Bohrungen) |
+| App and API (`python -m pytest tests`) | 161: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 7 for the Standort project (Vorerkundung, wrong coordinates, a Gutachten added later is gemischt, unknown Standort, the same point twice and reset, a site without a service, zone prefix with a Gutachten without it), 1 for the zone prefix in the Gegenprobe and the import, 1 for download names with special characters, 4 for the network layer (TLS against the system plus certifi with a local HTTPS server, a certificate error not retried, the service check), 4 for the online script, 10 for **3D Tiles** (UTM → geodetic → ECEF against PROJ, the quasigeoid reader on a synthetic grid and on the real file from the PROJ CDN, with network, the Berlin export within 1 cm in height, only UTM, outside the quasigeoid, a valid GLB), 26 for the **GeolDG help** (calendar months, deadlines, wrong dates, the status per Bohrung, the CSV, the package with BoreholeML, IFC, report and documentation, what is missing, a Standort without own Bohrungen), 11 for the **map of the Standort** (longitude/latitude → UTM against PROJ, round trip in both zones, the zone by longitude, the services at a point, the click in Berlin, Marl, Munich and with the zone prefix, Paris, Vienna and south of the Alps refused, a Standort in zone 31 refused, the three Standort examples) |
 | 3D Tiles in Cesium (`node scripts/check_tiles3d.mjs <export> <tools>`) | 4/4: official 3d-tiles-validator 0 errors, 0 warnings, 0 infos; CesiumJS: the top of the model at 422C-460, 422C-461, 422C-5525 within 1 mm of GOK + ζ (PROJ) |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 47/47 and no page error, also in a second run on the same server: **3D Tiles** downloaded with the model, the terrain and the buildings (left out only when the PROJ CDN cannot be reached), **GeolDG** (the end date gives the deadline of the Fachdaten, the package with the checklist and the model), **Standort ohne Gutachten** (real NRW service in Marl: 10 Bohrungen imported, all in the plan, origin at the Standort, Vorerkundung in the header, the report, the *Modell* step and the viewer, the whole model in view with the camera outside; left out only when the service cannot be reached), Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, everything in view with the camera outside, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 50/50 and no page error, also in a second run on the same server: **map pop-up** (a click sets Rechtswert, Hochwert and the system and shows the services), **Standort example Dortmund** (opens in *Lage*, no Lageplan sections, NRW with Schichtdaten), **Berlin: why not übernehmbar** (header only, profile as an image), **3D Tiles** downloaded with the model, the terrain and the buildings (left out only when the PROJ CDN cannot be reached), **GeolDG** (the end date gives the deadline of the Fachdaten, the package with the checklist and the model), **Standort ohne Gutachten** (real NRW service in Marl: 10 Bohrungen imported, all in the plan, origin at the Standort, Vorerkundung in the header, the report, the *Modell* step and the viewer, the whole model in view with the camera outside; left out only when the service cannot be reached), Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, everything in view with the camera outside, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 
@@ -757,6 +796,9 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
   - The percentages of the degrees are indicative values.
   - The ISO prefix is formed only from the strongest Nebenanteil.
 - **Lehm, Mergel, Schotter**: the proposal is uncertain or ambiguous and is marked.
+- **Map of the Standort**: WGS84 ≈ ETRS89 to about 1 m; the areas of the services are rectangles (a click in
+  Saxony-Anhalt near Brandenburg lists the Brandenburg services); basemap.de or OpenStreetMap must be reachable from
+  the browser.
 - **3D Tiles**: ETRS89 is not converted to ITRF/WGS84 (about 0.9 m, stated in the tileset); one tile per
   group, no levels of detail (models of a construction site are small); no normals (Cesium shades flat).
 - **GeolDG**: a help from the federal law only. The rules of each Land (the authority, its portal or form,

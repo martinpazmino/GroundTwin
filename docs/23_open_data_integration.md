@@ -254,6 +254,10 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
 - **2D background** for the Standort card and the Lage step.
   - Choice: basemap.de Web Raster / Vektor (official) or OSM tiles.
   - A light map library would draw it: MapLibre GL JS (BSD-3-Clause) or Leaflet (BSD-2-Clause).
+  - Done for the Standort card (2026-11-04, D97): a pop-up with Leaflet and the basemap.de Web Raster (OSM as the
+    second layer); a click sets the point, converted to ETRS89/UTM on the server
+    ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)). Not in the Lage
+    step: there the viewer shows the plan.
   - It would also allow placing the Lageplan over the basemap by two points.
   - The OSM tile servers have a usage policy (no heavy use) and require "© OpenStreetMap
     contributors". For production, use basemap.de or your own tiles.

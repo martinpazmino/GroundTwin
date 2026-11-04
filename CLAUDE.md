@@ -8,11 +8,11 @@ Repository `github.com/martinpazmino/GroundTwin` (formerly CAD_Extract and GeoIM
 license **AGPL-3.0-or-later** (D79).
 
 ## Read before touching the extraction
-- `docs/16_lessons_learned.md`: explicit rules (process P1–P19, input E, geometry G, labels L/T, text B, water W,
+- `docs/16_lessons_learned.md`: explicit rules (process P1–P20, input E, geometry G, labels L/T, text B, water W,
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D96.
+- `docs/11_decisions.md`: decisions D1–D97.
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -72,6 +72,10 @@ license **AGPL-3.0-or-later** (D79).
   Gutachten / Vorerkundung / gemischt from the `herkunft` of the Bohrungen (`ui/projekt.py`, `baugrundmodell.modell`),
   shown in the header, the *Modell* step, the viewer band, the report and the IFC; a PDF added to a Standort becomes a
   new project with the Bohrungen der Länder, query, DGM and buildings. Tests `tests/test_standort_app.py`.
+  The point can come from a map pop-up (D97, `apps/web/src/app/karte.ts`: Leaflet, basemap.de/OSM tiles loaded only
+  when it opens; `GET /api/standort/punkt` converts the click with `utm.von_geo` and lists `bohrdaten.am_ort`); a
+  Standort project shows no Lageplan sections in *Lage*; examples `STANDORT_BEISPIELE` (Dortmund, Karlsruhe, Berlin).
+  Tests `tests/test_karte.py`.
 - 3D Tiles for Cesium (D87, D95, docs/21 §5.2): `geodaten/tiles3d.py` turns the exported IFC into 3D Tiles 1.1 (one
   GLB each for model, terrain, buildings), every vertex exactly UTM → ECEF (`geodaten/utm.py`), heights + ζ of the
   GCG2016 (`geodaten/quasigeoid.py`, fetched once from cdn.proj.org into `<arbeit>/cache`, sha256, never committed);
@@ -91,7 +95,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (47 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (50 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

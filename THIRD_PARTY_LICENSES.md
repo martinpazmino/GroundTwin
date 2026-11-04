@@ -20,6 +20,7 @@ and the web-ifc WASM); everything else is installed with `pip` / `npm`.
 | three.js, camera-controls, iconify-icon | 3D, camera, icons | MIT |
 | [web-ifc](https://github.com/ThatOpen/engine_web-ifc) (`dist/vendor/*.wasm`) | reading IFC in the browser | MPL-2.0 |
 | lit | interface of the step app | BSD-3-Clause |
+| [Leaflet](https://leafletjs.com) | map pop-up of the Standort card | BSD-2-Clause |
 | Material Design Icons (`@iconify-json/mdi`) | icons | Apache-2.0 |
 | EOS Icons (`@iconify-json/eos-icons`) | icons | MIT |
 | xmlschema, elementpath (tests only) | checking the BoreholeML export against the official XSD | MIT |
@@ -64,6 +65,11 @@ switching to pypdfium2): [docs/14](docs/14_licensing.md).
   the Berlin example with the DGM of Brandenburg with Berlin („© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal
   Berlin, dl-de/by-2-0“), the LoD2 buildings of Berlin (dl-de/zero-2.0) and heights with the GCG2016 (© BKG,
   CC BY 4.0).
+- The map of the Standort card loads its tiles at runtime in the user's browser (nothing is shipped):
+  basemap.de Web Raster of the BKG, CC BY 4.0, „© GeoBasis-DE / BKG (year) CC BY 4.0“, shown in the map; or
+  OpenStreetMap tiles under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/),
+  „© OpenStreetMap-Mitwirkende“ (ODbL). The screenshot `docs/img/21_standort_karte.jpg` shows the basemap.de map
+  („© GeoBasis-DE / BKG (2026) CC BY 4.0“).
 - `services/geodaten/geodaten/geoldg.json` paraphrases the Geologiedatengesetz with § references and links to
   gesetze-im-internet.de; laws are official works without copyright (§ 5 Abs. 1 UrhG).
 - The norms database (`services/modeler/baugrundmodell/normen.json`) does **not** reproduce texts of

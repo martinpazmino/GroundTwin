@@ -51,6 +51,25 @@ def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRD
             and d["gebiet_wgs84"][1] <= lat <= d["gebiet_wgs84"][3]]
 
 
+# Kurztext je Art fuer die Oberflaeche (Karte, Standort): was der Dienst an diesem Ort liefert
+ART_TEXT = {"wfs-kopf": ("bohrungen", "Bohrungen {land}: nur Kopfdaten, Schichtenverzeichnis als Bild – nicht ins Modell"),
+            "wfs-boreholeml": ("bohrungen", "Bohrungen {land}: mit Schichtdaten (BoreholeML) – Modell der Vorerkundung möglich"),
+            "wcs-dgm": ("dgm", "Gelände DGM1: {land}"),
+            "lod2-kacheln": ("gebaeude", "Gebäude LoD2: {land}")}
+
+
+def am_ort(x: float, y: float, epsg: int) -> list[dict]:
+    """Alle Dienste der Laender an einem Punkt (Gebiet als Rechteck, an Landesgrenzen auch mehrere):
+    [{dienst, art, land, text}]; ohne Bohrdienst ein Eintrag, der das sagt."""
+    out = [{"dienst": d["id"], "art": ART_TEXT[d["art"]][0], "land": d["land"],
+            "text": ART_TEXT[d["art"]][1].format(land=d["land"])} for d in dienste_am_ort(x, y, epsg, tuple(ART_TEXT))]
+    if not any(o["art"] == "bohrungen" for o in out):
+        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
+        out.insert(0, {"dienst": "", "art": "bohrungen", "land": "",
+                       "text": f"Bohrungen: kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
+    return out
+
+
 def dienst(dienst_id: str) -> dict:
     for d in DIENSTE:
         if d["id"] == dienst_id:

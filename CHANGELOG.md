@@ -6,6 +6,14 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Standort ohne Gutachten **from a map** (decision D97): a pop-up with the basemap.de map of the BKG (or OpenStreetMap);
+  a click sets the point in ETRS89/UTM and shows what the services of the Länder deliver there.
+- Standort examples: Dortmund (NRW, Bohrungen with Schichtdaten), Karlsruhe (Baden-Württemberg, Schichten often
+  without petrography) and Berlin (header data only: terrain and buildings, no layer model).
+- *Lage* step of a Standort project: no Lageplan sections (the point is already georeferenced); a *Standort*
+  section with the point and the services there; *Bohrungen der Länder* first and open.
+- *Bohrungen der Länder*: a line says why a Bohrung cannot be taken over (Berlin and Brandenburg give the
+  Schichtenverzeichnis only as an image).
 - *Modell* step: the Baugrundmodell as **3D Tiles 1.1 for Cesium** (CesiumJS, Cesium for Unreal, QGIS 3D;
   decisions D87, D95).
   - One glTF tile each for the model, the terrain and the buildings, read from the exported IFC.
@@ -69,6 +77,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
 
 ### Fixed
+- Standort: a point in another UTM zone (for example Paris in zone 31) passed the check "in Germany"; the zone and the
+  longitude/latitude are checked now.
 - Exports with a project name containing characters outside latin-1 (for example "–" or "✓", common in file names of
   Gutachten) failed; download names now go as UTF-8 with an ASCII fallback, without the characters Windows forbids.
 - Standort: the same point a second time opens the existing project (name and step stay) instead of renaming it;

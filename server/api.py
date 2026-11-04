@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from ui import pipeline as pl
 
-from .arbeitsplatz import BEISPIELE, Arbeitsplatz, bohrdaten
+from .arbeitsplatz import BEISPIELE, STANDORT_BEISPIELE, Arbeitsplatz, bohrdaten
 
 DIST = Path(__file__).resolve().parents[1] / "apps" / "web" / "dist"
 VERSION = "3.0"
@@ -138,7 +138,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.get("/api/info")
     def info():
         return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "lizenz": LIZENZ, "quellcode": quellcode,
-                "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]}
+                "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]
+                + [{"name": k, "titel": v[0], "standort": True} for k, v in STANDORT_BEISPIELE.items()]}
 
     @app.get("/api/projekte")
     def projekte():
@@ -157,13 +158,18 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         sig, vorhanden = ap.standort_anlegen(s.x, s.y, s.epsg, s.name)
         return {"projekt": sig, "vorhanden": vorhanden}
 
+    @app.get("/api/standort/punkt")
+    def standort_punkt(laenge: float, breite: float, epsg: int | None = None):
+        """Klick in die Karte -> Rechts-/Hochwert in ETRS89/UTM und die Dienste der Laender an diesem Ort."""
+        return ap.standort_punkt(laenge, breite, epsg)
+
     @app.get("/api/auftrag/{aid}")
     def auftrag(aid: str):
         return ap.auftrag(aid).als_dict()
 
     @app.post("/api/beispiel")
     def beispiel(b: Beispiel):
-        if b.name not in BEISPIELE:
+        if b.name not in BEISPIELE and b.name not in STANDORT_BEISPIELE:
             raise KeyError(b.name)
         return ap.beispiel(b.name, b.ocr and pl.ocr_verfuegbar())
 
