@@ -5,7 +5,8 @@
 //      GOK - DGM, fehlende GOK uebernehmen, systematische Abweichung, DGM entfernen; B3 Bohrungen der Laender: echte
 //      Abfrage beim Dienst Berlin (Netz), Gegenprobe mit den fuenf Bohrungen des Gutachtens; B4 DGM vom Land (echter
 //      WCS, Netz): GOK-Vergleich, Modell mit Gelaende aus dem DGM, Gelaende im Viewer ein/aus; B5 Gebaeude (LoD2) vom
-//      Land (echte Kacheln Berlin, Netz): im IFC und im Viewer (alles im Bild, Kamera ausserhalb), ein/aus
+//      Land (echte Kacheln Berlin, Netz): im IFC und im Viewer (alles im Bild, Kamera ausserhalb), ein/aus; 3D Tiles
+//      fuer Cesium (Quasigeoid vom PROJ-CDN, Netz) als ZIP
 //   C  Lageplan (scripts/testplan.py): Strecke messen -> Massstab, Bezugspunkt, Drehung, sperren, Bohrungen ohne Lage
 //      aus der Liste auf ihren Kreis ziehen; C2 dasselbe ohne eine einzige Koordinate und mit echten Hoehen (Vorschau im
 //      Bild, EPSG-Liste, offene Punktwahl, Nullpunkt, kein Flackern); C3 Punkte setzen, zuordnen, loeschen, Direktaufruf
@@ -305,6 +306,27 @@ try {
     await page.locator('bim-button[label="Gebäude"]').click();
     await warte(() => window.baugrund.gebaeudeSichtbar === false, null, 10000).catch(() => {});
     pruefe("Gebäude im Viewer ausblendbar", await page.evaluate(() => window.baugrund.gebaeudeSichtbar === false));
+
+    // 3D Tiles fuer Cesium (P6, D87): ZIP mit Tileset und je einem GLB fuer Modell, Gelaende und Gebaeude; das
+    // Quasigeoid GCG2016 kommt beim ersten Mal vom PROJ-CDN (Netz) - nicht erreichbar: ausgelassen
+    const letzte3d = await page.evaluate(() => Math.max(0, ...window.app.meldungen.map((m) => m.id)));
+    const download = page.waitForEvent("download", { timeout: 240000 }).catch(() => null);
+    await page.getByRole("button", { name: /Baugrundmodell für Cesium/ }).click();
+    // die Wartenden enden mit dem Rennen (window.__ende3d): sonst fragte eine Seite nach dem naechsten Laden noch nach
+    // window.app, solange es das Element #app ist (Seitenfehler)
+    const meldung = warte((n) => window.__ende3d || window.app?.meldungen?.find((m) => m.id > n && m.art === "fehler"),
+      letzte3d, 240000).then(async (h) => ({ fehler: (await h.jsonValue())?.text })).catch(() => null);   // nie unbehandelt
+    const ausgang = (await Promise.race([download.then((d) => (d ? { d } : null)), meldung])) ?? { fehler: "kein Download" };
+    await page.evaluate(() => { window.__ende3d = true; });
+    if (ausgang.fehler && /Quasigeoid GCG2016 nicht geladen/.test(ausgang.fehler)) {
+      ausgelassen(`3D Tiles: PROJ-CDN nicht erreichbar (${ausgang.fehler}) – Prüfung ausgelassen`);
+    } else {
+      const roh = ausgang.d ? readFileSync(await ausgang.d.path()).toString("latin1") : "";
+      const dateien = ["tileset.json", "baugrundmodell.glb", "gelaende.glb", "gebaeude.glb", "LIESMICH.txt"];
+      pruefe("3D Tiles für Cesium: ZIP mit Tileset, Modell, Gelände und Gebäude", !!ausgang.d && roh.startsWith("PK") &&
+        dateien.every((d) => roh.includes(d)) && /_3dtiles\.zip$/.test(ausgang.d.suggestedFilename()),
+        ausgang.fehler ?? `${ausgang.d.suggestedFilename()} · ${Math.round(roh.length / 1024)} KB`);
+    }
   }
 
   // ---------------------------------------------------------------- C: Lageplan kalibrieren und Bohrungen setzen
@@ -544,8 +566,24 @@ try {
   const bml = (await page.request.get(`${url}/api/projekt/${sig}/export/boreholeml`)).status();
   const bmlText = await page.locator(".export-liste p.klein").textContent();
   pruefe("BoreholeML: ohne Koordinaten gesperrt (Knopf aus, Server 400)",
-    bml === 400 && (await page.locator(".export-liste .knopf.aus").count()) === 1 && /^0 von \d+ Bohrungen/.test(bmlText),
-    `${bml} · ${bmlText}`);
+    bml === 400 && (await page.locator(".export-liste .knopf.aus", { hasText: "BoreholeML" }).count()) === 1 &&
+    /^0 von \d+ Bohrungen/.test(bmlText), `${bml} · ${bmlText}`);
+  // GeolDG (P6, D96): Abschluss der Untersuchung -> Frist der Fachdaten; Paket mit Pruefliste und Modell (ohne
+  // Koordinaten kein BoreholeML: das steht im LIESMICH)
+  const abschluss = page.getByLabel("Abschluss der Untersuchung", { exact: true });     // nicht der Knopf "Hilfe: …"
+  await abschluss.fill("2026-09-30");
+  await abschluss.dispatchEvent("change");
+  await warte(() => window.app.z.geoldg.angaben.abschluss === "2026-09-30", null, 30000).catch(() => {});
+  await ruhe(500);
+  const frist = (await page.locator('.fristen li[data-frist="fachdaten"]').textContent()).replace(/\s+/g, " ").trim();
+  const ladenGeoldg = page.waitForEvent("download", { timeout: 240000 });
+  await page.getByRole("link", { name: /Paket für den Geologischen Dienst/ }).click();
+  const paketGeoldg = await ladenGeoldg;
+  const rohGeoldg = readFileSync(await paketGeoldg.path()).toString("latin1");
+  pruefe("GeolDG: Frist der Fachdaten aus dem Abschluss, Paket mit Prüfliste und Modell",
+    /bis 30\.12\.2026/.test(frist) && rohGeoldg.startsWith("PK") && /_geoldg\.zip$/.test(paketGeoldg.suggestedFilename()) &&
+    ["LIESMICH.txt", "pruefliste.csv", "bewertungsdaten_GeolDG_10/modelldokumentation.txt"].every((d) => rohGeoldg.includes(d)),
+    `${frist} · ${paketGeoldg.suggestedFilename()} · ${Math.round(rohGeoldg.length / 1024)} KB`);
   await page.screenshot({ path: `${aus}/D3_modell.png` });
 
   // ---------------------------------------------------------------- E: PDF mit Extraktion

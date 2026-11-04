@@ -8,11 +8,11 @@ Repository `github.com/martinpazmino/GroundTwin` (formerly CAD_Extract and GeoIM
 license **AGPL-3.0-or-later** (D79).
 
 ## Read before touching the extraction
-- `docs/16_lessons_learned.md`: explicit rules (process P1–P17, input E, geometry G, labels L/T, text B, water W,
+- `docs/16_lessons_learned.md`: explicit rules (process P1–P19, input E, geometry G, labels L/T, text B, water W,
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D94 (D87 proposed).
+- `docs/11_decisions.md`: decisions D1–D96.
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -72,6 +72,15 @@ license **AGPL-3.0-or-later** (D79).
   Gutachten / Vorerkundung / gemischt from the `herkunft` of the Bohrungen (`ui/projekt.py`, `baugrundmodell.modell`),
   shown in the header, the *Modell* step, the viewer band, the report and the IFC; a PDF added to a Standort becomes a
   new project with the Bohrungen der Länder, query, DGM and buildings. Tests `tests/test_standort_app.py`.
+- 3D Tiles for Cesium (D87, D95, docs/21 §5.2): `geodaten/tiles3d.py` turns the exported IFC into 3D Tiles 1.1 (one
+  GLB each for model, terrain, buildings), every vertex exactly UTM → ECEF (`geodaten/utm.py`), heights + ζ of the
+  GCG2016 (`geodaten/quasigeoid.py`, fetched once from cdn.proj.org into `<arbeit>/cache`, sha256, never committed);
+  only ETRS89/UTM; ETRS89 not converted to WGS84 and said so. Tests `tests/test_tiles3d.py`; check with the official
+  validator and CesiumJS: `node scripts/check_tiles3d.mjs <export> <tools>` (tools outside the repo).
+- GeolDG help (D96, docs/21 §5.3): `geodaten/geoldg.py` + `geoldg.json` (every rule with § and link): deadlines of
+  §§ 8–10 from `p.geoldg` (op `geoldg`), a checklist per own Bohrung (✓ / ⚑ not from the PDF / ✗), and the package
+  (`export/geoldg`: BoreholeML, IFC, report, model documentation, `pruefliste.csv`); refused without own Bohrungen.
+  A help, never legal advice. Tests `tests/test_geoldg.py`.
 - Norms (DIN 4023 / EN ISO 14688-1 / DIN 18196): `services/modeler/baugrundmodell/normen.json` + `normen.py`, with
   evidence per value; read them, never apply them silently (proposal with a click). IFC: `CPset_Bodenansprache` per
   Schicht.
@@ -82,7 +91,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (45 checks, also when run twice on the same server; B3, B4, B5 and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (47 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except
@@ -96,7 +105,8 @@ license **AGPL-3.0-or-later** (D79).
 
 ## Environment (cloud sessions)
 - Geodata hosts of docs/23 §7 (BGR, schemas.bgr.de, BKG, Länder) allowed since 2026-11-02 (before: X30);
-  schemas.opengis.net only over https (X31). Municipal websites were blocked (the user uploads the PDFs); pypi, npm
+  schemas.opengis.net only over https (X31); cdn.proj.org (GCG2016) reachable, overpass-api.de and
+  api.boreholes.swissgeol.ch not (2026-11-04). Municipal websites were blocked (the user uploads the PDFs); pypi, npm
   and GitHub reachable.
 - Heavy dependencies in venvs in the scratchpad: `venv` (pymupdf, opencv, rapidocr), `sgvenv` (swissgeol).
 - Docker (X25, X26): start `dockerd` in the background with the longest time limit; apt blocked → `--build-arg OCR=0`,

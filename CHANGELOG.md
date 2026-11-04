@@ -6,6 +6,19 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- *Modell* step: the Baugrundmodell as **3D Tiles 1.1 for Cesium** (CesiumJS, Cesium for Unreal, QGIS 3D;
+  decisions D87, D95).
+  - One glTF tile each for the model, the terrain and the buildings, read from the exported IFC.
+  - Every vertex converted exactly from ETRS89/UTM; heights made ellipsoidal with the quasigeoid GCG2016 of the
+    BKG (CC BY 4.0, fetched once from the PROJ CDN and checked by sha256).
+  - Valid for the official 3d-tiles-validator; in CesiumJS the top of the model lies within 1 mm of the expected
+    height (`scripts/check_tiles3d.mjs`).
+- *Modell* step: **GeolDG help** for the transmission to the Geologischer Dienst (decision D96).
+  - Deadlines of §§ 8–10 from the dates of the investigation.
+  - Per Bohrung what GroundTwin delivers (Lage, Ansatzhöhe, Endteufe, reviewed Schichtenverzeichnis, marked when
+    not from the PDF) and what comes from the Bohrprotokoll.
+  - A package with the Fachdaten (BoreholeML), the Bewertungsdaten (IFC, report, model documentation) and a
+    checklist to fill in. Every rule with its § and a link to the law; a help, not legal advice.
 - Standort ohne Gutachten: a Baugrundmodell from a point, marked as **Vorerkundung** (decisions D85, D94).
   - *Gutachten* step: a point in ETRS89/UTM starts a project; the Bohrungen der Länder, the DGM and the buildings
     come from around it.
@@ -74,6 +87,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
   distance to 300 m and moved the target); the camera now keeps its limit and its target when the mode changes.
 - Viewer: the camera no longer stands inside the model or a building when the first model or the first LoD2
   buildings arrive during the *Lage* step, and the first Bohrungen of an empty Standort are fitted into view.
+
+- End-to-end check: the BoreholeML check counted the switched-off 3D Tiles button too, and the waiter of the 3D
+  Tiles check kept polling into the next page (a page error); both fixed with the GeolDG check.
 
 ### Removed
 - Old experiments, kept in the git history and linked from the docs: prototype v3, the spike

@@ -24,6 +24,7 @@ and the web-ifc WASM); everything else is installed with `pip` / `npm`.
 | EOS Icons (`@iconify-json/eos-icons`) | icons | MIT |
 | xmlschema, elementpath (tests only) | checking the BoreholeML export against the official XSD | MIT |
 | [cloudflared](https://github.com/cloudflare/cloudflared) (optional, installed separately for `start_online.bat`) | free tunnel to share the app from your own PC | Apache-2.0 |
+| [3d-tiles-validator](https://github.com/CesiumGS/3d-tiles-validator), [CesiumJS](https://github.com/CesiumGS/cesium) (checks only, installed outside the repository for `scripts/check_tiles3d.mjs`) | checking the 3D Tiles export | Apache-2.0 |
 
 ## Why the AGPL
 
@@ -55,6 +56,16 @@ switching to pypdfium2): [docs/14](docs/14_licensing.md).
   (`CPset_Herkunft`). The screenshot `docs/img/21_standort_vorerkundung.jpg` shows a model from
   Bohrungen NRW: „© Geowissenschaftliche Daten: Bohrungen NRW @ Geologischer Dienst NRW, 2026“,
   dl-de/by-2.0.
+- The quasigeoid **GCG2016** of the Bundesamt für Kartographie und Geodäsie, as the PROJ-data file
+  `de_bkg_gcg2016.tif` (CC BY 4.0, „© Bundesamt für Kartographie und Geodäsie (BKG), GCG2016“), is fetched at
+  runtime on the first 3D Tiles export, checked by its sha256 and kept in the work folder; nothing is shipped.
+  The attribution goes into every tileset (`asset.extras.Namensnennung`) and its `LIESMICH.txt`, with those of
+  the DGM, the buildings and the Bohrungen in the model. The screenshot `docs/img/21_cesium_3dtiles.jpg` shows
+  the Berlin example with the DGM of Brandenburg with Berlin („© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal
+  Berlin, dl-de/by-2-0“), the LoD2 buildings of Berlin (dl-de/zero-2.0) and heights with the GCG2016 (© BKG,
+  CC BY 4.0).
+- `services/geodaten/geodaten/geoldg.json` paraphrases the Geologiedatengesetz with § references and links to
+  gesetze-im-internet.de; laws are official works without copyright (§ 5 Abs. 1 UrhG).
 - The norms database (`services/modeler/baugrundmodell/normen.json`) does **not** reproduce texts of
   DIN 4023, DIN EN ISO 14688-1 or DIN 18196: it collects abbreviations and colours with the evidence
   for every value.

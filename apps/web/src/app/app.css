@@ -332,6 +332,12 @@ select.epsg { width: 100%; max-width: 24rem; }
 .sgd tr.doppelt td { background: rgba(140, 180, 40, 0.08); }
 .sgd a, .abschnitt-inhalt p a { color: #8fc6ff; }                 /* Links auf dunklem Grund lesbar */
 
+/* GeolDG: Fristen und Stand der Uebermittlung im Schritt Modell */
+.fristen { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; }
+.fristen li.warn { color: var(--warn); }
+.geoldg a:not(.knopf) { color: #8fc6ff; }
+.geoldg input[type="date"] { width: 9.2rem; }
+
 /* BoreholeML: Knopf ohne exportierbare Bohrung */
 .knopf.aus { opacity: 0.45; cursor: not-allowed; }
 .export-liste .feld { margin-top: 0.5rem; }

@@ -89,6 +89,25 @@ export interface Sgd {
   gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
 }
 
+/** Pruefliste nach GeolDG (docs/21 §5.3): Fristen, je eigene Bohrung was die App hat, Hinweise mit Beleg. */
+export type GeoldgStatus = "ok" | "markiert" | "offen";
+export interface GeoldgFrist {
+  id: "anzeige" | "fachdaten" | "bewertungsdaten"; titel: string; regel: string; beleg: string; url: string;
+  bezug: "beginn" | "abschluss"; bis: string | null; tage: number | null;
+}
+export interface Geoldg {
+  quelle: { titel: string; url: string; gelesen: string; hinweis: string };
+  angaben: { beginn: string; abschluss: string; behoerde: boolean };
+  heute: string; fristen: GeoldgFrist[]; abschluss: { text: string; beleg: string; url: string };
+  punkte: { id: string; titel: string; beleg: string; quelle: "app" | "protokoll" }[];
+  bohrungen: { code: string; art: string; punkte: Record<string, [GeoldgStatus, string]>; bereit: boolean; boreholeml: string }[];
+  fremd: { code: string; herkunft: string }[];
+  zusammenfassung: { eigene: number; bereit: number; boreholeml: number; fremd: number; offen: { code: string; was: string }[] };
+  vorerkundung: boolean;
+  anzeige_inhalt: { beleg: string; url: string; punkte: string[]; aus_der_app: string };
+  hinweise: { text: string; beleg: string; url: string }[];
+}
+
 export interface Einstellungen {
   methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
   gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
@@ -113,6 +132,7 @@ export interface Zustand {
   gebaeude: Gebaeude | null;                          // LoD2-Gebäude der Länder um das Projekt (Kopf)
   standort: { x: number; y: number; epsg: number } | null;   // Projekt an einem Punkt, ohne Gutachten
   reifegrad: Reifegrad;
+  geoldg: Geoldg;                                     // Übermittlung an den Geologischen Dienst (GeolDG)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[] };
 }

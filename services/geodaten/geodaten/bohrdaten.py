@@ -21,6 +21,7 @@ from pathlib import Path
 from . import boreholeml
 from . import netz
 from .netz import AGENT, VERSUCHE, DienstFehler  # noqa: F401  (AGENT, VERSUCHE: wie bisher von hier lesbar)
+from . import utm
 from .utm import utm_normal
 
 DIENSTE: list[dict] = json.loads(Path(__file__).with_name("dienste.json").read_text(encoding="utf-8"))["dienste"]
@@ -34,25 +35,9 @@ KONFIDENZ_ARCHIV = 0.5                          # Schichten aus der Datenbank ei
 
 # ---------------------------------------------------------------- Lage
 def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
-    """UTM (GRS80, Nordhalbkugel) -> (Laenge, Breite) in Grad; Reihen nach Snyder (USGS 1987), Fehler << 1 m."""
-    a, f, k0 = 6378137.0, 1 / 298.257222101, 0.9996
-    e2 = f * (2 - f)
-    ep2 = e2 / (1 - e2)
-    m = n / k0
-    mu = m / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
-    e1 = (1 - math.sqrt(1 - e2)) / (1 + math.sqrt(1 - e2))
-    phi1 = (mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32)
-            * math.sin(4 * mu) + 151 * e1 ** 3 / 96 * math.sin(6 * mu) + 1097 * e1 ** 4 / 512 * math.sin(8 * mu))
-    s, c, t = math.sin(phi1), math.cos(phi1), math.tan(phi1)
-    n1 = a / math.sqrt(1 - e2 * s * s)
-    t1, c1 = t * t, ep2 * c * c
-    r1 = a * (1 - e2) / (1 - e2 * s * s) ** 1.5
-    d = (e - 500000.0) / (n1 * k0)
-    breite = phi1 - (n1 * t / r1) * (d ** 2 / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * ep2) * d ** 4 / 24
-                                     + (61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * ep2 - 3 * c1 ** 2) * d ** 6 / 720)
-    laenge = (d - (1 + 2 * t1 + c1) * d ** 3 / 6
-              + (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * ep2 + 24 * t1 ** 2) * d ** 5 / 120) / c
-    return zone * 6 - 183 + math.degrees(laenge), math.degrees(breite)
+    """UTM (GRS80, Nordhalbkugel) -> (Laenge, Breite) in Grad (utm.zu_geo, Krueger-Reihen)."""
+    laenge, breite = utm.zu_geo(e, n, zone)
+    return float(laenge), float(breite)
 
 
 BOHRDIENSTE = ("wfs-kopf", "wfs-boreholeml")

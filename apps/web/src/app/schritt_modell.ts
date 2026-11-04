@@ -1,6 +1,6 @@
 // Schritt 5 · Modell: das Baugrundmodell im Viewer (Vollbild), rechts Pruefstand, Einchecken, Export und Hinweise.
 import { html, nothing } from "lit";
-import { api } from "./api";
+import { api, type GeoldgFrist } from "./api";
 import { hilfe } from "./hilfe";
 import { S, aendern, gehe, modellRechnen, versuchen, zustandUebernehmen, neu, melden } from "./store";
 
@@ -35,6 +35,90 @@ function boreholemlTeil() {
     ${bereit.length ? html`<a class="knopf" href=${url} download>Bohrungen für den Geologischen Dienst (BoreholeML 3.2)</a>`
       : html`<span class="knopf aus" title="Erst alle Schichten prüfen; Lage in ETRS89/UTM und GOK nötig">Bohrungen für den Geologischen Dienst (BoreholeML 3.2)</span>`}
     <p class="leise klein">${bereit.length} von ${imModell.length} Bohrungen exportierbar (vollständig geprüft, ETRS89/UTM, GOK).</p>`;
+}
+
+// 3D Tiles fuer Cesium (D87): per fetch, damit ein Fehler (Lage ohne UTM, Quasigeoid ohne Netz) als Meldung kommt
+let tilesLaeuft = false;
+
+async function dreiDTiles() {
+  if (tilesLaeuft) return;
+  tilesLaeuft = true;
+  neu();
+  try {
+    const r = await fetch(api.exportUrl(S.sig, "3dtiles"));
+    if (!r.ok) {
+      const text = await r.text();
+      let detail = text;
+      try { detail = JSON.parse(text).detail ?? text; } catch { /* kein JSON */ }
+      melden(`3D Tiles: ${detail}`, "fehler", 10000);
+      return;
+    }
+    const name = /filename\*=UTF-8''([^;]+)/.exec(r.headers.get("content-disposition") ?? "")?.[1];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = name ? decodeURIComponent(name) : "baugrundmodell_3dtiles.zip";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    melden("3D Tiles exportiert (tileset.json + GLB, Höhen ellipsoidisch mit GCG2016).", "ok");
+  } finally {
+    tilesLaeuft = false;
+    neu();
+  }
+}
+
+function tilesTeil() {
+  const z = S.z!;
+  const bereit = z.lage_modus === "koordinaten" && z.viewer.epsg !== null && UTM.has(z.viewer.epsg);
+  return bereit
+    ? html`<button class="knopf" ?disabled=${tilesLaeuft} @click=${dreiDTiles}>${tilesLaeuft ? "3D Tiles werden erstellt …"
+        : "Baugrundmodell für Cesium (3D Tiles, ZIP)"}</button>${hilfe("tiles3d")}`
+    : html`<span class="knopf aus" title="Nur mit Lage nach Koordinaten in ETRS89/UTM">Baugrundmodell für Cesium (3D Tiles, ZIP)</span>`;
+}
+
+// GeolDG (docs/21 §5.3): Fristen aus Beginn und Abschluss der Untersuchung, je eigene Bohrung was die App liefert,
+// das Paket fuer den Geologischen Dienst (Fachdaten BoreholeML, Bewertungsdaten Modell + Dokumentation, Pruefliste)
+const FRIST: Record<GeoldgFrist["id"], string> = { anzeige: "Anzeige", fachdaten: "Fachdaten", bewertungsdaten: "Bewertungsdaten" };
+const datumDe = (iso: string) => iso.split("-").reverse().join(".");
+
+function fristText(f: GeoldgFrist) {
+  if (!f.bis || f.tage === null) return f.regel;
+  return `bis ${datumDe(f.bis)} (${f.tage > 0 ? `noch ${f.tage} Tage` : f.tage === 0 ? "heute" : "verstrichen"})`;
+}
+
+function geoldgTeil() {
+  const g = S.z!.geoldg;
+  const zs = g.zusammenfassung;
+  const setzen = (feld: "beginn" | "abschluss" | "behoerde", wert: string | boolean) =>
+    aendern([{ op: "geoldg", [feld]: wert }], { leise: true });
+  const url = `${api.exportUrl(S.sig, "geoldg")}?organisation=${encodeURIComponent(organisation)}`;
+  const protokoll = g.punkte.filter((p) => p.quelle === "protokoll").map((p) => p.titel.replace(/, falls durchgeführt$/, ""));
+  return html`
+    <section class="abschnitt-flach geoldg">
+      <h3>Geologischer Dienst (GeolDG) ${hilfe("geoldg")}</h3>
+      <div class="zeile">
+        <label class="inline">Beginn <input type="date" aria-label="Beginn der Untersuchung" .value=${g.angaben.beginn}
+          @change=${(e: Event) => setzen("beginn", (e.target as HTMLInputElement).value)}></label>
+        <label class="inline">Abschluss <input type="date" aria-label="Abschluss der Untersuchung" .value=${g.angaben.abschluss}
+          @change=${(e: Event) => setzen("abschluss", (e.target as HTMLInputElement).value)}></label>${hilfe("geoldg_abschluss")}
+      </div>
+      <label class="inline"><input type="checkbox" aria-label="Auftraggeber ist eine Behörde" .checked=${g.angaben.behoerde}
+        @change=${(e: Event) => setzen("behoerde", (e.target as HTMLInputElement).checked)}> Auftraggeber ist eine Behörde</label>
+      <ul class="fristen">${g.fristen.map((f) => html`
+        <li class=${f.tage !== null && f.tage < 0 ? "warn" : ""} data-frist=${f.id}><b>${FRIST[f.id]}</b>
+          <a href=${f.url} target="_blank" rel="noopener">${f.beleg}</a>: ${fristText(f)}</li>`)}</ul>
+      ${g.vorerkundung ? html`
+        <p class="klein">Noch keine eigene Bohrung: die geplante Erkundung spätestens zwei Wochen vor Beginn anzeigen
+          (<a href=${g.anzeige_inhalt.url} target="_blank" rel="noopener">§ 8</a>). ${g.anzeige_inhalt.aus_der_app}</p>`
+      : zs.eigene ? html`
+        <p class="klein geoldg-stand">${zs.eigene} eigene Bohrungen: für <b>${zs.bereit}</b> liefert GroundTwin Lage, GOK, Endteufe
+          und das geprüfte Schichtenverzeichnis, <b>${zs.boreholeml}</b> davon im BoreholeML.${zs.fremd
+          ? ` ${zs.fremd} Bohrungen der Länder liegen dem Land schon vor.` : ""}</p>
+        ${zs.offen.length ? html`<details class="protokoll"><summary class="warnung">⚠ ${zs.offen.length} Bohrung(en) offen</summary>
+          <ul>${zs.offen.map((o) => html`<li><b>${o.code}</b>: ${o.was}</li>`)}</ul></details>` : nothing}
+        <p class="klein leise">Aus dem Bohrprotokoll ergänzen (Spalten in pruefliste.csv): ${protokoll.join(" · ")}.</p>
+        <a class="knopf" href=${url} download>Paket für den Geologischen Dienst (ZIP)</a>` : nothing}
+      <p class="leise klein">${g.quelle.hinweis}</p>
+    </section>`;
 }
 
 export function schrittModell() {
@@ -109,9 +193,12 @@ export function schrittModell() {
         <div class="export-liste">
           ${exporte.map(([art, titel]) => html`<a class=${`knopf ${art === "ifc" ? "primaer" : ""}`} href=${api.exportUrl(S.sig, art)}
             download>${titel}</a>`)}
+          ${tilesTeil()}
           ${boreholemlTeil()}
         </div>
       </section>
+
+      ${geoldgTeil()}
 
       ${m && (m.hinweise.length || m.nicht_im_modell.length) ? html`
         <section class="abschnitt-flach">

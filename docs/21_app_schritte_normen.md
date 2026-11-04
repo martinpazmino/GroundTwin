@@ -1,8 +1,8 @@
 ---
 title: "21 Step app, norms for the description and new calibration"
 date: 2026-10-28
-updated: 2026-11-03
-tags: [app, norms, din4023, iso14688, din18196, calibration, ifc, thatopen, fastapi]
+updated: 2026-11-04
+tags: [app, norms, din4023, iso14688, din18196, calibration, ifc, thatopen, fastapi, 3d-tiles, cesium, geoldg]
 aliases: [Schritt-App, Normen-DB, App v3]
 ---
 
@@ -572,6 +572,7 @@ D85, D94): a first Baugrundmodell before there is a Gutachten, built only from t
 
 Under the GeolDG, every Bohrung is notified to the state geological survey (SGD) and its
 Schichtenverzeichnis submitted ([23 §2.1](23_open_data_integration.md#21-boreholeml-the-exchange-format-of-the-länder), D84, D90).
+The file is also part of the package for the Geologischer Dienst ([§5.3](#53-geoldg-what-goes-to-the-geologischer-dienst)).
 
 **Export:** *Export → Bohrungen für den Geologischen Dienst (BoreholeML 3.2)* writes the Bohrungen in
 their exchange format.
@@ -593,6 +594,116 @@ portal) can be uploaded like a PDF.
 - Its Bohrungen show their origin: GOK source *BoreholeML*, Lage *BoreholeML (database)*, and the
   hint *aus BoreholeML … – nicht aus dem Gutachten*.
 - A Schicht whose petrography has no Bodenart stays unklassifiziert, with the code named.
+
+### 5.2 3D Tiles for Cesium
+
+*Export → Baugrundmodell für Cesium (3D Tiles, ZIP)* writes the model as **3D Tiles 1.1** for
+CesiumJS, Cesium for Unreal or QGIS 3D (D87, D95; [`tiles3d.py`](../services/geodaten/geodaten/tiles3d.py)).
+Cesium stays outside the app: That Open remains the only 3D engine.
+
+- **Content:** `tileset.json` and one glTF 2.0 tile (GLB) per group: `baugrundmodell.glb` (Einheiten and
+  Bohrungen), `gelaende.glb` (terrain from the DGM) and `gebaeude.glb` (LoD2 buildings), when the
+  project has them. `LIESMICH.txt` lists the sources, licenses and how to load the tileset in CesiumJS.
+- **Geometry from the IFC**, with IfcOpenShell in world coordinates: what the viewer shows is what
+  Cesium shows. One primitive per material with the colour of the IFC; every node keeps the IFC class,
+  the GlobalId, the name and the description (`extras`).
+- **Exact position, no approximation per tile:** every vertex goes ETRS89/UTM → geodetic (Krüger
+  series to n³, below 1 mm against PROJ in the whole zone) → a local east-north-up frame at the centre
+  of the model; the root transform of the tileset puts that frame on the globe (ECEF, GRS80).
+- **Ellipsoidal heights:** Cesium works with heights above the ellipsoid, the model with m NHN. The
+  export adds the height anomaly ζ of the **German Combined Quasigeoid GCG2016** of the BKG
+  (34–51 m in Germany): h = H + ζ.
+  - The grid (`de_bkg_gcg2016.tif`, 1 MB, CC BY 4.0, © BKG) comes from the PROJ-data CDN on the first
+    export, is checked by its sha256 and stays in the work folder (`cache/`); it is not in the
+    repository. Offline: put the file there by hand (the message names the URL and the folder).
+  - The reader needs no GDAL ([`quasigeoid.py`](../services/geodaten/geodaten/quasigeoid.py)): tiled
+    TIFF, Deflate, floating-point predictor, bilinear like PROJ (equal to 0.1 mm).
+  - A model outside the grid (outside Germany) is refused with a message.
+- **Only ETRS89/UTM** (25832/25833, also with the zone prefix 4647/5650) and the Lage by coordinates;
+  otherwise the button is off and the server answers 400.
+- **Marked in the tileset** (`asset.extras`): the position is ETRS89 and **not converted to
+  ITRF/WGS84** (about 0.9 m in 2026); the height reference; the origin; the attribution of every
+  source.
+
+![The Berlin example as 3D Tiles in CesiumJS: Baugrundmodell, terrain from the DGM and LoD2 buildings](img/21_cesium_3dtiles.jpg)
+
+*Terrain © GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal Berlin, dl-de/by-2-0 · buildings: Berlin, dl-de/zero-2.0 ·
+heights with the GCG2016 © BKG, CC BY 4.0.*
+
+**Check** (`scripts/check_tiles3d.mjs`, tools outside the repository):
+
+```
+npm install --prefix <werkzeuge> 3d-tiles-validator@0.6.1 cesium@1.147.0
+node scripts/check_tiles3d.mjs <entpackter-export> <werkzeuge> [erwartet.json] [bild.png]
+```
+
+- The official **3d-tiles-validator** of CesiumGS: 0 errors, 0 warnings, 0 infos. It checks every GLB
+  with the glTF validator too (a broken GLB turns it red).
+- **CesiumJS** in headless Chromium loads the tileset and samples the top of the model at three
+  Bohrungen of the Berlin example (`sampleHeightMostDetailed`). Expected: GOK + ζ, computed
+  independently with PROJ. Result: within 1 mm (2 cm allowed).
+
+### 5.3 GeolDG: what goes to the Geologischer Dienst
+
+Whoever drills or has drilling done must notify the investigation to the geological survey of the Land
+and transmit its data (Geologiedatengesetz, GeolDG). The section **Geologischer Dienst (GeolDG)** of
+the *Modell* step shows what GroundTwin can deliver and what has to come from elsewhere (D96,
+[`geoldg.py`](../services/geodaten/geodaten/geoldg.py)). It is a help, not legal advice: the app says
+so, and the form and the channel are set by the authority.
+
+![GeolDG in the Modell step: deadlines from the dates of the investigation, what GroundTwin delivers per Bohrung, the package](img/21_geoldg.jpg)
+
+**Deadlines** from two optional dates of the investigation (*Beginn*, *Abschluss*) and one switch
+(*Auftraggeber ist eine Behörde*), saved in the project:
+
+| Data | Deadline | § |
+|---|---|---|
+| Anzeige with Nachweisdaten | at the latest two weeks before the start | § 8 Satz 1 |
+| Fachdaten (Schichtenverzeichnis, Bohrverfahren, Ausbau, Proben, Messungen, Labor) | at the latest three months after the end | § 9 Abs. 1 Satz 1 |
+| Bewertungsdaten (Gutachten, spatial models with their documentation) | on request of the authority; for obliged authorities and persons under § 3 Abs. 4 Satz 1 Nr. 2 at the latest six months after the end | § 10 Abs. 2 |
+
+- The end is the end of the duration given in the Anzeige, unless a continuation was notified in time
+  (§ 15 Abs. 1).
+- Months are calendar months: the same day, or the last day of a shorter month (as § 188 BGB:
+  30 November + 3 months = 28 February).
+- The app does not know whether the Anzeige was made: a passed deadline reads *verstrichen*, in the
+  warning colour, never "missed".
+
+**Per Bohrung** (only the own ones; the Bohrungen der Länder are already at the Land and are counted
+apart):
+
+| Item (§ 9 Abs. 1 Satz 1) | From GroundTwin | Status |
+|---|---|---|
+| Lage (Nr. 3 a) | coordinates and EPSG | ✓ from the PDF · ⚑ from the plan, the table or the viewer · ✗ missing, only a station in the Längsschnitt |
+| Ansatzhöhe (§ 8 Satz 2 Nr. 4, Nr. 3 a) | GOK in m NHN | ✓ from the PDF · ⚑ from the DGM or typed · ✗ missing or relative |
+| Verlauf (Nr. 3 a) | — | ⚑ vertical assumed (the inclination is not read) |
+| Endteufe (§ 8 Satz 2 Nr. 4, Nr. 3 a) | the deepest Schicht | ✓ · ✗ |
+| Schichtenverzeichnis (Nr. 3 a) | the reviewed Schichten | ✓ all reviewed · ✗ *k/n Schichten geprüft* |
+| Bohrverfahren, Bohrtechnik, Ausbau, Verfüllung (Nr. 3 e); Bohrkern and Proben (Nr. 3 a, c, Nr. 4); Bohrlochmessungen (Nr. 3 b); Pumpversuche (Nr. 3 d); Labor (Nr. 5) | not read from the Gutachten | to be added from the Bohrprotokoll |
+
+- The short code only hints at the kind of Bohrung (RKS/BS/KRB: Kleinbohrung; GWM: state the
+  Ausbau; SCH: a Schurf is an Aufschluss, Nr. 2) and says so.
+- Soundings in the Gutachten are counted: their data are Fachdaten (§ 3 Abs. 3 Nr. 2) but not in the
+  BoreholeML; to be agreed with the authority.
+- A Standort without own Bohrungen shows what an Anzeige contains (§ 8 Satz 2 Nr. 1, 2, 4) and what
+  GroundTwin offers for it: the DGM for the Ansatzhöhe of planned points, the Vorerkundung model as a
+  prognosis of the Schichten.
+
+**Package** *Paket für den Geologischen Dienst (ZIP)*, only with own Bohrungen (otherwise HTTP 400:
+a model from the Länder's Bohrungen is no evaluation of this investigation):
+
+| File | Content | Labelled as (§ 17 Abs. 1) |
+|---|---|---|
+| `fachdaten_GeolDG_9/<name>_boreholeml.xml` | the reviewed Bohrungen in BoreholeML 3.2 (§5.1) | Fachdaten |
+| `bewertungsdaten_GeolDG_10/<name>.ifc`, `…_pruefbericht.json` | the model and its report | Bewertungsdaten |
+| `bewertungsdaten_GeolDG_10/modelldokumentation.txt` | reference system, method (interpolation, grid, edge, base), Einheiten, every Bohrung with the origin of Lage and height, the Prüfstand, what is measured and what is interpolated, third-party data | Bewertungsdaten |
+| `pruefliste.csv` | one row per Bohrung: the values from GroundTwin with ✓/⚑/✗ and empty columns for the Bohrprotokoll (Excel, UTF-8, semicolons) | — |
+| `pruefliste.json`, `LIESMICH.txt` | the same overview; deadlines, contents, what is missing and why, and the hints with § and link | — |
+
+What cannot go into the package is listed in `LIESMICH.txt` with its reason (no Bohrung for BoreholeML:
+*6 × nicht vollständig geprüft*; no model; the Gutachten PDF itself, which the user has). Every rule
+carries its § and the link to gesetze-im-internet.de in
+[`geoldg.json`](../services/geodaten/geodaten/geoldg.json), read from the law on 2026-11-04.
 
 ## 6. IFC: the description on every Schicht
 
@@ -633,9 +744,10 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
 | Test | Result |
 |---|---|
 | Modeler (`cd services/modeler && python -m pytest tests`) | 63 (19 for norms, 1 IFC with Bodenansprache/diameter, 4 for the terrain from a DGM, 1 for the LoD2 buildings, 1 for the Reifegrad) |
-| App and API (`python -m pytest tests`) | 114: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 7 for the Standort project (Vorerkundung, wrong coordinates, a Gutachten added later is gemischt, unknown Standort, the same point twice and reset, a site without a service, zone prefix with a Gutachten without it), 1 for the zone prefix in the Gegenprobe and the import, 1 for download names with special characters, 4 for the network layer (TLS against the system plus certifi with a local HTTPS server, a certificate error not retried, the service check), 4 for the online script |
+| App and API (`python -m pytest tests`) | 150: 24 for project logic (points included), 10 for the API (TestClient), 18 for the DGM reader and the GOK check, 3 for the DGM in the app, 9 for BoreholeML (2 of them against the official XSD and example, with network), 2 for BoreholeML in the app, 10 for the Bohrungen der Länder (2 of them against the real services of Berlin and NRW, with network), 3 for them in the app, 8 for the DGM of the Länder (1 against the real services, with network), 2 for it in the app, 6 for the LoD2 buildings (1 against a real tile of Berlin, with network), 2 for them in the app, 7 for the Standort project (Vorerkundung, wrong coordinates, a Gutachten added later is gemischt, unknown Standort, the same point twice and reset, a site without a service, zone prefix with a Gutachten without it), 1 for the zone prefix in the Gegenprobe and the import, 1 for download names with special characters, 4 for the network layer (TLS against the system plus certifi with a local HTTPS server, a certificate error not retried, the service check), 4 for the online script, 10 for **3D Tiles** (UTM → geodetic → ECEF against PROJ, the quasigeoid reader on a synthetic grid and on the real file from the PROJ CDN, with network, the Berlin export within 1 cm in height, only UTM, outside the quasigeoid, a valid GLB), 26 for the **GeolDG help** (calendar months, deadlines, wrong dates, the status per Bohrung, the CSV, the package with BoreholeML, IFC, report and documentation, what is missing, a Standort without own Bohrungen) |
+| 3D Tiles in Cesium (`node scripts/check_tiles3d.mjs <export> <tools>`) | 4/4: official 3d-tiles-validator 0 errors, 0 warnings, 0 infos; CesiumJS: the top of the model at 422C-460, 422C-461, 422C-5525 within 1 mm of GOK + ζ (PROJ) |
 | Viewer (`node scripts/check.mjs <trasse.ifc> <plans>`) | 19/19: 6 km Trasse; *Lage* with a correct orthographic frame, no postproduction (0 of 14 frames) and orthographic GTAO; plan not draggable without locking, scale by distance, 1:500 · 10.0°, B 6/BS 9 within 0.3 m; section 1:500/1:100, exact stations, GOK from the PDF fixed, without a GOK it moves in height |
-| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 45/45 and no page error, also in a second run on the same server: **Standort ohne Gutachten** (real NRW service in Marl: 10 Bohrungen imported, all in the plan, origin at the Standort, Vorerkundung in the header, the report, the *Modell* step and the viewer, the whole model in view with the camera outside; left out only when the service cannot be reached), Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, everything in view with the camera outside, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
+| End-to-end app (`node scripts/check_app.mjs <url> <plans> <screenshots>`) | 47/47 and no page error, also in a second run on the same server: **3D Tiles** downloaded with the model, the terrain and the buildings (left out only when the PROJ CDN cannot be reached), **GeolDG** (the end date gives the deadline of the Fachdaten, the package with the checklist and the model), **Standort ohne Gutachten** (real NRW service in Marl: 10 Bohrungen imported, all in the plan, origin at the Standort, Vorerkundung in the header, the report, the *Modell* step and the viewer, the whole model in view with the camera outside; left out only when the service cannot be reached), Gebäude (LoD2) vom Land (real tiles of Berlin: in the IFC and the viewer, everything in view with the camera outside, on/off), Bohrungen der Länder (real query in Berlin, Gegenprobe of the five Bohrungen; left out only when the service cannot be reached), DGM vom Land (real WCS in Berlin: GOK comparison, model with the terrain, terrain on/off in the viewer; left out the same way), BoreholeML off without coordinates, warnings, ↓/N/G, classify, remove/restore, all reviewed, proposal by norm, **Gelände (DGM)** (comparison table, GOK taken on a click, systematic 3 m deviation warned, DGM removed), calibration of plan and section through the UI, **plan without any coordinate and with real elevations** (EPSG warning, preview in view, pending pick + lock, origin = reference, 0 frames with postproduction, B 1/B 7 with GOK 338 m and BS 10 without GOK within 0.29–0.36 m), **points** (B 2/B 3 by click within 0.04–0.16 m, free point assigned to B 4, chip, ✕, Del, panning without a point), **direct opening** with a correct frame, Einheit renamed, model, einchecken, IFC with Bodenansprache, PDF with progress and the Schicht marked on the page |
 
 ## 9. Assumptions and limits (marked)
 
@@ -645,6 +757,11 @@ Long texts go as `IfcText` (`IfcLabel` is for short names). The IFC validates wi
   - The percentages of the degrees are indicative values.
   - The ISO prefix is formed only from the strongest Nebenanteil.
 - **Lehm, Mergel, Schotter**: the proposal is uncertain or ambiguous and is marked.
+- **3D Tiles**: ETRS89 is not converted to ITRF/WGS84 (about 0.9 m, stated in the tileset); one tile per
+  group, no levels of detail (models of a construction site are small); no normals (Cesium shades flat).
+- **GeolDG**: a help from the federal law only. The rules of each Land (the authority, its portal or form,
+  a format other than BoreholeML) are not in the app; Bohrverfahren, Ausbau, Proben, Messungen and
+  Labor are not read from the Gutachten; the deadlines rest on the dates the user types.
 - **Windows**: `start.bat` has not been tested on Windows from here. If a new package (fastapi) is
   missing, it reinstalls it.
 - **Reading sources directly**: `de.wikipedia.org` and `www.gdws.wsv.bund.de` are blocked by the

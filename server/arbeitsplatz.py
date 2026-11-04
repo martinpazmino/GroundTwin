@@ -33,7 +33,7 @@ from ui import projekt as pj
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, utm  # noqa: E402
+from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
 
 BEISPIELE = {
@@ -405,6 +405,7 @@ class Arbeitsplatz:
                 "gelaende": self._gelaende(sig, docs, p),
                 "gebaeude": self._gebaeude_kopf(p, epsgs.most_common(1)[0][0] if epsgs else None),   # LoD2 (Kopf)
                 "sgd": self._sgd(sig, docs),
+                "geoldg": self._geoldg(docs, p, vorb, standort),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
                            "modus": p.lage_modus,
@@ -479,6 +480,10 @@ class Arbeitsplatz:
 
     def export(self, sig: str, art: str, organisation: str = "") -> tuple[bytes, str, str]:
         """(Inhalt, Dateiname, Medientyp) fuer den Download; organisation nur fuer BoreholeML."""
+        if art == "3dtiles":
+            return self._export_3dtiles(sig)
+        if art == "geoldg":
+            return self._export_geoldg(sig, organisation)
         with self.sperre(sig):
             docs, p = self.laden(sig)
             stamm = p.name or "baugrundmodell"
@@ -510,6 +515,81 @@ class Arbeitsplatz:
                                       **self._gebaeude_fuer_ifc(sig, p, m))
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
+
+    def _export_3dtiles(self, sig: str, holer=None) -> tuple[bytes, str, str]:
+        """Baugrundmodell als 3D Tiles 1.1 (Cesium, D87): ellipsoidische Hoehen mit dem Quasigeoid GCG2016."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            if p.lage_modus != pj.LAGE_KOORDINATEN:
+                raise ValueError("3D Tiles nur mit Lage nach Koordinaten (ETRS89/UTM)")
+        geoid = quasigeoid.laden(self.arbeit / "cache", holer=holer)      # Netz nur beim ersten Mal, ohne Sperre
+        ifc, _, _ = self.export(sig, "ifc")
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            m, bericht = self._modelle[self.vorbereitung(docs, p)[2]]
+            try:
+                utm.zone(m.epsg)
+            except (ValueError, TypeError):
+                raise ValueError(f"3D Tiles nur mit ETRS89/UTM (25832/25833, mit Zonenkennung 4647/5650), nicht "
+                                 f"EPSG:{m.epsg}") from None
+            info = {"projekt": p.name, "reifegrad": bericht.get("reifegrad"), "namensnennung": self._quellen(docs, p)}
+            stamm = p.name or "baugrundmodell"
+        inhalt, _ = tiles3d.exportieren(ifc, int(m.epsg), geoid, info)
+        return inhalt, f"{stamm}_3dtiles.zip", "application/zip"
+
+    @staticmethod
+    def _geoldg(docs: list[dict], p: pj.Projekt, vorb: pj.Vorbereitung, standort: dict | None) -> dict:
+        """Pruefliste nach GeolDG (docs/21 §5.3): eigene Bohrungen im Modell mit ihren wirksamen Werten, Fristen."""
+        sondierungen = sum(len(d.get("soundings") or {}) for d in docs)
+        return geoldg.pruefen([b for d in vorb.docs for b in d["boreholes"]], p.geoldg,
+                              reihe=p.lage_modus == pj.LAGE_REIHE, sondierungen=sondierungen, standort=bool(standort))
+
+    def _export_geoldg(self, sig: str, organisation: str = "") -> tuple[bytes, str, str]:
+        """Paket fuer den Geologischen Dienst: Fachdaten (BoreholeML), Bewertungsdaten (IFC, Pruefbericht,
+        Modelldokumentation) und die Pruefliste je Bohrung. Was nicht geht, steht mit Grund im LIESMICH."""
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            name, stamm = p.name, geoldg.dateiname(p.name or "baugrundmodell")
+            u = self._geoldg(docs, p, self.vorbereitung(docs, p)[0], pj.standort_von(docs))
+        if not u["bohrungen"]:                          # nur Bohrungen der Laender: liegen dem Land schon vor
+            raise ValueError("keine eigene Bohrung im Projekt – nichts an den Geologischen Dienst zu übermitteln "
+                             "(Bohrungen der Länder liegen dem Land vor)")
+        dateien: dict[str, bytes] = {}
+        fehlt: list[str] = []
+        try:
+            dateien[f"fachdaten_GeolDG_9/{stamm}_boreholeml.xml"] = self.export(sig, "boreholeml", organisation)[0]
+        except ValueError:
+            gruende = Counter(e["boreholeml"] for e in u["bohrungen"] if e["boreholeml"])
+            fehlt.append("BoreholeML (Fachdaten): keine exportierbare Bohrung ("
+                         + ", ".join(f"{n} × {g}" for g, n in gruende.most_common()) + "; je Bohrung in pruefliste.csv)")
+        try:
+            ifc = self.export(sig, "ifc")[0]
+        except ValueError as err:
+            fehlt.append(f"Baugrundmodell (Bewertungsdaten): {err}")
+        else:
+            with self.sperre(sig):
+                docs, p = self.laden(sig)
+                _, bericht = self._modelle[self.vorbereitung(docs, p)[2]]
+                letzter = p.eincheckungen[-1] if p.eincheckungen else None
+                doku = geoldg.modelldokumentation(bericht, name, pj.stand_text(letzter) if letzter else "nicht eingecheckt",
+                                                  self._quellen(docs, p))
+            dateien[f"bewertungsdaten_GeolDG_10/{stamm}.ifc"] = ifc
+            dateien[f"bewertungsdaten_GeolDG_10/{stamm}_pruefbericht.json"] = pl.json_bytes(bericht)
+            dateien["bewertungsdaten_GeolDG_10/modelldokumentation.txt"] = doku.encode("utf-8")
+        fehlt.append("das Gutachten selbst (PDF; Bewertungsdaten nach § 10 Abs. 2 Satz 1 Nr. 1) – liegt Ihnen vor")
+        return geoldg.paket(u, name, dateien, fehlt), f"{p.name or 'baugrundmodell'}_geoldg.zip", "application/zip"
+
+    @staticmethod
+    def _quellen(docs: list[dict], p: pj.Projekt) -> list[str]:
+        """Namensnennungen der Daten der Laender im Modell (DGM, Gebaeude, Bohrungen) fuer Exporte."""
+        quellen = []
+        if p.dgm:
+            q = p.dgm.get("quelle") or {}
+            quellen.append(q.get("namensnennung") or f"DGM: {p.dgm.get('name') or 'eigene Datei'}")
+        for d in ((p.gebaeude or {}).get("quelle") or {}).get("dienste", []):
+            quellen.append(d.get("namensnennung") or d.get("titel", ""))
+        quellen += [b["namensnennung"] for d in docs for b in d["boreholes"] if b.get("namensnennung")]
+        return list(dict.fromkeys(q for q in quellen if q))
 
     # ------------------------------------------------------------ Unterlage (Lageplan / Laengsschnitt)
     def unterlage_setzen(self, sig: str, name: str, daten: bytes | None, art: str, seite: int) -> None:

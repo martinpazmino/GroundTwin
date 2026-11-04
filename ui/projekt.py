@@ -15,7 +15,7 @@ import math
 import re
 import sys
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 _MODELLIERER = str(Path(__file__).resolve().parents[1] / "services" / "modeler")
@@ -75,6 +75,7 @@ class Projekt:
     durchmesser: float | None = None        # Bohrsaeulen in m; None = automatisch nach Modellgroesse
     ueberhoehung: int = 5
     schritt: str = "bohrungen"              # zuletzt offener Schritt der App
+    geoldg: dict = field(default_factory=dict)  # Untersuchung fuer die Fristen nach GeolDG: {beginn, abschluss, behoerde}
     angelegt: str = ""
     geaendert: str = ""
 
@@ -692,6 +693,9 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         p.erzeugt = True
     elif art == "auto":
         p.auto = bool(op["wert"])
+    elif art == "geoldg":                                # Beginn/Abschluss der Untersuchung (Fristen §§ 8-10 GeolDG)
+        p.geoldg = geoldg_angaben({**p.geoldg, **{k: op[k] for k in ("beginn", "abschluss", "behoerde") if k in op}})
+        meldung = "Angaben zur Untersuchung übernommen"
     elif art == "schritt":
         if op["wert"] not in SCHRITTE:
             raise ValueError("unbekannter Schritt")
@@ -702,6 +706,21 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
     p.version += 1
     p.geaendert = jetzt()
     return meldung
+
+
+def geoldg_angaben(a: dict) -> dict:
+    """Angaben der Untersuchung geprueft: ISO-Daten (leer = unbekannt), Abschluss nicht vor dem Beginn."""
+    tage = {}
+    for k in ("beginn", "abschluss"):
+        text = str(a.get(k) or "").strip()
+        try:
+            tage[k] = date.fromisoformat(text) if text else None
+        except ValueError:
+            raise ValueError(f"Datum „{text}“: JJJJ-MM-TT erwartet") from None
+    if tage["beginn"] and tage["abschluss"] and tage["abschluss"] < tage["beginn"]:
+        raise ValueError("Abschluss der Untersuchung liegt vor ihrem Beginn")
+    return {"beginn": tage["beginn"].isoformat() if tage["beginn"] else "",
+            "abschluss": tage["abschluss"].isoformat() if tage["abschluss"] else "", "behoerde": bool(a.get("behoerde"))}
 
 
 # ---------------------------------------------------------------- Reihe (Laengsschnitt)
