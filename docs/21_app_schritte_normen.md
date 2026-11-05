@@ -116,13 +116,15 @@ The open state stays while working (a re-render does not close what the user ope
 
 [`ui/plausibilitaet.py`](../ui/plausibilitaet.py) (`pruefen(docs, p)`) checks the effective (user-corrected) values of
 every Bohrung in the model and flags contradictions as a `warnung` or `hinweis` without ever modifying data
-(`plausibilitaet` in `zustand()`):
+(`plausibilitaet` in `zustand()`). First task built by Antigravity from a hand-off
+([24 §9](24_agent_team.md#9-phase-4-measured-results-2026-11-05)), reviewed and fixed by Claude:
 
 - **Warnungen**: `reihenfolge` (Schichten not sorted by Oberkante or Unterkante ≤ Oberkante), `luecke` / `ueberlappung`
   (> 0.01 m between consecutive Schichten), `endteufe` (`end_depth` differs by > 0.1 m from the deepest corrected
-  Unterkante), `grundwasser` (deeper than the Endteufe or above GOK, depth < 0 m).
+  Unterkante), `grundwasser` (above GOK, depth < 0 m, or deeper than the Endteufe: the deeper of the stated
+  Endteufe and the deepest Unterkante, so a missing bottom Schicht is reported once, by `endteufe`).
 - **Hinweise**: `beginn` (first Schicht starts > 0.05 m below 0 m), `duenn` (Schicht thinner than 0.05 m), `gok_fehlt`
-  (missing GOK, naming `gok_quelle` and referring to the DGM check `geodaten.gelaende.gok_pruefen` in the *Lage* step),
+  (missing GOK: enter it in the table or take it from the DGM in the *Lage* step, `geodaten.gelaende`),
   `gok_nachbarn` (GOK deviates by > 3 m from the median of at least two neighbour Bohrungen within 200 m in the same
   EPSG).
 - **UI** ([`schritt_bohrungen.ts`](../apps/web/src/app/schritt_bohrungen.ts)): summary line *Plausibilität: n

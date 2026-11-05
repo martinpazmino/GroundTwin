@@ -5,8 +5,6 @@ import copy
 import sys
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from server.arbeitsplatz import Arbeitsplatz  # noqa: E402
@@ -160,13 +158,22 @@ def test_grundwasser_ausgeloest_und_im_bereich():
     assert _befunde(docs_ok, p_ok) == []
 
 
+def test_grundwasser_gegen_die_angegebene_endteufe_wenn_unten_eine_schicht_fehlt():
+    # Schichten bis 4,0 m, Endteufe 5,0 m, Wasser bei 4,5 m: nur die Endteufe ist widerspruechlich, nicht das Wasser
+    docs, p = _projekt(_bohrung(schichten=[(0.0, 2.0, "Sand"), (2.0, 4.0, "Kies")], gw=[4.5], end_depth=5.0))
+    assert [f["regel"] for f in _befunde(docs, p)] == ["endteufe"]
+    docs, p = _projekt(_bohrung(gw=[5.2], end_depth=None))                         # ohne Angabe: tiefste Unterkante
+    assert [f["regel"] for f in _befunde(docs, p)] == ["grundwasser"]
+
+
 def test_gok_fehlt_nennt_gok_quelle():
     docs, p = _projekt(_bohrung(gok=None))
     zeile = pb.pruefen(docs, p)[0]
     assert zeile["gok_quelle"] == ""
     b = zeile["befunde"]
     assert len(b) == 1 and b[0]["regel"] == "gok_fehlt" and b[0]["stufe"] == "hinweis" and b[0]["schicht"] is None
-    assert "gok_quelle" in b[0]["text"] and "fehlt" in b[0]["text"]
+    assert "Keine GOK" in b[0]["text"] and "Schritt Lage" in b[0]["text"]
+    assert "gok_quelle" not in b[0]["text"] and "geodaten" not in b[0]["text"]     # keine internen Namen in der UI
 
     # Mit GOK -> kein Befund gok_fehlt, Quelle ist PDF
     docs_ok, p_ok = _projekt(_bohrung(gok=42.5))

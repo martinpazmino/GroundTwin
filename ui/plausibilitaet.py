@@ -139,15 +139,14 @@ def pruefe_grundwasser(gw_tiefen: list[float], endteufe: float | None) -> list[d
     return out
 
 
-def pruefe_gok_fehlt(gok: float | None, quelle: str) -> list[dict]:
-    """Keine GOK -> Hinweis (mit gok_quelle und Verweis auf die DGM-Pruefung im Schritt Lage)."""
+def pruefe_gok_fehlt(gok: float | None) -> list[dict]:
+    """Keine GOK -> Hinweis (Verweis auf die Tabelle und das DGM im Schritt Lage; die Quelle steht in gok_quelle)."""
     if gok is not None:
         return []
-    q_text = quelle or "fehlt"
     return [_befund(
         "gok_fehlt", "hinweis",
-        f"Keine Ansatzhöhe (GOK, 0,00 m; Quelle gok_quelle: {q_text}) – in der Tabelle eintragen oder im Schritt Lage "
-        f"gegen das DGM prüfen (geodaten.gelaende.gok_pruefen).",
+        "Keine GOK (weder aus dem PDF noch eingetragen) – in der Tabelle eintragen oder im Schritt Lage aus dem DGM "
+        "übernehmen.",
         None,
     )]
 
@@ -219,7 +218,10 @@ def pruefen(docs: list[dict], p: pj.Projekt) -> list[dict]:
         gueltige = [s for s in schichten if round(s[2] - s[1], 6) > 0.0]
         sortiert = sorted(gueltige, key=lambda s: (s[1], s[2], s[0]))
         tiefste_unten = max((s[2] for s in schichten), default=None)
-        endteufe_wirksam = tiefste_unten if tiefste_unten is not None else e["end_depth"]
+        # Grundwasser gegen die tiefere von angegebener Endteufe und tiefster Unterkante: fehlt unten eine Schicht,
+        # meldet das schon die Regel endteufe; Wasser in diesem Bereich ist kein zweiter Widerspruch
+        tiefen = [v for v in (tiefste_unten, e["end_depth"]) if v is not None]
+        endteufe_wirksam = max(tiefen) if tiefen else None
 
         befunde: list[dict] = []
         befunde.extend(pruefe_reihenfolge(schichten))
@@ -228,7 +230,7 @@ def pruefen(docs: list[dict], p: pj.Projekt) -> list[dict]:
         befunde.extend(pruefe_endteufe(e["end_depth"], tiefste_unten))
         befunde.extend(pruefe_duenn(schichten))
         befunde.extend(pruefe_grundwasser(e["gw_tiefen"], endteufe_wirksam))
-        befunde.extend(pruefe_gok_fehlt(e["gok"], e["gok_quelle"]))
+        befunde.extend(pruefe_gok_fehlt(e["gok"]))
         befunde.extend(pruefe_gok_nachbarn(e, modell_bohrungen))
 
         out.append({
