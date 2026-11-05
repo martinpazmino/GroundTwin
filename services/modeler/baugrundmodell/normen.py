@@ -483,7 +483,6 @@ def _haupt_name(klasse: str, fraktion: str) -> str:
     if klasse.startswith("Fels"):
         art = re.match(r"Fels\s*\((.+)\)", klasse)
         return art.group(1) if art else "Fels"
-    e = KLASSEN.get(klasse, {})
     stamm = {"Kies": "kies", "Sand": "sand", "Schluff": "schluff"}.get(klasse)
     if stamm and fraktion:
         teile = fraktion.split("-")

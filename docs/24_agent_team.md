@@ -3,14 +3,25 @@ title: "24 Agent team: Claude as orchestrator, Gemini as specialists (proposal)"
 date: 2026-11-05
 tags: [agents, orchestration, gemini, claude-code, tokens, automation, proposal]
 aliases: [Agent team, Multi-agent system, Gemini agents]
-status: proposed
+status: mvp-built
 ---
 
 # 24 Agent team: Claude as orchestrator, Gemini as specialists (proposal)
 
 Phases 1 and 2 of the mission "an autonomous multi-agent engineering system for GroundTwin": what the repository and the
 Google offering really allow, and the smallest architecture that saves Claude tokens without lowering the bar of
-[16](16_lessons_learned.md). **Nothing of §5 is built yet**; §8 lists what needs your decision first.
+[16](16_lessons_learned.md).
+
+> [!IMPORTANT]
+> **Status 2026-11-05: phases 3a, 3b and 3c are built** in [`agenten/`](../agenten) with [`AGENTS.md`](../AGENTS.md):
+> - checks without a model: `pruefen`, `doku`, `stand`, `kosten`;
+> - Gemini agents through the API: `verbindung`, `review`, `diagnose` with a worktree and `uebernehmen` /
+>   `verwerfen`;
+> - the hand-off to Antigravity: `uebergabe`, `agy-einlesen`.
+>
+> 15 offline tests run against a stand-in model (`tests/test_agenten.py`). The first real call needs the key
+> (`python -m agenten verbindung`). Phase 4, the measured comparison, follows once the key reaches the cloud sessions
+> too (§8).
 
 > [!NOTE]
 > Summary:
@@ -349,9 +360,9 @@ erfolg, kosten_usd, kosten_art}`.
 
 | Phase | Content | Accepted when |
 |---|---|---|
-| 3a, no model | `pruefen`, `doku-pruefen`, `stand`, metrics of the Claude side; `/pruefen` | The full check returns one verdict ≤ 15 lines; a known doc inconsistency is found; tests offline |
-| 3b, MVP agents | `google-genai` adapter, registry, packer with denylist and secret scan, Prüfer and Testanalyst, the *diagnose* workflow with a worktree, `bericht.json`, `uebernehmen` | A fake-provider test suite; one real *diagnose* on a deliberately broken test (§7 Phase 4); no write outside the worktree; tokens logged |
-| 3c, hand-off | Task files, `python -m agenten uebergabe <id>` (prints the one command for you), import of the `agy` JSON into the metrics, the *umsetzen* workflow with the Prüfer, branch protection (your action) | One real task done in Antigravity, reviewed, merged by Claude; its tokens and Claude's logged |
+| 3a, no model (**built**) | `pruefen`, `doku-pruefen`, `stand`, metrics of the Claude side; `/pruefen` | The full check returns one verdict ≤ 15 lines; a known doc inconsistency is found; tests offline |
+| 3b, MVP agents (**built**; REST without the SDK, changes as exact replacements instead of diffs) | `google-genai` adapter, registry, packer with denylist and secret scan, Prüfer and Testanalyst, the *diagnose* workflow with a worktree, `bericht.json`, `uebernehmen` | A fake-provider test suite; one real *diagnose* on a deliberately broken test (§7 Phase 4); no write outside the worktree; tokens logged |
+| 3c, hand-off (**built**) | Task files, `python -m agenten uebergabe <id>` (prints the one command for you), import of the `agy` JSON into the metrics, the *umsetzen* workflow with the Prüfer, branch protection (your action) | One real task done in Antigravity, reviewed, merged by Claude; its tokens and Claude's logged |
 | 4, validation | Four real tasks, each once delegated and once inline, Claude tokens from the transcript: (1) diagnose a reintroduced bug (the radius of the LoD2 cut-out); (2) review commit `a7523cb`; (3) the docs of a small feature against the docs written by hand; (4) tests for `geodaten/laender.py` kept only if they catch an injected fault | A table of Claude tokens, Gemini tokens, time and quality per task; a role stays only where it saves |
 | 5 | Dokumentar and Testautor if Phase 4 shows savings; UX-Prüfer for screenshots; hooks; Argon for high-risk reviews if you approve a budget | Each addition justified by the Phase 4 numbers |
 

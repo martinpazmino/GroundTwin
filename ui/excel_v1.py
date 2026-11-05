@@ -4,14 +4,13 @@ Unveraendert aus v1 uebernommen; Einstieg ist app.py.
 """
 from __future__ import annotations
 
-import io
 
 import fitz
 import streamlit as st
 
-from geo_agent.legend import parse_legend, DIN_LABELS, Legend
+from geo_agent.legend import parse_legend, DIN_LABELS
 from geo_agent.bohrprofil import parse_bohrprofil
-from geo_agent.laengsschnitt import parse_laengsschnitt, DEFAULT_COLOR_MAP
+from geo_agent.laengsschnitt import parse_laengsschnitt
 from geo_agent import excel_writer
 
 

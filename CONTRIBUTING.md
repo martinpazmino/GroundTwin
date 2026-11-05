@@ -15,7 +15,8 @@ cd apps/web && npm ci                                # only if you change the pa
 
 ## Before every pull request
 
-1. **Tests:** `pytest tests` and `cd services/modeler && pytest tests`.
+1. **Tests:** `python -m agenten pruefen` runs them all (pytest, modeler, lint, docs links) and prints one verdict;
+   by hand: `pytest tests` and `cd services/modeler && pytest tests`.
 2. **Page or viewer changed** (`apps/web/src`):
    - `cd apps/web && npm run build` and **commit `apps/web/dist`**: the server uses it without Node.
    - Check with `scripts/check_app.mjs` (see the [README](README.md#tests)).

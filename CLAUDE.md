@@ -119,6 +119,12 @@ license **AGPL-3.0-or-later** (D79).
   (AGPL § 13) stays. Dependencies: `requirements-server.txt` + exact versions in `constraints.txt` (D81; renewed with
   `pip freeze`); CI `.github/workflows/pruefungen.yml`. Third parties: `THIRD_PARTY_LICENSES.md`; rules:
   `CONTRIBUTING.md`.
+- **Agententeam (docs/24, D100–D103)**: `python -m agenten pruefen` (all checks, one verdict: read it instead of
+  logs), `doku`, `stand` (start a session with it), `review`, `diagnose --befehl "…"` (Gemini proposes, the patch waits
+  in a worktree), `uebernehmen <id>` / `verwerfen <id>` (only after reading the patch), `uebergabe` (task file for
+  Antigravity, the user starts it), `kosten`. Delegate loops of three or more turns or more than ~20 k tokens of
+  reading. Agent findings are claims: verify every high or medium one in the code. Settings in `.env`
+  (`agenten/env.beispiel`); paid models only with `AI_ALLOW_PAID_API=true`. Tests `tests/test_agenten.py`.
 - Free online (D83): `start_online.bat` / `scripts/online.py` start the server **always with a password** and a
   Cloudflare Quick Tunnel (`cloudflared`, `CLOUDFLARED` for the path); it refuses a server already running on the
   port. Test `tests/test_online.py` with a simulated cloudflared.
