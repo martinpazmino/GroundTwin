@@ -1,7 +1,8 @@
 """LoD2-Gebaeude in der Schritt-App: Abruf auf Klick, gebaeude.json, IFC mit Gebaeuden und Lizenz je Dienst, Entfernen.
 
 Die Kacheln liefert die Attrappe aus test_gebaeude (Berliner Beispiel: Kachel 394/5818 von Berlin, 395/5818 aus
-Brandenburg, damit beide Lizenzen im IFC stehen).
+Brandenburg, damit beide Lizenzen im IFC stehen). Mitten in Berlin waehlt die App nur den Berliner Dienst
+(Laendergrenzen); der Test stellt deshalb einen Projektort an der Landesgrenze nach (beide Dienste am Ort).
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from server.api import app_erstellen  # noqa: E402
 from test_gebaeude import attrappe, gb, gezippt, haus, kachel  # noqa: E402
+from geodaten import bohrdaten  # noqa: E402
 from ui import pipeline as pl  # noqa: E402
 
 KACHELN = {"LoD2_394_5818": gezippt(kachel(haus("DEBE_1", 394800, 5818300), haus("DEBE_2", 394860, 5818480))),
@@ -27,6 +29,7 @@ KACHELN = {"LoD2_394_5818": gezippt(kachel(haus("DEBE_1", 394800, 5818300), haus
 def client(tmp_path, monkeypatch):
     monkeypatch.setattr(pl, "ARBEIT", tmp_path)
     monkeypatch.setattr(gb, "_holen", attrappe(KACHELN))
+    monkeypatch.setattr(gb, "dienste_am_ort", lambda *a, **k: [bohrdaten.dienst("BE-LOD2"), bohrdaten.dienst("BB-LOD2")])
     with TestClient(app_erstellen(tmp_path)) as c:
         yield c
 

@@ -91,16 +91,26 @@ def test_citygml_lesen():
 
 
 def test_abruf_mit_rueckfall_ausschnitt_und_lizenz():
+    # Ausschnitt an der Grenze Berlin/Brandenburg (bei x = 406900): Mitte in Berlin, Kachel 407 nur bei Brandenburg
     aufrufe = []
-    holer = attrappe({"LoD2_394_5818": gezippt(kachel(haus("DEBE_1", 394800, 5818300), haus("DEBE_WEIT", 394100, 5818900))),
-                      "lod2_33395-5818": gezippt(kachel(haus("DEBB_1", 395000, 5818400, teil=False)), "lod2_33395-5818_geb.gml")},
+    holer = attrappe({"LoD2_406_5818": gezippt(kachel(haus("DEBE_1", 406500, 5818200), haus("DEBE_WEIT", 406100, 5818900))),
+                      "lod2_33407-5818": gezippt(kachel(haus("DEBB_1", 407000, 5818250, teil=False)), "lod2_33407-5818_geb.gml")},
                      aufrufe)
-    geb, q = gb.abrufen(394670, 5818238, 395010, 5818569, 25833, holer=holer)
+    geb, q = gb.abrufen(406300, 5818100, 407100, 5818400, 25833, holer=holer)
     assert sorted(b["id"] for b in geb) == ["DEBB_1", "DEBE_1"]                  # DEBE_WEIT liegt ausserhalb
     assert {b["id"]: b["dienst"] for b in geb} == {"DEBE_1": "BE-LOD2", "DEBB_1": "BB-LOD2"}
     assert [d["dienst"] for d in q["dienste"]] == ["BE-LOD2", "BB-LOD2"] and q["kacheln"] == 2 and q["ohne_kachel"] == []
     assert "GeoBasis-DE/LGB" in q["dienste"][1]["namensnennung"]
     assert sum("gdi.berlin.de" in u for u in aufrufe) == 2 and sum("geobasis-bb" in u for u in aufrufe) == 1
+
+
+def test_mitten_in_berlin_nur_der_dienst_von_berlin():
+    """Die Rechtecke beider Dienste decken Berlin; die Laendergrenzen nicht: Brandenburg wird nicht mehr gefragt."""
+    aufrufe = []
+    holer = attrappe({"LoD2_394_5818": gezippt(kachel(haus("DEBE_1", 394800, 5818300)))}, aufrufe)
+    geb, q = gb.abrufen(394670, 5818238, 395010, 5818569, 25833, holer=holer)
+    assert [b["id"] for b in geb] == ["DEBE_1"] and q["ohne_kachel"] == ["395/5818"]
+    assert aufrufe and all("gdi.berlin.de" in u for u in aufrufe)
 
 
 def test_zonenkennung_und_fehler():
@@ -112,8 +122,9 @@ def test_zonenkennung_und_fehler():
                                                                             "lod2_33394": DienstFehler("keine Antwort in 120 s")}))
     leer, q = gb.abrufen(394700, 5818250, 394950, 5818500, 25833, holer=attrappe({}))
     assert leer == [] and q["ohne_kachel"] == ["394/5818"]
-    with pytest.raises(ValueError, match="kein LoD2-Dienst"):
-        gb.abrufen(705000, 5300000, 705300, 5300300, 25832, holer=attrappe({}))            # Bayern
+    with pytest.raises(ValueError, match="kein LoD2-Dienst für diesen Ort .angebunden: Berlin, Brandenburg, "
+                                         "Nordrhein-Westfalen; im Portal des Landes: .*https://"):
+        gb.abrufen(705000, 5300000, 705300, 5300300, 25832, holer=attrappe({}))            # Bayern: Portal genannt
     with pytest.raises(ValueError, match="Kacheln"):
         gb.abrufen(390000, 5815000, 394500, 5819500, 25833, holer=attrappe({}))           # 5 x 5 km
 

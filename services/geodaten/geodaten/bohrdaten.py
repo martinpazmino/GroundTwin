@@ -6,25 +6,38 @@ es gibt, steht mit Beleg in dienste.json. Zwei Arten:
   wfs-boreholeml  BoreholeML mit den freigegebenen Schichtdaten (NRW, Baden-Wuerttemberg) - nur diese lassen sich
                   ins Projekt uebernehmen und modellieren (boreholeml.importieren, Herkunft markiert)
 Doppelte: dieselbe Bohrung im Gutachten und beim Land (Name oder Abstand) - zugleich eine Gegenprobe von Lage und GOK.
+Laender ohne Datendienst stehen als Portal im Register (portal-bohrungen): die Abfrage nennt sie mit Link, statt
+still "0 Bohrungen" zu sagen. Welches Land: aus den Laendergrenzen (laender.py), sonst aus den Rechtecken der Dienste.
 """
 from __future__ import annotations
 
-import json
 import math
 import re
 import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import date, datetime
-from pathlib import Path
 
 from . import boreholeml
-from . import netz
+from . import dienste as register
+from . import laender, netz
 from .netz import AGENT, VERSUCHE, DienstFehler  # noqa: F401  (AGENT, VERSUCHE: wie bisher von hier lesbar)
 from . import utm
 from .utm import utm_normal
 
-DIENSTE: list[dict] = json.loads(Path(__file__).with_name("dienste.json").read_text(encoding="utf-8"))["dienste"]
+DIENSTE: list[dict] = register.laden()["dienste"]
+_GELESEN = [register.version()]
+
+
+def neu_laden(erzwingen: bool = False) -> None:
+    """Register neu lesen, wenn das Werkzeug „Dienste der Länder“ die Datei geaendert hat (an Ort und Stelle: alle,
+    die DIENSTE importiert haben, sehen den neuen Stand)."""
+    stand = register.version()
+    if erzwingen or stand != _GELESEN[0]:
+        DIENSTE[:] = register.laden()["dienste"]
+        _GELESEN[0] = stand
+
+
 RADIUS_STANDARD, RADIUS_MAX = 250.0, 2000.0     # m um die Mitte des Projekts
 ANZAHL_MAX = 200                                # Bohrungen je Dienst und Abfrage
 ZEIT_KOPF, ZEIT_BML = 30, 120                   # s; der BoreholeML-Dienst von NRW braucht fuer grosse Flaechen lange
@@ -43,30 +56,68 @@ def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
 BOHRDIENSTE = ("wfs-kopf", "wfs-boreholeml")
 
 
-def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRDIENSTE) -> list[dict]:
-    """Dienste der Arten, deren Gebiet die Mitte des Projekts enthaelt (an Landesgrenzen auch mehrere)."""
+def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRDIENSTE,
+                   radius: float = 0.0) -> list[dict]:
+    """Dienste der Arten fuer die Laender am Punkt (und im Umkreis, an Landesgrenzen auch mehrere); abgeschaltete nicht.
+    Liegt der Punkt in keinem Land (See, Kueste) oder kennt ein Eintrag seine Laender nicht: das Rechteck des Dienstes."""
+    if DIENSTE is _DIENSTE_ANFANG:
+        neu_laden()
     x, y, epsg = utm_normal(x, y, epsg)
     lon, lat = utm_zu_geo(x, y, {25831: 31, 25832: 32, 25833: 33}[epsg])
-    return [d for d in DIENSTE if d["art"] in arten and d["gebiet_wgs84"][0] <= lon <= d["gebiet_wgs84"][2]
-            and d["gebiet_wgs84"][1] <= lat <= d["gebiet_wgs84"][3]]
+    am_punkt = laender.laender_um(x, y, epsg, radius)
+    out = []
+    for d in DIENSTE:
+        if d["art"] not in arten or d.get("aktiv", True) is False:
+            continue
+        if am_punkt and d.get("laender"):
+            if any(land in d["laender"] for land in am_punkt):
+                out.append(d)
+        elif (g := d.get("gebiet_wgs84")) and g[0] <= lon <= g[2] and g[1] <= lat <= g[3]:
+            out.append(d)
+    # das Land der Mitte zuerst (bei Kacheln: zuerst gefragt), bundesweite Eintraege (Bohrpunktkarte) zuletzt
+    rang = {land: i for i, land in enumerate(am_punkt)}
+    return sorted(out, key=lambda d: (d.get("land") == "Deutschland",
+                                      min((rang[land] for land in d.get("laender") or [] if land in rang), default=0)))
+
+
+def ohne_dienst(x: float, y: float, epsg: int, thema: str) -> str:
+    """Satz fuer „kein Dienst“: welche Laender angebunden sind und wo die Daten dieses Ortes zu finden sind (Portal)."""
+    arten = tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and verbunden)
+    portal = tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and not verbunden)
+    mit = sorted({land for d in DIENSTE if d["art"] in arten and d.get("aktiv", True) is not False
+                  for land in (d.get("laender") or [d["land"]])}, key=lambda n: (n not in laender.LAENDER, n))
+    satz = f"angebunden: {', '.join(mit)}" if mit else "noch kein Land angebunden"
+    hier = [d for d in dienste_am_ort(x, y, epsg, portal) if d.get("land") != "Deutschland"][:1]
+    return satz + (f"; im Portal des Landes: {hier[0]['titel']} – {hier[0]['url']}" if hier else "")
+
+
+_DIENSTE_ANFANG = DIENSTE                       # ersetzt ein Test DIENSTE, liest neu_laden nichts nach
 
 
 # Kurztext je Art fuer die Oberflaeche (Karte, Standort): was der Dienst an diesem Ort liefert
 ART_TEXT = {"wfs-kopf": ("bohrungen", "Bohrungen {land}: nur Kopfdaten, Schichtenverzeichnis als Bild – nicht ins Modell"),
             "wfs-boreholeml": ("bohrungen", "Bohrungen {land}: mit Schichtdaten (BoreholeML) – Modell der Vorerkundung möglich"),
             "wcs-dgm": ("dgm", "Gelände DGM1: {land}"),
-            "lod2-kacheln": ("gebaeude", "Gebäude LoD2: {land}")}
+            "lod2-kacheln": ("gebaeude", "Gebäude LoD2: {land}"),
+            "portal-bohrungen": ("bohrungen", "Bohrungen {land}: kein Datendienst – im Portal ansehen ({titel})"),
+            "portal-dgm": ("dgm", "Gelände {land}: als Datei im Portal ({titel})"),
+            "portal-gebaeude": ("gebaeude", "Gebäude {land}: als Datei im Portal ({titel})")}
+PORTALE = ("portal-bohrungen",)
 
 
 def am_ort(x: float, y: float, epsg: int) -> list[dict]:
     """Alle Dienste der Laender an einem Punkt (Gebiet als Rechteck, an Landesgrenzen auch mehrere):
     [{dienst, art, land, text}]; ohne Bohrdienst ein Eintrag, der das sagt."""
+    gefunden = dienste_am_ort(x, y, epsg, tuple(ART_TEXT))
+    mit_dienst = {register.thema(d) for d in gefunden if register.angebunden(d)}
     out = [{"dienst": d["id"], "art": ART_TEXT[d["art"]][0], "land": d["land"],
-            "text": ART_TEXT[d["art"]][1].format(land=d["land"])} for d in dienste_am_ort(x, y, epsg, tuple(ART_TEXT))]
+            "text": ART_TEXT[d["art"]][1].format(land=d["land"], titel=d["titel"]),
+            "url": d["url"] if d["art"].startswith("portal-") else "",
+            "status": d.get("status", "ungeprueft")}
+           for d in gefunden if register.angebunden(d) or register.thema(d) not in mit_dienst]   # Portal nur ohne Dienst
     if not any(o["art"] == "bohrungen" for o in out):
-        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
-        out.insert(0, {"dienst": "", "art": "bohrungen", "land": "",
-                       "text": f"Bohrungen: kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
+        out.insert(0, {"dienst": "", "art": "bohrungen", "land": "", "url": "", "status": "",
+                       "text": f"Bohrungen: kein Dienst für diesen Ort ({ohne_dienst(x, y, epsg, 'bohrungen')})"})
     return out
 
 
@@ -96,11 +147,18 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
     holer = holer or _holen
     radius = min(max(float(radius), 10.0), RADIUS_MAX)
     x, y, epsg = utm_normal(x, y, epsg)
-    am_ort = dienste_am_ort(x, y, epsg)
+    am_ort = dienste_am_ort(x, y, epsg, radius=radius)
+    # Laender im Umkreis ohne Datendienst (an einer Grenze auch nur eines von zweien): ihr Portal und die Bohrpunktkarte
+    hier = laender.laender_um(x, y, epsg, radius)
+    gedeckt = {land for d in am_ort for land in (d.get("laender") or [d["land"]])}
+    ohne = {land for land in hier if land not in gedeckt}
+    portale = [{"dienst": d["id"], "land": d["land"], "titel": d["titel"], "url": d["url"],
+                "hinweis": d.get("hinweis", ""), "status": d.get("status", "ungeprueft")}
+               for d in dienste_am_ort(x, y, epsg, PORTALE, radius=radius)
+               if ohne & set(d.get("laender") or []) or (not hier and not am_ort)]
     treffer, fehler = [], []
-    if not am_ort:                                  # Bayern, Hessen, ...: sagen statt still "0 Bohrungen"
-        laender = sorted({d["land"] for d in DIENSTE if d["art"] in BOHRDIENSTE})
-        fehler.append({"dienst": "Länder", "fehler": f"kein Dienst für diesen Ort (bisher {', '.join(laender)})"})
+    if not am_ort and not portale:                  # weder Dienst noch Portal: sagen statt still "0 Bohrungen"
+        fehler.append({"dienst": "Länder", "fehler": f"kein Dienst für diesen Ort ({ohne_dienst(x, y, epsg, 'bohrungen')})"})
     bbox = f"{x - radius:.1f},{y - radius:.1f},{x + radius:.1f},{y + radius:.1f},urn:ogc:def:crs:EPSG::{epsg}"
     for d in am_ort:
         if epsg not in d["systeme"]:
@@ -122,7 +180,7 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
                      key=lambda t: t["abstand"])
     return {"mitte": [round(x, 2), round(y, 2)], "epsg": epsg, "radius": radius,
             "zeit": datetime.now().strftime("%Y-%m-%d %H:%M"), "dienste": [d["id"] for d in am_ort],
-            "treffer": treffer, "fehler": fehler,
+            "treffer": treffer, "fehler": fehler, "portale": portale,
             "quellen": [{"dienst": d["id"], "titel": d["titel"], "land": d["land"], "lizenz": d["lizenz"],
                          "namensnennung": namensnennung(d), "beleg": d["beleg"]} for d in am_ort]}
 

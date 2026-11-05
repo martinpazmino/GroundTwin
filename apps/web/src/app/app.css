@@ -355,3 +355,82 @@ p.sgd-warum { border-left: 2px solid var(--warn); padding-left: 0.5rem; }
 /* BoreholeML: Knopf ohne exportierbare Bohrung */
 .knopf.aus { opacity: 0.45; cursor: not-allowed; }
 .export-liste .feld { margin-top: 0.5rem; }
+
+/* ---------------------------------------------------------------- Start: zwei Wege (Gutachten / Standort) */
+.start { gap: 1.4rem; padding-top: 2.6rem; }
+.start-titel { text-align: center; margin-bottom: 0.4rem; }
+.start-titel h1 { font-size: 2.3rem; font-weight: 650; letter-spacing: -0.02em; }
+.start-titel p { font-size: 1.05rem; color: #b9bec6; max-width: 44rem; margin: 0.5rem auto 0; line-height: 1.45; }
+.wege { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; align-items: stretch; }
+.weg {
+  display: flex; flex-direction: column; gap: 0.75rem; padding: 1.6rem 1.6rem 1.3rem; border-radius: 14px;
+  background: linear-gradient(180deg, #20252d 0%, var(--flaeche) 100%); border: 1px solid var(--linie);
+  transition: border-color 0.15s;
+}
+.weg:hover { border-color: #47505c; }
+.weg-symbol {
+  width: 3rem; height: 3rem; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem;
+  background: #1b2216; color: var(--gruen); border: 1px solid #34431a;
+}
+.weg h2 { font-size: 1.45rem; font-weight: 650; }
+.weg-text { color: #b9bec6; line-height: 1.45; font-size: 0.92rem; }
+.weg .ablage { padding: 1.6rem 1rem; border-radius: 10px; }
+.weg .ablage.bereit { border-style: solid; border-color: #4f6b17; }
+.weg .fortschritt-karte { border-radius: 10px; }
+.gross-knopf { padding: 0.6rem 1.15rem; font-size: 0.95rem; border-radius: 8px; align-self: flex-start; }
+.punkt-wahl { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.7rem 0.8rem; border-radius: 10px;
+  background: #171b21; border: 1px solid var(--linie); }
+.punkt-wahl .feld input { width: 100%; }
+.weg .raster-2 { margin-top: 0.5rem; }
+.weg .raster-2 .feld input, .weg .raster-2 .feld select { width: 100%; }
+
+details.still > summary {
+  cursor: pointer; color: var(--leise); font-size: 0.85rem; list-style: none; display: inline-flex; align-items: center;
+  gap: 0.35rem; padding: 0.15rem 0; user-select: none;
+}
+details.still > summary::-webkit-details-marker { display: none; }
+details.still > summary::before { content: "›"; display: inline-block; transition: transform 0.15s; font-size: 1rem; }
+details.still[open] > summary::before { transform: rotate(90deg); }
+details.still > summary:hover { color: var(--text); }
+details.still[open] > summary { margin-bottom: 0.4rem; }
+.zuletzt h3 { margin-bottom: 0.4rem; }
+.zuletzt details.still { margin-top: 0.5rem; }
+.beispiele { padding: 0.2rem 0; }
+.beispiele .zwei-spalten { grid-template-columns: 1fr 1fr; margin-top: 0.3rem; }
+.beispiele h4 { margin-bottom: 0.35rem; font-weight: 600; }
+
+/* ---------------------------------------------------------------- Erweitert: eingeklappt, ein Klick entfernt */
+details.erweitert { margin-top: 0.4rem; border-top: 1px solid var(--linie); }
+details.erweitert > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 0.45rem; padding: 0.65rem 0.1rem;
+  font-weight: 600; font-size: 0.9rem; color: #c3c8cf; user-select: none;
+}
+details.erweitert > summary::-webkit-details-marker { display: none; }
+details.erweitert > summary::before { content: "›"; display: inline-block; transition: transform 0.15s; font-size: 1.05rem; color: var(--leise); }
+details.erweitert[open] > summary::before { transform: rotate(90deg); }
+details.erweitert > summary .leise { font-weight: 400; }
+details.erweitert[open] > summary { color: var(--text); }
+details.erweitert.karte { border-top: 1px solid var(--linie); margin-top: 0; }
+details.erweitert.karte > summary { padding-top: 0; padding-bottom: 0; }
+details.erweitert.karte[open] > summary { margin-bottom: 0.6rem; }
+
+/* Stand in einem Satz (Schritt Lage) */
+.stand-satz { margin: 0.55rem 0 0.35rem; padding: 0.5rem 0.65rem; border-radius: 6px; font-size: 0.84rem; line-height: 1.4; }
+.stand-satz.ok { background: #18240a; border: 1px solid #3f5612; color: #dfeec0; }
+.stand-satz.warn { background: #2a2112; border: 1px solid #5c4515; color: #f3d39b; }
+
+/* Dienste und Portale der Laender */
+ul.dienste a { color: #8fc6ff; }
+.ungeprueft {
+  display: inline-block; margin-left: 0.3rem; padding: 0 0.38rem; border-radius: 999px; font-size: 0.68rem; line-height: 1.35;
+  border: 1px solid #5c4515; color: #f3d39b; vertical-align: 1px;
+}
+.portale { border-left: 2px solid var(--blau); padding-left: 0.55rem; margin: 0.2rem 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.portale a { color: #8fc6ff; }
+
+@media (max-width: 900px) {
+  .wege, .beispiele .zwei-spalten { grid-template-columns: 1fr; }
+  .start-titel h1 { font-size: 1.8rem; }
+}
+
+.karte-info a { color: #8fc6ff; }

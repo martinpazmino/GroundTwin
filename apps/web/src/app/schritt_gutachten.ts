@@ -1,6 +1,8 @@
-// Schritt 1 · Gutachten: PDF hochladen (Fortschritt je Seite), Beispiel waehlen oder ein Projekt weiterfuehren.
+// Schritt 1 · Start: zwei Wege, gleich gross - ein Gutachten (PDF) oder ein Standort (Punkt auf der Karte). Alles
+// Weitere (OCR, Koordinaten von Hand, Beispiele, aeltere Projekte) liegt eingeklappt darunter (docs/21 §2).
 import { html, nothing } from "lit";
 import { api, type DienstAmOrt } from "./api";
+import { dienstListe } from "./dienste_liste";
 import { hilfe } from "./hilfe";
 import { karteWaehlen } from "./karte";
 import { S, melden, neu, oeffnen, projekteLaden, versuchen } from "./store";
@@ -73,28 +75,36 @@ function standortKarte() {
     <label class="feld"><span>${titel}</span><input type="text" inputmode=${k === "name" ? "text" : "decimal"}
       aria-label=${titel} placeholder=${platz} .value=${ort[k]} @input=${(e: Event) => {
         ort[k] = (e.target as HTMLInputElement).value;
-        if (k !== "name" && ortDienste) { ortDienste = null; neu(); }       // die Liste galt dem Punkt aus der Karte
+        if (k !== "name" && ortDienste) ortDienste = null;               // die Liste galt dem Punkt aus der Karte
+        neu();
       }}></label>`;
+  const punkt = !!(ort.x.trim() && ort.y.trim());
   return html`
-    <section class="karte">
-      <h3>Standort ohne Gutachten ${hilfe("standort")}</h3>
-      <p class="leise klein">Ein Punkt statt eines PDFs: Bohrungen der Länder, DGM und Gebäude um den Standort. Das Modell
-        ist eine <b>Vorerkundung</b> – kein Ersatz für das Gutachten.</p>
-      <div class="zeile"><button @click=${ausDerKarte}>🗺 Auf der Karte wählen</button>${hilfe("karte")}
-        <span class="leise klein">oder Rechts- und Hochwert eintragen</span></div>
-      <div class="raster-2">
-        ${feld("x", "Rechtswert", "z. B. 368130")}
-        ${feld("y", "Hochwert", "z. B. 5724400")}
-        <label class="feld"><span>System</span>
-          <select aria-label="System des Standorts" @change=${(e: Event) => { ort.epsg = Number((e.target as HTMLSelectElement).value);
-            ortDienste = null; neu(); }}>
-            ${UTM.map(([c, n]) => html`<option value=${c} ?selected=${ort.epsg === c}>${c} · ${n}</option>`)}
-          </select></label>
+    <section class="weg" aria-labelledby="weg-standort">
+      <div class="weg-symbol" aria-hidden="true">◎</div>
+      <h2 id="weg-standort">Standort</h2>
+      <p class="weg-text">Noch kein Gutachten? Ein Punkt auf der Karte genügt: Bohrungen der Länder rund um den Punkt –
+        eine <b>Vorerkundung</b>, kein Ersatz für das Gutachten. ${hilfe("standort")}</p>
+      <button class=${punkt ? "" : "primaer gross-knopf"} @click=${ausDerKarte}>🗺 Auf der Karte wählen</button>
+      ${punkt ? html`<div class="punkt-wahl">
+        <p class="klein"><b>${ort.x} / ${ort.y}</b> · EPSG:${ort.epsg}</p>
+        ${ortDienste ? dienstListe(ortDienste) : nothing}
         ${feld("name", "Name (frei)", "z. B. Marl Nord")}
-      </div>
-      ${ortDienste ? html`<ul class="dienste klein" aria-label="Dienste am Standort">
-        ${ortDienste.map((d) => html`<li class=${d.art}>${d.text}</li>`)}</ul>` : nothing}
-      <button class="primaer" @click=${standortAnlegen}>Projekt am Standort anlegen →</button>
+        <button class="primaer gross-knopf" @click=${standortAnlegen}>Projekt am Standort anlegen →</button>
+      </div>` : nothing}
+      <details class="still">
+        <summary>Koordinaten eingeben</summary>
+        <div class="raster-2">
+          ${feld("x", "Rechtswert", "z. B. 368130")}
+          ${feld("y", "Hochwert", "z. B. 5724400")}
+          <label class="feld"><span>System</span>
+            <select aria-label="System des Standorts" @change=${(e: Event) => { ort.epsg = Number((e.target as HTMLSelectElement).value);
+              ortDienste = null; neu(); }}>
+              ${UTM.map(([c, n]) => html`<option value=${c} ?selected=${ort.epsg === c}>${c} · ${n}</option>`)}
+            </select></label>
+        </div>
+        <p class="leise klein">ETRS89/UTM, nur Deutschland. ${hilfe("karte")}</p>
+      </details>
     </section>`;
 }
 
@@ -116,84 +126,120 @@ async function entfernen(sig: string, name: string) {
   await projekteLaden();
 }
 
-export function schrittGutachten() {
+function wegGutachten() {
   const a = S.auftrag;
   const ocrDa = !!S.info?.ocr;
   return html`
-    <div class="seite-mitte">
-      <section class="karte gross">
-        <h2>Bodengutachten auswerten</h2>
-        <p class="leise">Bohrprofile, Schichtenverzeichnisse oder ganze Gutachten als PDF – Vektor oder Scan. Die Bohrungen
-          werden erkannt; im nächsten Schritt prüfen und korrigieren Sie sie.</p>
-        ${zumStandort() ? html`<p class="hinweis-standort">Zum Standort <b>${S.z!.name}</b>: Bohrungen der Länder (mit Prüfstand),
-          DGM und Gebäude kommen in das neue Projekt mit – es ist dann <b>gemischt</b>, beide Quellen bleiben getrennt.</p>` : nothing}
-        ${a ? html`
-          <div class="fortschritt-karte" aria-live="polite">
-            <div class="kreisel klein"></div>
-            <div>
-              <strong>${a.stand.datei || a.dateien[0]}</strong>
-              <span class="leise">Datei ${a.stand.nr}/${a.stand.dateien || a.dateien.length}
-                ${a.stand.seiten ? html` · Seite ${a.stand.seite}/${a.stand.seiten}${a.stand.klasse ? ` · ${a.stand.klasse}` : ""}` : " · wird geöffnet …"}</span>
-              <progress max=${a.stand.seiten || 1} value=${a.stand.seite}></progress>
-            </div>
-          </div>` : html`
-          <label class=${`ablage ${ziehen ? "ueber" : ""}`}
-            @dragover=${(e: DragEvent) => { e.preventDefault(); ziehen = true; neu(); }}
-            @dragleave=${() => { ziehen = false; neu(); }}
-            @drop=${(e: DragEvent) => { e.preventDefault(); ziehen = false; dateienSetzen(e.dataTransfer?.files); }}>
-            <input type="file" accept=".pdf,application/pdf,.json,application/json,.xml,application/xml,text/xml" multiple @change=${(e: Event) => dateienSetzen((e.target as HTMLInputElement).files)}>
-            <span class="ablage-icon">⇪</span>
-            <strong>${gewaehlt.length ? gewaehlt.map((f) => f.name).join(", ") : "PDF hierher ziehen oder klicken"}</strong>
-            <span class="leise">${gewaehlt.length ? `${gewaehlt.length} Datei(en) bereit` : "mehrere Dateien möglich (z. B. Anlagen 2–4) · auch eine Extraktion als JSON oder Bohrungen als BoreholeML (XML)"}</span>
-          </label>
+    <section class="weg" aria-labelledby="weg-gutachten">
+      <div class="weg-symbol" aria-hidden="true">⇪</div>
+      <h2 id="weg-gutachten">Gutachten</h2>
+      <p class="weg-text">Das Bodengutachten als PDF – Vektor oder Scan. Die Bohrungen werden erkannt; Sie prüfen sie,
+        sehen sie in 3D und vergleichen sie mit den Bohrungen der Länder.</p>
+      ${zumStandort() ? html`<p class="hinweis-standort">Zum Standort <b>${S.z!.name}</b>: Bohrungen der Länder (mit Prüfstand),
+        DGM und Gebäude kommen in das neue Projekt mit – es ist dann <b>gemischt</b>, beide Quellen bleiben getrennt.</p>` : nothing}
+      ${a ? html`
+        <div class="fortschritt-karte" aria-live="polite">
+          <div class="kreisel klein"></div>
+          <div>
+            <strong>${a.stand.datei || a.dateien[0]}</strong>
+            <span class="leise">Datei ${a.stand.nr}/${a.stand.dateien || a.dateien.length}
+              ${a.stand.seiten ? html` · Seite ${a.stand.seite}/${a.stand.seiten}${a.stand.klasse ? ` · ${a.stand.klasse}` : ""}` : " · wird geöffnet …"}</span>
+            <progress max=${a.stand.seiten || 1} value=${a.stand.seite}></progress>
+          </div>
+        </div>` : html`
+        <label class=${`ablage ${ziehen ? "ueber" : ""} ${gewaehlt.length ? "bereit" : ""}`}
+          @dragover=${(e: DragEvent) => { e.preventDefault(); ziehen = true; neu(); }}
+          @dragleave=${() => { ziehen = false; neu(); }}
+          @drop=${(e: DragEvent) => { e.preventDefault(); ziehen = false; dateienSetzen(e.dataTransfer?.files); }}>
+          <input type="file" accept=".pdf,application/pdf,.json,application/json,.xml,application/xml,text/xml" multiple @change=${(e: Event) => dateienSetzen((e.target as HTMLInputElement).files)}>
+          <strong>${gewaehlt.length ? gewaehlt.map((f) => f.name).join(", ") : "PDF hierher ziehen oder klicken"}</strong>
+          <span class="leise klein">${gewaehlt.length ? `${gewaehlt.length} Datei(en) bereit` : "mehrere Dateien möglich (z. B. Anlagen 2–4)"}</span>
+        </label>
+        <button class="primaer gross-knopf" ?disabled=${!gewaehlt.length} @click=${auswerten}>Auswerten →</button>
+        <details class="still">
+          <summary>Optionen</summary>
           <div class="zeile">
             <label class="schalter" title=${ocrDa ? "" : "nicht installiert: pip install -r requirements-ocr.txt"}>
               <input type="checkbox" .checked=${ocr && ocrDa} ?disabled=${!ocrDa} @change=${(e: Event) => { ocr = (e.target as HTMLInputElement).checked; }}>
               OCR für Scans ${ocrDa ? "" : "(nicht installiert)"}
             </label>${hilfe("ocr")}
-            <span class="fueller"></span>
-            <button class="primaer" ?disabled=${!gewaehlt.length} @click=${auswerten}>Auswerten →</button>
-          </div>`}
-      </section>
+          </div>
+          <p class="leise klein">Auch eine Extraktion als JSON oder Bohrungen als BoreholeML (XML) lassen sich laden.</p>
+        </details>`}
+    </section>`;
+}
 
-      ${standortKarte()}
+const ZULETZT = 5;                                       // so viele Projekte offen, der Rest eingeklappt
 
+function projektZeilen(liste: typeof S.projekte) {
+  return liste.map((p) => html`
+    <tr>
+      <td><button class="link" @click=${() => oeffnen(p.signatur)}>${p.name}</button>${p.standort
+        ? html` <span class="abzeichen vorerkundung" title="Standort ohne Gutachten">Standort</span>` : nothing}
+        <div class="leise klein">${p.dokumente.join(", ")}</div></td>
+      <td class="zahl" title=${p.fremd ? `davon ${p.fremd} aus den Datenbanken der Länder` : ""}>${p.bohrungen}</td>
+      <td class="zahl">${p.geprueft}${p.eincheckungen ? html` · <span title="eingecheckt">✓${p.eincheckungen}</span>` : nothing}</td>
+      <td class="leise klein">${p.geaendert}</td>
+      <td><button class="symbol" title="Projekt löschen" aria-label="Projekt löschen" @click=${() => entfernen(p.signatur, p.name)}>🗑</button></td>
+    </tr>`);
+}
+
+function zuletzt() {
+  if (!S.projekte.length) return nothing;
+  const kopf = html`<thead><tr><th>Projekt</th><th>Bohrungen</th><th>geprüft</th><th>geändert</th><th></th></tr></thead>`;
+  const rest = S.projekte.slice(ZULETZT);
+  return html`
+    <section class="zuletzt">
+      <h3>Zuletzt bearbeitet</h3>
+      <table class="tabelle kompakt">${kopf}<tbody>${projektZeilen(S.projekte.slice(0, ZULETZT))}</tbody></table>
+      ${rest.length ? html`<details class="still"><summary>Alle ${S.projekte.length} Projekte</summary>
+        <table class="tabelle kompakt">${kopf}<tbody>${projektZeilen(rest)}</tbody></table></details>` : nothing}
+    </section>`;
+}
+
+function beispiele() {
+  const a = S.auftrag;
+  const liste = S.info?.beispiele ?? [];
+  return html`
+    <details class="still beispiele">
+      <summary>Beispiele ausprobieren</summary>
       <div class="zwei-spalten">
-        <section class="karte">
-          <h3>Beispiele ${hilfe("beispiele")}</h3>
+        <div>
+          <h4 class="klein">Gutachten ${hilfe("beispiele")}</h4>
           <ul class="auswahl-liste">
-            ${(S.info?.beispiele ?? []).filter((b) => !b.standort).map((b) => html`
+            ${liste.filter((b) => !b.standort).map((b) => html`
               <li><button class="link" ?disabled=${!!a} @click=${() => beispiel(b.name)}>${b.titel}</button></li>`)}
           </ul>
-          <h4 class="klein">Standort ohne Gutachten <span class="leise">(Bohrungen der Länder: Abfrage im Schritt Lage, mit Netz)</span></h4>
+        </div>
+        <div>
+          <h4 class="klein">Standort <span class="leise">(Bohrungen der Länder: Abfrage im Schritt Lage, mit Netz)</span></h4>
           <ul class="auswahl-liste">
-            ${(S.info?.beispiele ?? []).filter((b) => b.standort).map((b) => html`
+            ${liste.filter((b) => b.standort).map((b) => html`
               <li><button class="link" ?disabled=${!!a} @click=${() => beispiel(b.name)}>${b.titel}</button></li>`)}
           </ul>
-        </section>
-        <section class="karte">
-          <h3>Zuletzt bearbeitet</h3>
-          ${S.projekte.length ? html`
-            <table class="tabelle kompakt">
-              <thead><tr><th>Projekt</th><th>Bohrungen</th><th>geprüft</th><th>geändert</th><th></th></tr></thead>
-              <tbody>
-                ${S.projekte.map((p) => html`
-                  <tr>
-                    <td><button class="link" @click=${() => oeffnen(p.signatur)}>${p.name}</button>${p.standort
-                      ? html` <span class="abzeichen vorerkundung" title="Standort ohne Gutachten">Standort</span>` : nothing}
-                      <div class="leise klein">${p.dokumente.join(", ")}</div></td>
-                    <td class="zahl" title=${p.fremd ? `davon ${p.fremd} aus den Datenbanken der Länder` : ""}>${p.bohrungen}</td>
-                    <td class="zahl">${p.geprueft}${p.eincheckungen ? html` · <span title="eingecheckt">✓${p.eincheckungen}</span>` : nothing}</td>
-                    <td class="leise klein">${p.geaendert}</td>
-                    <td><button class="symbol" title="Projekt löschen" aria-label="Projekt löschen" @click=${() => entfernen(p.signatur, p.name)}>🗑</button></td>
-                  </tr>`)}
-              </tbody>
-            </table>` : html`<p class="leise">Noch keine Projekte. Ein Projekt entsteht beim ersten Auswerten und wird automatisch gesichert.</p>`}
-        </section>
+        </div>
       </div>
-      ${S.info ? html`<p class="leise klein impressum">GroundTwin ${S.info.version} · freie Software unter
+    </details>`;
+}
+
+export function schrittGutachten() {
+  return html`
+    <div class="seite-mitte start">
+      <header class="start-titel">
+        <h1>Baugrund verstehen.</h1>
+        <p>Bohrungen aus dem Gutachten oder vom Standort – geprüft, in 3D, im Vergleich mit den Bohrungen der Länder.</p>
+      </header>
+      <div class="wege">
+        ${wegGutachten()}
+        ${standortKarte()}
+      </div>
+      ${zuletzt()}
+      ${beispiele()}
+      ${S.info ? html`<p class="leise klein impressum">GroundTwin ${S.info.version} ·
+        <a href="dienste.html" target="_blank" rel="noopener">Dienste der Länder</a> ·
+        <a href="viewer.html" target="_blank" rel="noopener">Viewer allein</a> · freie Software unter
         <a href=${`${S.info.quellcode}/blob/main/LICENSE`} target="_blank" rel="noopener">${S.info.lizenz}</a> ·
-        <a href=${S.info.quellcode} target="_blank" rel="noopener">Quellcode</a> · die App extrahiert und schlägt vor;
+        <a href=${S.info.quellcode} target="_blank" rel="noopener">Quellcode</a><br>Die App extrahiert und schlägt vor;
         die Interpretation und Freigabe bleibt beim Geotechniker.</p>` : nothing}
     </div>`;
 }

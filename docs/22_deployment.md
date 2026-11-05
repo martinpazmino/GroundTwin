@@ -165,6 +165,8 @@ If the platform reports a lack of memory (the service restarts during an extract
 | `GEO_AGENT_MAX_MB` | 200 | Maximum size of a request. Above it the server answers 413 |
 | `GEO_AGENT_ARBEIT` | Temporary folder `geo_agent` (in the container `/data`) | Projects. Online **always** on a persistent disk |
 | `GEO_AGENT_QUELLCODE` | `https://github.com/martinpazmino/GroundTwin` | *Quellcode* link (AGPL § 13). A fork with changes puts its own repository here |
+| `GEO_AGENT_DIENSTE_BEARBEITEN` | — | `1` allows editing the registry *Dienste der Länder* ([21 §4.8](21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)) on a server with a password. Without it, online means read and check the saved entries only (the server never calls an address from a request) |
+| `GEO_AGENT_DIENSTE` | `services/geodaten/geodaten/dienste.json` | The registry elsewhere, for example `/data/dienste.json` in the container (the image folder is not writable for user 1000). A missing file starts as a copy of the one in the image; from then on it no longer follows updates of the image |
 | `CLOUDFLARED` | — | Path to `cloudflared` for `scripts/online.py`, if it is not on the `PATH` |
 
 ## 7. Memory and size (measured)

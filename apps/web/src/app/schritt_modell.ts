@@ -121,15 +121,19 @@ function geoldgTeil() {
     </section>`;
 }
 
+let erweitertAuf = false;                       // vom Nutzer geöffnet (bleibt beim Neuzeichnen)
+
 export function schrittModell() {
   const z = S.z!;
   const m = S.modell;
   const b = m?.bericht;
   const st = z.pruefstand;
   const letzter = z.eincheckungen[z.eincheckungen.length - 1];
-  const exporte: [string, string][] = [["ifc", "Baugrundmodell (IFC 4.3)"], ["bericht", "Prüfbericht (JSON)"],
-    ["einheiten", "Einheiten-Vorlage (JSON)"], ["extraktion", "Extraktion (JSON)"], ["eingabe", "Modell-Eingabe mit Korrekturen (JSON)"],
-    ["projekt", "Projektstand (JSON)"]];
+  // vorn das Modell (IFC) und der Prüfbericht; alle weiteren Ausgaben unter „Erweitert“
+  const exporte: [string, string][] = [["ifc", "Baugrundmodell (IFC 4.3)"], ["bericht", "Prüfbericht (JSON)"]];
+  const weitere: [string, string][] = [["einheiten", "Einheiten-Vorlage (JSON)"], ["extraktion", "Extraktion (JSON)"],
+    ["eingabe", "Modell-Eingabe mit Korrekturen (JSON)"], ["projekt", "Projektstand (JSON)"]];
+  const erweitert = erweitertAuf || !!(z.geoldg?.angaben.beginn || z.geoldg?.angaben.abschluss);   // GeolDG in Arbeit
   return html`
     <div class="app-panel rechts">
       <section class="abschnitt-flach">
@@ -156,14 +160,6 @@ export function schrittModell() {
           <span class="fueller"></span>
           <button ?disabled=${S.rechnet} @click=${() => modellRechnen()}>Neu rechnen</button>
         </div>
-        <label class="inline">Überhöhung ${hilfe("ueberhoehung")}
-          <select @change=${async (e: Event) => {
-            const f = Number((e.target as HTMLSelectElement).value);
-            await S.viewer?.ueberhoehen(f);                // erst der Viewer (Kamera passt sich an), dann der Stand
-            await aendern([{ op: "ueberhoehung", wert: f }], { leise: true });
-          }}>
-            ${[1, 2, 5, 10, 20].map((f) => html`<option value=${f} .selected=${z.ueberhoehung === f}>${f}×</option>`)}
-          </select></label>
       </section>
 
       <section class="abschnitt-flach">
@@ -193,12 +189,33 @@ export function schrittModell() {
         <div class="export-liste">
           ${exporte.map(([art, titel]) => html`<a class=${`knopf ${art === "ifc" ? "primaer" : ""}`} href=${api.exportUrl(S.sig, art)}
             download>${titel}</a>`)}
-          ${tilesTeil()}
-          ${boreholemlTeil()}
         </div>
       </section>
 
-      ${geoldgTeil()}
+      <details class="erweitert" ?open=${erweitert}
+        @toggle=${(e: Event) => { erweitertAuf = (e.target as HTMLDetailsElement).open; }}>
+        <summary>Erweitert <span class="leise klein">Exporte · Cesium · BoreholeML · GeolDG · Darstellung</span></summary>
+        <section class="abschnitt-flach">
+          <h3>Weitere Exporte</h3>
+          <div class="export-liste">
+            ${weitere.map(([art, titel]) => html`<a class="knopf" href=${api.exportUrl(S.sig, art)} download>${titel}</a>`)}
+            ${tilesTeil()}
+            ${boreholemlTeil()}
+          </div>
+        </section>
+        ${geoldgTeil()}
+        <section class="abschnitt-flach">
+          <h3>Darstellung</h3>
+          <label class="inline">Überhöhung ${hilfe("ueberhoehung")}
+            <select @change=${async (e: Event) => {
+              const f = Number((e.target as HTMLSelectElement).value);
+              await S.viewer?.ueberhoehen(f);                // erst der Viewer (Kamera passt sich an), dann der Stand
+              await aendern([{ op: "ueberhoehung", wert: f }], { leise: true });
+            }}>
+              ${[1, 2, 5, 10, 20].map((f) => html`<option value=${f} .selected=${z.ueberhoehung === f}>${f}×</option>`)}
+            </select></label>
+        </section>
+      </details>
 
       ${m && (m.hinweise.length || m.nicht_im_modell.length) ? html`
         <section class="abschnitt-flach">

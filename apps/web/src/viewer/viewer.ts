@@ -1063,8 +1063,10 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     $("leer").hidden = !!modell || editor.nadeln.size > 0;
     KAMERA.szeneAktualisieren();
     if (neu && !modell) await kameraStart();
-    else if (leerVorher && !KAMERA.szeneLeer() && !modell) {
-      // erster Inhalt einer leeren Szene (Standort: Bohrungen der Laender uebernommen): ganz zeigen
+    else if (leerVorher && !KAMERA.szeneLeer() && (!modell || editor.aktiv)) {
+      // erster Inhalt einer leeren Szene (Standort: Bohrungen der Laender uebernommen): ganz zeigen. Im Lage-Editor auch,
+      // wenn mit den Bohrungen schon ihr Modell kommt (aus dem Zwischenspeicher, etwa nach „verwerfen“ und neu
+      // uebernommen): es ist dort ausgeblendet, die Ansicht blieb sonst auf der leeren Szene (lesson M42)
       await KAMERA.ansicht(editor.aktiv ? (rahmen.modus === "reihe" ? "sued" : "oben") : "iso", false);
     }
     letzte = a;

@@ -87,10 +87,14 @@ export interface Sgd {
   fehler: { dienst: string; fehler: string }[];
   quellen: { dienst: string; titel: string; land: string; lizenz: string; namensnennung: string; beleg: string }[];
   gegenprobe: { anzahl: number; lage_max: number | null; gok_max: number | null };
+  /** Länder im Umkreis ohne Datendienst: ihr Portal (Link, „ungeprueft“ = nicht gegen den Dienst getestet). */
+  portale?: { dienst: string; land: string; titel: string; url: string; hinweis: string; status: string }[];
 }
 
-/** Dienst eines Landes an einem Punkt (Karte, Standort): was er dort liefert. */
-export interface DienstAmOrt { dienst: string; art: "bohrungen" | "dgm" | "gebaeude"; land: string; text: string }
+/** Dienst eines Landes an einem Punkt (Karte, Standort): was er dort liefert; ein Portal mit Adresse (Link). */
+export interface DienstAmOrt {
+  dienst: string; art: "bohrungen" | "dgm" | "gebaeude"; land: string; text: string; url?: string; status?: string;
+}
 
 /** Klick in die Karte: Punkt in ETRS89/UTM und die Dienste der Länder dort. */
 export interface StandortPunkt { x: number; y: number; epsg: number; laenge: number; breite: number; dienste: DienstAmOrt[] }

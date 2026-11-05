@@ -43,7 +43,8 @@ def test_berlin_gegenprobe_und_nur_kopfdaten(client):
     assert client.get(f"/api/projekt/{sig}").json()["sgd"] is None                 # nichts ohne Klick
     z = client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250}).json()
     s = z["sgd"]
-    assert [t["name"] for t in s["treffer"]] == ["999X-1", "422C-460"] and {f["dienst"] for f in s["fehler"]} == {"BB"}
+    assert [t["name"] for t in s["treffer"]] == ["999X-1", "422C-460"] and s["dienste"] == ["BE"]   # Berlin, nicht BB
+    assert s["fehler"] == [] and s["portale"] == []
     t = s["treffer"][1]
     assert t["gutachten"] == "422C-460" and not t["uebernehmbar"] and s["gegenprobe"]["anzahl"] == 1
     r = client.post(f"/api/projekt/{sig}/sgd/uebernehmen", json={"auswahl": [{"dienst": "BE", "id": t["id"]}]})

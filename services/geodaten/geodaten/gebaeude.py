@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime
 
-from .bohrdaten import dienste_am_ort, namensnennung, utm_normal
+from .bohrdaten import dienste_am_ort, namensnennung, ohne_dienst, utm_normal
 from . import netz
 from .netz import DienstFehler
 
@@ -161,10 +161,12 @@ def abrufen(x0: float, y0: float, x1: float, y1: float, epsg: int, holer=None,
     x1n, y1n, _ = utm_normal(x1, y1, epsg)
     if x1n <= x0n or y1n <= y0n:
         raise ValueError("Ausschnitt leer")
-    am_ort = [d for d in dienste_am_ort((x0n + x1n) / 2, (y0n + y1n) / 2, system, arten=("lod2-kacheln",))
+    mitte = ((x0n + x1n) / 2, (y0n + y1n) / 2)
+    am_ort = [d for d in dienste_am_ort(*mitte, system, arten=("lod2-kacheln",),       # an einer Landesgrenze: beide
+                                        radius=math.hypot(x1n - x0n, y1n - y0n) / 2)
               if int(d["system"]) == system]
     if not am_ort:
-        raise ValueError("kein LoD2-Dienst für diesen Ort (bisher Berlin, Brandenburg, NRW)")
+        raise ValueError(f"kein LoD2-Dienst für diesen Ort ({ohne_dienst(*mitte, system, 'gebaeude')})")
     ks = kacheln(x0n, y0n, x1n, y1n)
     if len(ks) > MAX_KACHELN:
         raise ValueError(f"Ausschnitt braucht {len(ks)} Kacheln (höchstens {MAX_KACHELN}) – Rand verkleinern")

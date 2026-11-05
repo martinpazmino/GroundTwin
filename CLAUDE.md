@@ -8,11 +8,11 @@ Repository `github.com/martinpazmino/GroundTwin` (formerly CAD_Extract and GeoIM
 license **AGPL-3.0-or-later** (D79).
 
 ## Read before touching the extraction
-- `docs/16_lessons_learned.md`: explicit rules (process P1–P20, input E, geometry G, labels L/T, text B, water W,
+- `docs/16_lessons_learned.md`: explicit rules (process P1–P21, input E, geometry G, labels L/T, text B, water W,
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D97.
+- `docs/11_decisions.md`: decisions D1–D99.
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -41,6 +41,11 @@ license **AGPL-3.0-or-later** (D79).
 ## App, model and viewer
 - Step app (docs/21): `python -m server` (Windows: `start.bat`, port 8500) = FastAPI (`server/`) + page
   `apps/web/dist` (lit + viewer). Streamlit (`app.py`, `start_excel.bat`) only for Excel v1.
+- **Focus (D99, docs/21 §1.1–1.2)**: the use case is a Gutachten shown interactively and checked for plausibility, also
+  against the Bohrungen der Länder. Start = two paths of the same weight (Gutachten PDF / Standort point); each step
+  shows its core and folds the rest under **Erweitert** (Lage: DGM, Gebäude, Darstellung; Einheiten: model settings;
+  Modell: further exports, 3D Tiles, BoreholeML, GeolDG, Überhöhung), open when it holds data. **Never delete a
+  function; fold it.** A new function goes under *Erweitert* unless it serves the use case.
 - Project rules in `ui/projekt.py` (`aendern(op)`): warnings = **unklassifiziert** Schichten (not confidence), all
   reviewed, remove/restore, Ø of the columns, calibration (scale by distance or 1:n + reference point + rotation /
   vertical scale + lock), dragging only with the lock (plan x/y; section: height only without a GOK from the PDF),
@@ -58,14 +63,22 @@ license **AGPL-3.0-or-later** (D79).
   `werkzeuge/boreholeml_codes.py`, mapped by official names, P15); import marks the origin. Must stay valid against
   the official XSD: `tests/test_boreholeml.py` (needs network; opengis only over https, X31).
 - Bohrungen der Länder (D91, docs/21 §4.5): `geodaten/bohrdaten.py` + `dienste.json` (services with license and
-  evidence); query **only on a click**; Gegenprobe against the Gutachten; import only BoreholeML with Schichtdaten into
+  evidence; all 16 Länder, D98: 4 with data services, the other 12 as portal links marked *ungeprueft*; the Land from
+  VG2500 borders in `geodaten/laender.py`, at a border both); query **only on a click**; Gegenprobe against the Gutachten; import only BoreholeML with Schichtdaten into
   `fremd.json` (codes `NW-…`, `herkunft` SGD, never exported back). Tests use the service dummy of
   `tests/test_bohrdaten.py`; two tests ask the real services (skip offline). Every request goes through
   `geodaten/netz.py` (TLS: system store + certifi, X33); `scripts/dienste_pruefen.py` checks all services from the
   user's machine.
+- Dienste der Länder (D98, docs/21 §4.8): the file is `services/geodaten/geodaten/dienste.json`, the tool is
+  `dienste.html` (`server/dienste_werkzeug.py`, `geodaten/dienste.py`: validate, complete, order, save atomically with
+  the version read, `pruefen_live`); `GET/PUT /api/dienste`, `POST /api/dienste/pruefen`. Editing only without a
+  password or with `GEO_AGENT_DIENSTE_BEARBEITEN=1`; online only saved entries are checked (no address from the
+  request). `GEO_AGENT_DIENSTE` puts the registry elsewhere. Tests `tests/test_dienste_werkzeug.py` (on a copy).
+  Untested links stay *ungeprueft* until someone checks them; never mark a link geprueft without a check.
 - Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (1 × 1 km, AdV profile, UTM +
   DHHN2016) of Berlin, Brandenburg and NRW on a click (`dienste.json`, per tile the first service that has it) into
-  `gebaeude.json`; IFC context as `IfcBuildingElementProxy` with the license of its service, viewer button *Gebäude*.
+  `gebaeude.json`; IFC context as `IfcBuildingElementProxy` with the license of its service, viewer button *Gebäude*; the Länder of the
+  cut-out (radius = half its diagonal), the Land of the centre first.
   Tests `tests/test_gebaeude*.py`.
 - Standort ohne Gutachten (D94, docs/21 §4.7): `standort_anlegen` in `server/arbeitsplatz.py` (point in ETRS89/UTM,
   Germany only) makes an empty project whose point is the centre of the queries and the origin of the scene; Reifegrad
@@ -95,11 +108,12 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (50 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (54 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except
-  `/gesund`), `GEO_AGENT_BENUTZER`, `GEO_AGENT_MAX_MB`, `GEO_AGENT_ARBEIT`, `GEO_AGENT_QUELLCODE`. The *Quellcode* link
+  `/gesund`), `GEO_AGENT_BENUTZER`, `GEO_AGENT_MAX_MB`, `GEO_AGENT_ARBEIT`, `GEO_AGENT_QUELLCODE`,
+  `GEO_AGENT_DIENSTE`, `GEO_AGENT_DIENSTE_BEARBEITEN`. The *Quellcode* link
   (AGPL § 13) stays. Dependencies: `requirements-server.txt` + exact versions in `constraints.txt` (D81; renewed with
   `pip freeze`); CI `.github/workflows/pruefungen.yml`. Third parties: `THIRD_PARTY_LICENSES.md`; rules:
   `CONTRIBUTING.md`.

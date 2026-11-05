@@ -25,6 +25,7 @@ from pydantic import BaseModel
 from ui import pipeline as pl
 
 from .arbeitsplatz import BEISPIELE, STANDORT_BEISPIELE, Arbeitsplatz, bohrdaten
+from . import dienste_werkzeug as werkzeug
 
 DIST = Path(__file__).resolve().parents[1] / "apps" / "web" / "dist"
 VERSION = "3.0"
@@ -93,6 +94,16 @@ class Seite(BaseModel):
     art: str = "plan"
 
 
+class Register(BaseModel):
+    dienste: list[dict]
+    version: str
+
+
+class RegisterPruefen(BaseModel):
+    id: str = ""
+    eintrag: dict | None = None
+
+
 def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_mb: float | None = None) -> FastAPI:
     """passwort / max_mb: sonst aus GEO_AGENT_PASSWORT (leer = ohne Anmeldung, nur fuer localhost gedacht) und
     GEO_AGENT_MAX_MB (Standard 200 MB je Anfrage)."""
@@ -123,6 +134,14 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     @app.exception_handler(ValueError)
     async def ungueltig(_: Request, err: ValueError):
         return JSONResponse({"detail": str(err)}, status_code=400)
+
+    @app.exception_handler(werkzeug.Konflikt)
+    async def konflikt(_: Request, err: Exception):
+        return JSONResponse({"detail": str(err)}, status_code=409)
+
+    @app.exception_handler(werkzeug.Gesperrt)
+    async def gesperrt(_: Request, err: Exception):
+        return JSONResponse({"detail": str(err)}, status_code=403)
 
     @app.exception_handler(bohrdaten.DienstFehler)
     async def dienst_fehler(_: Request, err: Exception):
@@ -162,6 +181,22 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def standort_punkt(laenge: float, breite: float, epsg: int | None = None):
         """Klick in die Karte -> Rechts-/Hochwert in ETRS89/UTM und die Dienste der Laender an diesem Ort."""
         return ap.standort_punkt(laenge, breite, epsg)
+
+    # ------------------------------------------------------------ Werkzeug „Dienste der Länder“ (dienste.html)
+    bearbeiten, grund = werkzeug.bearbeiten_erlaubt(passwort)
+
+    @app.get("/api/dienste")
+    def dienste_register():
+        return werkzeug.ansicht(bearbeiten, grund)
+
+    @app.put("/api/dienste")
+    def dienste_speichern(r: Register):
+        werkzeug.speichern(r.dienste, r.version, bearbeiten)
+        return werkzeug.ansicht(bearbeiten, grund)
+
+    @app.post("/api/dienste/pruefen")
+    def dienste_pruefen(r: RegisterPruefen):
+        return werkzeug.pruefen(r.id, r.eintrag, bearbeiten)
 
     @app.get("/api/auftrag/{aid}")
     def auftrag(aid: str):

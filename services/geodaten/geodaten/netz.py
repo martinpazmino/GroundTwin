@@ -69,3 +69,21 @@ def holen(url: str, zeit: float, bei_http: Callable[[urllib.error.HTTPError], No
                 continue
             raise DienstFehler(f"nicht erreichbar ({grund})") from None
     raise AssertionError("unerreichbar")
+
+
+def erreichbar(url: str, zeit: float) -> tuple[int, bytes]:
+    """Nur ansehen, nicht laden (Werkzeug „Dienste der Länder“): GET mit Range auf die ersten 2 KB, gelesen werden
+    hoechstens diese - auch eine Kachel von 25 MB kostet so nichts. Rueckgabe (HTTP-Status, Anfang der Antwort)."""
+    anfrage = urllib.request.Request(url, headers={"User-Agent": AGENT, "Range": "bytes=0-2047"})
+    try:
+        with urllib.request.urlopen(anfrage, timeout=zeit, context=ssl_kontext()) as antwort:
+            return antwort.status, antwort.read(2048)
+    except TimeoutError:
+        raise DienstFehler(f"keine Antwort in {zeit:g} s") from None
+    except urllib.error.HTTPError as err:
+        raise DienstFehler(f"HTTP {err.code}") from None
+    except (urllib.error.URLError, OSError) as err:
+        grund = err.reason if isinstance(err, urllib.error.URLError) else err
+        if isinstance(grund, ssl.SSLCertVerificationError):
+            raise DienstFehler(zertifikat_meldung(url, grund)) from None
+        raise DienstFehler(f"nicht erreichbar ({grund})") from None

@@ -43,8 +43,11 @@ def test_dienste_am_ort():
     assert "nur Kopfdaten" in next(d["text"] for d in berlin if d["dienst"] == "BE")
     marl = bohrdaten.am_ort(368130.0, 5724400.0, 25832)
     assert "mit Schichtdaten" in next(d["text"] for d in marl if d["dienst"] == "NW")
-    muenchen = bohrdaten.am_ort(691567.3, 5334734.3, 25832)
-    assert muenchen[0]["dienst"] == "" and "kein Dienst für diesen Ort" in muenchen[0]["text"]
+    muenchen = bohrdaten.am_ort(691567.3, 5334734.3, 25832)                          # Bayern: nur Portale, als Link
+    assert [d["dienst"] for d in muenchen if d["art"] == "bohrungen"] == ["BY", "DE-BGR"]
+    assert "kein Datendienst – im Portal ansehen" in muenchen[0]["text"] and muenchen[0]["url"].startswith("https://")
+    assert {d["status"] for d in muenchen} == {"ungeprueft"} and {d["art"] for d in muenchen} == {"bohrungen", "dgm", "gebaeude"}
+    assert all(d["url"] == "" and d["status"] == "geprueft" for d in berlin)            # angebunden: kein Portal-Link
 
 
 # ---------------------------------------------------------------- in der App
@@ -71,7 +74,7 @@ def test_klick_in_die_karte(client):
     r = client.get("/api/standort/punkt", params={"laenge": 7.0936462523, "breite": 51.6551050227, "epsg": 4647}).json()
     assert (r["x"], r["epsg"]) == (32368130.0, 4647)                                  # mit Zonenkennung
     r = client.get("/api/standort/punkt", params={"laenge": 11.575, "breite": 48.137}).json()
-    assert r["epsg"] == 25832 and "kein Dienst" in r["dienste"][0]["text"]            # München: kein Bohrdienst
+    assert r["epsg"] == 25832 and "kein Datendienst" in r["dienste"][0]["text"]       # München: Portal statt Dienst
 
 
 @pytest.mark.parametrize("laenge, breite", [(2.35, 48.85), (16.37, 48.21), (10.0, 46.0)])   # Paris, Wien, Alpen-Süd

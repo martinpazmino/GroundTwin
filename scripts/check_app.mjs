@@ -16,7 +16,8 @@
 //   E  PDF-Beispiel: Extraktion mit Fortschritt, Quelle der Schicht im PDF
 //   F  Standort ohne Gutachten (echter Dienst NRW, Netz): Projekt am Punkt, Bohrungen der Laender uebernehmen (ganz
 //      im Lageplan, Nullpunkt bleibt am Standort), Modell als Vorerkundung in Kopf, Modell-Schritt, Bericht und
-//      Viewer, Modell ganz im Bild mit der Kamera ausserhalb
+//      Viewer, Modell ganz im Bild mit der Kamera ausserhalb; Start mit zwei Wegen, Erweitertes eingeklappt
+//   G  Werkzeug „Dienste der Länder“: alle 16 Laender je Thema, Eintrag bearbeiten und verwerfen (nie speichern)
 //
 //   python -m server --port 8511 --kein-browser --arbeit <leerer-ordner>     (in einem zweiten Terminal)
 //   python scripts/testplan.py <plaene>
@@ -62,6 +63,14 @@ const stand = () => page.evaluate(() => {
 const ruhe = (ms = 800) => page.waitForTimeout(ms);
 const bohrung = async (code) => (await stand()).z.bohrungen.find((b) => b.code === code);
 const warte = (f, arg, timeout = 120000) => page.waitForFunction(f, arg, { timeout, polling: 250 });
+/** Das Modell des aktuellen Stands ist im Viewer (geladen, nicht mehr gerechnet). Nicht „noch einmal geladen“: kommt
+ *  es aus dem Zwischenspeicher (zweiter Lauf), hat es der Viewer schon im Schritt Lage geladen. */
+const modellDa = () => {
+  const a = window.app, b = window.baugrund, ifc = a?.modell?.ifc;
+  const laedt = document.getElementById("laden")?.hidden === false;     // Ladeanzeige des Viewers
+  const aktuell = a?.modell?.zustand?.modell?.schluessel === a?.z?.modell?.schluessel;   // Modell zum jetzigen Stand
+  return !!ifc && aktuell && !a.rechnet && !laedt && !!b?.geladen && b.geladeneIfc?.at(-1) === ifc.split("/").pop();
+};
 /** Huelle ganz im Bild (alle Ecken in NDC)? "modell": das Modell, die Kamera ausserhalb; "lage": die Bohrungen im
  *  Lage-Editor. Mit nurOk nur wahr/falsch (fuer warte). */
 const huelleImBild = ([welche, nurOk]) => {
@@ -92,6 +101,21 @@ async function startseite() {
   await page.waitForSelector(".ablage", { timeout: 60000 });
 }
 
+/** Eingeklappten Teil oeffnen (details mit dieser Ueberschrift und alle darueber): „Erweitert“, „Beispiele“ … */
+async function aufklappen(text) {
+  const n = await page.evaluate((t) => {
+    let k = 0;
+    for (const s of document.querySelectorAll("details > summary")) {
+      if (!(s.textContent ?? "").includes(t)) continue;
+      k += 1;
+      for (let d = s.parentElement; d; d = d.parentElement?.closest("details") ?? null) d.open = true;
+    }
+    return k;
+  }, text);
+  if (!n) throw new Error(`nichts zum Aufklappen: ${text}`);
+  await ruhe(200);
+}
+
 /** Gespeicherten Stand verwerfen (Menue): jede Pruefung beginnt ohne Korrekturen, auch beim zweiten Lauf. */
 async function zuruecksetzen() {
   await page.locator(".menue summary").click();
@@ -102,6 +126,7 @@ async function zuruecksetzen() {
 
 async function beispiel(titel) {
   await startseite();
+  await aufklappen("Beispiele ausprobieren");
   await page.getByRole("button", { name: titel }).click();
   await warte(() => window.app?.schritt && window.app.schritt !== "gutachten" && window.app.z);
   await zuruecksetzen();
@@ -205,7 +230,16 @@ try {
   // ---------------------------------------------------------------- B2: Gelaende (DGM-Datei des Nutzers)
   await hochladen(`${plaene}/berlin_ohne_gok_extraktion.json`);
   await zuLage();
-  await page.locator("details.abschnitt summary", { hasText: "Gelände (DGM)" }).click();
+  // Gelaende liegt unter „Erweitert“ (eingeklappt, bis Gelaende oder Gebaeude geladen sind)
+  pruefe("Lage: Gelände, Gebäude und Darstellung eingeklappt unter „Erweitert“, Vergleich mit den Ländern offen",
+    await page.evaluate(() => {
+      const e = document.querySelector(".app-panel details.erweitert");
+      const vergleich = [...document.querySelectorAll(".app-panel details.abschnitt")]
+        .find((d) => d.querySelector("summary")?.textContent?.includes("Bohrungen der Länder"));
+      return !!e && !e.open && !!e.querySelector("summary")?.textContent?.includes("Erweitert") && !!vergleich?.open &&
+        !vergleich.closest("details.erweitert");
+    }));
+  await aufklappen("Gelände (DGM)");
   await page.getByLabel("DGM-Dateien").setInputFiles(`${plaene}/dgm_berlin.xyz`);
   await warte(() => window.app.z.gelaende?.pruefung, null, 60000);
   let gz = (await stand()).z.gelaende;
@@ -229,7 +263,7 @@ try {
   pruefe("DGM entfernt, übernommene GOK bleibt", (await bohrung("422C-5527")).gok_quelle === "DGM");
 
   // ---------------------------------------------------------------- B3: Bohrungen der Laender (echter Dienst Berlin)
-  await page.locator("details.abschnitt summary", { hasText: "Bohrungen der Länder" }).click();
+  await aufklappen("Bohrungen der Länder");
   await page.getByRole("button", { name: "Abfragen" }).click();
   await warte(() => window.app.z.sgd, null, 90000);
   const sgd = (await stand()).z.sgd;
@@ -251,8 +285,7 @@ try {
   await page.screenshot({ path: `${aus}/B3_laender.png` });
 
   // ---------------------------------------------------------------- B4: DGM vom Land (echter WCS Brandenburg mit Berlin)
-  const gelaendeTeil = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Gelände (DGM)" }) });
-  if (!(await gelaendeTeil.evaluate((d) => d.open))) await gelaendeTeil.locator("summary").click();   // nach "DGM entfernen" zu
+  await aufklappen("Gelände (DGM)");                                    // nach "DGM entfernen" zu
   await page.getByRole("button", { name: "DGM vom Land abrufen" }).click();
   await warte(() => window.app.z.gelaende?.info?.quelle || window.app.meldungen.some((m) => m.art === "fehler"), null, 150000);
   gz = (await stand()).z.gelaende;
@@ -265,11 +298,11 @@ try {
       gz?.info?.quelle?.dienst === "BB-DGM1" && gz.info.dx === 1 && st["422C-5526"] === "abweichung" &&
       ["422C-460", "422C-461", "422C-5525"].every((c) => st[c] === "ok"), `${JSON.stringify(st)} ${fehlerLand}`);
     await page.screenshot({ path: `${aus}/B4_dgm_land.png` });
-    const ladungen = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
     await page.getByRole("button", { name: /Weiter: Einheiten/ }).click();
     await warte(() => document.querySelector("table.einheiten"), null, 180000);
     await page.getByRole("button", { name: /Weiter: Modell/ }).click();
-    await warte((n) => window.baugrund?.ladungen > n && !window.app.rechnet, ladungen, 240000);
+    await warte(() => window.app.schritt === "modell" && window.app.modell?.ifc, null, 240000);
+    await warte(modellDa, null, 240000);
     await ruhe(2000);
     const v = await page.evaluate(() => ({ gelaende: window.baugrund.gelaende,
                                            quelle: window.app.modell?.bericht?.parameter?.gelaende?.quelle }));
@@ -285,8 +318,7 @@ try {
     await page.locator("nav.schritte button", { hasText: "Lage" }).click();
     await warte(() => window.app.schritt === "lage", null, 60000);
   }
-  const gebaeudeTeil = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Gebäude (LoD2)" }) });
-  if (!(await gebaeudeTeil.evaluate((d) => d.open))) await gebaeudeTeil.locator("summary").click();
+  await aufklappen("Gebäude (LoD2)");
   const letzteMeldung = await page.evaluate(() => Math.max(0, ...window.app.meldungen.map((m) => m.id)));
   await page.getByRole("button", { name: "Gebäude vom Land abrufen" }).click();
   await warte((n) => window.app.z.gebaeude || window.app.meldungen.some((m) => m.id > n && m.art === "fehler"), letzteMeldung, 240000);
@@ -299,9 +331,9 @@ try {
     pruefe("Gebäude (LoD2) vom Land: Kacheln Berlin, Lizenz dl-de/zero-2.0",
       zg?.anzahl > 10 && zg.quelle.dienste[0]?.dienst === "BE-LOD2" && zg.quelle.dienste[0]?.lizenz === "dl-de/zero-2.0",
       `${zg?.anzahl} Gebäude · ${zg?.quelle?.kacheln} Kacheln ${fehlerGeb}`);
-    const ladungenG = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
     await page.locator("nav.schritte button", { hasText: "Modell" }).click();
-    await warte((n) => window.baugrund?.ladungen > n && !window.app.rechnet, ladungenG, 240000);
+    await warte(() => window.app.schritt === "modell" && window.app.modell?.ifc, null, 240000);
+    await warte(modellDa, null, 240000);
     await ruhe(2000);
     const vg = await page.evaluate(() => ({ gebaeude: window.baugrund.gebaeude, gelaende: window.baugrund.gelaende }));
     pruefe("Gebäude im Modell und im Viewer (IfcBuildingElementProxy)", vg.gebaeude === zg.anzahl, JSON.stringify(vg));
@@ -318,6 +350,7 @@ try {
     // Quasigeoid GCG2016 kommt beim ersten Mal vom PROJ-CDN (Netz) - nicht erreichbar: ausgelassen
     const letzte3d = await page.evaluate(() => Math.max(0, ...window.app.meldungen.map((m) => m.id)));
     const download = page.waitForEvent("download", { timeout: 240000 }).catch(() => null);
+    await aufklappen("Erweitert");                                     // weitere Exporte im Schritt Modell
     await page.getByRole("button", { name: /Baugrundmodell für Cesium/ }).click();
     // die Wartenden enden mit dem Rennen (window.__ende3d): sonst fragte eine Seite nach dem naechsten Laden noch nach
     // window.app, solange es das Element #app ist (Seitenfehler)
@@ -571,6 +604,7 @@ try {
     ifc.includes("CPset_Bodenansprache") && ifc.includes("'Beschreibungen'") && ifc.includes("Kieslinse") && ifc.includes("IFCLABEL('v1 "), `${(ifc.length / 1e6).toFixed(1)} MB`);
   // ueber den Anfrage-Kontext, nicht fetch in der Seite: ein erwartetes 400 waere sonst ein Konsolenfehler
   const bml = (await page.request.get(`${url}/api/projekt/${sig}/export/boreholeml`)).status();
+  await aufklappen("Erweitert");                                       // BoreholeML und GeolDG: unter „Erweitert“
   const bmlText = await page.locator(".export-liste p.klein").textContent();
   pruefe("BoreholeML: ohne Koordinaten gesperrt (Knopf aus, Server 400)",
     bml === 400 && (await page.locator(".export-liste .knopf.aus", { hasText: "BoreholeML" }).count()) === 1 &&
@@ -595,6 +629,7 @@ try {
 
   // ---------------------------------------------------------------- E: PDF mit Extraktion
   await startseite();
+  await aufklappen("Beispiele ausprobieren");
   await page.getByRole("button", { name: /Bohrprofil-PDF/ }).click();
   const fortschritt = await warte(() => document.querySelector(".fortschritt-karte"), null, 30000).then(() => true).catch(() => false);
   await warte(() => window.app?.schritt === "bohrungen" && document.querySelector(".schichten"), null, 300000);
@@ -609,6 +644,14 @@ try {
   // ---------------------------------------------------------------- F: Standort ohne Gutachten (echter Dienst NRW, Marl)
   // Beispiel Dortmund: Projekt am Punkt im Schritt Lage, ohne Lageplan-Abschnitte (der Punkt ist georeferenziert)
   await startseite();
+  // Start: zwei gleich grosse Wege, alles Weitere eingeklappt
+  pruefe("Start: zwei Wege (Gutachten, Standort), Beispiele und Koordinaten eingeklappt",
+    await page.evaluate(() => {
+      const wege = [...document.querySelectorAll(".wege > .weg h2")].map((h) => h.textContent?.trim());
+      const zu = (t) => [...document.querySelectorAll("details.still")].some((d) => d.textContent?.includes(t) && !d.open);
+      return wege.join("|") === "Gutachten|Standort" && zu("Beispiele ausprobieren") && zu("Koordinaten eingeben");
+    }));
+  await aufklappen("Beispiele ausprobieren");
   await page.getByRole("button", { name: /Standort Dortmund \(NRW\)/ }).click();
   await warte(() => window.app.z?.standort && window.app.schritt === "lage", null, 60000);
   await ruhe(800);
@@ -628,6 +671,7 @@ try {
   const karteInfo = (await page.locator(".karte-info").innerText()).replace(/\s+/g, " ");
   await page.getByRole("button", { name: "Punkt übernehmen" }).click();
   await ruhe(400);
+  await aufklappen("Koordinaten eingeben");
   const rw = Number(await page.getByLabel("Rechtswert").inputValue());
   const hw = Number(await page.getByLabel("Hochwert").inputValue());
   pruefe("Karte als Pop-up: Klick setzt Rechts-/Hochwert (ETRS89/UTM) und zeigt die Dienste am Ort",
@@ -644,8 +688,7 @@ try {
   await page.getByRole("button", { name: /Alle Korrekturen verwerfen/ }).click();
   await warte(() => window.app?.z?.version === 0 && window.app.schritt === "lage" && !window.app.z.bohrungen.length, null, 60000);
   const kopfAbzeichen = await page.locator(".kopf .abzeichen.vorerkundung").count();
-  const teilSgd = page.locator("details.abschnitt", { has: page.locator("summary", { hasText: "Bohrungen der Länder" }) });
-  if (!(await teilSgd.evaluate((d) => d.open))) await teilSgd.locator("summary").click();
+  await aufklappen("Bohrungen der Länder");
   await page.getByRole("button", { name: "Abfragen" }).click();
   await warte(() => window.app.z.sgd, null, 180000);
   const sgdF = (await stand()).z.sgd;
@@ -668,9 +711,9 @@ try {
     pruefe("Standort: übernommene Bohrungen ganz im Lageplan, Nullpunkt bleibt am Standort",
       bl.ok && zf.viewer.ursprung[0] === 368100 && zf.viewer.ursprung[1] === 5724400,
       `${JSON.stringify(bl)} · Nullpunkt ${zf.viewer.ursprung}`);
-    const ladungenF = await page.evaluate(() => window.baugrund?.ladungen ?? 0);
     await page.locator("nav.schritte button", { hasText: "Modell" }).click();
-    await warte((k) => window.baugrund?.ladungen > k && !window.app.rechnet, ladungenF, 240000);
+    await warte(() => window.app.schritt === "modell" && window.app.modell?.ifc, null, 240000);
+    await warte(modellDa, null, 240000);
     await ruhe(1500);
     const vf = await page.evaluate(() => ({ viewer: window.baugrund.reifegrad, bericht: window.app.modell?.bericht?.reifegrad,
                                             band: !document.querySelector("#reifegrad")?.hidden,
@@ -683,6 +726,35 @@ try {
     pruefe("Standort: Modell ganz im Bild, Kamera außerhalb", bm.ok, JSON.stringify(bm));
     await page.screenshot({ path: `${aus}/F_standort.png` });
   }
+
+  // ---------------------------------------------------------------- G: Werkzeug „Dienste der Länder“ (ohne Speichern)
+  await page.goto(`${url}/dienste.html`);
+  await page.waitForSelector("table.matrix .chip", { timeout: 60000 });
+  const matrix = await page.evaluate(() => {
+    const zeilen = [...document.querySelectorAll("table.matrix tbody tr")];
+    const luecken = zeilen.filter((z) => z.querySelector("th")?.textContent !== "Deutschland")
+      .filter((z) => [...z.querySelectorAll("td")].some((td) => !td.querySelector(".chip"))).map((z) => z.querySelector("th")?.textContent);
+    return { zeilen: zeilen.length, luecken, bearbeiten: window.werkzeug?.reg?.bearbeiten, datei: window.werkzeug?.reg?.datei };
+  });
+  pruefe("Dienste der Länder: alle 16 Länder × Bohrungen, Gelände, Gebäude (dazu bundesweit)",
+    matrix.zeilen === 17 && !matrix.luecken.length && /dienste\.json$/.test(matrix.datei ?? ""), JSON.stringify(matrix));
+  await page.locator("table.matrix").getByRole("button", { name: "BY", exact: true }).click();
+  await page.waitForSelector(".editor h2", { timeout: 10000 });
+  if (matrix.bearbeiten) {
+    const hinweis = page.locator(".editor textarea[name=hinweis]");
+    const vorher = await hinweis.inputValue();
+    await hinweis.fill(`${vorher} (E2E)`);
+    const leiste = await page.locator(".speicherleiste").isVisible();
+    await page.locator(".speicherleiste").getByRole("button", { name: "Verwerfen" }).click();        // Dialog: angenommen
+    await ruhe(300);
+    pruefe("Dienste der Länder: Eintrag bearbeiten zeigt „nicht gespeichert“, Verwerfen stellt ihn wieder her",
+      leiste && !(await page.locator(".speicherleiste").count()) && (await hinweis.inputValue()) === vorher &&
+      (await page.locator(".editor h2").textContent())?.trim() === "BY");
+  } else {
+    pruefe("Dienste der Länder: im Netz nur lesen (Hinweis, Felder gesperrt)",
+      (await page.locator(".nur-lesen").count()) === 1 && (await page.locator(".editor input[name=titel]").isDisabled()));
+  }
+  await page.screenshot({ path: `${aus}/G_dienste.png` });
 } finally {
   const fehlgeschlagen = pruefungen.filter((p) => !p.ok);
   console.log(`\n${pruefungen.length - fehlgeschlagen.length}/${pruefungen.length} Pruefungen bestanden`);

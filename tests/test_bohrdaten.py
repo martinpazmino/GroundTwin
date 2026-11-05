@@ -98,21 +98,27 @@ def test_utm_zu_geo_wie_proj(e, n, zone, lon, lat):
 
 
 def test_dienste_am_ort_und_systeme():
-    assert [d["id"] for d in bd.dienste_am_ort(394774.3, 5818338.1, 25833)] == ["BE", "BB"]
+    # das Land aus den Laendergrenzen (VG2500), nicht aus den Rechtecken: Berlin fragt Brandenburg nicht mehr mit
+    assert [d["id"] for d in bd.dienste_am_ort(394774.3, 5818338.1, 25833)] == ["BE"]
+    assert [d["id"] for d in bd.dienste_am_ort(407692.0, 5818077.0, 25833)] == ["BB"]    # Brandenburg an der Grenze
+    assert [d["id"] for d in bd.dienste_am_ort(407692.0, 5818077.0, 25833, radius=1500)] == ["BB", "BE"]  # Mitte zuerst
     assert [d["id"] for d in bd.dienste_am_ort(368228.4, 5724116.5, 25832)] == ["NW"]
     assert [d["id"] for d in bd.dienste_am_ort(32512295.7, 5403623.3, 4647)] == ["BW"]   # Zonenkennung im Rechtswert
-    assert bd.dienste_am_ort(705000.0, 5300000.0, 25832) == []                           # Bayern: noch kein Dienst
+    assert bd.dienste_am_ort(705000.0, 5300000.0, 25832) == []                           # Bayern: kein Datendienst
+    assert bd.dienste_am_ort(285763.0, 5795714.0, 25833) == []                           # Sachsen-Anhalt, nicht BB
     with pytest.raises(ValueError, match="ETRS89/UTM"):
         bd.dienste_am_ort(4594774.3, 5818338.1, 31468)
     for d in bd.DIENSTE:                                                                 # jede Angabe mit Beleg
-        assert d["beleg"].startswith("https://") and d["lizenz"] and d["namensnennung"]
+        assert d["beleg"].startswith("https://") and d["namensnennung"] and d["status"] in ("geprueft", "ungeprueft")
+        if d["art"] in bd.BOHRDIENSTE + ("wcs-dgm", "lod2-kacheln"):                     # angebunden: geprueft, Lizenz
+            assert d["status"] == "geprueft" and d["geprueft"] and d["lizenz"]
 
 
 # ---------------------------------------------------------------- Abfrage mit Attrappe
 def test_abfrage_kopfdaten_umkreis_fehler_und_gegenprobe():
     aufrufe: list[str] = []
     erg = bd.abfragen(394836.0, 5818414.0, 25833, 250, holer=attrappe(aufrufe))
-    assert erg["dienste"] == ["BE", "BB"] and [f["dienst"] for f in erg["fehler"]] == ["BB", "BB"]
+    assert erg["dienste"] == ["BE"] and erg["fehler"] == [] and erg["portale"] == []      # nur Berlin, mit Dienst
     assert [t["name"] for t in erg["treffer"]] == ["999X-1", "422C-460"]                  # nach Abstand; 999X-2 zu weit
     t = erg["treffer"][1]
     assert (t["schichten"], t["gok"], t["teufe"], t["datum"]) == ("grafik", 36.25, 20.0, "1993-02-17")
@@ -146,6 +152,36 @@ def test_boreholeml_dienst_auflisten_und_uebernehmen():
     assert doc["fehlen"] == ["DABO_9"] and "{jahr}" not in b["namensnennung"]
     with pytest.raises(ValueError, match="nur Kopfdaten"):
         bd.holen("BE", ["422C00460"], holer=attrappe())
+
+
+def test_an_der_landesgrenze_beide_dienste_und_fehler_je_dienst():
+    erg = bd.abfragen(407692.0, 5818077.0, 25833, 1500, holer=attrappe())             # Brandenburg, Berlin im Umkreis
+    assert erg["dienste"] == ["BB", "BE"] and [f["dienst"] for f in erg["fehler"]] == ["BB", "BB"]
+    assert erg["portale"] == []                                                       # beide Laender mit Dienst
+
+
+def test_grenze_zu_einem_land_ohne_dienst_nennt_dessen_portal():
+    # NRW an der Grenze zu Niedersachsen (bei x = 428500): NW abgefragt, fuer Niedersachsen das Portal und die BGR-Karte
+    erg = bd.abfragen(428300.0, 5800000.0, 25832, 500, holer=attrappe())
+    assert erg["dienste"] == ["NW"] and [p["dienst"] for p in erg["portale"]] == ["NI", "DE-BGR"]   # bundesweit zuletzt
+    nur_nrw = bd.abfragen(368120.0, 5724400.0, 25832, 250, holer=attrappe())
+    assert nur_nrw["portale"] == []
+
+
+def test_kein_dienst_sagt_was_angebunden_ist_und_wo_die_daten_sind():
+    satz = bd.ohne_dienst(691567.3, 5334734.3, 25832, "dgm")                          # München
+    assert satz.startswith("angebunden: Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")
+    assert "https://" in satz and "Deutschland" not in satz
+    assert bd.ohne_dienst(691567.3, 5334734.3, 25832, "bohrungen").startswith(
+        "angebunden: Baden-Württemberg, Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")
+
+
+def test_land_ohne_datendienst_nennt_portale():
+    erg = bd.abfragen(691567.3, 5334734.3, 25832, 250, holer=attrappe())              # München: Bayern
+    assert erg["dienste"] == [] and erg["fehler"] == [] and erg["treffer"] == []
+    portale = {p["dienst"]: p for p in erg["portale"]}
+    assert set(portale) == {"BY", "DE-BGR"} and portale["BY"]["url"].startswith("https://www.umweltatlas.bayern.de")
+    assert all(p["status"] == "ungeprueft" for p in portale.values())
 
 
 def test_ausnahme_des_dienstes_wird_fehler():

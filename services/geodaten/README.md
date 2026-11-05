@@ -23,7 +23,10 @@ network: nothing reveals the site of the project, and they work in every Land.
 | [`geodaten/boreholeml.py`](geodaten/boreholeml.py) | BoreholeML 3.2: export of reviewed Bohrungen, import of BoreholeML 3.x into the canonical JSON |
 | [`geodaten/boreholeml_codes.json`](geodaten/boreholeml_codes.json) | Codes of the official codelists v2 that GroundTwin uses, each with the official name as evidence, and the code hierarchies |
 | [`werkzeuge/boreholeml_codes.py`](werkzeuge/boreholeml_codes.py) | Generates the JSON from the official codelists; stops if a name is missing or ambiguous |
-| [`geodaten/dienste.json`](geodaten/dienste.json) | Services of the state geological surveys: URL, type, systems, area, fields, license, attribution and evidence |
+| [`geodaten/dienste.json`](geodaten/dienste.json) | Services and portals of all 16 Länder (Bohrungen, DGM, LoD2): URL, art, Länder, status (*geprueft* with a date / *ungeprueft*), systems, area, fields, license, attribution and evidence. Maintained with the tool *Dienste der Länder* (`dienste.html`, [docs/21 §4.8](../../docs/21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)) |
+| [`geodaten/dienste.py`](geodaten/dienste.py) | The registry: read, validate (`fehler`), complete (`ergaenzen`), order and save atomically (`speichern`), check one entry against the real service (`pruefen_live`); `GEO_AGENT_DIENSTE` keeps the file elsewhere |
+| [`geodaten/laender.py`](geodaten/laender.py) + [`laender.geojson`](geodaten/laender.geojson) | In which Land a point lies, and which Länder a radius touches (VG2500 of the BKG, dl-de/by-2.0, simplified to about 150 m) |
+| [`werkzeuge/laender_vg2500.py`](werkzeuge/laender_vg2500.py) | Makes `laender.geojson` again from VG2500 (download, GeoPackage via sqlite3, pyproj, shapely) |
 | [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten; `am_ort`: what every service of the Länder delivers at a point (map and Standort) |
 | [`geodaten/gebaeude.py`](geodaten/gebaeude.py) | LoD2 buildings from the CityGML tiles of the Länder (1 × 1 km), streamed; walls, roof and ground with openings; cut-out, zone prefix |
 | [`geodaten/utm.py`](geodaten/utm.py) | ETRS89/UTM with and without zone prefix (25832/4647, 25833/5650): normal form for the services, the offset between the two forms of one zone (lesson S17); UTM ↔ geodetic (Krüger series both ways, below 1 mm against PROJ; the zone by longitude for a click in the map), geodetic → ECEF and the east-north-up frame (GRS80) |
@@ -121,6 +124,12 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 | Brandenburg | WFS-BPK `inspire.brandenburg.de/services/bpk_wfs` | header data with / without Schichtenverzeichnis, image | dl-de/by-2.0 |
 | NRW | BoreholeML WFS `www.bml3.nrw.de/service/bml` | BoreholeML 3.0 with the released Schichtdaten | dl-de/by-2.0 |
 | Baden-Württemberg | BoreholeML WFS `services.lgrb-bw.de/boreholeml/services/bml` | BoreholeML 3.0, often without petrography | not stated by the service |
+| the other 12 Länder | their portal (viewer, download or request) and the BGR Bohrpunktkarte | a link, marked *ungeprüft* | see the portal |
+
+- Which Land: from the borders of the Länder (`laender.py`), at a border both (centre plus eight points on the radius),
+  the Land of the centre first; a point outside every Land (lake, coast) falls back to the rectangles of the services.
+- A Land without a data service: the query returns its portal (`portale`) instead of "0 Bohrungen"; `am_ort` lists the
+  portal with its address and status.
 
 - Queried only on a click.
 - The middle of the project goes to longitude/latitude (Snyder series, < 1 mm against PROJ) to pick the

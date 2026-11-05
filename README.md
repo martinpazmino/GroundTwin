@@ -12,8 +12,10 @@ The German technical terms (Bohrung = borehole, Schicht = layer, GOK = ground le
 site plan, Längsschnitt = longitudinal section…) are kept as they appear in the Gutachten and in the
 app: see the [glossary](docs/glossary.md).
 
-* **Baugrundmodell (step app, full screen):**
-  1. **Gutachten**: upload the PDF (vector, or scanned with OCR).
+* **Baugrundmodell (step app, full screen):** show a Gutachten interactively and check it for plausibility, also
+  against the Bohrungen of the Länder. Each step shows that first; DGM, buildings, Cesium, BoreholeML and GeolDG wait
+  under *Erweitert* ([docs/21 §1.2](docs/21_app_schritte_normen.md#12-what-is-in-front-and-what-is-under-erweitert)).
+  1. **Start**: two paths – the Gutachten as PDF (vector, or scanned with OCR) or a Standort as a point on the map.
   2. **Bohrungen**: review and correct Bohrungen and Schichten. There are warnings for unclassified
      Schichten, and every description is read according to **DIN 4023 / EN ISO 14688-1 /
      DIN 18196**. Bohrungen can be removed.
@@ -132,6 +134,8 @@ and how to update the versions.
      ([docs/21 §4.4](docs/21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)).
    - Bohrungen der Länder: the Bohrungen of the state databases around the site (on a click), a
      Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
+     All 16 Länder are in one file, [`dienste.json`](services/geodaten/geodaten/dienste.json), with a tool to maintain
+     the links (`dienste.html`, [docs/21 §4.8](docs/21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)).
    - Gebäude (LoD2): the 3D buildings of Berlin, Brandenburg and NRW around the site (on a click), in the
      IFC and the viewer ([docs/21 §4.6](docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,

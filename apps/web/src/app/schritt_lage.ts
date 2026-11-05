@@ -5,6 +5,7 @@
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { api, type GelaendeZeile, type SgdTreffer, type Zustand } from "./api";
+import { dienstListe, portalListe } from "./dienste_liste";
 import { hilfe } from "./hilfe";
 import { epsgAuswahl, lagePruefen, systemText } from "./epsg";
 import { S, aendern, melden, naechsteOhneLage, neu, versuchen, viewerAktualisieren, zustandUebernehmen } from "./store";
@@ -663,6 +664,7 @@ function sgdTeil(z: Zustand) {
     ${gp.anzahl ? html`<p class=${`klein ${gpOk ? "ok" : "warnung"}`}>${gpOk ? "✓" : "⚠"} ${gp.anzahl} Bohrungen des Gutachtens auch
       beim Land: Lage ≤ ${zahl(gp.lage_max)} m${gp.gok_max !== null ? html`, GOK ≤ ${zahl(gp.gok_max)} m` : nothing}${gpOk ? "" : " – Lage und GOK prüfen"}</p>` : nothing}
     ${s.fehler.map((f) => html`<p class="warnung klein">${f.dienst}: ${f.fehler}</p>`)}
+    ${portalListe(s.portale)}
     ${zeigen.length ? html`
       <table class="tabelle kompakt sgd">
         <thead><tr><th></th><th>Bohrung</th><th class="zahl">Abstand</th><th class="zahl">GOK</th><th class="zahl">Teufe</th><th>Schichten</th></tr></thead>
@@ -707,8 +709,25 @@ function standortTeil(z: Zustand) {
   return abschnitt(html`Standort ${hilfe("standort")}`, html`
     <p class="klein"><b>${zahl(s.x, 1)} / ${zahl(s.y, 1)}</b> · EPSG:${s.epsg}</p>
     <p class="leise klein">Georeferenziert über den Punkt: kein Lageplan, keine Kalibrierung – die Bohrungen der Länder
-      kommen mit ihren Koordinaten. Ein Gutachten dazu (Schritt Gutachten) wird ein neues Projekt mit Lageplan.</p>
-    <ul class="dienste klein" aria-label="Dienste am Standort">${s.dienste.map((d) => html`<li class=${d.art}>${d.text}</li>`)}</ul>`);
+      kommen mit ihren Koordinaten. Ein Gutachten dazu (Schritt Start) wird ein neues Projekt mit Lageplan.</p>
+    ${dienstListe(s.dienste)}`);
+}
+
+let erweitertAuf = false;                       // vom Nutzer geöffnet (bleibt beim Neuzeichnen)
+
+/** Stand in einem Satz: wie viele Bohrungen eine Lage haben - und was als Nächstes zu tun ist. */
+function lageStand(z: Zustand) {
+  const alle = z.viewer.bohrungen.length;
+  const ohne = z.viewer.bohrungen.filter((b) => b.x === null).length;
+  if (z.standort) {
+    return html`<p class="stand-satz ok">Standort ${Math.round(z.standort.x)} / ${Math.round(z.standort.y)} · EPSG:${z.standort.epsg}
+      ${alle ? html` · ${alle} Bohrungen der Länder` : html` · <span class="leise">Bohrungen der Länder unten abfragen</span>`}</p>`;
+  }
+  if (!alle) return nothing;
+  return ohne
+    ? html`<p class="stand-satz warn">${ohne} von ${alle} Bohrungen ohne Lage – auf dem Plan setzen oder Koordinaten eingeben</p>`
+    : html`<p class="stand-satz ok">✓ Alle ${alle} Bohrungen haben eine Lage${z.lage_modus === "reihe" ? " (Reihe)" : ""}
+      – jetzt mit den Bohrungen der Länder vergleichen</p>`;
 }
 
 export function schrittLage() {
@@ -724,8 +743,16 @@ export function schrittLage() {
       if (ev.key === "Escape" && S.schritt === "lage" && S.punktModus) punktModus(false);
     });
   }
+  // Wesentlich: die Lage der Bohrungen und der Vergleich mit den Bohrungen der Länder. Gelände, Gebäude und Darstellung
+  // liegen unter „Erweitert“ (offen, sobald Gelände oder Gebäude geladen sind). Haben alle Bohrungen Koordinaten (Lage
+  // nach Koordinaten, ohne Unterlage), ist der Lageplan eingeklappt - einen Klick entfernt. Die Reihe (Längsschnitt)
+  // bleibt offen: dort sind Unterlage und Abstände die Lage.
+  const verortet = z.viewer.bohrungen.length > 0 && z.viewer.bohrungen.every((b) => b.x !== null);
+  const planZu = z.lage_modus === "koordinaten" && verortet && !z.unterlage;
+  const erweitert = erweitertAuf || !!(z.gelaende || z.gebaeude);
   return html`
     <div class="app-panel links">
+      ${lageStand(z)}
       ${z.standort ? standortTeil(z) : html`
         ${abschnitt(html`Lage der Bohrungen ${hilfe("lage_art")}`, html`
           <div class="umschalter">
@@ -734,20 +761,23 @@ export function schrittLage() {
             <label><input type="radio" name="lagemodus" .checked=${z.lage_modus === "reihe"}
               @change=${() => aendern([{ op: "lage_modus", wert: "reihe" }])}> Reihe (Längsschnitt)</label>
           </div>`)}
-        ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z))}
+        ${abschnitt(html`Unterlage ${hilfe("unterlage")}`, unterlageTeil(z), !planZu)}
         ${z.unterlage ? abschnitt(html`Kalibrieren`, kalibrierenTeil(z)) : nothing}
-        ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z))}`}
-      ${z.standort ? abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z)) : nothing}
-      ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
-        gelaendeTeil(z), !!z.gelaende)}
-      ${z.standort ? nothing : abschnitt(html`Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z), !!z.sgd)}
-      ${abschnitt(html`Gebäude (LoD2)${z.gebaeude ? " ✓" : ""} ${hilfe("gebaeude")}`, gebaeudeTeil(z), !!z.gebaeude)}
-      ${abschnitt(html`Darstellung`, html`
-        <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}
-          <input type="number" step="0.1" min="0" class="kurz" placeholder=${`auto ${zahl(z.durchmesser_auto, 1)}`}
-            .value=${live(z.durchmesser === null ? "" : String(z.durchmesser))}
-            @change=${(ev: Event) => aendern([{ op: "durchmesser", wert: eingabe(ev) }])}> m</label>
-        <p class="leise klein">Je Bohrung im Schritt Bohrungen (Ø Säule). Leer = automatisch nach Modellgröße.</p>`, false)}
+        ${abschnitt(html`Bohrungen setzen`, bohrungenTeil(z), !planZu)}`}
+      ${abschnitt(html`Vergleich mit Bohrungen der Länder${z.sgd?.gegenprobe.anzahl ? " ✓" : ""} ${hilfe("sgd")}`, sgdTeil(z))}
+      <details class="erweitert" ?open=${erweitert}
+        @toggle=${(e: Event) => { erweitertAuf = (e.target as HTMLDetailsElement).open; }}>
+        <summary>Erweitert <span class="leise klein">Gelände · Gebäude · Darstellung</span></summary>
+        ${abschnitt(html`Gelände (DGM)${z.gelaende?.pruefung?.warnungen.length ? " ⚠" : z.gelaende ? " ✓" : ""} ${hilfe("gelaende")}`,
+          gelaendeTeil(z), !!z.gelaende)}
+        ${abschnitt(html`Gebäude (LoD2)${z.gebaeude ? " ✓" : ""} ${hilfe("gebaeude")}`, gebaeudeTeil(z), !!z.gebaeude)}
+        ${abschnitt(html`Darstellung`, html`
+          <label class="inline">Ø Bohrsäulen ${hilfe("durchmesser")}
+            <input type="number" step="0.1" min="0" class="kurz" placeholder=${`auto ${zahl(z.durchmesser_auto, 1)}`}
+              .value=${live(z.durchmesser === null ? "" : String(z.durchmesser))}
+              @change=${(ev: Event) => aendern([{ op: "durchmesser", wert: eingabe(ev) }])}> m</label>
+          <p class="leise klein">Je Bohrung im Schritt Bohrungen (Ø Säule). Leer = automatisch nach Modellgröße.</p>`, false)}
+      </details>
       ${z.hinweise.length ? html`<div class="hinweisliste">${z.hinweise.map((h) => html`<p class="klein">ℹ ${h}</p>`)}</div>` : nothing}
     </div>`;
 }
