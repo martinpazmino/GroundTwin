@@ -453,6 +453,34 @@ Decision per role (D103: a role stays only where it saves):
 | Dokumentar | not built | Phase 5, once a docs task is measured |
 | Umsetzer (Antigravity) | first task written | `agenten/auftraege/agy-20261105-154624.md`: the plausibility report per Bohrung; you start it on your PC (§4.5) |
 
+### 9.1 Day-to-day workflow (after phase 4)
+
+Who does what:
+
+| Who | Does | Automatic? |
+|---|---|---|
+| **You** | say what you want; start Antigravity on your PC for a large task (`agy` in the worktree the hand-off names) and push its branch; approve merges to `main` | no, always you |
+| **Claude (cloud session)** | plans, decides what to delegate, writes the task files, reads every patch, fixes, merges into the working branch, runs the checks, commits, pushes, watches CI | runs by itself within a session; never starts `agy` |
+| **Gemini agents (API, free tier)** | `review` a diff, `diagnose` a failing check, `tests` for a module; they return text or a patch in a worktree | started by Claude with one command; no tools, no writes outside the worktree |
+| **Deterministic checks** | `pruefen` (ruff, tests, modeler, docs; `--web` builds the app), the mutation probe, the end-to-end check, CI | fully automatic |
+| **Antigravity (CLI, your subscription)** | implements a larger task from `agenten/auftraege/<id>.md` on its own branch `agy/<id>` | started by you, never by Claude (§4.2) |
+
+The loop for a feature:
+
+1. You describe it. Claude decides: small → Claude does it; large and well specified → a hand-off (`uebergabe`).
+2. A hand-off: Claude commits the task file and gives you the commands; you run `agy` and push `agy/<id>`.
+3. Claude fetches the branch and runs `pruefen` and a mutation probe of the new tests. It lets the Prüfer look at
+   small diffs (≤ ~15 k tokens), reads the code itself, fixes what it finds, merges, builds `apps/web/dist`, and runs
+   the end-to-end check.
+4. Claude pushes; CI runs; you merge the working branch into `main` through a pull request when you want it there.
+
+First real hand-off (2026-11-05, the plausibility report):
+- Antigravity delivered a working module, a UI and 9 tests.
+- Claude's review found an unused import that turns CI red, internal function names in a UI text, and a false
+  groundwater warning when the bottom Schicht is missing. All three were fixed in the merge.
+- The Prüfer on the whole 82 k-token diff said "ok" again (point 2 above), so `review` still has to split large diffs
+  by itself (Phase 5).
+
 ## 10. Sources (read 2026-11-05)
 
 - [Gemini Code Assist for individuals: deprecation](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals), and the [Gemini CLI discussion #28017](https://github.com/google-gemini/gemini-cli/discussions/28017)
