@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ui import pipeline as pl
+from ui import plausibilitaet as pb
 from ui import projekt as pj
 
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
@@ -423,6 +424,7 @@ class Arbeitsplatz:
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
                 "vorgabe": p.vorgabe, "eincheckungen": p.eincheckungen,
                 "pruefstand": pj.pruefstand(docs, p),
+                "plausibilitaet": pb.pruefen(docs, p),
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
                 "seit_einchecken_geaendert": pj.seit_einchecken_geaendert(docs, p, schluessel),
                 "bohrungen": pj.bohrungen_liste(docs, p),
