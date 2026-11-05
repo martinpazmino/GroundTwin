@@ -157,13 +157,15 @@ def _anwenden(baum: Path, aenderungen: list[dict]) -> list[str]:
     return fehler
 
 
-def _befehl(cwd: Path, befehl: str, zeit: int) -> tuple[int, str]:
+def _befehl(cwd: Path, befehl: str, zeit: int, env: dict | None = None) -> tuple[int, str]:
     teile = shlex.split(befehl)
     if teile and teile[0] in ("python", "python3"):
         import sys
         teile[0] = sys.executable
     try:
-        r = subprocess.run(teile, cwd=cwd, capture_output=True, text=True, timeout=zeit)
+        import os
+        r = subprocess.run(teile, cwd=cwd, capture_output=True, text=True, timeout=zeit,
+                           env={**os.environ, **env} if env else None)
         return r.returncode, r.stdout + r.stderr
     except subprocess.TimeoutExpired:
         return 124, f"Zeitlimit {zeit} s"
@@ -185,8 +187,18 @@ def diagnose(repo: Path, e: Einstellungen, anbieter, befehl: str = "", log: str 
     erlaubt = kontext.verfolgt(repo)
     dateien = kontext.dateien_aus_log(kurz, erlaubt)[:8]
     modell = modelle.waehlen("testanalyst", e, dateien, stark)
-    paket, _ = kontext.packen(repo, dateien, BUDGET["testanalyst"] - kontext.tokens(kurz))
-    d = a.rufen("testanalyst", modell, f"BEFEHL: {befehl or '(Protokoll)'}\n\nPROTOKOLL (gekuerzt):\n{kurz}\n\nDATEIEN:\n{paket}")
+    # die letzten Aenderungen der genannten Dateien (ohne Tests): ein neuer Fehler steckt meist dort
+    def quelle(x: str) -> bool:
+        return x in erlaubt and not x.startswith("tests/") and x != "AGENTS.md" and not kontext.gesperrt(x)
+    quellen = [x for x in dateien if quelle(x)]
+    if not quellen:                                          # keine Quelldatei genannt: die der letzten drei Commits
+        namen = _git(repo, "log", "-n", "3", "--name-only", "--format=", check=False).split()
+        quellen = list(dict.fromkeys(x for x in namen if quelle(x)))[:8]
+    teile = [_git(repo, "log", "-p", "-n", "3", "--format=commit %h %s", "--", x, check=False) for x in quellen]
+    juengst = "".join(x for x in teile if not kontext.geheim(x))[:40_000]     # eine Datei mit Geheimnis faellt weg
+    paket, _ = kontext.packen(repo, dateien, BUDGET["testanalyst"] - kontext.tokens(kurz) - kontext.tokens(juengst))
+    d = a.rufen("testanalyst", modell, f"BEFEHL: {befehl or '(Protokoll)'}\n\nPROTOKOLL (gekuerzt):\n{kurz}\n\n"
+                f"LETZTE AENDERUNGEN der genannten Quelldateien (git log -p -3):\n{juengst or '(keine)'}\n\nDATEIEN:\n{paket}")
     if d.get("mehr_dateien") and not d.get("aenderungen"):                    # einmal mehr Kontext, dann entscheiden
         mehr, info = kontext.packen(repo, [str(x) for x in d["mehr_dateien"][:5]], BUDGET["testanalyst"] // 2)
         a.nachricht("orchestrator", "testanalyst", "antwort", f"geliefert: {info['genommen']}, nicht: {info}")
@@ -239,6 +251,97 @@ def diagnose(repo: Path, e: Einstellungen, anbieter, befehl: str = "", log: str 
                       "stat": stat.strip().splitlines()[-1:] if stat else [], "zweig": zweig})
 
 
+# ------------------------------------------------------------------ Tests schreiben (mit Mutationsprobe)
+MUTANTEN = {"<=": "<", ">=": ">", "==": "!=", "!=": "==", "<": "<=", ">": ">=", "+": "-", "-": "+",
+            "and": "or", "or": "and", "True": "False", "False": "True"}
+
+
+def _mutanten(text: str, hoechstens: int = 8) -> list[tuple[int, str, str, int]]:
+    """Einfache Mutationen an Operatoren im Code (Kommentare und Texte bleiben), gleichmaessig ueber die Datei."""
+    import io
+    import tokenize
+    anfang = [0]
+    for z in text.splitlines(keepends=True):
+        anfang.append(anfang[-1] + len(z))
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (tokenize.TokenError, SyntaxError):
+        return []
+    k = [t for t in toks if t.type in (tokenize.OP, tokenize.NAME) and t.string in MUTANTEN]
+    if len(k) > hoechstens:
+        k = [k[int(i * len(k) / hoechstens)] for i in range(hoechstens)]
+    return [(anfang[t.start[0] - 1] + t.start[1], t.string, MUTANTEN[t.string], t.start[0]) for t in k]
+
+
+def tests_schreiben(repo: Path, e: Einstellungen, anbieter, modul: str, ziel: str, vorhandene: list[str],
+                    zeit: int = 600, runden: int = 1) -> dict:
+    """Der Testautor schreibt eine neue Testdatei; sie zaehlt nur, wenn sie gruen ist und die Haelfte der Mutanten des
+    Moduls toetet. Ueberlebende Mutanten gehen einmal an den Testautor zurueck (begrenzte Runde)."""
+    a = Auftrag(repo, "tests", e, anbieter)
+    paket, _ = kontext.packen(repo, [modul, *vorhandene], BUDGET["testanalyst"])
+    modell = modelle.waehlen("testautor", e, [modul])
+    d = a.rufen("testautor", modell, f"MODUL: {modul}\nZIELDATEI: {ziel}\n\nDATEIEN:\n{paket}")
+    datei = str(d.get("datei") or ziel)
+    if not datei.startswith("tests/") or ".." in datei or kontext.gesperrt(datei) or (repo / datei).exists():
+        return a.bericht({"status": "abgelehnt", "abgelehnt": [f"{datei}: nur eine neue Datei unter tests/"]})
+    baum = a.ordner / "baum"
+    _git(repo, "worktree", "add", "-q", "-b", f"agenten/{a.id}", str(baum), "HEAD")
+    befehl = f"python -m pytest -q -p no:cacheprovider {datei}"
+    ohne_pyc = {"PYTHONDONTWRITEBYTECODE": "1"}        # sonst laeuft bei gleicher Groesse und Sekunde alter Bytecode
+    quelle = baum / modul
+    original = quelle.read_text(encoding="utf-8")
+    zeilen = original.splitlines()
+
+    def probe(inhalt: str) -> tuple[int, list[str], list[bool]]:
+        (baum / datei).write_text(inhalt, encoding="utf-8")
+        code, log = _befehl(baum, befehl, zeit, ohne_pyc)
+        (a.ordner / "tests.log").write_text(log, encoding="utf-8")
+        namen, tot = [], []
+        if code == 0:
+            for pos, alt, neu, zeile in _mutanten(original):
+                quelle.write_text(original[:pos] + neu + original[pos + len(alt):], encoding="utf-8")
+                c, _ = _befehl(baum, befehl, zeit, ohne_pyc)
+                namen.append(f"Zeile {zeile}: {alt} → {neu}")
+                tot.append(c != 0)
+            quelle.write_text(original, encoding="utf-8")
+        return code, namen, tot
+
+    inhalt = str(d.get("inhalt", ""))
+    code, namen, tot = probe(inhalt)
+    runde = 0
+    while runde < runden and code == 0 and not all(tot):
+        runde += 1
+        offen = [f"{n}   | {zeilen[int(n.split()[1].rstrip(':')) - 1].strip()}" for n, t in zip(namen, tot) if not t]
+        a.nachricht("orchestrator", "testautor", "nachbessern", "\n".join(offen))
+        try:
+            d2 = a.rufen("testautor", modell, f"MODUL: {modul}\nZIELDATEI: {datei}\n\nDEINE TESTS (grün):\n{inhalt}\n\n"
+                         "DIESE MUTATIONEN DES MODULS UEBERLEBEN (deine Tests bleiben grün, obwohl der Code falsch ist):\n"
+                         + "\n".join(offen) + "\n\nErgänze Tests, die sie erkennen; gib die vollständige Datei zurück. "
+                         "Eine Mutation ohne Wirkung auf das Verhalten nenne in der begruendung.\n\nDATEIEN:\n" + paket)
+        except AnbieterFehler as err:                        # Kontingent erschoepft: das erste Ergebnis zaehlt
+            a.nachricht("orchestrator", "testautor", "hinweis", f"Nachbesserung ausgefallen: {err}")
+            break
+        neu = str(d2.get("inhalt", ""))
+        c2, n2, t2 = probe(neu)
+        if c2 == 0 and sum(t2) >= sum(tot):                  # nur uebernehmen, was nicht schlechter ist
+            inhalt, code, namen, tot, d = neu, c2, n2, t2, d2
+        else:
+            probe(inhalt)
+    (baum / datei).write_text(inhalt, encoding="utf-8")
+    _git(baum, "add", "-N", datei)
+    (a.ordner / "patch.diff").write_text(_git(baum, "diff"), encoding="utf-8")
+    brauchbar = code == 0 and any(tot) and sum(tot) * 2 >= len(tot)
+    n = len(re.findall(r"^def test_", inhalt, flags=re.M))
+    if not brauchbar:
+        verwerfen(repo, a.id, still=True)
+    return a.bericht({"status": "wartet_auf_freigabe" if brauchbar else "verworfen", "datei": datei, "tests": n,
+                      "gruen": code == 0, "mutanten": len(tot), "getoetet": sum(tot), "runden": runde,
+                      "ueberlebt": [m for m, t in zip(namen, tot) if not t],
+                      "begruendung": d.get("begruendung", ""),
+                      "patch": str(a.ordner / "patch.diff") if brauchbar else "",
+                      "stat": [f"{datei} neu, {n} Tests"]})
+
+
 # ------------------------------------------------------------------ Freigabe durch Claude
 def uebernehmen(repo: Path, kennung: str) -> dict:
     ordner = repo / ".agenten" / kennung
@@ -274,28 +377,38 @@ def verwerfen(repo: Path, kennung: str, still: bool = False) -> None:
 
 
 # ------------------------------------------------------------------ Uebergabe an Antigravity (der Nutzer startet sie)
-def uebergabe(repo: Path, ziel: str, dateien: list[str], tests: list[str]) -> tuple[Path, str]:
+def uebergabe(repo: Path, ziel: str, dateien: list[str], tests: list[str], titel: str = "") -> tuple[Path, str]:
+    """Auftrag fuer Antigravity in agenten/auftraege/ (eingecheckt, damit er auf den PC des Nutzers kommt). Der Nutzer
+    startet ihn selbst - nie Claude Code (Abschnitt 6 der Antigravity-Bedingungen, docs/24 §4.2)."""
     kennung = f"agy-{datetime.now():%Y%m%d-%H%M%S}"
-    ordner = repo / ".agenten" / "auftraege"
+    ordner = repo / "agenten" / "auftraege"
     ordner.mkdir(parents=True, exist_ok=True)
     datei = ordner / f"{kennung}.md"
-    datei.write_text(f"""# Auftrag {kennung} (GroundTwin)
+    rel = datei.relative_to(repo).as_posix()
+    basis = _git(repo, "rev-parse", "--abbrev-ref", "HEAD", check=False).strip() or "main"
+    datei.write_text(f"""# Auftrag {kennung}{(': ' + titel) if titel else ''} (GroundTwin)
 
-Lies zuerst AGENTS.md im Repository und halte dich an alle Punkte.
+Lies zuerst AGENTS.md im Repository und halte dich an alle Punkte. Grundlage ist der Zweig `{basis}`.
 
-**Ziel:** {ziel}
+## Ziel
 
-**Dateien, die du ändern darfst:** {', '.join(dateien) or '(nur, was das Ziel verlangt; nichts Geschütztes)'}
+{ziel}
 
-**Tests, die danach grün sein müssen:** {', '.join(tests) or 'python -m pytest tests -q'}
+## Rahmen
 
-**Arbeitsweise:** arbeite nur auf dem Zweig `agy/{kennung}`, committe dort mit einer klaren Nachricht und pushe ihn.
-Ändere keinen Test, um ihn grün zu machen. Wenn etwas unklar ist, schreib es in die Commit-Nachricht statt zu raten.
+- **Dateien, die du ändern darfst:** {', '.join(dateien) or '(nur, was das Ziel verlangt; nichts Geschütztes)'}
+- **Danach grün:** {', '.join(tests) or 'python -m agenten pruefen'}
+- Arbeite nur auf dem Zweig `agy/{kennung}`, committe dort mit klaren Nachrichten und pushe ihn.
+- Ändere keinen Test, um ihn grün zu machen. Was unklar ist, schreib in die Commit-Nachricht statt zu raten.
 """, encoding="utf-8")
-    befehl = (f"git worktree add ../gt-{kennung} -b agy/{kennung}\n"
-              f"cd ../gt-{kennung}\n"
-              f"agy -p \"$(cat {datei.relative_to(repo).as_posix()})\" --output-format json > ../{kennung}.json\n"
-              f"git push -u origin agy/{kennung}")
+    befehl = (f"git fetch origin {basis}\n"
+              f"git worktree add ..\\gt-{kennung} -b agy/{kennung} origin/{basis}\n"
+              f"cd ..\\gt-{kennung}\n"
+              f"agy      (dann eintippen: Lies {rel} und fuehre den Auftrag aus.)\n"
+              f"   oder ohne Dialog, in PowerShell:\n"
+              f"   agy -p (Get-Content -Raw {rel.replace('/', chr(92))}) --output-format json > ..\\{kennung}.json\n"
+              f"git push -u origin agy/{kennung}\n"
+              f"python -m agenten agy-einlesen {kennung} ..\\{kennung}.json   (nur nach agy -p)")
     return datei, befehl
 
 

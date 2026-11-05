@@ -143,6 +143,7 @@ def test_diagnose_patch_im_worktree_dann_freigabe(repo):
     nachrichten = [json.loads(z) for z in (repo / ".agenten" / b["auftrag"] / "nachrichten.jsonl").read_text().splitlines()]
     assert [(n["von"], n["an"]) for n in nachrichten] == [("testanalyst", "pruefer"), ("pruefer", "testanalyst")]
     assert "AGENTS.md" not in anb.anfragen[0]["text"] and "Regeln" in anb.anfragen[0]["system"]   # Auftrag als System
+    assert "LETZTE AENDERUNGEN" in anb.anfragen[0]["text"] and "commit " in anb.anfragen[0]["text"]  # juengste Commits
     metriken = protokoll.summe(repo / ".agenten")
     assert metriken["aufrufe"] == 2 and metriken["je_rolle"] == {"testanalyst": 1, "pruefer": 1}
     ablauf.uebernehmen(repo, b["auftrag"])
@@ -212,6 +213,32 @@ def test_uebergabe_an_antigravity_und_token_einlesen(repo, tmp_path):
     assert (z["tokens_ein"], z["tokens_aus"], z["anbieter"], z["tokens_art"]) == (10415, 657, "antigravity", "gemessen")
 
 
+def test_testautor_zaehlt_nur_mit_getoeteten_mutanten(repo):
+    (repo / "rechnen.py").write_text("def summe(a, b):\n    return a + b\n", encoding="utf-8")
+    _git(repo, "commit", "-qam", "richtig")
+    e = laden(repo)
+    gut = {"datei": "tests/test_summe_neu.py", "inhalt": TEST.replace("test_summe", "test_summe_neu"), "begruendung": "x"}
+    b = ablauf.tests_schreiben(repo, e, Attrappe([gut]), "rechnen.py", "tests/test_summe_neu.py", ["tests/test_rechnen.py"])
+    assert b["status"] == "wartet_auf_freigabe" and b["gruen"] and (b["mutanten"], b["getoetet"]) == (1, 1)
+    assert not (repo / "tests" / "test_summe_neu.py").exists()                       # erst nach der Freigabe
+    ablauf.uebernehmen(repo, b["auftrag"])
+    assert "test_summe_neu" in (repo / "tests" / "test_summe_neu.py").read_text()
+    schwach = {"datei": "tests/test_schwach.py", "inhalt": "def test_nichts():\n    assert True\n"}
+    anb = Attrappe([schwach, schwach])                                              # die Nachbesserung bleibt schwach
+    b = ablauf.tests_schreiben(repo, e, anb, "rechnen.py", "tests/test_schwach.py", [])
+    assert b["status"] == "verworfen" and b["gruen"] and b["getoetet"] == 0 and b["ueberlebt"] == ["Zeile 2: + → -"]
+    assert b["runden"] == 1 and "return a + b" in anb.anfragen[1]["text"]           # Mutant mit Codezeile zurueck
+    besser = {"inhalt": "from rechnen import summe\n\n\ndef test_s():\n    assert summe(1, 1) == 2\n"}
+    b = ablauf.tests_schreiben(repo, e, Attrappe([schwach, besser]), "rechnen.py", "tests/test_schwach.py", [])
+    assert b["status"] == "wartet_auf_freigabe" and b["getoetet"] == 1 and "summe(1, 1)" in Path(b["patch"]).read_text()
+    ablauf.verwerfen(repo, b["auftrag"])
+    assert "agenten/" not in _git(repo, "branch")
+    for falsch in ("rechnen.py", "tests/test_rechnen.py", "tests/../x.py"):
+        b = ablauf.tests_schreiben(repo, e, Attrappe([{"datei": falsch, "inhalt": "x"}]), "rechnen.py", falsch, [])
+        assert b["status"] == "abgelehnt"
+    assert (repo / "tests" / "test_rechnen.py").read_text() == TEST
+
+
 def test_claude_verbrauch_aus_dem_transkript(tmp_path):
     t = tmp_path / "s.jsonl"
     zeilen = [{"timestamp": "2026-11-05T10:00:00Z", "message": {"role": "assistant", "usage": {"input_tokens": 1,
@@ -232,6 +259,10 @@ def test_befehlszeile_ohne_netz(repo, tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(repo)
     assert main(["verbindung"]) == 0 and "ok · Modell gemini-3.5-flash-lite" in capsys.readouterr().out
     assert main(["stand"]) == 0 and "Zweig" in capsys.readouterr().out
+    # --befehl darf den Unterbefehl nicht ueberschreiben (so lief diagnose still ins Leere)
+    (repo / "rechnen.py").write_text("def summe(a, b):\n    return a + b\n")
+    _git(repo, "commit", "-qam", "gut")
+    assert main(["diagnose", "--befehl", befehl()]) == 0 and "kein_fehler" in capsys.readouterr().out
 
 
 def test_ueberlast_weicht_auf_ein_freies_modell_aus(repo):

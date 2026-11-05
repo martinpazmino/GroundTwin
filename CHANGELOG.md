@@ -9,7 +9,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - **Agent team** for development (`agenten/`, docs/24): one command for all checks with a short verdict, a docs
   link/number check and a session state; Gemini agents through the API (review of a diff, diagnosis of a failing check
   with the fix applied in a git worktree, merged only on Claude's approval); a task hand-off to Antigravity; token and
-  cost records of agents and of Claude. Shared spec for non-Claude agents: `AGENTS.md`.
+  cost records of agents and of Claude; tests written by an agent, kept only if they kill mutants of the module.
+  Shared spec for non-Claude agents: `AGENTS.md`. Measured on three real tasks (docs/24 §9).
+- Tests for `geodaten/laender.py` (`tests/test_laender.py`): areas instead of rectangles, the Land of the centre
+  first, UTM zones and the zone prefix.
 - **All 16 Länder** in the registry of services (decision D98): the 12 Länder without a data service with their
   portals for Bohrungen, DGM and LoD2 as links, plus the Bohrpunktkarte of the BGR, marked *ungeprüft* (entered, not
   tested). A query in such a Land names the portal instead of "0 Bohrungen".

@@ -13,15 +13,17 @@ Google offering really allow, and the smallest architecture that saves Claude to
 [16](16_lessons_learned.md).
 
 > [!IMPORTANT]
-> **Status 2026-11-05: phases 3a, 3b and 3c are built** in [`agenten/`](../agenten) with [`AGENTS.md`](../AGENTS.md):
+> **Status 2026-11-05: phases 3a, 3b and 3c are built, and phase 4 is measured (§9).** All of it is in
+> [`agenten/`](../agenten), with [`AGENTS.md`](../AGENTS.md):
 > - checks without a model: `pruefen`, `doku`, `stand`, `kosten`;
-> - Gemini agents through the API: `verbindung`, `review`, `diagnose` with a worktree and `uebernehmen` /
->   `verwerfen`;
-> - the hand-off to Antigravity: `uebergabe`, `agy-einlesen`.
+> - Gemini agents through the API:
+>   - `verbindung`, `review`;
+>   - `diagnose` with a worktree;
+>   - `tests` with a mutation probe;
+>   - `uebernehmen` / `verwerfen`;
+> - the hand-off to Antigravity: `uebergabe`, `agy-einlesen`. The first task is written; you start it.
 >
-> 15 offline tests run against a stand-in model (`tests/test_agenten.py`). The first real call needs the key
-> (`python -m agenten verbindung`). Phase 4, the measured comparison, follows once the key reaches the cloud sessions
-> too (§8).
+> 17 offline tests run against a stand-in model (`tests/test_agenten.py`).
 
 > [!NOTE]
 > Summary:
@@ -248,7 +250,7 @@ Dynamic: a role is instantiated per task, and several of the proposed roles shar
 | **Prüfer** | code reviewer, security reviewer, IFC and geotechnics rules | 3.8 Flash; Argon for diffs in extractor, modeler, IFC or benchmark if a budget is set | the diff, the changed files whole, their tests, the relevant rules of 16 | findings: severity, file:line, claim, evidence, confidence | nothing |
 | **Testanalyst** | test-failure analyst, regression analyst | 3.8 Flash; escalate on low confidence | the compressed log, files and lines of the traceback, recent diff of those files | cause, evidence, a minimal patch, confidence | patch as text |
 | **Dokumentar** | documentation engineer, consistency | 3.5 Flash-Lite for checks, 3.8 Flash for drafts | the diff, the doc map (which notes name which modules), the style rules (English, German terms, links) | a doc patch + the list of claims it could not verify | patch as text |
-| **Testautor** | test generation, QA | 3.8 Flash | the module, its existing tests, the fixtures | new tests as a patch | patch as text |
+| **Testautor** (`tests`) | test generation, QA | 3.8 Flash | the module, its existing tests, the fixtures | a new test file, kept only if green and it kills at least half of the operator mutants of the module (one revision with the survivors) | new file in a worktree |
 | **Umsetzer (Antigravity, by hand)** | backend, frontend and full-stack developer, refactoring | Antigravity with your subscription (Argon or Flash, its choice) | the task file: goal, files to touch, tests that must pass, protected files; Antigravity reads the repository itself | commits on branch `agy/<id>` | its branch only |
 | later: UX-Prüfer, IFC-Fachmann, Rechercheur | UX, IFC 4.3/BIM, research | Flash (images), Argon (IFC), grounding | screenshots; IFC validation output; a question | findings | nothing |
 
@@ -316,6 +318,7 @@ main-thread context but are still Claude tokens, so they are not the default for
 | Critical files | **Protected**: `services/extractor/prototyp_v4.py`, `benchmark/baseline_v4.json`, `benchmark/groundtruth/**`, `constraints.txt`, CI workflows, `CLAUDE.md`, `LICENSE`. A patch touching one is refused unless Claude allows it explicitly for that task |
 | Weakened tests | A patch that deletes or skips a test, or lowers a baseline, is refused automatically |
 | Generated code accepted blindly | Claude reviews every patch; high-risk patches get an independent review by a second model |
+| Generated code runs before anyone reads it | `diagnose` reruns the test on the patched worktree, and `tests` runs the new test file and its mutants. Both run with your user's rights, with a time limit, inside the worktree only, **without a sandbox**. The model sees only tracked files of the public repository, so the residual risk is a prompt injection through repository content. Run these commands in a cloud session (its container is thrown away) or read the patch first (`patch.diff`) when the task touches untrusted contributions |
 | Costs | Paid models off by default; a daily and a per-task budget in the config; over budget → stop, not fallback to paid |
 | Data | §4.4; the packer enforces it, not the prompt |
 
@@ -363,7 +366,7 @@ erfolg, kosten_usd, kosten_art}`.
 | 3a, no model (**built**) | `pruefen`, `doku-pruefen`, `stand`, metrics of the Claude side; `/pruefen` | The full check returns one verdict ≤ 15 lines; a known doc inconsistency is found; tests offline |
 | 3b, MVP agents (**built**; REST without the SDK, changes as exact replacements instead of diffs) | `google-genai` adapter, registry, packer with denylist and secret scan, Prüfer and Testanalyst, the *diagnose* workflow with a worktree, `bericht.json`, `uebernehmen` | A fake-provider test suite; one real *diagnose* on a deliberately broken test (§7 Phase 4); no write outside the worktree; tokens logged |
 | 3c, hand-off (**built**) | Task files, `python -m agenten uebergabe <id>` (prints the one command for you), import of the `agy` JSON into the metrics, the *umsetzen* workflow with the Prüfer, branch protection (your action) | One real task done in Antigravity, reviewed, merged by Claude; its tokens and Claude's logged |
-| 4, validation | Four real tasks, each once delegated and once inline, Claude tokens from the transcript: (1) diagnose a reintroduced bug (the radius of the LoD2 cut-out); (2) review commit `a7523cb`; (3) the docs of a small feature against the docs written by hand; (4) tests for `geodaten/laender.py` kept only if they catch an injected fault | A table of Claude tokens, Gemini tokens, time and quality per task; a role stays only where it saves |
+| 4, validation (**measured**, §9: three of four tasks) | Four real tasks, each once delegated and once inline, Claude tokens from the transcript: (1) diagnose a reintroduced bug (the radius of the LoD2 cut-out); (2) review commit `a7523cb`; (3) the docs of a small feature against the docs written by hand; (4) tests for `geodaten/laender.py` kept only if they catch an injected fault | A table of Claude tokens, Gemini tokens, time and quality per task; a role stays only where it saves |
 | 5 | Dokumentar and Testautor if Phase 4 shows savings; UX-Prüfer for screenshots; hooks; Argon for high-risk reviews if you approve a budget | Each addition justified by the Phase 4 numbers |
 
 ## 8. Decisions needed from you
@@ -386,7 +389,71 @@ erfolg, kosten_usd, kosten_art}`.
 5. **Branch protection** on `main` of `martinpazmino/GroundTwin` (merge only with a reviewed pull request).
 6. **Go for Phase 3a**: it needs no key and no decision above, and is useful on its own.
 
-## 9. Sources (read 2026-11-05)
+## 9. Phase 4: measured results (2026-11-05)
+
+Three of the four planned tasks were run on the free tier with real calls. The docs task (Dokumentar) was not run:
+that role is not built yet. Gemini tokens come from `usageMetadata` (`.agenten/metriken.jsonl`). Claude tokens come
+from the transcript (`python -m agenten kosten --seit`), for the window of each task. Each window also holds the work
+on the tool itself (fixes found while using it), so it is an upper bound for the task. A separate inline run of each
+task was not made: on the same session it would have doubled the cost, so the inline column is an estimate in turns.
+
+| Task | Gemini (calls, failed, tokens in/out, list price) | Result | Claude in the window (responses, cache read, per call) | Claude turns delegated / inline (estimate) |
+|---|---|---|---|---|
+| T1 diagnose a reintroduced bug (radius of the LoD2 cut-out) | 5, 3 overloaded, 10,019 / 408, ~$0.003 | correct cause (confidence 1.0), test green, Prüfer ok; patch equal to the original fix but for a lost comment | 15, 13.3 M, ~890 k | 3 / ~6 |
+| T2 review: the whole MVP diff | 1 of the 7, 80,506 / 71 | "ok" without findings: **superficial** | (window shared with the seeded bug) | 2 / 2–4 |
+| T2 review: a seeded bug (secret scan removed from `kontext.packen`) | 2 of the 7, ~2,700 / ~180 each | caught both times at severity *hoch* (3.1 Flash-Lite: reject; 3.5 Flash-Lite: revise) | 36 in total for T2, 9.0 M, ~250 k | 2 / 2–4 |
+| T3 tests for `geodaten/laender.py` | 9, 6 failed, 19,548 / 2,119, ~$0.008 | first draft: 7 green tests, 1 of 6 mutants killed → **rejected by the gate**; after one revision round: 10 tests, 3 of 6 killed (the other 3 are equivalent mutants) → approved; Claude then sharpened it | 30, 4.5 M, ~150 k | 6 / ~5 |
+
+All calls ran at list price $0 (free tier). The list price is what the same tokens would cost on a paid key.
+
+What the numbers show:
+
+1. **The free tier is the bottleneck, not the quality.** 13 of 21 calls failed:
+   - `gemini-3.8-flash` answered 503 (high demand), then 429 (daily quota used up);
+   - `3.5-flash-lite` often answered 503.
+
+   The fallback chain (§5.4) let every task finish, mostly on `3.1-flash-lite`.
+2. **Small, focused inputs work even on the lite models; large ones do not.**
+   - The seeded bug was caught twice in a 2.7 k-token diff.
+   - The 80 k-token diff got a bare "ok".
+
+   Rule: review in groups of at most ~15 k tokens. Send a large or risky diff to 3.8 Flash, or to Argon once a budget
+   is approved.
+3. **Context decides a diagnosis.** The first real diagnose blamed the test and proposed an edit that did not match
+   the file. With the last three commits of the implicated source files in the prompt, the same lite model found the
+   cause at once.
+4. **Deterministic gates make cheap models usable.**
+   - Diagnose: the rerun of the test and the Prüfer.
+   - Tests: the test run plus a **mutation probe** (`python -m agenten tests`). Simple operator mutants of the module
+     are applied one by one; a test file counts only if it is green and kills at least half of them. Surviving
+     mutants go back once, with the code line.
+
+   Weak tests (`assert len(res) >= 1`) were thrown out without Claude reading them.
+5. **Claude's review stays mandatory.** The approved test file still held a test that claimed to cover a mutation
+   it did not check, plus a duplicate. Claude replaced them with exact expectations and added two behaviours the
+   model missed: the EPSG 25832 → 25833 normalisation and the zone prefix, and the Land of the centre first. The
+   final `tests/test_laender.py` kills every non-equivalent mutant.
+6. **The largest lever was the session, not the agents.** The context per Claude call fell from ~890 k (T1) to
+   ~150 k (T3) once the session was compacted. One task per session, started with `python -m agenten stand`, saves
+   more than any delegation.
+7. **Using the tool found its own bugs.** All are fixed, with tests:
+   - the CLI's `--befehl` overwrote the command name, so diagnose silently did nothing;
+   - with no source file in the log, the recent-commit context fell back to the whole repository and could carry
+     deny-listed files. It now uses only allowed source files, and scans each file's history for secrets;
+   - the hand-off wrote its task file into the git-ignored `.agenten/`, which never reaches your PC;
+   - stale `.pyc` files let a same-size mutant run the old bytecode.
+
+Decision per role (D103: a role stays only where it saves):
+
+| Role | Keeps? | Why |
+|---|---|---|
+| Testanalyst (`diagnose`) | **yes** | about half the Claude turns of an inline diagnosis, at equal quality |
+| Prüfer (`review`) | **yes, for small diffs** | reliable on focused diffs; large diffs are split or sent to a stronger model |
+| Testautor (`tests`) | **yes, behind the mutation gate** | saves little on a 58-line module (Claude still sharpens); worth it for larger modules. The gate is useful for any tests, Claude's own included |
+| Dokumentar | not built | Phase 5, once a docs task is measured |
+| Umsetzer (Antigravity) | first task written | `agenten/auftraege/agy-20261105-154624.md`: the plausibility report per Bohrung; you start it on your PC (§4.5) |
+
+## 10. Sources (read 2026-11-05)
 
 - [Gemini Code Assist for individuals: deprecation](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals), and the [Gemini CLI discussion #28017](https://github.com/google-gemini/gemini-cli/discussions/28017)
 - [Antigravity CLI: headless mode](https://antigravity.google/docs/cli/headless/) and the [announcement](https://antigravity.google/blog/introducing-google-antigravity-cli/)

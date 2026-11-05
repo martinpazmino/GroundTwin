@@ -67,6 +67,10 @@
   },
   "zusammenfasser": {
    "modell": "gemini-3.5-flash-lite"
+  },
+  "testautor": {
+   "modell": "standard",
+   "risiko_modell": "stark"
   }
  },
  "risiko_pfade": [
