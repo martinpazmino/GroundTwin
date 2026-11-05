@@ -402,7 +402,7 @@ Lies zuerst AGENTS.md im Repository und halte dich an alle Punkte. Grundlage ist
 - Ändere keinen Test, um ihn grün zu machen. Was unklar ist, schreib in die Commit-Nachricht statt zu raten.
 """, encoding="utf-8")
     befehl = (f"git fetch origin {basis}\n"
-              f"git worktree add ..\\gt-{kennung} -b agy/{kennung} origin/{basis}\n"
+              f"git worktree add --no-track ..\\gt-{kennung} -b agy/{kennung} origin/{basis}\n"
               f"cd ..\\gt-{kennung}\n"
               f"agy      (dann eintippen: Lies {rel} und fuehre den Auftrag aus.)\n"
               f"   oder ohne Dialog, in PowerShell:\n"

@@ -206,6 +206,7 @@ def test_uebergabe_an_antigravity_und_token_einlesen(repo, tmp_path):
     text = datei.read_text()
     assert "AGENTS.md" in text and "rechnen.py" in text and "agy/" in text
     assert "agy -p" in befehl_ and "git worktree add" in befehl_ and "--output-format json" in befehl_
+    assert "--no-track" in befehl_                       # ein git push des Agenten trifft nie den Zweig der Grundlage
     j = tmp_path / "agy.json"
     j.write_text(json.dumps({"response": "fertig", "num_turns": 3,
                              "usage": {"input_tokens": 10415, "output_tokens": 657, "thinking_tokens": 616}}))
