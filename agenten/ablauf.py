@@ -53,12 +53,19 @@ class Auftrag:
             f.write(json.dumps(z, ensure_ascii=False) + "\n")
 
     def rufen(self, rolle: str, modell: str, text: str) -> dict:
-        try:
-            a: Antwort = self.anbieter.antworten(modell, _rolle(rolle, self.repo), text)
-            daten = a.json()
-        except (AnbieterFehler, ValueError) as err:
-            protokoll.schreiben(self.repo / ".agenten", self.id, rolle, self.anbieter.name, erfolg=False, fehler=str(err))
-            raise AnbieterFehler(f"{rolle}: {err}") from None
+        while True:
+            try:
+                a: Antwort = self.anbieter.antworten(modell, _rolle(rolle, self.repo), text)
+                daten = a.json()
+                break
+            except (AnbieterFehler, ValueError) as err:
+                protokoll.schreiben(self.repo / ".agenten", self.id, rolle, self.anbieter.name, erfolg=False,
+                                    fehler=f"{modell}: {err}")
+                ersatz = modelle.ausweich(modell, self.e) if getattr(err, "code", 0) in (429, 503) else None
+                if not ersatz:
+                    raise AnbieterFehler(f"{rolle}: {err}") from None
+                self.nachricht("orchestrator", rolle, "hinweis", f"{modell} überlastet, weiter mit {ersatz}")
+                modell = ersatz
         z = protokoll.schreiben(self.repo / ".agenten", self.id, rolle, self.anbieter.name, a,
                                 kosten=self.e.kosten_protokollieren)
         self.aufrufe.append(z)

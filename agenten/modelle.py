@@ -14,6 +14,14 @@ def eintrag(modell: str) -> dict:
     return REGISTER["modelle"].get(modell, {"anbieter": "gemini", "frei": False, "ein": 0.0, "aus": 0.0})
 
 
+def ausweich(modell: str, e: Einstellungen) -> str | None:
+    """Freies Ersatzmodell bei Ueberlast (HTTP 429/503); ein bezahltes nur, wenn erlaubt."""
+    m = eintrag(modell).get("ausweich")
+    if m and (eintrag(m).get("frei") or e.bezahlt_erlaubt):
+        return m
+    return None
+
+
 def kosten_usd(modell: str, ein: int, aus: int) -> float:
     e = eintrag(modell)
     return round((ein * e.get("ein", 0) + aus * e.get("aus", 0)) / 1e6, 6)

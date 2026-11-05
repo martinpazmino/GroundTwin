@@ -232,3 +232,20 @@ def test_befehlszeile_ohne_netz(repo, tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(repo)
     assert main(["verbindung"]) == 0 and "ok · Modell gemini-3.5-flash-lite" in capsys.readouterr().out
     assert main(["stand"]) == 0 and "Zweig" in capsys.readouterr().out
+
+
+def test_ueberlast_weicht_auf_ein_freies_modell_aus(repo):
+    from agenten.anbieter import AnbieterFehler as AF
+
+    class Ueberlastet(Attrappe):
+        def antworten(self, modell, system, text, json_antwort=True):
+            if modell == "gemini-3.8-flash":
+                self.anfragen.append({"modell": modell})
+                raise AF("Gemini HTTP 503: high demand", 503)
+            return super().antworten(modell, system, text, json_antwort)
+    (repo / "rechnen.py").write_text("def summe(a, b):\n    return a + b\n")
+    anb = Ueberlastet([OK])
+    b = ablauf.review(repo, laden(repo), anb)
+    assert b["urteil"] == "ok" and b["modelle"] == ["gemini-3.5-flash-lite"]
+    assert [x["modell"] for x in anb.anfragen] == ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    assert protokoll.summe(repo / ".agenten")["fehler"] == 1                    # der Fehlversuch steht im Protokoll

@@ -35,7 +35,9 @@ class Antwort:
 
 
 class AnbieterFehler(RuntimeError):
-    pass
+    def __init__(self, text: str, code: int = 0):
+        super().__init__(text)
+        self.code = code
 
 
 def _tls() -> ssl.SSLContext:
@@ -73,9 +75,9 @@ class Gemini:
             except urllib.error.HTTPError as err:
                 inhalt = err.read().decode("utf-8", "replace")[:300]
                 if err.code in (429, 500, 502, 503, 504) and versuch <= self.versuche:
-                    time.sleep(min(30, 2 ** versuch))
+                    time.sleep(min(30, 3 * 2 ** versuch))
                     continue
-                raise AnbieterFehler(f"Gemini HTTP {err.code}: {inhalt}") from None
+                raise AnbieterFehler(f"Gemini HTTP {err.code}: {inhalt}", err.code) from None
             except (urllib.error.URLError, TimeoutError) as err:
                 if versuch <= self.versuche:
                     time.sleep(min(30, 2 ** versuch))

@@ -2,17 +2,77 @@
  "stand": "2026-11-05",
  "quelle": "https://ai.google.dev/gemini-api/docs/pricing (gelesen 2026-11-05); Preise je 1 Mio. Tokens, USD, Standard",
  "modelle": {
-  "gemini-3.8-flash": {"anbieter": "gemini", "frei": true, "ein": 0.75, "aus": 3.75, "kontext": 1048576, "staerke": "Standard: Pruefung, Diagnose, Doku"},
-  "gemini-3.5-flash-lite": {"anbieter": "gemini", "frei": true, "ein": 0.30, "aus": 2.50, "kontext": 1048576, "staerke": "Zusammenfassen, Pruefen, Einordnen"},
-  "gemini-3.1-flash-lite": {"anbieter": "gemini", "frei": true, "ein": 0.25, "aus": 1.50, "kontext": 1048576, "staerke": "Ersatz fuer Flash-Lite"},
-  "gemini-4-argon": {"anbieter": "gemini", "frei": false, "ein": 2.00, "aus": 10.00, "kontext": 1048576, "staerke": "Hohes Risiko: Extraktion, Modellierer, IFC"},
-  "gemini-2.5-flash": {"anbieter": "gemini", "frei": true, "ein": 0.30, "aus": 2.50, "kontext": 1048576, "staerke": "alte Generation", "ersatz": "gemini-3.8-flash"},
-  "gemini-3.6-flash": {"anbieter": "gemini", "frei": true, "ein": 0.75, "aus": 3.75, "kontext": 1048576, "staerke": "laeuft aus", "ersatz": "gemini-3.8-flash"}
+  "gemini-3.8-flash": {
+   "anbieter": "gemini",
+   "frei": true,
+   "ein": 0.75,
+   "aus": 3.75,
+   "kontext": 1048576,
+   "staerke": "Standard: Pruefung, Diagnose, Doku",
+   "ausweich": "gemini-3.5-flash-lite"
+  },
+  "gemini-3.5-flash-lite": {
+   "anbieter": "gemini",
+   "frei": true,
+   "ein": 0.3,
+   "aus": 2.5,
+   "kontext": 1048576,
+   "staerke": "Zusammenfassen, Pruefen, Einordnen",
+   "ausweich": "gemini-3.1-flash-lite"
+  },
+  "gemini-3.1-flash-lite": {
+   "anbieter": "gemini",
+   "frei": true,
+   "ein": 0.25,
+   "aus": 1.5,
+   "kontext": 1048576,
+   "staerke": "Ersatz fuer Flash-Lite"
+  },
+  "gemini-4-argon": {
+   "anbieter": "gemini",
+   "frei": false,
+   "ein": 2.0,
+   "aus": 10.0,
+   "kontext": 1048576,
+   "staerke": "Hohes Risiko: Extraktion, Modellierer, IFC",
+   "ausweich": "gemini-3.8-flash"
+  },
+  "gemini-2.5-flash": {
+   "anbieter": "gemini",
+   "frei": true,
+   "ein": 0.3,
+   "aus": 2.5,
+   "kontext": 1048576,
+   "staerke": "alte Generation",
+   "ersatz": "gemini-3.8-flash"
+  },
+  "gemini-3.6-flash": {
+   "anbieter": "gemini",
+   "frei": true,
+   "ein": 0.75,
+   "aus": 3.75,
+   "kontext": 1048576,
+   "staerke": "laeuft aus",
+   "ersatz": "gemini-3.8-flash"
+  }
  },
  "rollen": {
-  "pruefer": {"modell": "standard", "risiko_modell": "stark"},
-  "testanalyst": {"modell": "standard", "risiko_modell": "stark"},
-  "zusammenfasser": {"modell": "gemini-3.5-flash-lite"}
+  "pruefer": {
+   "modell": "standard",
+   "risiko_modell": "stark"
+  },
+  "testanalyst": {
+   "modell": "standard",
+   "risiko_modell": "stark"
+  },
+  "zusammenfasser": {
+   "modell": "gemini-3.5-flash-lite"
+  }
  },
- "risiko_pfade": ["services/extractor/", "services/modeler/", "benchmark/", "services/geodaten/geodaten/boreholeml"]
+ "risiko_pfade": [
+  "services/extractor/",
+  "services/modeler/",
+  "benchmark/",
+  "services/geodaten/geodaten/boreholeml"
+ ]
 }
