@@ -6,6 +6,7 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Plausibility report per Bohrung** (`ui/plausibilitaet.py`, `plausibilitaet` in `server/arbeitsplatz.py`, *Bohrungen* step in `apps/web/src/app/schritt_bohrungen.ts`, `tests/test_plausibilitaet.py`, [docs/21 §2.1](docs/21_app_schritte_normen.md#21-plausibility-report-per-bohrung)): checks the effective (corrected) values for `reihenfolge`, `luecke`/`ueberlappung`, `beginn`, `endteufe`, `duenn`, `grundwasser`, `gok_fehlt` and `gok_nachbarn` without modifying data.
 - **Agent team** for development (`agenten/`, docs/24): one command for all checks with a short verdict, a docs
   link/number check and a session state; Gemini agents through the API (review of a diff, diagnosis of a failing check
   with the fix applied in a git worktree, merged only on Claude's approval); a task hand-off to Antigravity; token and
