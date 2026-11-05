@@ -1,7 +1,7 @@
 ---
 title: "GroundTwin documentation: index"
 date: 2026-10-23
-updated: 2026-11-02
+updated: 2026-11-05
 tags: [index, geo_agent]
 aliases: [Index, Map of documents]
 ---
@@ -39,6 +39,7 @@ The notes are in English and keep the German technical terms of the Gutachten an
 ## Next
 
 - [23 Open data and open-source integration](23_open_data_integration.md): evaluation and intervention plan for BoreholeML, the BGR Bohrpunktkarte and the state geological surveys, a Baugrundmodell from a point, the Umgebungsmodell (DGM + LoD2 buildings), basemaps, Cesium / 3D Tiles and OpenStreetMap.
+- [24 Agent team (proposal)](24_agent_team.md): Claude as orchestrator and Gemini as specialists — where Claude's tokens go (measured), what the Google subscription and the Gemini API allow, roles, protocol, permissions, metrics and the roadmap.
 
 ## Extraction: problem and design
 
