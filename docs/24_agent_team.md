@@ -18,13 +18,20 @@ Google offering really allow, and the smallest architecture that saves Claude to
 >   a median context of 487 k tokens per call, 2.3 billion cached tokens re-read. Every extra round trip re-reads
 >   about half a million tokens. The saving comes from fewer Claude round trips and compact reports, not from
 >   shorter answers.
-> - **Your Google AI Pro subscription cannot carry an automated agent team.** Gemini CLI no longer serves AI Pro
->   since 2026-06-18. The successor, Antigravity CLI, may be run from your own local script. Google staff call
->   wrapping it in a third-party agent (Claude Code) a breach of its terms. Unattended runs risk an account lockout
->   (§4.2).
-> - **The supported path is the Gemini API with an AI Studio key**, called from a thin Python package in the repo.
->   Its free tier needs no billing and covers `gemini-3.8-flash` and `gemini-3.5-flash-lite`. "Argon" is real:
->   `gemini-4-argon`, Google's flagship, but paid only (§4.3).
+> - **Your Google AI Pro subscription cannot be driven through its CLI.** Gemini CLI no longer serves AI Pro since
+>   2026-06-18. The successor, Antigravity CLI, may be run from your own local script. Google staff call wrapping it
+>   in a third-party agent (Claude Code) a breach of its terms. Unattended runs risk an account lockout (§4.2).
+> - **The subscription still pays its way, through official APIs** (§4.5):
+>   - **Jules** (Google's asynchronous coding agent): AI Pro raises it to 100 tasks a day and 15 at once. It has a
+>     documented API for automation and works in Google's VMs on a branch of the GitHub repository. It becomes the
+>     implementing agent, at no Claude tokens while it works.
+>   - **$10 a month of Google Cloud credit** (Developer Program, included since 2026-01-27). It pays for paid Gemini
+>     API calls, including `gemini-4-argon`, once a Cloud project with billing is linked.
+>   - The subscription does **not** raise the limits of an API key; its higher quotas apply in the AI Studio web
+>     interface only.
+> - **The reviewing and analysing agents use the Gemini API with an AI Studio key**, called from a thin Python package
+>   in the repo. Its free tier needs no billing and covers `gemini-3.8-flash` and `gemini-3.5-flash-lite`. "Argon" is
+>   real: `gemini-4-argon`, Google's flagship, paid only (§4.3), so it runs on the monthly credit.
 > - **Deterministic scripts first, agents second.** A suite runner with a ten-line verdict and a docs consistency
 >   check save more Claude turns than any model. Agents get the loops that need judgement: diagnose a failure,
 >   review a diff, draft the docs of a change, write tests (§3).
@@ -96,6 +103,8 @@ agents that talk freely.
 | **Gemini CLI** (open source, npm 0.67.0) | Stopped serving the individual, AI Pro and Ultra tiers on 2026-06-18; "Login with Google" no longer works. API key, Vertex AI and Code Assist Standard/Enterprise still work | No | Possible with an API key, but it is an agent with a shell: more to sandbox than we need |
 | **Antigravity CLI** (`agy`, closed source, since 2026-05-19) | Headless `agy -p`, `--output-format json`/`stream-json`, `--json-schema`; the JSON reports `usage` (input, output, thinking, cached tokens) and `num_turns`; login once interactively | Only for **your own local scripts, started by hand**. Google staff: Section 6 of the Antigravity Additional Terms prohibits wrapping `agy` inside third-party agents or apps; unattended or automatic requests are not supported on consumer plans and can trigger enforcement and lockouts | **Not as an agent of Claude Code.** Fine for you to use interactively next to it |
 | **Gemini API** (AI Studio key; SDK `google-genai` 2.34.0) | Supported path for automation; per-call model choice, structured output, parallel calls within the rate limits, token counts in every response | Not the subscription: a separate key. Free tier without billing | **Recommended** |
+| **Jules API** (`jules.googleapis.com/v1alpha`, alpha) | Google's asynchronous coding agent; sessions on a connected GitHub repository; key from the Jules settings (at most 3); plan approval optional; result as a pull request or in the session | **Yes**: "Jules in Pro" is a benefit of Google AI Pro (100 tasks per rolling 24 h, 15 concurrent; free: 15 and 3). The API is documented for automation ("automate tasks like bug fixing and code reviews") | **Recommended** as the implementing agent (§4.5) |
+| Developer Program credits | $10 per month in Google Cloud credits for Google AI Pro ($100 for Ultra), activated at the Google Developer Program, applied to a Cloud project with billing; usable for the Gemini API | **Yes**, as money for paid API calls; with prepay billing a paid balance above $0 is needed to activate them | Pays for Argon escalations (§5.4) |
 | Vertex AI | Paid Google Cloud project | No | Only if a company account and contract are wanted |
 | MCP server around Gemini | Possible | – | Unnecessary: a command called by Claude through Bash costs the same and is simpler |
 
@@ -104,12 +113,16 @@ would come as an environment secret, never pasted into the chat.
 
 ### 4.2 Your Google AI Pro subscription, answered
 
-1. **Programmatic access?** Only through `agy` run by hand from your own script. The quota works inside Google's own
-   apps and cannot be called as a backend API (Google staff, 2026-10-28).
+1. **Programmatic access?**
+   - Through `agy`: only when run by hand from your own script. Its quota works inside Google's own apps and cannot
+     be called as a backend API (Google staff, 2026-10-28).
+   - Through **Jules**: yes, with its official API and the higher limits of *Jules in Pro*.
+   - Through the **Gemini API**: with the monthly Cloud credit (§4.5).
 2. **Reuse the authentication?** No. Extracting or reusing the OAuth tokens is explicitly prohibited, and a cloud
    session could not hold your login safely anyway.
-3. **Separate API billing?** Not for the free tier of the API (an AI Studio key, no billing). Billing only for paid
-   models (`gemini-4-argon`) or higher limits, and only with your approval.
+3. **Separate API billing?** Not for the free tier of the API (an AI Studio key, no billing). Paid models
+   (`gemini-4-argon`) and higher limits need Cloud Billing on the project. Your $10 monthly credit is applied first,
+   and with prepay billing nothing beyond the prepaid balance can be spent. Only with your approval.
 4. **Models**: see §4.3.
 5. **Parallel execution?** Yes, through the API, within the per-project rate limits.
 6. **Limits**: the free-tier rate limits are no longer published; AI Studio shows them per project. Argon and 3.1 Pro
@@ -150,6 +163,26 @@ only, and Batch and Flex. It is a valid model, but it costs money from the first
   - project folders (`ARBEIT`) and secrets;
   - **any blind-test PDF before its predictions are frozen and pushed** (the blind protocol of
     [CONTRIBUTING](../CONTRIBUTING.md)).
+
+### 4.5 What the subscription does give, and how the system uses it
+
+| Benefit of Google AI Pro | Programmatic? | Use in this system |
+|---|---|---|
+| **Jules in Pro**: 100 tasks per rolling 24 h, 15 concurrent, the latest Gemini Pro model | Yes, with the Jules API | **Umsetzer** (implementer): a task with a clear goal → Jules works on its own branch → a pull request. Claude reviews, CI runs, nothing is merged without Claude |
+| **$10 per month in Google Cloud credits** (Developer Program; each grant valid one year) | Yes, as payment for Gemini API calls | Argon for high-risk reviews and hard diagnoses, capped by the orchestrator at the credit (for example $9 per month) |
+| Higher quotas and Argon in the **AI Studio web interface** | No (web only) | For you, by hand: a second opinion on a module |
+| **Antigravity** with the AI Pro quota (refresh every 5 hours, weekly cap) | Only scripted by hand | For you, interactively; never wrapped by Claude Code |
+| **NotebookLM**, Deep Research | No | For you and the team: the docs of GroundTwin as a notebook (questions, audio overviews for the manager) |
+| Colab compute units | No | Later, by hand: a GPU for OCR experiments or a local model |
+
+Conditions:
+
+- Paid Jules plans exist only for personal Google accounts ending in @gmail.com. These benefits belong to Google
+  AI Pro (formerly Google One AI Premium); a Google AI Plus plan may not include them, so check the plan name in
+  your Google One settings.
+- Jules needs its GitHub app on the repository. It writes branches and pull requests; branch protection on `main`
+  keeps every merge with a reviewed pull request.
+- The Jules API is alpha: names may change. The adapter is small, so a change costs one file.
 
 ## 5. Recommended architecture
 
@@ -204,6 +237,7 @@ Dynamic: a role is instantiated per task, and several of the proposed roles shar
 | **Testanalyst** | test-failure analyst, regression analyst | 3.8 Flash; escalate on low confidence | the compressed log, files and lines of the traceback, recent diff of those files | cause, evidence, a minimal patch, confidence | patch as text |
 | **Dokumentar** | documentation engineer, consistency | 3.5 Flash-Lite for checks, 3.8 Flash for drafts | the diff, the doc map (which notes name which modules), the style rules (English, German terms, links) | a doc patch + the list of claims it could not verify | patch as text |
 | **Testautor** | test generation, QA | 3.8 Flash | the module, its existing tests, the fixtures | new tests as a patch | patch as text |
+| **Umsetzer (Jules)** | backend, frontend and full-stack developer, refactoring | Jules (subscription, latest Gemini Pro), up to 15 at once | the task text, the files to touch, the tests that must pass, the protected files; Jules reads the repository itself in its VM | a pull request on its own branch | its branch only |
 | later: UX-Prüfer, IFC-Fachmann, Rechercheur | UX, IFC 4.3/BIM, research | Flash (images), Argon (IFC), grounding | screenshots; IFC validation output; a question | findings | nothing |
 
 ### 5.4 Model selection
@@ -213,9 +247,11 @@ picks one per call:
 
 1. Start from the role's default (§5.3).
 2. Down to Flash-Lite when the input is a log summary or a check.
-3. Up to Argon only when the task is high-risk (extractor, modeler, IFC, benchmark) **and** a paid budget is set, or
-   after a Flash result with low confidence.
-4. Never a preview model by default. A retired model (for example 3.6 Flash on Vertex after 2026-11-19) falls back
+3. Up to Argon only when the task is high-risk (extractor, modeler, IFC, benchmark) **and** budget is left on the
+   monthly Cloud credit, or after a Flash result with low confidence.
+4. Implementation work goes to **Jules** when it is well specified (goal, files, tests), and to Claude when it needs
+   the architecture in Claude's head.
+5. Never a preview model by default. A retired model (for example 3.6 Flash on Vertex after 2026-11-19) falls back
    to its successor named in the registry.
 
 A new provider is one adapter and a few registry lines. The Claude side stays Claude Code: Claude subagents save
@@ -233,6 +269,12 @@ main-thread context but are still Claude tokens, so they are not the default for
    3. Prüfer: review of patch and test result.
    4. One revision round if the Prüfer objects.
    5. Stop.
+   Example *umsetzen* (with Jules):
+   1. Claude writes the task.
+   2. Jules plans and implements on its branch.
+   3. CI and the Prüfer (Gemini API) check the pull request.
+   4. The Prüfer's findings go back to the Jules session as a message, at most twice.
+   5. Claude reviews the final diff and merges or rejects it.
 3. **Report.** Claude reads only `bericht.json` (≤ 2 KB): verdict, the merged findings, the patch path with its
    `--stat`, the tests run and their result, confidence, open questions, and the tokens and cost of the task.
 4. **Decision.** Claude approves (`python -m agenten uebernehmen <id>` applies the patch to the working tree after
@@ -257,7 +299,7 @@ main-thread context but are still Claude tokens, so they are not the default for
 
 | Risk | Answer |
 |---|---|
-| An agent changes production code | Agents have no tools; patches are applied by the orchestrator in `git worktree` on a scratch branch only |
+| An agent changes production code | Gemini agents have no tools; patches are applied by the orchestrator in `git worktree` on a scratch branch only. Jules writes only its own branch; branch protection keeps `main` behind a reviewed pull request |
 | Two agents on the same file | Write sets are locked per task; overlapping tasks wait |
 | Critical files | **Protected**: `services/extractor/prototyp_v4.py`, `benchmark/baseline_v4.json`, `benchmark/groundtruth/**`, `constraints.txt`, CI workflows, `CLAUDE.md`, `LICENSE`. A patch touching one is refused unless Claude allows it explicitly for that task |
 | Weakened tests | A patch that deletes or skips a test, or lowers a baseline, is refused automatically |
@@ -308,21 +350,31 @@ erfolg, kosten_usd, kosten_art}`.
 |---|---|---|
 | 3a, no model | `pruefen`, `doku-pruefen`, `stand`, metrics of the Claude side; `/pruefen` | The full check returns one verdict ≤ 15 lines; a known doc inconsistency is found; tests offline |
 | 3b, MVP agents | `google-genai` adapter, registry, packer with denylist and secret scan, Prüfer and Testanalyst, the *diagnose* workflow with a worktree, `bericht.json`, `uebernehmen` | A fake-provider test suite; one real *diagnose* on a deliberately broken test (§7 Phase 4); no write outside the worktree; tokens logged |
+| 3c, Jules | Jules adapter (sessions, plan, messages, pull request), the *umsetzen* workflow with the Prüfer, one GitHub app install and branch protection (your action) | One real small task (for example a test for `geodaten/laender.py`) done by Jules, reviewed, merged by Claude; Jules tasks and Claude tokens logged |
 | 4, validation | Four real tasks, each once delegated and once inline, Claude tokens from the transcript: (1) diagnose a reintroduced bug (the radius of the LoD2 cut-out); (2) review commit `a7523cb`; (3) the docs of a small feature against the docs written by hand; (4) tests for `geodaten/laender.py` kept only if they catch an injected fault | A table of Claude tokens, Gemini tokens, time and quality per task; a role stays only where it saves |
 | 5 | Dokumentar and Testautor if Phase 4 shows savings; UX-Prüfer for screenshots; hooks; Argon for high-risk reviews if you approve a budget | Each addition justified by the Phase 4 numbers |
 
 ## 8. Decisions needed from you
 
-1. **Integration**: Gemini API with an AI Studio key, free tier (recommended), instead of your subscription. Not the
-   subscription through `agy`.
-2. **The key**: create it in Google AI Studio (no billing). Add it as `GEMINI_API_KEY`:
+1. **Integration**:
+   - the Gemini API with an AI Studio key for the reviewing and analysing roles;
+   - **Jules** with your subscription for the implementing role;
+   - not the subscription through `agy`.
+2. **The keys**: create them without billing:
+   - the Gemini key in Google AI Studio;
+   - the Jules key in the Jules settings.
+   
+   Add them as `GEMINI_API_KEY` and `JULES_API_KEY`:
    - for cloud sessions, as an environment secret;
    - on your PC, in a git-ignored `.env`.
    
    Never in the repository or the chat.
 3. **Data policy** of §4.4: only tracked files of the (public) repository, never client Gutachten, never blind PDFs.
-4. **Paid models**: off. Later, a budget for Argon if Phase 4 shows that high-risk reviews need it.
-5. **Go for Phase 3a**: it needs no key and no decision above, and is useful on its own.
+4. **The monthly $10 credit**: activate it at the Google Developer Program and link a Cloud project with prepay
+   billing. With prepay, the spend can never exceed what you deposited. Until then, paid models stay off.
+5. **Jules on the repository**: install its GitHub app on `martinpazmino/GroundTwin`, and protect `main` (merge only
+   with a reviewed pull request).
+6. **Go for Phase 3a**: it needs no key and no decision above, and is useful on its own.
 
 ## 9. Sources (read 2026-11-05)
 
@@ -331,6 +383,8 @@ erfolg, kosten_usd, kosten_art}`.
 - Google AI Developers Forum: [policy clarification on subscription quota](https://discuss.ai.google.dev/t/policy-clarification-private-monitoring-app-using-official-antigravity-cli-and-subscription-quota/190756) (staff reply 2026-10-28) and [external orchestration of headless mode](https://discuss.ai.google.dev/t/is-external-orchestration-of-antigravity-cli-headless-mode-supported-with-account-based-usage/183051)
 - [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing), [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms), [Gemini 4 Argon](https://ai.google.dev/gemini-api/docs/models/gemini-4-argon)
 - [Gemini CLI headless mode](https://geminicli.com/docs/cli/headless/) (JSON statistics, for API-key use)
+- [Google AI plans in the Gemini API docs](https://ai.google.dev/gemini-api/docs/google-ai-plans) (subscription benefits in the AI Studio UI only; Developer Program credits for the API), [Google blog: Developer Program premium in AI Pro and Ultra](https://blog.google/innovation-and-ai/technology/developers-tools/gdp-premium-ai-pro-ultra/) ($10 / $100 per month), [Google AI plans](https://one.google.com/about/google-ai-plans/)
+- [Jules: limits and plans](https://jules.google/docs/usage-limits), [Jules API](https://developers.google.com/jules/api)
 - Claude side: the `usage` records of the session transcript, measured with a script (§2)
 
 Up: [Index](README.md)
