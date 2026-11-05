@@ -45,3 +45,6 @@ screenshots/
 capturas/
 /arbeit/
 *.log
+
+# Agententeam (docs/24): Auftraege, Worktrees, Berichte, Messwerte
+.agenten/

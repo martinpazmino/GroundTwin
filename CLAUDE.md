@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D99.
+- `docs/11_decisions.md`: decisions D1–D103 (D100–D103 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -21,6 +21,8 @@ license **AGPL-3.0-or-later** (D79).
   why not Vercel, variables, memory, CI.
 - `docs/23_open_data_integration.md`: open data and open-source integration (BoreholeML, BGR Bohrpunktkarte, DGM +
   LoD2 Umgebungsmodell, 3D Tiles, Cesium/OSM): evaluation and plan P0–P6.
+- `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
+  patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
 ## Working rules
 - **Blind test**: with a new PDF, freeze the predictions (`benchmark/blind_test.py freeze`)
@@ -117,6 +119,14 @@ license **AGPL-3.0-or-later** (D79).
   (AGPL § 13) stays. Dependencies: `requirements-server.txt` + exact versions in `constraints.txt` (D81; renewed with
   `pip freeze`); CI `.github/workflows/pruefungen.yml`. Third parties: `THIRD_PARTY_LICENSES.md`; rules:
   `CONTRIBUTING.md`.
+- **Agententeam (docs/24, D100–D103)**: `python -m agenten pruefen` (all checks, one verdict: read it instead of
+  logs), `doku`, `stand` (start a session with it), `review`, `diagnose --befehl "…"` (Gemini proposes, the patch waits
+  in a worktree), `tests --modul … --ziel tests/…` (kept only if it kills mutants), `uebernehmen <id>` /
+  `verwerfen <id>` (only after reading the patch), `uebergabe` (task file in `agenten/auftraege/` for Antigravity, the
+  user starts it), `kosten`. Delegate loops of three or more turns or more than ~20 k tokens of reading; review diffs
+  in groups ≤ ~15 k tokens (the lite models wave large diffs through, docs/24 §9). Agent findings are claims: verify
+  every high or medium one in the code. Settings in `.env`
+  (`agenten/env.beispiel`); paid models only with `AI_ALLOW_PAID_API=true`. Tests `tests/test_agenten.py`.
 - Free online (D83): `start_online.bat` / `scripts/online.py` start the server **always with a password** and a
   Cloudflare Quick Tunnel (`cloudflared`, `CLOUDFLARED` for the path); it refuses a server already running on the
   port. Test `tests/test_online.py` with a simulated cloudflared.

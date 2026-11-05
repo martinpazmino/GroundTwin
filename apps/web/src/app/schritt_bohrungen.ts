@@ -24,6 +24,28 @@ let seiteLaedt = "";
 let zoom = 0.5;
 let entfernteOffen = false;
 
+interface PlausibilitaetBefund {
+  regel: string;
+  stufe: "warnung" | "hinweis";
+  text: string;
+  schicht: number | null;
+}
+
+interface PlausibilitaetZeile {
+  id: string;
+  code: string;
+  gok_quelle?: string;
+  befunde: PlausibilitaetBefund[];
+}
+
+function plausibilitaetListe(): PlausibilitaetZeile[] {
+  return ((S.z as unknown as { plausibilitaet?: PlausibilitaetZeile[] })?.plausibilitaet) ?? [];
+}
+
+function befundeVon(bid: string): PlausibilitaetBefund[] {
+  return plausibilitaetListe().find((p) => p.id === bid)?.befunde ?? [];
+}
+
 // ------------------------------------------------------------------ Aktionen
 function nachbar(richtung: 1 | -1) {
   const liste = sichtbareBohrungen();
@@ -87,6 +109,32 @@ function zustandZeichen(b: Bohrung) {
   return html`<span class="zeichen" title="noch zu prüfen">○</span>`;
 }
 
+function plausibilitaetZeichen(b: Bohrung) {
+  const befunde = befundeVon(b.id);
+  if (!befunde.length) return nothing;
+  const warn = befunde.some((f) => f.stufe === "warnung");
+  const titel = befunde.map((f) => `${f.stufe === "warnung" ? "Warnung" : "Hinweis"}: ${f.text}`).join("\n");
+  return html`<span class=${`klein ${warn ? "warn" : "leise"}`} title=${titel}>${warn ? "⚠" : "ℹ"}\u00a0${befunde.length}</span>`;
+}
+
+function plausibilitaetDetails(b: Bohrung) {
+  const befunde = befundeVon(b.id);
+  if (!befunde.length) return nothing;
+  const w = befunde.filter((f) => f.stufe === "warnung").length;
+  const h = befunde.filter((f) => f.stufe === "hinweis").length;
+  const teile = [w ? `${w} Warnung(en)` : "", h ? `${h} Hinweis(e)` : ""].filter(Boolean).join(", ");
+  return html`
+    <details class="still" ?open=${w > 0}>
+      <summary class=${w ? "warn" : ""}>${w ? "⚠" : "ℹ"} Plausibilität (${befunde.length}): ${teile}</summary>
+      <ul class="dienste klein">
+        ${befunde.map((f) => html`
+          <li class=${f.stufe === "warnung" ? "warn" : "leise"}>
+            ${f.stufe === "warnung" ? "⚠ Warnung" : "ℹ Hinweis"}: ${f.text}
+          </li>`)}
+      </ul>
+    </details>`;
+}
+
 function liste() {
   const alle = S.z!.bohrungen;
   const sichtbar = sichtbareBohrungen();
@@ -100,7 +148,7 @@ function liste() {
           <li role="option" aria-selected=${String(b.id === S.bid)} class=${b.id === S.bid ? "aktiv" : ""}
             @click=${() => bohrungWaehlen(b.id)}>
             ${zustandZeichen(b)}
-            <span class="name">${b.code}</span>
+            <span class="name">${b.code} ${plausibilitaetZeichen(b)}</span>
             <span class="wert">${b.schichten_geprueft}/${b.schichten_n}</span>
             <button class="symbol leise-knopf" title="Aus dem Modell entfernen" aria-label=${`${b.code} entfernen`}
               @click=${(e: Event) => { e.stopPropagation(); void aendern([{ op: "entfernen", id: b.id }]); }}>🗑</button>
@@ -126,6 +174,9 @@ function pruefleiste() {
   const st = S.z!.pruefstand;
   const [bg, bn] = st.bohrungen;
   const [sg, sn] = st.schichten;
+  const alleBefunde = plausibilitaetListe().flatMap((p) => p.befunde);
+  const nWarn = alleBefunde.filter((f) => f.stufe === "warnung").length;
+  const nHinw = alleBefunde.filter((f) => f.stufe === "hinweis").length;
   return html`
     <div class="pruefleiste">
       <div class="balken"><span>Bohrungen geprüft <b>${bg}/${bn}</b></span><progress max=${bn || 1} value=${bg}></progress></div>
@@ -133,6 +184,7 @@ function pruefleiste() {
       <span class=${`plakette ${st.unklassifiziert_offen ? "warn" : "ok"}`}>
         ${st.unklassifiziert_offen ? `⚠ ${st.unklassifiziert_offen} Schicht(en) nicht klassifiziert` : "✓ keine offenen Warnungen"}</span>
       ${hilfe("warnung")}
+      <span class=${`klein ${nWarn ? "warn" : "leise"}`}>Plausibilität: ${nWarn} Warnungen, ${nHinw} Hinweise</span>
       <span class="fueller"></span>
       ${hilfe("pruefstand")}
       <button @click=${() => allePruefen(true)} ?disabled=${bg === bn && sg === sn}>✓ Alle Bohrungen geprüft</button>
@@ -178,6 +230,7 @@ function kopf(b: Bohrung) {
         ${feld("Grundwasser", html`<output>${b.grundwasser || "–"}</output>`)}
       </div>
       ${lagePruefung(b)}
+      ${plausibilitaetDetails(b)}
       ${b.hinweise.length ? html`<p class="hinweise">ℹ ${b.hinweise.join(" · ")}</p>` : nothing}
     </div>`;
 }
