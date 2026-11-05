@@ -16,7 +16,7 @@ from datetime import date, datetime
 import numpy as np
 
 from . import gelaende
-from .bohrdaten import dienste_am_ort, namensnennung, utm_normal
+from .bohrdaten import dienste_am_ort, namensnennung, ohne_dienst, utm_normal
 from . import netz
 from .netz import DienstFehler
 
@@ -75,9 +75,10 @@ def abrufen(x0: float, y0: float, x1: float, y1: float, epsg: int, holer=None,
     x1n, y1n, _ = utm_normal(x1, y1, epsg)
     if x1n <= x0n or y1n <= y0n:
         raise ValueError("Ausschnitt leer")
-    am_ort = dienste_am_ort((x0n + x1n) / 2, (y0n + y1n) / 2, system, arten=("wcs-dgm",))
+    mitte = ((x0n + x1n) / 2, (y0n + y1n) / 2)
+    am_ort = dienste_am_ort(*mitte, system, arten=("wcs-dgm",))       # das Land der Mitte (ein Raster je Abruf)
     if not am_ort:
-        raise ValueError("kein DGM-Dienst für diesen Ort (bisher Brandenburg mit Berlin und NRW) – DGM als Datei laden")
+        raise ValueError(f"kein DGM-Dienst für diesen Ort ({ohne_dienst(*mitte, system, 'dgm')}) – DGM als Datei laden")
     fehler = []
     for d in am_ort:
         if int(d["system"]) != system:

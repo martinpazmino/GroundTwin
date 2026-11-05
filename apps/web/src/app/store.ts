@@ -6,7 +6,7 @@ import type { Kalibrierung } from "../viewer/kanal";
 import type { ViewerApi } from "../viewer/viewer";
 
 export const SCHRITTE = [
-  { id: "gutachten", nr: 1, titel: "Gutachten", kurz: "PDF hochladen" },
+  { id: "gutachten", nr: 1, titel: "Start", kurz: "Gutachten (PDF) oder Standort (Punkt)" },
   { id: "bohrungen", nr: 2, titel: "Bohrungen", kurz: "prüfen und korrigieren" },
   { id: "lage", nr: 3, titel: "Lage", kurz: "Plan, Bezugspunkt, Bohrungen setzen" },
   { id: "einheiten", nr: 4, titel: "Einheiten", kurz: "Schichten verbinden" },

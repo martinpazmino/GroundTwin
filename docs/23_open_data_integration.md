@@ -1,7 +1,7 @@
 ---
 title: "23 Open data and open-source integration: evaluation and intervention plan"
 date: 2026-11-02
-updated: 2026-11-04
+updated: 2026-11-05
 tags: [open-data, boreholeml, bgr, geoportal, dgm, lod2, 3d-tiles, cesium, openstreetmap, plan]
 aliases: [Open data integration, Umgebungsmodell, BoreholeML, Bohrpunktkarte, Intervention plan]
 ---
@@ -32,8 +32,13 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
   - Cesium becomes an optional *export target*: the Baugrundmodell as 3D Tiles. No Cesium ion.
   - OSM is a fallback where the official open data end: outside Germany, or a Land without LoD2.
 - **Effort:** about 5–8 weeks for one person for the phases P0–P5 (§5); P6 is optional.
-- **Status (2026-11-04):** P0 to P5 are done; of the optional P6, the 3D Tiles export for Cesium and the
+- **Status (2026-11-05):** P0 to P5 are done; of the optional P6, the 3D Tiles export for Cesium and the
   GeolDG help ([21 §5.2, §5.3](21_app_schritte_normen.md#52-3d-tiles-for-cesium)).
+  - **All 16 Länder in the registry** (D98): Berlin, Brandenburg, NRW and Baden-Württemberg with data services; the
+    other 12 with their portals as links, marked *ungeprüft*; the Land of a point from its borders (VG2500); one file
+    and a tool to maintain it ([21 §4.8](21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)).
+  - The app puts the use case first (D99): a Gutachten shown and checked against the Bohrungen of the Länder; DGM,
+    buildings, Cesium and GeolDG are under *Erweitert* ([21 §1.2](21_app_schritte_normen.md#12-what-is-in-front-and-what-is-under-erweitert)).
   - A Baugrundmodell from a point (Standort start, P5), marked as Vorerkundung in the app, the viewer, the
     report and the IFC; a Gutachten added later keeps both sources apart
     ([21 §4.7](21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
@@ -365,11 +370,11 @@ Rules:
 | **P5 Standort start** | Step 1 accepts a point; the project uses P2 and P3; `reifegrad = Vorerkundung` in the app, the IFC and the report; a PDF can be added later | From a point in Berlin, a model with ≥ 3 SGD Bohrungen in under a minute; Vorerkundung visible everywhere; with the PDF added, both sources stay apart | 1 week |
 | **P6 Optional** | 3D Tiles export for Cesium; GeolDG help (prefilled BoreholeML / SEP3 for the SGD); swissgeol boreholes for Switzerland; OSM fallback; 3DCityDB if a project database is needed | Per item | Per item |
 
-**Status (2026-11-04):**
+**Status (2026-11-05):**
 
 | Phase | State |
 |---|---|
-| P0: service registry | **Done for four Länder.** [`dienste.json`](../services/geodaten/geodaten/dienste.json): Berlin, Brandenburg, NRW, Baden-Württemberg with license, attribution and evidence; area per service (NRW from its OGC API: its capabilities name a wrong area). Open: Bayern; the BGR GBL has no feature service (its WFS answers 404, only the WMS map exists) |
+| P0: service registry | **Done, all 16 Länder** (2026-11-05, D98). [`dienste.json`](../services/geodaten/geodaten/dienste.json): the services of Berlin, Brandenburg, NRW and Baden-Württemberg with license, attribution and evidence (*geprüft*); the 12 other Länder with their portals (Bohrungen, DGM, LoD2) and the BGR Bohrpunktkarte as links (*ungeprüft*, not tested on request); the Land of a point from its borders (VG2500 of the BKG), at a border both. Maintained with the tool *Dienste der Länder* ([21 §4.8](21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)). The BGR GBL has no feature service (its WFS answers 404, only the WMS map exists) |
 | P1: BoreholeML export and import | **Done.** [`boreholeml.py`](../services/geodaten/geodaten/boreholeml.py), code table from the official codelists v2 with the official names as evidence, export valid against the official XSD 3.2, import of the official examples and round trip; *Modell* and *Gutachten* steps ([21 §5.1](21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)); 11 tests + 1 end-to-end check |
 | P2: Bohrungen of the state services | **Done.** [`bohrdaten.py`](../services/geodaten/geodaten/bohrdaten.py), *Lage* step ([21 §4.5](21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)): query only on a click, Gegenprobe (Berlin example: 5 of 5 found, ≤ 0.05 m), import of the BoreholeML Schichtdaten of NRW and Baden-Württemberg; 13 tests + 1 end-to-end check. The GBL is not queried: as a WMS it gives a map, not data |
 | P3a: DGM from files, GOK check and fill | **Done.** [`services/geodaten`](../services/geodaten/README.md), *Lage* step ([21 §4.4](21_app_schritte_normen.md#44-gelände-dgm-gok-check-dgm-from-the-land-terrain-in-the-model)), 21 tests + 4 end-to-end checks |

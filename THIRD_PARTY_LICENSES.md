@@ -70,6 +70,13 @@ switching to pypdfium2): [docs/14](docs/14_licensing.md).
   OpenStreetMap tiles under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/),
   „© OpenStreetMap-Mitwirkende“ (ODbL). The screenshot `docs/img/21_standort_karte.jpg` shows the basemap.de map
   („© GeoBasis-DE / BKG (2026) CC BY 4.0“).
+- `services/geodaten/geodaten/laender.geojson` holds the borders of the 16 Länder from the **Verwaltungsgebiete
+  1 : 2 500 000 (VG2500)** of the Bundesamt für Kartographie und Geodäsie, Datenlizenz Deutschland – Namensnennung –
+  Version 2.0: „© BKG (2025) dl-de/by-2-0, Datenquellen:
+  https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_vg_nuts.pdf“. Changed: simplified to about
+  150 m and converted to WGS84 by `services/geodaten/werkzeuge/laender_vg2500.py`; the attribution is also in the file.
+- `services/geodaten/geodaten/dienste.json` lists the addresses, licenses and attributions of the services and portals
+  of the Länder (facts and links, no data of the services). The data stay with the services and are fetched by the user.
 - `services/geodaten/geodaten/geoldg.json` paraphrases the Geologiedatengesetz with § references and links to
   gesetze-im-internet.de; laws are official works without copyright (§ 5 Abs. 1 UrhG).
 - The norms database (`services/modeler/baugrundmodell/normen.json`) does **not** reproduce texts of

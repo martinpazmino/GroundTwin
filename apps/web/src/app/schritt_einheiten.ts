@@ -1,5 +1,6 @@
 // Schritt 4 · Einheiten: wie die Schichten zwischen den Bohrungen verbunden werden (automatisch korreliert oder
-// vorgegeben), Profil aller Bohrungen nach Einheit, Beschreibungen je Einheit und die Einstellungen des Modells.
+// vorgegeben), Profil aller Bohrungen nach Einheit, Beschreibungen je Einheit; die Einstellungen des Modells liegen
+// eingeklappt unter „Erweitert“ (offen, sobald eine vom Standard abweicht).
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { hilfe } from "./hilfe";
@@ -12,6 +13,7 @@ const zahl = (v: number | null | undefined, s = 1) =>
 let gewaehlt = "";
 let vorgabe: { name: string; bodenarten: string }[] | null = null;   // Bearbeitung (vor dem Uebernehmen)
 let vorgabeFuer = "";
+let erweitertAuf = false;                       // Einstellungen des Modells: vom Nutzer geöffnet
 
 /** Woher die Oberkante kommt: DGM (an den Bohrungen auf die GOK) oder aus den GOK der Bohrungen. */
 function gelaendeText(g: Record<string, unknown> | undefined) {
@@ -33,9 +35,13 @@ function einstellungen() {
       </div>`;
   };
   const p = S.modell?.bericht?.parameter ?? {};
+  // offen, sobald eine Einstellung vom Standard abweicht (ui/projekt.py, Einstellungen)
+  const eigene = e.methode !== "idw" || e.puffer !== null || e.raster !== null || e.basis !== null || !e.gok_relativ
+    || !e.gelaende_dgm;
   return html`
-    <section class="karte">
-      <h3>Modell</h3>
+    <details class="erweitert karte" ?open=${erweitertAuf || eigene}
+      @toggle=${(ev: Event) => { erweitertAuf = (ev.target as HTMLDetailsElement).open; }}>
+      <summary>Erweitert <span class="leise klein">Interpolation · Puffer · Raster · Basis · Gelände</span></summary>
       <div class="einstellung">
         <span>Interpolation ${hilfe("methode")}</span>
         <label class="inline"><input type="radio" name="methode" .checked=${e.methode === "idw"} @change=${() => setzen("methode", "idw")}> IDW</label>
@@ -55,7 +61,7 @@ function einstellungen() {
       ${p.raster_m !== undefined ? html`<p class="leise klein">gerechnet: Puffer ${zahl(Number(p.puffer_m), 0)} m · Raster ${zahl(Number(p.raster_m))} m ·
         Basis ${zahl(Number(p.basis_nhn), 2)} m NHN · Fläche ${zahl(Number(p.flaeche_m2) / 1e4, 2)} ha ·
         Gelände ${gelaendeText(p.gelaende as unknown as Record<string, unknown> | undefined)}</p>` : nothing}
-    </section>`;
+    </details>`;
 }
 
 function vorgabeTeil() {
@@ -104,8 +110,8 @@ export function schrittEinheiten() {
   return html`
     <div class="schritt-einheiten">
       <div class="spalte">
-        ${einstellungen()}
         ${vorgabeTeil()}
+        ${einstellungen()}
       </div>
       <div class="spalte breit">
         ${S.rechnet ? html`<div class="karte"><div class="kreisel klein"></div> Modell wird gerechnet …</div>` : nothing}

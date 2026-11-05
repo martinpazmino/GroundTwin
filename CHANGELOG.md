@@ -6,6 +6,13 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **All 16 Länder** in the registry of services (decision D98): the 12 Länder without a data service with their
+  portals for Bohrungen, DGM and LoD2 as links, plus the Bohrpunktkarte of the BGR, marked *ungeprüft* (entered, not
+  tested). A query in such a Land names the portal instead of "0 Bohrungen".
+- Tool **Dienste der Länder** (`dienste.html`, link on the start page and in the menu ⋯): all services and portals as
+  a table Land × theme; edit, check against the real service, save (validated, ordered, with the version read).
+  Online with a password: read and check only (`GEO_AGENT_DIENSTE_BEARBEITEN=1` to edit); `GEO_AGENT_DIENSTE` keeps
+  the registry elsewhere. The app uses a saved change at once.
 - Standort ohne Gutachten **from a map** (decision D97): a pop-up with the basemap.de map of the BKG (or OpenStreetMap);
   a click sets the point in ETRS89/UTM and shows what the services of the Länder deliver there.
 - Standort examples: Dortmund (NRW, Bohrungen with Schichtdaten), Karlsruhe (Baden-Württemberg, Schichten often
@@ -66,6 +73,19 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed
+- **The UI puts the first use case in front** (decision D99): a Gutachten shown interactively and checked for
+  plausibility, also against the Bohrungen of the Länder. Nothing was removed.
+  - Start page with **two paths of the same weight**: *Gutachten* (drop the PDF) and *Standort* (a point on the map).
+    OCR, typed coordinates, examples and older projects are folded; the first step is called *Start*.
+  - *Lage*: one sentence on the state and the next step; *Vergleich mit Bohrungen der Länder* open; Gelände (DGM),
+    Gebäude (LoD2) and Darstellung under **Erweitert** (open as soon as a DGM or buildings are loaded); the Lageplan
+    sections fold once every Bohrung has a position.
+  - *Einheiten*: the model settings under *Erweitert*, below the Einheiten (open when one differs from the default).
+  - *Modell*: IFC and Prüfbericht in front; the other exports, 3D Tiles, BoreholeML, GeolDG and the Überhöhung under
+    *Erweitert*.
+- The Land of a point comes from **the borders of the Länder** (VG2500 of the BKG), not from the overlapping
+  rectangles of the services: Berlin no longer asks Brandenburg, a click in Saxony-Anhalt no longer names Brandenburg;
+  at a border both Länder are asked, the Land of the centre first (also for the LoD2 tiles).
 - The project list counts the imported Bohrungen der Länder.
 - A service of the Land that does not answer gives a message (HTTP 502) instead of a server error.
 - A dropped connection to a service of the Land is retried (up to three attempts).
@@ -77,6 +97,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.gitignore`: PDFs (except the examples), IFC files, logs and test outputs are never committed.
 
 ### Fixed
+- *Lage* after *Alle Korrekturen verwerfen* and the same Bohrungen der Länder imported again: the view now shows
+  them whole. Their model came from the cache together with them and kept the view on the empty scene (lesson M42).
 - Standort: a point in another UTM zone (for example Paris in zone 31) passed the check "in Germany"; the zone and the
   longitude/latitude are checked now.
 - Exports with a project name containing characters outside latin-1 (for example "–" or "✓", common in file names of

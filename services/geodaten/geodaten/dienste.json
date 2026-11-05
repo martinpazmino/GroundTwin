@@ -1,113 +1,1222 @@
 {
- "format": "groundtwin-dienste/1",
- "stand": "2026-11-02",
- "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2) und Digitale Geländemodelle der Vermessungsverwaltungen (§2.4). Jede Angabe aus den Capabilities bzw. Metadaten des Dienstes (beleg). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88).",
+ "format": "groundtwin-dienste/2",
+ "stand": "2026-11-05",
+ "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2), Geländemodelle und LoD2-Gebäude der Vermessungsverwaltungen (§2.4). Angebunden sind wfs-kopf, wfs-boreholeml, wcs-dgm und lod2-kacheln; portal-* sind nur Links. status: geprueft (gegen den echten Dienst, mit Datum) oder ungeprueft (eingetragen, nicht getestet). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88). Pflege mit dem Werkzeug „Dienste der Länder“ (docs/21 §4.8).",
+ "geprueft_nicht_aufgenommen": [
+  {
+   "land": "Baden-Württemberg",
+   "art": "wcs-dgm",
+   "geprueft": "2026-11-02",
+   "url": "https://owsproxy.lgl-bw.de/owsproxy/wcs/WCS_INSP_BW_Hoehe_Coverage_DGM1",
+   "grund": "liefert ganze Meter (16 bit) und rechnet auf den angefragten Ausschnitt um (Pixel 1,005 m): für den Vergleich mit der GOK (±0,5 m) ungeeignet – DGM1 als Datei laden"
+  },
+  {
+   "land": "Bayern",
+   "art": "wcs-dgm",
+   "geprueft": "2026-11-02",
+   "url": "",
+   "grund": "kein frei zugänglicher WCS für das DGM1 gefunden – DGM1-Kacheln (GeoTIFF) als Datei laden"
+  }
+ ],
  "dienste": [
   {
-   "id": "BE", "land": "Berlin", "titel": "Geologische Bohrdaten",
-   "anbieter": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
-   "art": "wfs-kopf", "url": "https://gdi.berlin.de/services/wfs/bohrdaten", "typen": ["bohrdaten:bohrpunkte"],
-   "systeme": [25833, 25832], "gebiet_wgs84": [13.0815, 52.3334, 13.7581, 52.6724],
-   "felder": {"id": "schluessel", "name": "langname", "x": "xcoord", "y": "ycoord", "gok": "ansatzhoehe",
-              "teufe": "endteufe", "datum": "bohrende", "profil": "profil_lang"},
-   "schichten": "grafik",
-   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
-   "namensnennung": "Geologische Bohrdaten Berlin, SenSBW (dl-de/zero-2.0)",
-   "beleg": "https://gdi.berlin.de/services/wfs/bohrdaten?request=GetCapabilities&service=WFS"
+   "id": "DE-BGR",
+   "land": "Deutschland",
+   "laender": [
+    "Schleswig-Holstein",
+    "Hamburg",
+    "Niedersachsen",
+    "Bremen",
+    "Nordrhein-Westfalen",
+    "Hessen",
+    "Rheinland-Pfalz",
+    "Baden-Württemberg",
+    "Bayern",
+    "Saarland",
+    "Berlin",
+    "Brandenburg",
+    "Mecklenburg-Vorpommern",
+    "Sachsen",
+    "Sachsen-Anhalt",
+    "Thüringen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Bohrpunktkarte Deutschland (BGR)",
+   "anbieter": "Bundesanstalt für Geowissenschaften und Rohstoffe (BGR)",
+   "url": "https://boreholemap.bgr.de/",
+   "hinweis": "Lage und Tiefe der freigegebenen Bohrungen aller Länder (Nachweisdaten); Schichten je nach Land.",
+   "gebiet_wgs84": [
+    5.866,
+    47.2704,
+    15.0377,
+    55.0572
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Bundesanstalt für Geowissenschaften und Rohstoffe (BGR)",
+   "beleg": "https://www.bgr.bund.de/EN/Themen/Geodatenmanagement/Bohrpunktkarte-Deutschland/bohrpunktkarte-deutschland_node_en.html"
   },
   {
-   "id": "BB", "land": "Brandenburg", "titel": "Bohrpunktkarte Brandenburg (WFS-BPK)",
-   "anbieter": "Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg (LBGR)",
-   "art": "wfs-kopf", "url": "https://inspire.brandenburg.de/services/bpk_wfs", "typen": ["app:bpk_m_sch", "app:bpk_o_sch"],
-   "systeme": [25833, 25832], "gebiet_wgs84": [11.2419, 51.3157, 14.7637, 53.5429],
-   "felder": {"id": "Bohrungs_ID", "name": "Bohrungsname", "x": "Ostwert", "y": "Nordwert", "gok": "HoeheNN_in_m",
-              "teufe": "Teufe_in_m", "profil": "Schichtenverzeichnis_grafisch"},
-   "schichten": "grafik",
-   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
-   "namensnennung": "© Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg",
-   "beleg": "https://inspire.brandenburg.de/services/bpk_wfs?SERVICE=WFS&REQUEST=GetCapabilities"
+   "id": "SH",
+   "land": "Schleswig-Holstein",
+   "laender": [
+    "Schleswig-Holstein"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Geologie Schleswig-Holstein (Umweltportal, Karten)",
+   "anbieter": "Landesamt für Umwelt Schleswig-Holstein (LfU), Geologischer Landesdienst",
+   "url": "https://www.schleswig-holstein.de/DE/landesregierung/themen/umwelt-naturschutz/geologie",
+   "hinweis": "Geologische Daten über das Umweltportal (Karten); kein öffentlicher Bohrdatendienst gefunden.",
+   "gebiet_wgs84": [
+    7.8685,
+    53.3591,
+    11.3132,
+    55.0572
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Umwelt Schleswig-Holstein (LfU), Geologischer Landesdienst",
+   "beleg": "https://www.schleswig-holstein.de/mm/downloads/LFU/Geologie/Anleitung_Umweltportal_Geologie.pdf"
   },
   {
-   "id": "NW", "land": "Nordrhein-Westfalen", "titel": "Bohrpunkte boreholeML Full",
+   "id": "SH-DGM",
+   "land": "Schleswig-Holstein",
+   "laender": [
+    "Schleswig-Holstein"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Open Data Schleswig-Holstein",
+   "anbieter": "Landesamt für Vermessung und Geoinformation Schleswig-Holstein",
+   "url": "https://opendata.schleswig-holstein.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    7.8685,
+    53.3591,
+    11.3132,
+    55.0572
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geoinformation Schleswig-Holstein",
+   "beleg": "https://opendata.schleswig-holstein.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SH-LOD2",
+   "land": "Schleswig-Holstein",
+   "laender": [
+    "Schleswig-Holstein"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Open Data Schleswig-Holstein",
+   "anbieter": "Landesamt für Vermessung und Geoinformation Schleswig-Holstein",
+   "url": "https://opendata.schleswig-holstein.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    7.8685,
+    53.3591,
+    11.3132,
+    55.0572
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geoinformation Schleswig-Holstein",
+   "beleg": "https://opendata.schleswig-holstein.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "HH",
+   "land": "Hamburg",
+   "laender": [
+    "Hamburg"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Bohrdatenportal Hamburg (Geologisches Landesamt)",
+   "anbieter": "Behörde für Umwelt, Klima, Energie und Agrarwirtschaft (BUKEA), Geologisches Landesamt",
+   "url": "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/boden-und-geologie/geologie/geologie-in-hamburg/bohrdaten-168370",
+   "hinweis": "Rund 300.000 Schichtenverzeichnisse digital; das Bohrdatenportal ist auf der Seite verlinkt.",
+   "gebiet_wgs84": [
+    8.4214,
+    53.396,
+    10.3243,
+    53.9643
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Behörde für Umwelt, Klima, Energie und Agrarwirtschaft (BUKEA), Geologisches Landesamt",
+   "beleg": "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/boden-und-geologie/geologie/geologie-in-hamburg/bohrdaten-168370"
+  },
+  {
+   "id": "HH-DGM",
+   "land": "Hamburg",
+   "laender": [
+    "Hamburg"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Transparenzportal Hamburg",
+   "anbieter": "Landesbetrieb Geoinformation und Vermessung Hamburg (LGV)",
+   "url": "https://transparenz.hamburg.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    8.4214,
+    53.396,
+    10.3243,
+    53.9643
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesbetrieb Geoinformation und Vermessung Hamburg (LGV)",
+   "beleg": "https://transparenz.hamburg.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "HH-LOD2",
+   "land": "Hamburg",
+   "laender": [
+    "Hamburg"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Transparenzportal Hamburg",
+   "anbieter": "Landesbetrieb Geoinformation und Vermessung Hamburg (LGV)",
+   "url": "https://transparenz.hamburg.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    8.4214,
+    53.396,
+    10.3243,
+    53.9643
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesbetrieb Geoinformation und Vermessung Hamburg (LGV)",
+   "beleg": "https://transparenz.hamburg.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "NI",
+   "land": "Niedersachsen",
+   "laender": [
+    "Niedersachsen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "NIBIS-Kartenserver (Bohrdatenbank Niedersachsen)",
+   "anbieter": "Landesamt für Bergbau, Energie und Geologie (LBEG)",
+   "url": "https://nibis.lbeg.de/cardomap3/",
+   "hinweis": "Bohrungen im Kartenserver; Daten auf Anfrage (fachdaten@lbeg.niedersachsen.de). Kein öffentlicher Datendienst für Bohrungen gefunden.",
+   "gebiet_wgs84": [
+    6.6546,
+    51.2954,
+    11.5977,
+    53.8939
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Bergbau, Energie und Geologie (LBEG)",
+   "beleg": "https://www.lbeg.niedersachsen.de/"
+  },
+  {
+   "id": "NI-DGM",
+   "land": "Niedersachsen",
+   "laender": [
+    "Niedersachsen"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "OpenGeoData Niedersachsen",
+   "anbieter": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "url": "https://ni-lgln-opengeodata.hub.arcgis.com/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    6.6546,
+    51.2954,
+    11.5977,
+    53.8939
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "beleg": "https://ni-lgln-opengeodata.hub.arcgis.com/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "NI-LOD2",
+   "land": "Niedersachsen",
+   "laender": [
+    "Niedersachsen"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "OpenGeoData Niedersachsen",
+   "anbieter": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "url": "https://ni-lgln-opengeodata.hub.arcgis.com/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    6.6546,
+    51.2954,
+    11.5977,
+    53.8939
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "beleg": "https://ni-lgln-opengeodata.hub.arcgis.com/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "HB",
+   "land": "Bremen",
+   "laender": [
+    "Bremen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Bohrdatenbank Land Bremen (GDfB)",
+   "anbieter": "Geologischer Dienst für Bremen (GDfB) am MARUM",
+   "url": "https://www.gdfb.de/",
+   "hinweis": "Download und WMS der Bohrdatenbank im Geodatenkatalog verzeichnet (CC BY, INSPIRE) – noch nicht angebunden.",
+   "gebiet_wgs84": [
+    8.4814,
+    53.0104,
+    8.983,
+    53.6062
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Geologischer Dienst für Bremen (GDfB) am MARUM",
+   "beleg": "https://geoportal.bremen.de/geoportal/"
+  },
+  {
+   "id": "HB-DGM",
+   "land": "Bremen",
+   "laender": [
+    "Bremen"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "GeoPortal Bremen",
+   "anbieter": "Landesamt GeoInformation Bremen",
+   "url": "https://geoportal.bremen.de/geoportal/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    8.4814,
+    53.0104,
+    8.983,
+    53.6062
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt GeoInformation Bremen",
+   "beleg": "https://geoportal.bremen.de/geoportal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "HB-LOD2",
+   "land": "Bremen",
+   "laender": [
+    "Bremen"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "GeoPortal Bremen",
+   "anbieter": "Landesamt GeoInformation Bremen",
+   "url": "https://geoportal.bremen.de/geoportal/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    8.4814,
+    53.0104,
+    8.983,
+    53.6062
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt GeoInformation Bremen",
+   "beleg": "https://geoportal.bremen.de/geoportal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "NW",
+   "land": "Nordrhein-Westfalen",
+   "laender": [
+    "Nordrhein-Westfalen"
+   ],
+   "art": "wfs-boreholeml",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "Bohrpunkte boreholeML Full",
    "anbieter": "Geologischer Dienst NRW",
-   "art": "wfs-boreholeml", "url": "https://www.bml3.nrw.de/service/bml", "typen": ["bml:Borehole"],
-   "systeme": [25832], "gebiet_wgs84": [5.7724, 50.3282, 9.4470, 52.5170],
-   "gebiet_beleg": "Ausdehnung der Sammlung Bohrungen in https://ogc-api.nrw.de/brgnrw/v1/collections (die Capabilities nennen ein falsches Gebiet)",
+   "url": "https://www.bml3.nrw.de/service/bml",
+   "typen": [
+    "bml:Borehole"
+   ],
+   "systeme": [
+    25832
+   ],
    "schichten": "boreholeml",
-   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "gebiet_wgs84": [
+    5.7724,
+    50.3282,
+    9.447,
+    52.517
+   ],
+   "gebiet_beleg": "Ausdehnung der Sammlung Bohrungen in https://ogc-api.nrw.de/brgnrw/v1/collections (die Capabilities nennen ein falsches Gebiet)",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
    "namensnennung": "© Geowissenschaftliche Daten: Bohrungen NRW @ Geologischer Dienst NRW, {jahr}",
    "beleg": "https://www.bml3.nrw.de/service/bml?SERVICE=WFS&REQUEST=GetCapabilities"
   },
   {
-   "id": "BW", "land": "Baden-Württemberg", "titel": "Bohrpunkte der LGRB-Aufschlussdatenbank in BoreholeML",
+   "id": "NW-DGM1",
+   "land": "Nordrhein-Westfalen",
+   "laender": [
+    "Nordrhein-Westfalen"
+   ],
+   "art": "wcs-dgm",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "WCS NW DGM",
+   "anbieter": "Geobasis NRW",
+   "url": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm",
+   "coverage": "nw_dgm",
+   "achsen": [
+    "x",
+    "y"
+   ],
+   "system": 25832,
+   "raster_m": 1.0,
+   "gebiet_wgs84": [
+    5.725,
+    50.151,
+    9.532,
+    52.601
+   ],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25832) in Länge/Breite umgerechnet",
+   "lizenz": "dl-de/zero-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
+   "beleg": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "NW-LOD2",
+   "land": "Nordrhein-Westfalen",
+   "laender": [
+    "Nordrhein-Westfalen"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-03",
+   "titel": "3D-Gebäudemodell LoD2 (CityGML), Einzelkacheln",
+   "anbieter": "Geobasis NRW",
+   "url": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/LoD2_32_{e}_{n}_1_NW.gml",
+   "system": 25832,
+   "format": "gml",
+   "kachel_km": 1,
+   "gebiet_wgs84": [
+    5.725,
+    50.151,
+    9.532,
+    52.601
+   ],
+   "gebiet_beleg": "wie das DGM NRW; die OGC API Features (ogc-api.nrw.de/3dg/v1) lehnt Parameter crs und bbox-crs mit HTTP 400 ab, Höhen in CRS84h sind ellipsoidisch",
+   "lizenz": "dl-de/zero-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
+   "beleg": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/index.json"
+  },
+  {
+   "id": "HE",
+   "land": "Hessen",
+   "laender": [
+    "Hessen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Geologie-Viewer Hessen (Bohrdatenportal)",
+   "anbieter": "Hessisches Landesamt für Naturschutz, Umwelt und Geologie (HLNUG)",
+   "url": "https://geologie.hessen.de/",
+   "hinweis": "Rund 120.000 Bohrungen im Bohrdatenportal einsehbar; kein öffentlicher Datendienst gefunden.",
+   "gebiet_wgs84": [
+    7.7735,
+    49.3949,
+    10.234,
+    51.654
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Hessisches Landesamt für Naturschutz, Umwelt und Geologie (HLNUG)",
+   "beleg": "https://www.hlnug.de/fileadmin/dokumente/geologie/erdwaerme/fachgespraech/2021/FG_2021_06_Senner_Gruschu___Co.pdf"
+  },
+  {
+   "id": "HE-DGM",
+   "land": "Hessen",
+   "laender": [
+    "Hessen"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Geodatenshop Hessen",
+   "anbieter": "Hessische Verwaltung für Bodenmanagement und Geoinformation (HVBG)",
+   "url": "https://gds.hessen.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    7.7735,
+    49.3949,
+    10.234,
+    51.654
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Hessische Verwaltung für Bodenmanagement und Geoinformation (HVBG)",
+   "beleg": "https://gds.hessen.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "HE-LOD2",
+   "land": "Hessen",
+   "laender": [
+    "Hessen"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Geodatenshop Hessen",
+   "anbieter": "Hessische Verwaltung für Bodenmanagement und Geoinformation (HVBG)",
+   "url": "https://gds.hessen.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    7.7735,
+    49.3949,
+    10.234,
+    51.654
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Hessische Verwaltung für Bodenmanagement und Geoinformation (HVBG)",
+   "beleg": "https://gds.hessen.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "RP",
+   "land": "Rheinland-Pfalz",
+   "laender": [
+    "Rheinland-Pfalz"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Landesamt für Geologie und Bergbau (LGB)",
+   "anbieter": "Landesamt für Geologie und Bergbau Rheinland-Pfalz (LGB)",
+   "url": "https://www.lgb-rlp.de/",
+   "hinweis": "Kein öffentlicher Bohrdatendienst gefunden – Bohrdaten auf Anfrage beim LGB.",
+   "gebiet_wgs84": [
+    6.1174,
+    48.9663,
+    8.5083,
+    50.9404
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geologie und Bergbau Rheinland-Pfalz (LGB)",
+   "beleg": "https://www.lgb-rlp.de/"
+  },
+  {
+   "id": "RP-DGM",
+   "land": "Rheinland-Pfalz",
+   "laender": [
+    "Rheinland-Pfalz"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Geobasisdaten Rheinland-Pfalz",
+   "anbieter": "Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz",
+   "url": "https://lvermgeo.rlp.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    6.1174,
+    48.9663,
+    8.5083,
+    50.9404
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz",
+   "beleg": "https://lvermgeo.rlp.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "RP-LOD2",
+   "land": "Rheinland-Pfalz",
+   "laender": [
+    "Rheinland-Pfalz"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Geobasisdaten Rheinland-Pfalz",
+   "anbieter": "Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz",
+   "url": "https://lvermgeo.rlp.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    6.1174,
+    48.9663,
+    8.5083,
+    50.9404
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz",
+   "beleg": "https://lvermgeo.rlp.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "BW",
+   "land": "Baden-Württemberg",
+   "laender": [
+    "Baden-Württemberg"
+   ],
+   "art": "wfs-boreholeml",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "Bohrpunkte der LGRB-Aufschlussdatenbank in BoreholeML",
    "anbieter": "Regierungspräsidium Freiburg, Landesamt für Geologie, Rohstoffe und Bergbau (LGRB)",
-   "art": "wfs-boreholeml", "url": "https://services.lgrb-bw.de/boreholeml/services/bml", "typen": ["bml:Borehole"],
-   "systeme": [25832], "gebiet_wgs84": [7.4521, 47.5316, 10.5133, 49.7914],
+   "url": "https://services.lgrb-bw.de/boreholeml/services/bml",
+   "typen": [
+    "bml:Borehole"
+   ],
+   "systeme": [
+    25832
+   ],
    "schichten": "boreholeml",
+   "gebiet_wgs84": [
+    7.4521,
+    47.5316,
+    10.5133,
+    49.7914
+   ],
    "lizenz": "im Dienst nicht genannt (Gebühren: keine; Zugriff ohne Beschränkung) – vor Weitergabe beim LGRB prüfen",
    "lizenz_url": "",
    "namensnennung": "LGRB Baden-Württemberg, Aufschlussdatenbank",
    "beleg": "https://services.lgrb-bw.de/boreholeml/services/bml?SERVICE=WFS&REQUEST=GetCapabilities"
   },
   {
-   "id": "BB-DGM1", "land": "Brandenburg mit Berlin", "titel": "WCS BB DGM 1m",
-   "anbieter": "Landesvermessung und Geobasisinformation Brandenburg (LGB)",
-   "art": "wcs-dgm", "url": "https://isk.geobasis-bb.de/ows/dgm_wcs", "coverage": "bb_dgm", "achsen": ["x", "y"],
-   "system": 25833, "raster_m": 1.0, "gebiet_wgs84": [10.898, 51.3, 14.905, 53.6],
-   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25833) in Länge/Breite umgerechnet; außerhalb des Landes liefert der Dienst NoData (-9999)",
-   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
-   "namensnennung": "© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal Berlin, dl-de/by-2-0 (Daten geändert)",
-   "beleg": "https://isk.geobasis-bb.de/ows/dgm_wcs?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+   "id": "BW-DGM",
+   "land": "Baden-Württemberg",
+   "laender": [
+    "Baden-Württemberg"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "OpenGeodata BW",
+   "anbieter": "Landesamt für Geoinformation und Landentwicklung (LGL)",
+   "url": "https://opengeodata.lgl-bw.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    7.5116,
+    47.534,
+    10.4918,
+    49.7914
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geoinformation und Landentwicklung (LGL)",
+   "beleg": "https://opengeodata.lgl-bw.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   },
   {
-   "id": "NW-DGM1", "land": "Nordrhein-Westfalen", "titel": "WCS NW DGM", "anbieter": "Geobasis NRW",
-   "art": "wcs-dgm", "url": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm", "coverage": "nw_dgm", "achsen": ["x", "y"],
-   "system": 25832, "raster_m": 1.0, "gebiet_wgs84": [5.725, 50.151, 9.532, 52.601],
-   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25832) in Länge/Breite umgerechnet",
-   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
-   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
-   "beleg": "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+   "id": "BW-LOD2",
+   "land": "Baden-Württemberg",
+   "laender": [
+    "Baden-Württemberg"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "OpenGeodata BW",
+   "anbieter": "Landesamt für Geoinformation und Landentwicklung (LGL)",
+   "url": "https://opengeodata.lgl-bw.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    7.5116,
+    47.534,
+    10.4918,
+    49.7914
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geoinformation und Landentwicklung (LGL)",
+   "beleg": "https://opengeodata.lgl-bw.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   },
   {
-   "id": "BE-LOD2", "land": "Berlin", "titel": "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)",
+   "id": "BY",
+   "land": "Bayern",
+   "laender": [
+    "Bayern"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "UmweltAtlas Bayern (Geologie)",
+   "anbieter": "Bayerisches Landesamt für Umwelt (LfU)",
+   "url": "https://www.umweltatlas.bayern.de/",
+   "hinweis": "Bohrungen im UmweltAtlas einsehbar; Download je nach Art, sonst Anfrage bei der Datenstelle des LfU (Gebühren möglich). Kein öffentlicher Datendienst gefunden.",
+   "gebiet_wgs84": [
+    8.9773,
+    47.2704,
+    13.835,
+    50.5645
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Bayerisches Landesamt für Umwelt (LfU)",
+   "beleg": "https://www.lfu.bayern.de/geologie/geologie_bayerns/geologische_landesaufnahme/index.htm"
+  },
+  {
+   "id": "BY-DGM",
+   "land": "Bayern",
+   "laender": [
+    "Bayern"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "OpenData Bayern",
+   "anbieter": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
+   "url": "https://geodaten.bayern.de/opengeodata/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    8.9773,
+    47.2704,
+    13.835,
+    50.5645
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
+   "beleg": "https://geodaten.bayern.de/opengeodata/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "BY-LOD2",
+   "land": "Bayern",
+   "laender": [
+    "Bayern"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "OpenData Bayern",
+   "anbieter": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
+   "url": "https://geodaten.bayern.de/opengeodata/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    8.9773,
+    47.2704,
+    13.835,
+    50.5645
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
+   "beleg": "https://geodaten.bayern.de/opengeodata/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SL",
+   "land": "Saarland",
+   "laender": [
+    "Saarland"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Geoportal Saarland",
+   "anbieter": "Landesamt für Umwelt- und Arbeitsschutz (LUA), Geologischer Dienst",
+   "url": "https://geoportal.saarland.de/",
+   "hinweis": "Keine Bohrdatenbank online gefunden – Anfrage beim Geodatenzentrum (Geodatenzentrum@umwelt.saarland.de).",
+   "gebiet_wgs84": [
+    6.3585,
+    49.1136,
+    7.4029,
+    49.6393
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Umwelt- und Arbeitsschutz (LUA), Geologischer Dienst",
+   "beleg": "https://geoportal.saarland.de/"
+  },
+  {
+   "id": "SL-DGM",
+   "land": "Saarland",
+   "laender": [
+    "Saarland"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Geoportal Saarland",
+   "anbieter": "Landesamt für Vermessung, Geoinformation und Landentwicklung (LVGL)",
+   "url": "https://geoportal.saarland.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    6.3585,
+    49.1136,
+    7.4029,
+    49.6393
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung, Geoinformation und Landentwicklung (LVGL)",
+   "beleg": "https://geoportal.saarland.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SL-LOD2",
+   "land": "Saarland",
+   "laender": [
+    "Saarland"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Geoportal Saarland",
+   "anbieter": "Landesamt für Vermessung, Geoinformation und Landentwicklung (LVGL)",
+   "url": "https://geoportal.saarland.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    6.3585,
+    49.1136,
+    7.4029,
+    49.6393
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung, Geoinformation und Landentwicklung (LVGL)",
+   "beleg": "https://geoportal.saarland.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "BE",
+   "land": "Berlin",
+   "laender": [
+    "Berlin"
+   ],
+   "art": "wfs-kopf",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "Geologische Bohrdaten",
    "anbieter": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
-   "art": "lod2-kacheln", "url": "https://gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip", "format": "zip",
-   "system": 25833, "kachel_km": 1, "gebiet_wgs84": [13.0815, 52.3334, 13.7581, 52.6724],
+   "url": "https://gdi.berlin.de/services/wfs/bohrdaten",
+   "typen": [
+    "bohrdaten:bohrpunkte"
+   ],
+   "systeme": [
+    25833,
+    25832
+   ],
+   "felder": {
+    "id": "schluessel",
+    "name": "langname",
+    "x": "xcoord",
+    "y": "ycoord",
+    "gok": "ansatzhoehe",
+    "teufe": "endteufe",
+    "datum": "bohrende",
+    "profil": "profil_lang"
+   },
+   "schichten": "grafik",
+   "gebiet_wgs84": [
+    13.0815,
+    52.3334,
+    13.7581,
+    52.6724
+   ],
+   "lizenz": "dl-de/zero-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "namensnennung": "Geologische Bohrdaten Berlin, SenSBW (dl-de/zero-2.0)",
+   "beleg": "https://gdi.berlin.de/services/wfs/bohrdaten?request=GetCapabilities&service=WFS"
+  },
+  {
+   "id": "BE-LOD2",
+   "land": "Berlin",
+   "laender": [
+    "Berlin"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-03",
+   "titel": "3D-Gebäudemodelle im Level of Detail 2 (LoD 2)",
+   "anbieter": "Senatsverwaltung für Stadtentwicklung, Bauen und Wohnen Berlin",
+   "url": "https://gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip",
+   "system": 25833,
+   "format": "zip",
+   "kachel_km": 1,
+   "gebiet_wgs84": [
+    13.0815,
+    52.3334,
+    13.7581,
+    52.6724
+   ],
    "gebiet_beleg": "wie die Bohrdaten Berlin; Kacheln 1 x 1 km nach der Blattschnittübersicht 1X1_EPSG_25833.pdf des Feeds",
-   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
+   "lizenz": "dl-de/zero-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
    "namensnennung": "3D-Gebäudemodelle LoD2 Berlin, SenSBW (dl-de/zero-2.0)",
    "beleg": "https://gdi.berlin.de/data/a_lod2/atom/0.atom"
   },
   {
-   "id": "BB-LOD2", "land": "Brandenburg", "titel": "3D-Gebäudemodelle LoD2",
+   "id": "BB",
+   "land": "Brandenburg",
+   "laender": [
+    "Brandenburg"
+   ],
+   "art": "wfs-kopf",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "Bohrpunktkarte Brandenburg (WFS-BPK)",
+   "anbieter": "Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg (LBGR)",
+   "url": "https://inspire.brandenburg.de/services/bpk_wfs",
+   "typen": [
+    "app:bpk_m_sch",
+    "app:bpk_o_sch"
+   ],
+   "systeme": [
+    25833,
+    25832
+   ],
+   "felder": {
+    "id": "Bohrungs_ID",
+    "name": "Bohrungsname",
+    "x": "Ostwert",
+    "y": "Nordwert",
+    "gok": "HoeheNN_in_m",
+    "teufe": "Teufe_in_m",
+    "profil": "Schichtenverzeichnis_grafisch"
+   },
+   "schichten": "grafik",
+   "gebiet_wgs84": [
+    11.2419,
+    51.3157,
+    14.7637,
+    53.5429
+   ],
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© Landesamt für Bergbau, Geologie und Rohstoffe Brandenburg",
+   "beleg": "https://inspire.brandenburg.de/services/bpk_wfs?SERVICE=WFS&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "BB-DGM1",
+   "land": "Brandenburg mit Berlin",
+   "laender": [
+    "Brandenburg",
+    "Berlin"
+   ],
+   "art": "wcs-dgm",
+   "status": "geprueft",
+   "geprueft": "2026-11-02",
+   "titel": "WCS BB DGM 1m",
    "anbieter": "Landesvermessung und Geobasisinformation Brandenburg (LGB)",
-   "art": "lod2-kacheln", "url": "https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/lod2_gml/lod2_33{e}-{n}.zip", "format": "zip",
-   "system": 25833, "kachel_km": 1, "gebiet_wgs84": [11.2419, 51.3157, 14.7637, 53.5429],
+   "url": "https://isk.geobasis-bb.de/ows/dgm_wcs",
+   "coverage": "bb_dgm",
+   "achsen": [
+    "x",
+    "y"
+   ],
+   "system": 25833,
+   "raster_m": 1.0,
+   "gebiet_wgs84": [
+    10.898,
+    51.3,
+    14.905,
+    53.6
+   ],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25833) in Länge/Breite umgerechnet; außerhalb des Landes liefert der Dienst NoData (-9999)",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© GeoBasis-DE/LGB, dl-de/by-2-0; © Geoportal Berlin, dl-de/by-2-0 (Daten geändert)",
+   "beleg": "https://isk.geobasis-bb.de/ows/dgm_wcs?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  },
+  {
+   "id": "BB-LOD2",
+   "land": "Brandenburg",
+   "laender": [
+    "Brandenburg"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-03",
+   "titel": "3D-Gebäudemodelle LoD2",
+   "anbieter": "Landesvermessung und Geobasisinformation Brandenburg (LGB)",
+   "url": "https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/lod2_gml/lod2_33{e}-{n}.zip",
+   "system": 25833,
+   "format": "zip",
+   "kachel_km": 1,
+   "gebiet_wgs84": [
+    11.2419,
+    51.3157,
+    14.7637,
+    53.5429
+   ],
    "gebiet_beleg": "wie die Bohrdaten Brandenburg; Berlin ist nicht enthalten (Kacheln 404)",
-   "lizenz": "dl-de/by-2.0", "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
    "namensnennung": "© GeoBasis-DE/LGB, dl-de/by-2-0 (Daten geändert)",
    "beleg": "https://data.geobasis-bb.de/geobasis/daten/3d_gebaeude/lod2_gml/"
   },
   {
-   "id": "NW-LOD2", "land": "Nordrhein-Westfalen", "titel": "3D-Gebäudemodell LoD2 (CityGML), Einzelkacheln",
-   "anbieter": "Geobasis NRW",
-   "art": "lod2-kacheln", "url": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/LoD2_32_{e}_{n}_1_NW.gml", "format": "gml",
-   "system": 25832, "kachel_km": 1, "gebiet_wgs84": [5.725, 50.151, 9.532, 52.601],
-   "gebiet_beleg": "wie das DGM NRW; die OGC API Features (ogc-api.nrw.de/3dg/v1) lehnt Parameter crs und bbox-crs mit HTTP 400 ab, Höhen in CRS84h sind ellipsoidisch",
-   "lizenz": "dl-de/zero-2.0", "lizenz_url": "https://www.govdata.de/dl-de/zero-2-0",
-   "namensnennung": "Geobasis NRW, dl-de/zero-2-0",
-   "beleg": "https://www.opengeodata.nrw.de/produkte/geobasis/3dg/lod2_gml/lod2_gml/index.json"
-  }
- ],
- "geprueft_nicht_aufgenommen": [
-  {
-   "land": "Baden-Württemberg", "art": "wcs-dgm", "geprueft": "2026-11-02",
-   "url": "https://owsproxy.lgl-bw.de/owsproxy/wcs/WCS_INSP_BW_Hoehe_Coverage_DGM1",
-   "grund": "liefert ganze Meter (16 bit) und rechnet auf den angefragten Ausschnitt um (Pixel 1,005 m): für den Vergleich mit der GOK (±0,5 m) ungeeignet – DGM1 als Datei laden"
+   "id": "MV",
+   "land": "Mecklenburg-Vorpommern",
+   "laender": [
+    "Mecklenburg-Vorpommern"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Kartenportal Umwelt MV (Bohrungen)",
+   "anbieter": "Landesamt für Umwelt, Naturschutz und Geologie (LUNG)",
+   "url": "https://www.umweltkarten.mv-regierung.de/",
+   "hinweis": "Schichtinformationen frei verfügbarer Bohrungen im Kartenportal; ein WFS „Landesbohrdatenspeicher“ ist im Geodatenkatalog verzeichnet (noch nicht angebunden).",
+   "gebiet_wgs84": [
+    10.5932,
+    53.1159,
+    14.4123,
+    54.685
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Umwelt, Naturschutz und Geologie (LUNG)",
+   "beleg": "https://www.regierung-mv.de/Landesregierung/lm/Umwelt/geologie/geologische-daten/"
   },
   {
-   "land": "Bayern", "art": "wcs-dgm", "geprueft": "2026-11-02", "url": "",
-   "grund": "kein frei zugänglicher WCS für das DGM1 gefunden – DGM1-Kacheln (GeoTIFF) als Datei laden"
+   "id": "MV-DGM",
+   "land": "Mecklenburg-Vorpommern",
+   "laender": [
+    "Mecklenburg-Vorpommern"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "GeoPortal.MV",
+   "anbieter": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
+   "url": "https://www.geoportal-mv.de/portal/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    10.5932,
+    53.1159,
+    14.4123,
+    54.685
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
+   "beleg": "https://www.geoportal-mv.de/portal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "MV-LOD2",
+   "land": "Mecklenburg-Vorpommern",
+   "laender": [
+    "Mecklenburg-Vorpommern"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "GeoPortal.MV",
+   "anbieter": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
+   "url": "https://www.geoportal-mv.de/portal/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    10.5932,
+    53.1159,
+    14.4123,
+    54.685
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
+   "beleg": "https://www.geoportal-mv.de/portal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SN",
+   "land": "Sachsen",
+   "laender": [
+    "Sachsen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Aufschlussdatenbank Sachsen (LfULG)",
+   "anbieter": "Sächsisches Landesamt für Umwelt, Landwirtschaft und Geologie (LfULG)",
+   "url": "https://www.lfulg.sachsen.de/",
+   "hinweis": "Kein öffentlicher Datendienst gefunden – Bohrdaten auf Anfrage beim LfULG.",
+   "gebiet_wgs84": [
+    11.8723,
+    50.1718,
+    15.0377,
+    51.6831
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Sächsisches Landesamt für Umwelt, Landwirtschaft und Geologie (LfULG)",
+   "beleg": "https://www.bge.de/fileadmin/user_upload/Standortsuche/Wesentliche_Unterlagen/Korrespondenz/rvSU/Sachsen/20220201_STA_Anschreiben_von_LfULG_Datenlieferung__Ergaenzung_zur_Datenabfrage_vom_27.08.2021_geschwaerzt_barrierefrei.pdf"
+  },
+  {
+   "id": "SN-DGM",
+   "land": "Sachsen",
+   "laender": [
+    "Sachsen"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Geodaten Sachsen (Downloadbereich)",
+   "anbieter": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
+   "url": "https://www.geodaten.sachsen.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    11.8723,
+    50.1718,
+    15.0377,
+    51.6831
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
+   "beleg": "https://www.geodaten.sachsen.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SN-LOD2",
+   "land": "Sachsen",
+   "laender": [
+    "Sachsen"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Geodaten Sachsen (Downloadbereich)",
+   "anbieter": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
+   "url": "https://www.geodaten.sachsen.de/",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    11.8723,
+    50.1718,
+    15.0377,
+    51.6831
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
+   "beleg": "https://www.geodaten.sachsen.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "ST",
+   "land": "Sachsen-Anhalt",
+   "laender": [
+    "Sachsen-Anhalt"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Landesbohrdatenbank Sachsen-Anhalt (LAGB)",
+   "anbieter": "Landesamt für Geologie und Bergwesen Sachsen-Anhalt (LAGB)",
+   "url": "https://lagb.sachsen-anhalt.de/",
+   "hinweis": "Kartenbasierte Bohrdatenbank; Schichtdaten teils nur mit Zustimmung des Eigentümers, Gebühren möglich. Aus der Cloud-Sitzung nicht erreichbar gewesen.",
+   "gebiet_wgs84": [
+    10.5615,
+    50.938,
+    13.1866,
+    53.0421
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Geologie und Bergwesen Sachsen-Anhalt (LAGB)",
+   "beleg": "https://lagb.sachsen-anhalt.de/fileadmin/Bibliothek/LaGB/daten/pdf/Nutzeranleitung_Bohrdatenbank.pdf"
+  },
+  {
+   "id": "ST-DGM",
+   "land": "Sachsen-Anhalt",
+   "laender": [
+    "Sachsen-Anhalt"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Open Data Sachsen-Anhalt",
+   "anbieter": "Landesamt für Vermessung und Geoinformation Sachsen-Anhalt",
+   "url": "https://www.lvermgeo.sachsen-anhalt.de/de/gdp-open-data.html",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    10.5615,
+    50.938,
+    13.1866,
+    53.0421
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geoinformation Sachsen-Anhalt",
+   "beleg": "https://www.lvermgeo.sachsen-anhalt.de/de/gdp-open-data.html (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "ST-LOD2",
+   "land": "Sachsen-Anhalt",
+   "laender": [
+    "Sachsen-Anhalt"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Open Data Sachsen-Anhalt",
+   "anbieter": "Landesamt für Vermessung und Geoinformation Sachsen-Anhalt",
+   "url": "https://www.lvermgeo.sachsen-anhalt.de/de/gdp-open-data.html",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    10.5615,
+    50.938,
+    13.1866,
+    53.0421
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Landesamt für Vermessung und Geoinformation Sachsen-Anhalt",
+   "beleg": "https://www.lvermgeo.sachsen-anhalt.de/de/gdp-open-data.html (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "TH",
+   "land": "Thüringen",
+   "laender": [
+    "Thüringen"
+   ],
+   "art": "portal-bohrungen",
+   "status": "ungeprueft",
+   "titel": "Thüringer Landesamt für Umwelt, Bergbau und Naturschutz (TLUBN)",
+   "anbieter": "Thüringer Landesamt für Umwelt, Bergbau und Naturschutz (TLUBN)",
+   "url": "https://tlubn.thueringen.de/",
+   "hinweis": "Kein öffentlicher Datendienst gefunden – Bohrdaten auf Anfrage beim TLUBN.",
+   "gebiet_wgs84": [
+    9.8791,
+    50.2042,
+    12.6532,
+    51.6491
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Thüringer Landesamt für Umwelt, Bergbau und Naturschutz (TLUBN)",
+   "beleg": "https://www.BGE.de/fileadmin/user_upload/Standortsuche/Wesentliche_Unterlagen/Korrespondenz/rvSU/Thueringen/20230216_Anschreiben_von_TLUBN_zur_Datenabfrage_geschwaerzt_barrierefrei.pdf"
+  },
+  {
+   "id": "TH-DGM",
+   "land": "Thüringen",
+   "laender": [
+    "Thüringen"
+   ],
+   "art": "portal-dgm",
+   "status": "ungeprueft",
+   "titel": "Offene Geodaten Thüringen",
+   "anbieter": "Thüringer Landesamt für Bodenmanagement und Geoinformation (TLBG)",
+   "url": "https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen",
+   "hinweis": "Geobasis-Portal des Landes: ob das DGM1 dort frei als Datei liegt, ist nicht geprüft. Kacheln (XYZ, GeoTIFF) im Schritt Lage laden.",
+   "gebiet_wgs84": [
+    9.8791,
+    50.2042,
+    12.6532,
+    51.6491
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Thüringer Landesamt für Bodenmanagement und Geoinformation (TLBG)",
+   "beleg": "https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "TH-LOD2",
+   "land": "Thüringen",
+   "laender": [
+    "Thüringen"
+   ],
+   "art": "portal-gebaeude",
+   "status": "ungeprueft",
+   "titel": "Offene Geodaten Thüringen",
+   "anbieter": "Thüringer Landesamt für Bodenmanagement und Geoinformation (TLBG)",
+   "url": "https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen",
+   "hinweis": "Geobasis-Portal des Landes: ob LoD2-Gebäude dort frei liegen, ist nicht geprüft; abrufen kann GroundTwin bisher nur Kacheldienste (Berlin, Brandenburg, NRW).",
+   "gebiet_wgs84": [
+    9.8791,
+    50.2042,
+    12.6532,
+    51.6491
+   ],
+   "lizenz": "",
+   "lizenz_url": "",
+   "namensnennung": "Thüringer Landesamt für Bodenmanagement und Geoinformation (TLBG)",
+   "beleg": "https://www.geoportal-th.de/de-de/Downloadbereiche/Download-Offene-Geodaten-Th%C3%BCringen (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   }
  ]
 }

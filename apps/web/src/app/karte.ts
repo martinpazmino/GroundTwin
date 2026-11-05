@@ -62,8 +62,10 @@ export async function karteWaehlen(): Promise<StandortPunkt | null> {
         punkt = p;
         uebernehmen.disabled = false;
         info.innerHTML = `<b>Rechtswert ${zahl(p.x)} · Hochwert ${zahl(p.y)} · EPSG:${p.epsg}</b>
-          <ul class="dienste">${p.dienste.map((d) => `<li class="${d.art}">${text(d.text)}</li>`).join("")}</ul>
-          <span class="leise">Gebiete der Dienste als Rechteck: nahe einer Landesgrenze ohne Gewähr.</span>`;
+          <ul class="dienste">${p.dienste.map((d) => `<li class="${d.art}">${/^https?:\/\//.test(d.url ?? "")
+            ? `<a href="${text(d.url!)}" target="_blank" rel="noopener noreferrer">${text(d.text)}</a>` : text(d.text)}${
+            d.status === "ungeprueft" ? ' <span class="ungeprueft">ungeprüft</span>' : ""}</li>`).join("")}</ul>
+          <span class="leise">Das Land aus den Ländergrenzen (VG2500 des BKG, auf rund 150 m); Portale als Link.</span>`;
       } catch (err) {
         if (meine !== nr) return;
         info.innerHTML = `<span class="warnung">${text((err as Error).message)}</span>`;

@@ -1,5 +1,6 @@
 // Schritt-App im Vollbild: Kopf mit den fuenf Schritten, darunter der Schritt (und im Schritt Lage/Modell der
 // Viewer), unten Zurueck/Weiter. Jeder Schritt fuehrt zum naechsten und zieht ihn nach (Modell rechnen, Viewer).
+// Je Schritt zuerst das Wesentliche (pruefen, vergleichen); Weiteres liegt eingeklappt unter „Erweitert“.
 // Adresse: #/<projekt>/<schritt>/<bohrung> - Neuladen oder Lesezeichen fuehren an dieselbe Stelle.
 import "../viewer/viewer.css";
 import "./app.css";
@@ -60,6 +61,7 @@ function kopf() {
               <button @click=${() => gehe("gutachten")}>Anderes Projekt öffnen</button>
               <button @click=${zuruecksetzen}>Alle Korrekturen verwerfen …</button>
               <a href="viewer.html" target="_blank" rel="noopener">Viewer allein öffnen</a>
+              <a href="dienste.html" target="_blank" rel="noopener">Dienste der Länder (Werkzeug)</a>
               ${S.info ? html`<a href=${S.info.quellcode} target="_blank" rel="noopener">Quellcode (${S.info.lizenz})</a>` : nothing}
             </div>
           </details>` : nothing}
