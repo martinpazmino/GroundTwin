@@ -21,8 +21,8 @@ license **AGPL-3.0-or-later** (D79).
   why not Vercel, variables, memory, CI.
 - `docs/23_open_data_integration.md`: open data and open-source integration (BoreholeML, BGR Bohrpunktkarte, DGM +
   LoD2 Umgebungsmodell, 3D Tiles, Cesium/OSM): evaluation and plan P0–P6.
-- `docs/24_agent_team.md`: **proposal** (not built): Claude as orchestrator, Gemini API agents (no tools, patches in
-  worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
+- `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
+  patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
 ## Working rules
 - **Blind test**: with a new PDF, freeze the predictions (`benchmark/blind_test.py freeze`)
