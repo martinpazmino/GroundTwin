@@ -1,6 +1,6 @@
 {
  "format": "groundtwin-dienste/2",
- "stand": "2026-11-06",
+ "stand": "2026-11-07",
  "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2), Geländemodelle und LoD2-Gebäude der Vermessungsverwaltungen (§2.4). Angebunden sind wfs-kopf, wfs-boreholeml, wcs-dgm und lod2-kacheln; portal-* sind nur Links. status: geprueft (gegen den echten Dienst, mit Datum) oder ungeprueft (eingetragen, nicht getestet). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88). Pflege mit dem Werkzeug „Dienste der Länder“ (docs/21 §4.8).",
  "geprueft_nicht_aufgenommen": [
   {
@@ -23,34 +23,6 @@
    "geprueft": "2026-11-06",
    "url": "https://www.geodatenportal.sachsen-anhalt.de/ows_WCS_ST_DGM1",
    "grund": "GetCoverage (FORMAT=image/tiff, CoverageId=Coverage1) liefert MIME multipart/related (GML-Vorspann + GeoTIFF) statt einer reinen GeoTIFF-Datei; dgm_dienst._laden kann den Multipart-Umschlag ohne Entpacker nicht lesen"
-  },
-  {
-   "land": "Bayern",
-   "art": "lod2-kacheln",
-   "geprueft": "2026-11-06",
-   "url": "https://download1.bayernwolke.de/a/lod2/citygml/{e}_{n}.gml",
-   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25832, CC BY 4.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf und fragt ungerade Kacheln an (HTTP 404)"
-  },
-  {
-   "land": "Rheinland-Pfalz",
-   "art": "lod2-kacheln",
-   "geprueft": "2026-11-06",
-   "url": "https://geobasis-rlp.de/data/geb3dlo/current/gml/LoD2_32_{e}_{n}_2_RP.gml",
-   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25832, dl-de/by-2.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf und fragt ungerade Kacheln an (HTTP 404)"
-  },
-  {
-   "land": "Mecklenburg-Vorpommern",
-   "art": "lod2-kacheln",
-   "geprueft": "2026-11-06",
-   "url": "https://www.geodaten-mv.de/dienste/gebaeude_download?index=0&dataset=8397b554-5cb9-4274-8be8-c20490d9a6e8&file=lod2_33_{e}_{n}_2_gml.zip",
-   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25833, CC BY 4.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf"
-  },
-  {
-   "land": "Sachsen",
-   "art": "lod2-kacheln",
-   "geprueft": "2026-11-06",
-   "url": "https://geocloud.landesvermessung.sachsen.de/public.php/dav/files/AyJqXpJAZJXomCb/lod2_33{e}_{n}_2_sn_citygml.zip",
-   "grund": "2x2-km-Kacheln über Nextcloud/WebDAV (gerade Kilometerwerte in EPSG:25833, dl-de/by-2.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf"
   },
   {
    "land": "Schleswig-Holstein",
@@ -188,22 +160,31 @@
    "laender": [
     "Hamburg"
    ],
-   "art": "portal-bohrungen",
-   "status": "ungeprueft",
-   "titel": "Bohrdatenportal Hamburg (Geologisches Landesamt)",
+   "art": "wfs-boreholeml",
+   "status": "geprueft",
+   "geprueft": "2026-11-07",
+   "titel": "WFS BoreholeML 3.0 Hamburg",
    "anbieter": "Behörde für Umwelt, Klima, Energie und Agrarwirtschaft (BUKEA), Geologisches Landesamt",
-   "url": "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/boden-und-geologie/geologie/geologie-in-hamburg/bohrdaten-168370",
-   "hinweis": "Rund 300.000 Schichtenverzeichnisse digital; das Bohrdatenportal ist auf der Seite verlinkt.",
-   "gebiet_wgs84": [
-    8.4214,
-    53.396,
-    10.3243,
-    53.9643
+   "url": "https://geodienste.hamburg.de/HH_WFS_BoreholeML3",
+   "hinweis": "BoreholeML 3.0 mit Schichtdaten; von Claude am 2026-11-07 mit dem Code der App geprüft (Rathaus: 151 Bohrungen in 300 m, Schichten, Grundwasser). Hinweis aus docs/26 (Antigravity).",
+   "typen": [
+    "bml:Borehole"
    ],
-   "lizenz": "",
-   "lizenz_url": "",
-   "namensnennung": "Behörde für Umwelt, Klima, Energie und Agrarwirtschaft (BUKEA), Geologisches Landesamt",
-   "beleg": "https://www.hamburg.de/politik-und-verwaltung/behoerden/bukea/themen/boden-und-geologie/geologie/geologie-in-hamburg/bohrdaten-168370"
+   "systeme": [
+    25832
+   ],
+   "schichten": "boreholeml",
+   "gebiet_wgs84": [
+    9.731149,
+    53.395895,
+    10.333542,
+    53.741236
+   ],
+   "gebiet_beleg": "WGS84BoundingBox der Capabilities (bml:Borehole)",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "Freie und Hansestadt Hamburg, Behörde für Umwelt, Klima, Energie und Agrarwirtschaft, {jahr}",
+   "beleg": "https://geodienste.hamburg.de/HH_WFS_BoreholeML3?SERVICE=WFS&REQUEST=GetCapabilities"
   },
   {
    "id": "HH-DGM",
@@ -677,6 +658,34 @@
    "beleg": "https://lvermgeo.rlp.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   },
   {
+   "id": "RP-LOD2-GML",
+   "land": "Rheinland-Pfalz",
+   "laender": [
+    "Rheinland-Pfalz"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-07",
+   "titel": "Geobasisdaten RLP – 3D-Gebäudemodell LoD2 (Kacheln)",
+   "anbieter": "Landesamt für Vermessung und Geobasisinformation Rheinland-Pfalz",
+   "url": "https://geobasis-rlp.de/data/geb3dlo/current/gml/LoD2_32_{e}_{n}_2_RP.gml",
+   "hinweis": "2×2-km-Kacheln mit geraden Kilometerwerten (docs/25 §3.1); unbebaute Kacheln liefern 404 → keine Kachel",
+   "system": 25832,
+   "format": "gml",
+   "kachel_km": 2,
+   "gebiet_wgs84": [
+    6.1174,
+    48.9663,
+    8.5083,
+    50.9404
+   ],
+   "gebiet_beleg": "Rechteck des Landes aus VG2500 (geodaten/laender.py)",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© GeoBasis-DE / LVermGeoRP ({jahr}), dl-de/by-2-0",
+   "beleg": "https://geobasis-rlp.de/data/geb3dlo/current/meta4/geb3dlo_gml_07.meta4"
+  },
+  {
    "id": "BW",
    "land": "Baden-Württemberg",
    "laender": [
@@ -820,6 +829,34 @@
    "lizenz_url": "",
    "namensnennung": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
    "beleg": "https://geodaten.bayern.de/opengeodata/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "BY-LOD2-GML",
+   "land": "Bayern",
+   "laender": [
+    "Bayern"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-07",
+   "titel": "OpenData Bayern – 3D-Gebäudemodelle LoD2 (Kacheln)",
+   "anbieter": "Landesamt für Digitalisierung, Breitband und Vermessung (LDBV)",
+   "url": "https://download1.bayernwolke.de/a/lod2/citygml/{e}_{n}.gml",
+   "hinweis": "2×2-km-Kacheln mit geraden Kilometerwerten (docs/25 §3.1); unbebaute Kacheln liefern 404 → keine Kachel",
+   "system": 25832,
+   "format": "gml",
+   "kachel_km": 2,
+   "gebiet_wgs84": [
+    8.9773,
+    47.2704,
+    13.835,
+    50.5645
+   ],
+   "gebiet_beleg": "Rechteck des Landes aus VG2500 (geodaten/laender.py)",
+   "lizenz": "CC-BY-4.0",
+   "lizenz_url": "https://creativecommons.org/licenses/by/4.0/",
+   "namensnennung": "Datenquelle: Bayerische Vermessungsverwaltung – www.geodaten.bayern.de, CC BY 4.0",
+   "beleg": "https://geodaten.bayern.de/odd/a/lod2/citygml/meta/metalink/09.meta4"
   },
   {
    "id": "SL",
@@ -1160,6 +1197,34 @@
    "beleg": "https://www.geoportal-mv.de/portal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   },
   {
+   "id": "MV-LOD2-GML",
+   "land": "Mecklenburg-Vorpommern",
+   "laender": [
+    "Mecklenburg-Vorpommern"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-07",
+   "titel": "GeoPortal.MV – 3D-Gebäudemodell LoD2 (INSPIRE-Download, Kacheln)",
+   "anbieter": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
+   "url": "https://www.geodaten-mv.de/dienste/gebaeude_download?index=0&dataset=8397b554-5cb9-4274-8be8-c20490d9a6e8&file=lod2_33_{e}_{n}_2_gml.zip",
+   "hinweis": "2×2-km-Kacheln mit geraden Kilometerwerten (docs/25 §3.1); unbebaute Kacheln liefern 404 → keine Kachel",
+   "system": 25833,
+   "format": "zip",
+   "kachel_km": 2,
+   "gebiet_wgs84": [
+    10.5932,
+    53.1159,
+    14.4123,
+    54.685
+   ],
+   "gebiet_beleg": "Rechteck des Landes aus VG2500 (geodaten/laender.py)",
+   "lizenz": "CC-BY-4.0",
+   "lizenz_url": "https://creativecommons.org/licenses/by/4.0/",
+   "namensnennung": "© GeoBasis-DE/M-V ({jahr}), CC BY 4.0",
+   "beleg": "https://www.geodaten-mv.de/dienste/gebaeude_atom?type=dataset&id=8397b554-5cb9-4274-8be8-c20490d9a6e8"
+  },
+  {
    "id": "SN",
    "land": "Sachsen",
    "laender": [
@@ -1227,6 +1292,34 @@
    "lizenz_url": "",
    "namensnennung": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
    "beleg": "https://www.geodaten.sachsen.de/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "SN-LOD2-GML",
+   "land": "Sachsen",
+   "laender": [
+    "Sachsen"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-07",
+   "titel": "Geodaten Sachsen – 3D-Gebäudemodell LoD2 (Batch-Download, Kacheln)",
+   "anbieter": "Landesamt für Geobasisinformation Sachsen (GeoSN)",
+   "url": "https://geocloud.landesvermessung.sachsen.de/public.php/dav/files/AyJqXpJAZJXomCb/lod2_33{e}_{n}_2_sn_citygml.zip",
+   "hinweis": "2×2-km-Kacheln mit geraden Kilometerwerten (docs/25 §3.1); unbebaute Kacheln liefern 404 → keine Kachel",
+   "system": 25833,
+   "format": "zip",
+   "kachel_km": 2,
+   "gebiet_wgs84": [
+    11.8723,
+    50.1718,
+    15.0377,
+    51.6831
+   ],
+   "gebiet_beleg": "Rechteck des Landes aus VG2500 (geodaten/laender.py)",
+   "lizenz": "dl-de/by-2.0",
+   "lizenz_url": "https://www.govdata.de/dl-de/by-2-0",
+   "namensnennung": "© GeoBasis-DE / GeoSN ({jahr}), dl-de/by-2-0",
+   "beleg": "https://www.geodaten.sachsen.de/batch-download-4719.html"
   },
   {
    "id": "ST",

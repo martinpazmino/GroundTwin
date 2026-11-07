@@ -67,7 +67,7 @@ license **AGPL-3.0-or-later** (D79).
   `werkzeuge/boreholeml_codes.py`, mapped by official names, P15); import marks the origin. Must stay valid against
   the official XSD: `tests/test_boreholeml.py` (needs network; opengis only over https, X31).
 - Bohrungen der Länder (D91, docs/21 §4.5): `geodaten/bohrdaten.py` + `dienste.json` (services with license and
-  evidence; all 16 Länder, D98: 4 with data services (DGM also NI, MV; LoD2 also NI, docs/25), the other 12 as portal links marked *ungeprueft*; the Land from
+  evidence; all 16 Länder, D98: 5 with Bohrungen services (NW, BW, HH with Schichten; BE, BB Kopf; DGM also NI, MV; LoD2 also NI, BY, RP, MV, SN, docs/25), the other 11 as portal links marked *ungeprueft*; the Land from
   VG2500 borders in `geodaten/laender.py`, at a border both); query **only on a click**; Gegenprobe against the Gutachten; import only BoreholeML with Schichtdaten into
   `fremd.json` (codes `NW-…`, `herkunft` SGD, never exported back). Tests use the service dummy of
   `tests/test_bohrdaten.py`; two tests ask the real services (skip offline). Every request goes through
@@ -79,8 +79,8 @@ license **AGPL-3.0-or-later** (D79).
   password or with `GEO_AGENT_DIENSTE_BEARBEITEN=1`; online only saved entries are checked (no address from the
   request). `GEO_AGENT_DIENSTE` puts the registry elsewhere. Tests `tests/test_dienste_werkzeug.py` (on a copy).
   Untested links stay *ungeprueft* until someone checks them; never mark a link geprueft without a check.
-- Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (1 × 1 km, AdV profile, UTM +
-  DHHN2016) of Berlin, Brandenburg and NRW on a click (`dienste.json`, per tile the first service that has it) into
+- Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (AdV profile, UTM +
+  DHHN2016) of BE, BB, NW, NI (1 km) and BY, RP, MV, SN (2 km, `kachel_km`) on a click (`dienste.json`, per grid and tile the first service that has it) into
   `gebaeude.json`; IFC context as `IfcBuildingElementProxy` with the license of its service, viewer button *Gebäude*; the Länder of the
   cut-out (radius = half its diagonal), the Land of the centre first.
   Tests `tests/test_gebaeude*.py`.

@@ -215,7 +215,8 @@ For the remaining 13 Länder without a BoreholeML WFS (`SH, NI, HB, HE, RP, BY, 
 
 ### Ranked Action Plan
 
-1. **Immediate configuration upgrade (0 LoC, after `dienste.json` lock is released):**
+1. **Immediate configuration upgrade (0 LoC, after `dienste.json` lock is released):** **done 2026-11-07** (entry `HH`,
+   checked by Claude with the app's code: 151 Bohrungen within 300 m of the Rathaus, Schichten and groundwater).
    - Switch **Hamburg (`HH`)** in [`services/geodaten/geodaten/dienste.json`](../services/geodaten/geodaten/dienste.json)
      from `typ: "portal-bohrungen"` to `typ: "wfs-boreholeml"`,
      `url: "https://geodienste.hamburg.de/HH_WFS_BoreholeML3"`, `feature_type: "bml:Borehole"`,

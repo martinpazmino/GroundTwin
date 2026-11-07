@@ -46,7 +46,10 @@ def test_dienste_am_ort():
     muenchen = bohrdaten.am_ort(691567.3, 5334734.3, 25832)                          # Bayern: nur Portale, als Link
     assert [d["dienst"] for d in muenchen if d["art"] == "bohrungen"] == ["BY", "DE-BGR"]
     assert "kein Datendienst – im Portal ansehen" in muenchen[0]["text"] and muenchen[0]["url"].startswith("https://")
-    assert {d["status"] for d in muenchen} == {"ungeprueft"} and {d["art"] for d in muenchen} == {"bohrungen", "dgm", "gebaeude"}
+    assert {d["art"] for d in muenchen} == {"bohrungen", "dgm", "gebaeude"}
+    assert {d["status"] for d in muenchen if d["art"] != "gebaeude"} == {"ungeprueft"}
+    lod2 = [d for d in muenchen if d["art"] == "gebaeude"]                             # LoD2 Bayern seit 2026-11-07
+    assert [(d["dienst"], d["status"], d["url"]) for d in lod2] == [("BY-LOD2-GML", "geprueft", "")]
     assert all(d["url"] == "" and d["status"] == "geprueft" for d in berlin)            # angebunden: kein Portal-Link
 
 

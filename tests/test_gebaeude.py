@@ -104,6 +104,18 @@ def test_abruf_mit_rueckfall_ausschnitt_und_lizenz():
     assert sum("gdi.berlin.de" in u for u in aufrufe) == 2 and sum("geobasis-bb" in u for u in aufrufe) == 1
 
 
+def test_kacheln_mit_2_km_raster_nur_gerade_kilometer():
+    # Bayern liefert 2 x 2 km mit geraden Kilometern: ein Ausschnitt ueber 691/692 km fragt 690 und 692 an, nie 691
+    assert gb.kacheln(691500, 5335100, 692500, 5335900, km=2) == [(690, 5334), (692, 5334)]
+    aufrufe = []
+    holer = attrappe({"/690_5334.gml": kachel(haus("DEBY_1", 691800, 5335500)),
+                      "/692_5334.gml": kachel(haus("DEBY_2", 692100, 5335500))}, aufrufe)
+    geb, q = gb.abrufen(691500, 5335100, 692500, 5335900, 25832, holer=holer)
+    assert sorted(b["id"] for b in geb) == ["DEBY_1", "DEBY_2"] and q["kacheln"] == 2 and q["ohne_kachel"] == []
+    assert all("bayernwolke" in u for u in aufrufe) and not any("691_" in u for u in aufrufe)
+    assert q["dienste"][0]["dienst"] == "BY-LOD2-GML" and "Bayerische Vermessungsverwaltung" in q["dienste"][0]["namensnennung"]
+
+
 def test_mitten_in_berlin_nur_der_dienst_von_berlin():
     """Die Rechtecke beider Dienste decken Berlin; die Laendergrenzen nicht: Brandenburg wird nicht mehr gefragt."""
     aufrufe = []
@@ -122,9 +134,10 @@ def test_zonenkennung_und_fehler():
                                                                             "lod2_33394": DienstFehler("keine Antwort in 120 s")}))
     leer, q = gb.abrufen(394700, 5818250, 394950, 5818500, 25833, holer=attrappe({}))
     assert leer == [] and q["ohne_kachel"] == ["394/5818"]
-    with pytest.raises(ValueError, match="kein LoD2-Dienst für diesen Ort .angebunden: Berlin, Brandenburg, "
-                                         "Niedersachsen, Nordrhein-Westfalen; im Portal des Landes: .*https://"):
-        gb.abrufen(705000, 5300000, 705300, 5300300, 25832, holer=attrappe({}))            # Bayern: Portal genannt
+    with pytest.raises(ValueError, match="kein LoD2-Dienst für diesen Ort .angebunden: Bayern, Berlin, Brandenburg, "
+                                         "Mecklenburg-Vorpommern, Niedersachsen, Nordrhein-Westfalen, Rheinland-Pfalz, "
+                                         "Sachsen; im Portal des Landes: .*https://"):
+        gb.abrufen(477000, 5550000, 477300, 5550300, 25832, holer=attrappe({}))            # Hessen: Portal genannt
     with pytest.raises(ValueError, match="Kacheln"):
         gb.abrufen(390000, 5815000, 394500, 5819500, 25833, holer=attrappe({}))           # 5 x 5 km
 

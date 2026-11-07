@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **LoD2 of Bayern, Rheinland-Pfalz, Mecklenburg-Vorpommern and Sachsen** (2 × 2 km tiles: each service on its own grid)
+  and **Bohrungen with Schichtdaten from Hamburg** (BoreholeML 3.0 WFS of the Geologisches Landesamt).
 - **DGM1 vom Land for Niedersachsen and Mecklenburg-Vorpommern, LoD2 for Niedersachsen** (WCS / 1-km tiles, CC BY 4.0),
   surveyed and checked live for all 13 Länder without a service (docs/25); first work of Antigravity, rechecked by Claude.
 - Survey of borehole sources of the Länder without a WFS and a WMS-GetFeatureInfo prototype for head data

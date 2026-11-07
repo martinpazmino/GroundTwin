@@ -59,6 +59,10 @@ Many *Länder* publish their `DGM1` and `LoD2` datasets as Open Data without reg
 
 ### 3.1 Pass `kachel_km` to `kacheln()` in `lod2-kacheln` — Unlocks **4 Länder (BY, RP, MV, SN)**
 
+> **Done 2026-11-07 (Claude):** `gebaeude.abrufen` fetches each service on its own grid; BY, RP, MV and SN are
+> connected (`*-LOD2-GML`), checked with real tiles: München 179, Mainz 56, Rostock 140, Dresden 32 Gebäude in
+> 300 × 300 m, a corner of four Bavarian tiles complete.
+
 - **Coverage:** **Bayern (`BY`)**, **Rheinland-Pfalz (`RP`)**, **Mecklenburg-Vorpommern (`MV`)**, and **Sachsen (`SN`)**.
 - **Problem:** [`dienste.py`](../services/geodaten/geodaten/dienste.py) already defines `"kachel_km"` as a required field of `lod2-kacheln`, and `dienste.pruefen_live()` (line 146) correctly rounds the test coordinate to multiples of `kachel_km` (` int(math.floor(x / 1000.0 / km)) * km`). However, [`gebaeude.py`](../services/geodaten/geodaten/gebaeude.py) line 170 calls `for e, n in kacheln(x0n, y0n, x1n, y1n):` without passing `km=int(d.get("kachel_km") or 1)`. Because `kacheln()` defaults to `km=1`, any query covering an odd kilometer coordinate requests non-existent odd tiles (`HTTP 404`) from 2×2 km tile servers.
 - **How the code would read it:** Pass `km=int(d.get("kachel_km") or 1)` in `gebaeude._laden()` (`gebaeude.py:170`). No new service type is required; the four services in `geprueft_nicht_aufgenommen` (`BY`, `RP`, `MV`, `SN`) can immediately move into `dienste` as `lod2-kacheln` with `"kachel_km": 2`.

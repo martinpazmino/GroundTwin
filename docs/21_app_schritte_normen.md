@@ -515,7 +515,9 @@ the terrain of §4.4.
 
 - Section *Gebäude (LoD2)* in the *Lage* step. *Gebäude vom Land abrufen* loads the 3D building models
   LoD2 of the Land for the cut-out around the Bohrungen (plus a margin, 100 m by default).
-- Berlin, Brandenburg and NRW publish them in the same way: CityGML tiles of 1 × 1 km in the AdV profile,
+- Berlin, Brandenburg, NRW and Niedersachsen publish them as CityGML tiles of 1 × 1 km; Bayern, Rheinland-Pfalz,
+  Mecklenburg-Vorpommern and Sachsen as 2 × 2 km tiles on even kilometres (`kachel_km`: each service is fetched on
+  its own grid; since 2026-11-07, [25](25_laender_dgm_lod2_research.md)). All in the AdV profile,
   in ETRS89/UTM with heights in DHHN2016. That is the frame of the model, so no quasigeoid and no
   meridian convergence are needed ([`dienste.json`](../services/geodaten/geodaten/dienste.json)).
   - Berlin: dl-de/zero-2.0.
