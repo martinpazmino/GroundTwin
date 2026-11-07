@@ -1,6 +1,6 @@
 {
  "format": "groundtwin-dienste/2",
- "stand": "2026-11-05",
+ "stand": "2026-11-06",
  "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2), Geländemodelle und LoD2-Gebäude der Vermessungsverwaltungen (§2.4). Angebunden sind wfs-kopf, wfs-boreholeml, wcs-dgm und lod2-kacheln; portal-* sind nur Links. status: geprueft (gegen den echten Dienst, mit Datum) oder ungeprueft (eingetragen, nicht getestet). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88). Pflege mit dem Werkzeug „Dienste der Länder“ (docs/21 §4.8).",
  "geprueft_nicht_aufgenommen": [
   {
@@ -16,6 +16,62 @@
    "geprueft": "2026-11-02",
    "url": "",
    "grund": "kein frei zugänglicher WCS für das DGM1 gefunden – DGM1-Kacheln (GeoTIFF) als Datei laden"
+  },
+  {
+   "land": "Sachsen-Anhalt",
+   "art": "wcs-dgm",
+   "geprueft": "2026-11-06",
+   "url": "https://www.geodatenportal.sachsen-anhalt.de/ows_WCS_ST_DGM1",
+   "grund": "GetCoverage (FORMAT=image/tiff, CoverageId=Coverage1) liefert MIME multipart/related (GML-Vorspann + GeoTIFF) statt einer reinen GeoTIFF-Datei; dgm_dienst._laden kann den Multipart-Umschlag ohne Entpacker nicht lesen"
+  },
+  {
+   "land": "Bayern",
+   "art": "lod2-kacheln",
+   "geprueft": "2026-11-06",
+   "url": "https://download1.bayernwolke.de/a/lod2/citygml/{e}_{n}.gml",
+   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25832, CC BY 4.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf und fragt ungerade Kacheln an (HTTP 404)"
+  },
+  {
+   "land": "Rheinland-Pfalz",
+   "art": "lod2-kacheln",
+   "geprueft": "2026-11-06",
+   "url": "https://geobasis-rlp.de/data/geb3dlo/current/gml/LoD2_32_{e}_{n}_2_RP.gml",
+   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25832, dl-de/by-2.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf und fragt ungerade Kacheln an (HTTP 404)"
+  },
+  {
+   "land": "Mecklenburg-Vorpommern",
+   "art": "lod2-kacheln",
+   "geprueft": "2026-11-06",
+   "url": "https://www.geodaten-mv.de/dienste/gebaeude_download?index=0&dataset=8397b554-5cb9-4274-8be8-c20490d9a6e8&file=lod2_33_{e}_{n}_2_gml.zip",
+   "grund": "2x2-km-Kacheln (gerade Kilometerwerte in EPSG:25833, CC BY 4.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf"
+  },
+  {
+   "land": "Sachsen",
+   "art": "lod2-kacheln",
+   "geprueft": "2026-11-06",
+   "url": "https://geocloud.landesvermessung.sachsen.de/public.php/dav/files/AyJqXpJAZJXomCb/lod2_33{e}_{n}_2_sn_citygml.zip",
+   "grund": "2x2-km-Kacheln über Nextcloud/WebDAV (gerade Kilometerwerte in EPSG:25833, dl-de/by-2.0); gebaeude.py:170 ruft kacheln() noch ohne km=d['kachel_km'] (fest mit km=1) auf"
+  },
+  {
+   "land": "Schleswig-Holstein",
+   "art": "lod2-kacheln",
+   "geprueft": "2026-11-06",
+   "url": "https://geodaten.schleswig-holstein.de/gaialight-sh/_apps/dladownload/dl-lod2.html",
+   "grund": "Server geodaten.schleswig-holstein.de liefert kein Zwischenzertifikat (SSLCertVerificationError: unable to get local issuer certificate mit certifi); Kachel-URLs zudem mit wechselndem Erhebungsjahr"
+  },
+  {
+   "land": "Hessen",
+   "art": "wcs-dgm",
+   "geprueft": "2026-11-06",
+   "url": "https://inspire-hessen.de/raster/wms/dgm1/ows",
+   "grund": "Endpunkt unterstützt nur WMS (SERVICE=WCS liefert ServiceException); Downloadcenter gds.hessen.de nutzt sitzungsgebundene Intershop-URLs"
+  },
+  {
+   "land": "Thüringen",
+   "art": "wcs-dgm",
+   "geprueft": "2026-11-06",
+   "url": "https://www.geoproxy.geoportal-th.de/geoproxy/services/DGM",
+   "grund": "Endpunkt unterstützt nur WMS (auch bei SERVICE=WCS antwortet WMS_Capabilities); Downloadportal geoportal-th.de ist durch Link11/Friendly-Captcha für automatisierte Abrufe gesperrt"
   }
  ],
  "dienste": [
@@ -242,6 +298,39 @@
    "beleg": "https://ni-lgln-opengeodata.hub.arcgis.com/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
   },
   {
+   "id": "NI-DGM1",
+   "land": "Niedersachsen",
+   "laender": [
+    "Niedersachsen"
+   ],
+   "art": "wcs-dgm",
+   "status": "geprueft",
+   "geprueft": "2026-11-06",
+   "aktiv": false,
+   "titel": "WCS NI DGM1",
+   "anbieter": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "url": "https://opendata.geoservices.lgln.niedersachsen.de/dgm_wcs",
+   "hinweis": "Geprüft und lauffähig (Float32-GeoTIFF, 1,0 m); aktiv=false, bis die Liste der angebundenen Länder in tests/test_bohrdaten.py:173 angepasst wird.",
+   "coverage": "ni_dgm1",
+   "achsen": [
+    "x",
+    "y"
+   ],
+   "system": 25832,
+   "raster_m": 1.0,
+   "gebiet_wgs84": [
+    6.544,
+    51.246,
+    11.637,
+    53.913
+   ],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25832: 341000..676040, 5681992..5973000) in Länge/Breite umgerechnet",
+   "lizenz": "CC-BY-4.0",
+   "lizenz_url": "https://creativecommons.org/licenses/by/4.0/",
+   "namensnennung": "© LGLN ({jahr}), CC BY 4.0",
+   "beleg": "https://opendata.geoservices.lgln.niedersachsen.de/dgm_wcs?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
+  },
+  {
    "id": "NI-LOD2",
    "land": "Niedersachsen",
    "laender": [
@@ -263,6 +352,35 @@
    "lizenz_url": "",
    "namensnennung": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
    "beleg": "https://ni-lgln-opengeodata.hub.arcgis.com/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "NI-LOD2-GML",
+   "land": "Niedersachsen",
+   "laender": [
+    "Niedersachsen"
+   ],
+   "art": "lod2-kacheln",
+   "status": "geprueft",
+   "geprueft": "2026-11-06",
+   "aktiv": false,
+   "titel": "3D-Gebäudemodell LoD2 Niedersachsen (Einzelkacheln)",
+   "anbieter": "Landesamt für Geoinformation und Landesvermessung Niedersachsen (LGLN)",
+   "url": "https://lod2.s3.eu-de.cloud-object-storage.appdomain.cloud/LoD2_32_{e}_{n}_1_ni.gml",
+   "hinweis": "1x1-km-CityGML-Kacheln im S3-Speicher des LGLN (unbebaute Kacheln liefern HTTP 404 -> KeineKachel); aktiv=false, bis tests/test_gebaeude.py:125 angepasst wird.",
+   "system": 25832,
+   "format": "gml",
+   "kachel_km": 1,
+   "gebiet_wgs84": [
+    6.654,
+    51.295,
+    11.49,
+    53.894
+   ],
+   "gebiet_beleg": "Landesausdehnung Niedersachsen (Mitte auf bebauter Kachel 504/5827 für Live-Prüfung)",
+   "lizenz": "CC-BY-4.0",
+   "lizenz_url": "https://creativecommons.org/licenses/by/4.0/",
+   "namensnennung": "© LGLN ({jahr}), CC BY 4.0",
+   "beleg": "https://lod.stac.lgln.niedersachsen.de/collections/lod2"
   },
   {
    "id": "HB",
@@ -987,6 +1105,39 @@
    "lizenz_url": "",
    "namensnennung": "Landesamt für innere Verwaltung MV, Amt für Geoinformation",
    "beleg": "https://www.geoportal-mv.de/portal/ (nicht getestet (Eintrag 2026-11-05, Seite erreichbar))"
+  },
+  {
+   "id": "MV-DGM1",
+   "land": "Mecklenburg-Vorpommern",
+   "laender": [
+    "Mecklenburg-Vorpommern"
+   ],
+   "art": "wcs-dgm",
+   "status": "geprueft",
+   "geprueft": "2026-11-06",
+   "aktiv": false,
+   "titel": "WCS Digitales Geländemodell MV (WCS_MV_DGM)",
+   "anbieter": "Landesamt für innere Verwaltung Mecklenburg-Vorpommern (LAiV), Amt für Geoinformation, Vermessungs- und Katasterwesen",
+   "url": "https://www.geodaten-mv.de/dienste/dgm_wcs",
+   "hinweis": "Geprüft und lauffähig (Float32-GeoTIFF, 1,0 m); aktiv=false, bis die Liste der angebundenen Länder in tests/test_bohrdaten.py:173 angepasst wird.",
+   "coverage": "mv_dgm",
+   "achsen": [
+    "x",
+    "y"
+   ],
+   "system": 25833,
+   "raster_m": 1.0,
+   "gebiet_wgs84": [
+    10.524,
+    53.039,
+    14.455,
+    54.821
+   ],
+   "gebiet_beleg": "Envelope der DescribeCoverage (EPSG:25833: 200000..465000, 5886000..6075000) in Länge/Breite umgerechnet",
+   "lizenz": "CC-BY-4.0",
+   "lizenz_url": "https://creativecommons.org/licenses/by/4.0/deed.de",
+   "namensnennung": "© GeoBasis-DE/M-V ({jahr})",
+   "beleg": "https://www.geodaten-mv.de/dienste/dgm_wcs?SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities"
   },
   {
    "id": "MV-LOD2",
