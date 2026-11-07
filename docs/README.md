@@ -40,6 +40,8 @@ The notes are in English and keep the German technical terms of the Gutachten an
 
 - [23 Open data and open-source integration](23_open_data_integration.md): evaluation and intervention plan for BoreholeML, the BGR Bohrpunktkarte and the state geological surveys, a Baugrundmodell from a point, the Umgebungsmodell (DGM + LoD2 buildings), basemaps, Cesium / 3D Tiles and OpenStreetMap.
 - [24 Agent team (proposal)](24_agent_team.md): Claude as orchestrator and Gemini as specialists — where Claude's tokens go (measured), what the Google subscription and the Gemini API allow, roles, protocol, permissions, metrics and the roadmap.
+- [25 DGM1 and LoD2 of the Länder](25_laender_dgm_lod2_research.md): the 13 Länder without a data service surveyed and checked live; NI and MV connected, proposals for new service types.
+- [26 Bohrungen of the Länder without a service](26_laender_bohrungen_options.md): sources per Land, options (a)–(e), recommendation, and the WMS prototype (`bohrdaten_wms.py`, not yet wired).
 
 ## Extraction: problem and design
 

@@ -170,7 +170,8 @@ def test_grenze_zu_einem_land_ohne_dienst_nennt_dessen_portal():
 
 def test_kein_dienst_sagt_was_angebunden_ist_und_wo_die_daten_sind():
     satz = bd.ohne_dienst(691567.3, 5334734.3, 25832, "dgm")                          # München
-    assert satz.startswith("angebunden: Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")
+    assert satz.startswith("angebunden: Berlin, Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, "
+                            "Nordrhein-Westfalen; im Portal des Landes: ")   # MV und NI seit 2026-11-07
     assert "https://" in satz and "Deutschland" not in satz
     assert bd.ohne_dienst(691567.3, 5334734.3, 25832, "bohrungen").startswith(
         "angebunden: Baden-Württemberg, Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")

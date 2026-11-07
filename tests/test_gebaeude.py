@@ -123,7 +123,7 @@ def test_zonenkennung_und_fehler():
     leer, q = gb.abrufen(394700, 5818250, 394950, 5818500, 25833, holer=attrappe({}))
     assert leer == [] and q["ohne_kachel"] == ["394/5818"]
     with pytest.raises(ValueError, match="kein LoD2-Dienst für diesen Ort .angebunden: Berlin, Brandenburg, "
-                                         "Nordrhein-Westfalen; im Portal des Landes: .*https://"):
+                                         "Niedersachsen, Nordrhein-Westfalen; im Portal des Landes: .*https://"):
         gb.abrufen(705000, 5300000, 705300, 5300300, 25832, holer=attrappe({}))            # Bayern: Portal genannt
     with pytest.raises(ValueError, match="Kacheln"):
         gb.abrufen(390000, 5815000, 394500, 5819500, 25833, holer=attrappe({}))           # 5 x 5 km

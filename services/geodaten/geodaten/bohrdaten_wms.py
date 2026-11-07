@@ -24,8 +24,12 @@ from . import bohrdaten, laender
 from .netz import DienstFehler
 from .utm import utm_normal
 
-BILD_BREITE = 101                               # ungerade Pixelzahl: Mittelpunkt (50, 50) liegt exakt auf (x, y)
-BILD_MITTE = 50
+# GetFeatureInfo liefert nur, was unter dem abgefragten Pixel (plus wenigen Pixeln Toleranz des Servers) liegt. Mit
+# 101 x 101 Pixeln fand der BGR-WMS nur Bohrungen bis ~40 m um die Mitte, eine bekannte Bohrung 150 m daneben fehlte
+# (Radius 500 m, 2026-11-07). 5 x 5 Pixel: das Mittelpixel mit Toleranz deckt den ganzen Umkreis (29-31 Treffer,
+# die bekannte dabei); 3 x 3 lieferte nichts. Genau gefiltert wird danach nach dem Abstand.
+BILD_BREITE = 5                                 # ungerade Pixelzahl: das Mittelpixel liegt auf (x, y)
+BILD_MITTE = 2
 TREFFER_MAX = 50                                # FEATURE_COUNT je WMS-GetFeatureInfo-Abruf
 
 _PUNKT_RE = re.compile(r"POINT\s*\(\s*([+-]?\d+(?:[.,]\d+)?)\s+([+-]?\d+(?:[.,]\d+)?)", re.IGNORECASE)
@@ -333,6 +337,7 @@ def abfragen_wms(x: float, y: float, epsg: int, radius: float = bohrdaten.RADIUS
     treffer: list[dict] = []
     fehler: list[dict] = []
     gesehen: set[tuple[str, str]] = set()
+    unvollstaendig: list[str] = []
 
     for d in am_ort:
         Abfrage_epsg = epsg if epsg in d["systeme"] else d["systeme"][0]
@@ -343,7 +348,10 @@ def abfragen_wms(x: float, y: float, epsg: int, radius: float = bohrdaten.RADIUS
             url = _url_wms(d, typ, ax, ay, Abfrage_epsg, radius)
             try:
                 daten = holer(url, bohrdaten.ZEIT_KOPF)
-                for t in wms_kopfdaten(d, daten, epsg=epsg, heute=heute):
+                roh = wms_kopfdaten(d, daten, epsg=epsg, heute=heute)
+                if len(roh) >= TREFFER_MAX:                     # Grenze des Servers erreicht: Liste unvollstaendig
+                    unvollstaendig.append(d["id"])
+                for t in roh:
                     schluessel = (t["dienst"], t["id"])
                     if schluessel not in gesehen:
                         gesehen.add(schluessel)
@@ -363,6 +371,7 @@ def abfragen_wms(x: float, y: float, epsg: int, radius: float = bohrdaten.RADIUS
         "dienste": [d["id"] for d in am_ort],
         "treffer": treffer,
         "fehler": fehler,
+        "unvollstaendig": sorted(set(unvollstaendig)),   # markiert, nie still gekappt: Radius verkleinern
         "portale": [],
         "quellen": [
             {

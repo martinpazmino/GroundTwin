@@ -160,6 +160,11 @@ For the remaining 13 Länder without a BoreholeML WFS (`SH, NI, HB, HE, RP, BY, 
     pixel `(50, 50)` on a `101×101` canvas, the server returns boreholes near the center; the parser
     then computes the exact Euclidean distance from the returned point coordinates (`point` or
     `x_4647`/`y_4647`) and filters strictly by `abstand_m <= radius_m`.
+  - **Review 2026-11-07 (Claude):** with `101×101` pixels the BGR WMS returned only Bohrungen within ~40 m of
+    the centre (tolerance in pixels); a known Bohrung 150 m away was missing at a radius of 500 m. The prototype
+    now asks a `5×5` image (centre pixel `(2, 2)` covers the radius: 29–31 hits, the known one included; `3×3`
+    returned nothing), and an answer that reaches `FEATURE_COUNT` (50) is listed in `unvollstaendig`
+    instead of being cut silently (central München reaches it at 500 m).
   - `schichten` is always `[]` (never invented), and `issues` explicitly states that WMS
     `GetFeatureInfo` provides `Kopfdaten` only (`"WMS-GetFeatureInfo liefert nur Kopfdaten..."`).
   - Any personal clerk names or phone/email attributes in `<FIELDS>` (`individualName`, `voice`,

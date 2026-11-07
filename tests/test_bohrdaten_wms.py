@@ -103,14 +103,14 @@ def test_url_wms_version_130_und_111():
     url_130 = bohrdaten_wms._url_wms(d_bgr, "0", 691500.0, 5335500.0, 25832, 250.0)
     assert "VERSION=1.3.0" in url_130
     assert "CRS=EPSG:25832" in url_130
-    assert "I=50" in url_130 and "J=50" in url_130
+    assert "I=2" in url_130 and "J=2" in url_130 and "WIDTH=5" in url_130   # Mittelpixel deckt den Umkreis
     assert "INFO_FORMAT=text/xml" in url_130
 
     d_hb = next(d for d in bohrdaten_wms.WMS_DIENSTE if d["id"] == "hb-bohrungen-wms")
     url_111 = bohrdaten_wms._url_wms(d_hb, "Bohrpunkte_Bremen", 487461.0, 5882434.0, 25832, 250.0)
     assert "VERSION=1.1.1" in url_111
     assert "SRS=EPSG:25832" in url_111
-    assert "X=50" in url_111 and "Y=50" in url_111
+    assert "X=2" in url_111 and "Y=2" in url_111
     assert "INFO_FORMAT=application/vnd.ogc.gml" in url_111
 
 
@@ -179,6 +179,7 @@ def test_abfragen_wms_filtert_radius_und_passt_zu_doppelte():
     # Der 3. Treffer (WEIT_WEG) liegt ~5 km entfernt und wird durch radius=100.0 ausgefiltert
     assert [t["id"] for t in erg["treffer"]] == ["BIS-BY_7835BG000657", "BIS-BY_7835BG010373"]
     assert erg["treffer"][0]["abstand"] < erg["treffer"][1]["abstand"]
+    assert erg["unvollstaendig"] == []
 
     # Gegenprobe gegen eine Bohrung des Gutachtens mit bohrdaten.doppelte()
     gutachten_bohrungen = [
@@ -227,3 +228,11 @@ def test_wms_fehlerbehandlung_bei_service_exception():
     assert erg["treffer"] == []
     assert len(erg["fehler"]) == 1
     assert erg["fehler"][0]["dienst"] == "de-bgr-gbl-wms"
+
+
+def test_abfragen_wms_markiert_eine_gekappte_antwort(monkeypatch):
+    # Liefert der Server so viele Treffer wie FEATURE_COUNT, fehlen vielleicht welche: markieren, nie still kappen
+    monkeypatch.setattr(bohrdaten_wms, "TREFFER_MAX", 2)
+    erg = bohrdaten_wms.abfragen_wms(691500.0, 5335500.0, 25832, radius=100.0,
+                                     holer=lambda url, zeit: BEISPIEL_BGR_GBL_XML, heute=date(2026, 11, 6))
+    assert erg["unvollstaendig"] == ["de-bgr-gbl-wms"]
