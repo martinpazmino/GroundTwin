@@ -145,16 +145,13 @@ def test_gpkg_felder_vorschlagen_und_lesen_mit_herkunft(tmp_path):
 
 
 def test_gpkg_punkt_aus_blob_und_ohne_stille_zuordnung(tmp_path):
-    """Ohne bestätigte Zuordnung wendet lesen keinen Spaltenvorschlag still an, liest aber Punkt & PK aus dem GPKG."""
+    """Ohne bestätigte Zuordnung liest lesen nichts: der Primärschlüssel zählt nur Zeilen, er kennt keine Bohrung."""
     gpkg = _synthetisches_gpkg(tmp_path)
-    doc_ohne = bdd.lesen(gpkg, "probe_mv.gpkg", QUELLE_MV, zuordnung=None, heute=HEUTE)
-    # Zeilen 1, 2, 3, 6 haben gültige GP-Blobs in Deutschland und eindeutige PKs (fid 1, 2, 3, 6);
-    # gok und teufe bleiben None, weil keine Spaltenzuordnung bestätigt wurde!
-    assert len(doc_ohne["boreholes"]) == 4
-    assert doc_ohne["boreholes"][0]["gok_nhn"] is None and doc_ohne["boreholes"][0]["end_depth"] is None
-    assert doc_ohne["boreholes"][0]["x"] == pytest.approx(398528.0)
-    assert doc_ohne["boreholes"][1]["x"] == pytest.approx(398580.0)   # mit 32-Byte-Envelope im GP-Blob
-    # Mit Teil-Zuordnung ohne x/y kommt der Punkt ebenfalls aus dem GeoPackage-Blob
+    with pytest.raises(ValueError, match="ausdrückliche Spaltenzuordnung"):
+        bdd.lesen(gpkg, "probe_mv.gpkg", QUELLE_MV, zuordnung=None, heute=HEUTE)
+    with pytest.raises(ValueError, match="Pflichtfeld 'id'"):
+        bdd.lesen(gpkg, "probe_mv.gpkg", QUELLE_MV, zuordnung={"name": "LONGNAME"}, heute=HEUTE)
+    # Mit Teil-Zuordnung ohne x/y kommt der Punkt aus dem GeoPackage-Blob
     doc_blob = bdd.lesen(
         gpkg,
         "probe_mv.gpkg",
@@ -165,6 +162,7 @@ def test_gpkg_punkt_aus_blob_und_ohne_stille_zuordnung(tmp_path):
     assert len(doc_blob["boreholes"]) == 2
     assert doc_blob["boreholes"][0]["gok_nhn"] == pytest.approx(34.0)
     assert doc_blob["boreholes"][0]["x"] == pytest.approx(398528.0)
+    assert doc_blob["boreholes"][1]["x"] == pytest.approx(398580.0)   # mit 32-Byte-Envelope im GP-Blob
     with pytest.raises(ValueError, match="keine gültige GeoPackage"):
         bdd.lesen(b"kein sqlite", "kaputt.gpkg", QUELLE_MV)
     pfad_epsg = tmp_path / "org_epsg.gpkg"
@@ -196,7 +194,7 @@ CSV_LANG_CP1252 = (
 
 def test_csv_erfordert_ausdrueckliche_zuordnung():
     info = bdd.felder_vorschlagen(CSV_LANG_CP1252, "schichten.csv")
-    assert info["format"] == "csv" and info["trenner"] == ";" and info["kodierung"] == "utf-8" or info["kodierung"] == "cp1252"
+    assert info["format"] == "csv" and info["trenner"] == ";" and info["kodierung"] in ("utf-8", "cp1252")
     assert info["vorschlag"]["id"] == "bohr_id" and info["vorschlag"]["von"] == "tiefe_von"
     with pytest.raises(ValueError, match="ausdrückliche Spaltenzuordnung"):
         bdd.lesen(CSV_LANG_CP1252, "schichten.csv", QUELLE_MV, zuordnung=None)
@@ -396,3 +394,229 @@ def test_im_umkreis_sortiert_setzt_schichten_und_passt_zu_doppelte(tmp_path):
     assert len(erg_f["fehler"]) == 1 and erg_f["treffer"] == []
     with pytest.raises(ValueError, match="31468"):
         bdd.im_umkreis(doc, 4500000.0, 5800000.0, 31468, radius=100.0)
+
+
+# ---------------------------------------------------------------- Befunde an der echten Datei von MV (2026-11-09)
+QUELLE = {"kennung": "T", "titel": "Test", "land": "Berlin", "lizenz": "x", "namensnennung": "y"}
+LANG = {"id": "id", "x": "x", "y": "y", "epsg": "epsg", "von": "von", "bis": "bis", "petrographie": "p"}
+KOPF = "id;x;y;epsg;von;bis;p\n"
+BERLIN = "394774;5818338;25833"
+Z_KOPF = {"id": "id", "x": "x", "y": "y", "epsg": "epsg"}
+
+
+def _lang(zeilen: str) -> dict:
+    return bdd.lesen((KOPF + zeilen).encode(), "t.csv", QUELLE, zuordnung=LANG, heute=HEUTE)
+
+
+def _kopf_csv(zeilen: list[str], spalten: str = "bo_ident;prj_id;locid;x;y;epsg") -> bytes:
+    return ("\n".join([spalten, *zeilen]) + "\n").encode()
+
+
+def test_nicht_eindeutige_id_schlaegt_ein_eindeutiges_spaltenpaar_vor():
+    # bo_ident wiederholt sich bei verschiedenen Bohrungen (MV: bis 204-mal), prj_id + locid ist je Zeile eindeutig
+    daten = _kopf_csv(["7;P1;1;394774;5818338;25833", "7;P1;2;394800;5818338;25833", "8;P2;1;394900;5818338;25833"])
+    info = bdd.felder_vorschlagen(daten, "a.csv")
+    assert info["vorschlag"]["id"] == ["prj_id", "locid"] and "bo_ident" in info["id_hinweis"]
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=info["vorschlag"], heute=HEUTE)
+    assert [b["fremd_id"] for b in doc["boreholes"]] == ["P1/1", "P1/2", "P2/1"] and doc["abgelehnt"] == []
+    eindeutig = _kopf_csv(["7;P1;1;394774;5818338;25833", "8;P2;1;394900;5818338;25833"])
+    info = bdd.felder_vorschlagen(eindeutig, "a.csv")
+    assert info["vorschlag"]["id"] == "bo_ident" and info["id_hinweis"] is None
+
+
+def test_id_ohne_eindeutige_alternative_warnt_und_markiert_die_behaltene_bohrung():
+    daten = _kopf_csv(["7;394774;5818338;25833", "7;394800;5818338;25833"], "id;x;y;epsg")
+    info = bdd.felder_vorschlagen(daten, "a.csv")
+    assert info["vorschlag"]["id"] == "id" and "keine andere Kennung" in info["id_hinweis"]
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=info["vorschlag"], heute=HEUTE)
+    assert len(doc["boreholes"]) == 1 and [a["zeile"] for a in doc["abgelehnt"]] == [3]
+    assert any("steht noch 1-mal" in h for h in doc["boreholes"][0]["issues"])
+
+
+def test_id_aus_mehreren_spalten_braucht_alle_teile():
+    daten = _kopf_csv(["P1;1;394774;5818338;25833", ";2;394800;5818338;25833"], "a;b;x;y;epsg")
+    z = {"id": ["a", "b"], "x": "x", "y": "y", "epsg": "epsg"}
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=z, heute=HEUTE)
+    assert [b["fremd_id"] for b in doc["boreholes"]] == ["P1/1"] and doc["abgelehnt"] == [{"zeile": 3, "grund": "fehlende ID"}]
+    with pytest.raises(ValueError, match="existiert nicht"):
+        bdd.lesen(daten, "a.csv", QUELLE, zuordnung={**z, "id": ["a", "fehlt"]})
+
+
+@pytest.mark.parametrize("lon,lat,erwartet", [
+    (12.0905, 54.1845, "markiert"),         # Warnemuende, Mole: an Land, aber nicht auf der Flaeche von VG2500
+    (12.0000, 54.3800, "markiert"),         # rund 20 km vor der Kueste: Kuestenmeer
+    (14.4200, 50.0800, "abgelehnt"),        # Prag: im Rechteck um Deutschland, aber weit vom naechsten Land
+    (16.6000, 55.9000, "abgelehnt"),        # noerdlich von Bornholm, ausserhalb des Rechtecks
+])
+def test_lage_an_der_kueste_wird_markiert_und_nur_weit_draussen_abgelehnt(lon, lat, erwartet):
+    x, y = bd.utm.von_geo(lon, lat, 33)
+    daten = f"id;x;y;epsg\nA;{float(x)};{float(y)};25833\n".encode()
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=Z_KOPF, heute=HEUTE)
+    if erwartet == "markiert":
+        assert doc["abgelehnt"] == [] and any("nicht auf der Landfläche" in h for h in doc["boreholes"][0]["issues"])
+    else:
+        assert doc["boreholes"] == [] and "außerhalb Deutschlands" in doc["abgelehnt"][0]["grund"]
+
+
+def test_link_zum_schichtenverzeichnis_wird_gelesen_und_nur_als_http():
+    daten = (b"id;x;y;epsg;svz_url\n"
+             b"A;394774;5818338;25833;https://example.org/svz?a=1\n"
+             b"B;394800;5818338;25833;javascript:alert(1)\n"
+             b"C;394820;5818338;25833;\n")
+    info = bdd.felder_vorschlagen(daten, "a.csv")
+    assert info["vorschlag"]["profil"] == "svz_url"
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=info["vorschlag"], heute=HEUTE)
+    a, b, c = doc["boreholes"]
+    assert a["profil"] == "https://example.org/svz?a=1" and b["profil"] is None and c["profil"] is None
+    assert any("keine http" in h for h in b["issues"]) and not any("keine http" in h for h in c["issues"])
+    t = {x["id"]: x for x in bdd.im_umkreis(doc, 394774.0, 5818338.0, 25833, 100.0)["treffer"]}
+    assert (t["A"]["schichten"], t["A"]["profil"]) == ("grafik", "https://example.org/svz?a=1")
+    assert (t["B"]["schichten"], t["C"]["schichten"]) == ("keine", "keine")
+
+
+def test_unlesbare_schicht_steht_an_der_bohrung():
+    doc = _lang(f"B;{BERLIN};0;2;S\nB;{BERLIN};2;4;U\nB;{BERLIN};4;sechs;T\n")
+    b = doc["boreholes"][0]
+    assert [(ly["top_depth"], ly["bottom_depth"]) for ly in b["layers"]] == [(0.0, 2.0), (2.0, 4.0)]
+    assert any("Zeile 4" in h and "unvollständig" in h for h in b["issues"]) and doc["abgelehnt"][0]["zeile"] == 4
+
+
+def test_gleiche_id_mit_anderer_lage_steht_an_der_bohrung():
+    b = _lang(f"B;{BERLIN};0;2;S\nB;394900;5818338;25833;2;4;U\n")["boreholes"][0]
+    assert len(b["layers"]) == 1 and any("abweichender Lage" in h and "unvollständig" in h for h in b["issues"])
+
+
+def test_schichten_werden_nach_tiefe_geordnet_ohne_falsche_meldung():
+    b = _lang(f"B;{BERLIN};4;6;S\nB;{BERLIN};0;2;S\nB;{BERLIN};2;4;S\n")["boreholes"][0]
+    assert [ly["top_depth"] for ly in b["layers"]] == [0.0, 2.0, 4.0]
+    assert not any("Überlappung" in h or "Lücke" in h for h in b["issues"])
+
+
+@pytest.mark.parametrize("gok,text", [("0", "genau 0"), ("3708", "außerhalb"), ("-60", "außerhalb"), ("34,5", None), ("-9,9", None)])
+def test_zweifelhafte_gok_wird_markiert_und_bleibt_stehen(gok, text):
+    daten = f"id;x;y;epsg;gok\nA;394774;5818338;25833;{gok}\n".encode()
+    b = bdd.lesen(daten, "a.csv", QUELLE, zuordnung={**Z_KOPF, "gok": "gok"}, heute=HEUTE)["boreholes"][0]
+    assert b["gok_nhn"] == pytest.approx(float(gok.replace(",", ".")))
+    assert any(text in h for h in b["issues"]) if text else not any("GOK" in h for h in b["issues"])
+
+
+def test_eine_bohrung_ohne_lage_kippt_nicht_die_ganze_boreholeml_datei():
+    xml = b"""<wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2"
+      xmlns:bml="http://www.infogeo.de/boreholeml/3.0">
+      <wfs:member><bml:Borehole gml:id="a"><bml:location><gml:Point srsName="EPSG:25833"><gml:pos>394774 5818338</gml:pos></gml:Point></bml:location><bml:id>A</bml:id></bml:Borehole></wfs:member>
+      <wfs:member><bml:Borehole gml:id="b"><bml:id>B</bml:id></bml:Borehole></wfs:member>
+      <wfs:member><bml:Borehole gml:id="c"><bml:location><gml:Point><gml:pos>394800 5818338</gml:pos></gml:Point></bml:location><bml:id>C</bml:id></bml:Borehole></wfs:member>
+    </wfs:FeatureCollection>"""
+    doc = bdd.lesen(xml, "a.xml", QUELLE, heute=HEUTE)
+    assert [b["fremd_id"] for b in doc["boreholes"]] == ["A"]
+    assert doc["abgelehnt"] == [{"zeile": 2, "grund": "ohne Lage"}, {"zeile": 3, "grund": "ohne Koordinatensystem"}]
+
+
+def test_beschaedigtes_geopackage_ist_ein_lesefehler_und_laesst_nichts_liegen(tmp_path, monkeypatch):
+    p = tmp_path / "gross.gpkg"
+    con = sqlite3.connect(p)
+    con.execute("CREATE TABLE gpkg_contents (table_name TEXT, data_type TEXT, srs_id INTEGER)")
+    con.execute("INSERT INTO gpkg_contents VALUES ('b', 'features', 25833)")
+    con.execute("CREATE TABLE gpkg_geometry_columns (table_name TEXT, column_name TEXT, srs_id INTEGER)")
+    con.execute("INSERT INTO gpkg_geometry_columns VALUES ('b', 'geom', 25833)")
+    con.execute("CREATE TABLE b (fid INTEGER PRIMARY KEY, kennung TEXT, geom BLOB, txt TEXT)")
+    con.executemany("INSERT INTO b VALUES (?, ?, ?, ?)",
+                    [(i + 1, f"K{i}", _gp_punkt_blob(394774.0 + i, 5818338.0, 25833), "x" * 200) for i in range(3000)])
+    con.commit()
+    con.close()
+    daten = bytearray(p.read_bytes())
+    for i in range(len(daten) // 2, len(daten), 512):
+        daten[i:i + 64] = b"\xa5" * 64
+    ablage = tmp_path / "temp"
+    ablage.mkdir()
+    monkeypatch.setattr(bdd.tempfile, "tempdir", str(ablage))
+    with pytest.raises(ValueError, match="nicht lesbar"):
+        bdd.lesen(bytes(daten), "a.gpkg", QUELLE, zuordnung={"id": "kennung"})
+    assert list(ablage.iterdir()) == []
+
+
+def test_zuordnung_nur_bestaetigt_und_ohne_tippfehler():
+    daten = b"id;x;y;epsg\nA;394774;5818338;25833\n"
+    with pytest.raises(ValueError, match="nicht das Ergebnis"):
+        bdd.lesen(daten, "a.csv", QUELLE, zuordnung=bdd.felder_vorschlagen(daten, "a.csv"))
+    with pytest.raises(ValueError, match="unbekannte Felder.*guk"):
+        bdd.lesen(daten, "a.csv", QUELLE, zuordnung={**Z_KOPF, "guk": "gok"})
+
+
+def test_doctype_auch_in_utf16():
+    for kodierung in ("utf-16", "utf-16-le", "utf-16-be"):
+        xml = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE a [<!ENTITY e "x">]><a>&e;</a>'.encode(kodierung)
+        with pytest.raises(ValueError, match="DOCTYPE"):
+            bdd.felder_vorschlagen(xml, "a.gml")
+
+
+def test_zeilennummer_ist_die_der_datei_auch_nach_leerzeilen():
+    daten = b"\n\nid;x;y;epsg\n\nA;394774;5818338;25833\n\n;394800;5818338;25833\n"
+    doc = bdd.lesen(daten, "a.csv", QUELLE, zuordnung=Z_KOPF, heute=HEUTE)
+    assert len(doc["boreholes"]) == 1 and doc["abgelehnt"] == [{"zeile": 7, "grund": "fehlende ID"}]
+
+
+def test_im_umkreis_anderes_system_und_fehlende_teile():
+    doc = {"boreholes": [{"code": "A", "x": 394774.0, "y": 5818338.0, "crs_epsg": 25833, "quelle": "T", "fremd_id": "A"},
+                         {"code": "B", "x": 394774.0, "y": None, "crs_epsg": 25833, "quelle": "T"},
+                         {"code": "C", "x": 394774.0, "y": 5818338.0, "crs_epsg": None, "quelle": "T"}]}
+    erg = bdd.im_umkreis(doc, 33394774.0, 5818338.0, 5650, 10.0)            # gleiche Zone mit Zonenkennung
+    assert [t["id"] for t in erg["treffer"]] == ["A"] and len(erg["fehler"]) == 2
+    x, y = bd.utm.von_geo(*bd.utm.zu_geo(394774.0, 5818338.0, 33), 32)      # andere Zone: umgerechnet derselbe Punkt
+    erg = bdd.im_umkreis(doc, float(x), float(y), 25832, 1.0)
+    assert [t["id"] for t in erg["treffer"]] == ["A"] and erg["treffer"][0]["abstand"] == 0.0
+
+
+# ---------------------------------------------------------------- Grenzen, die die Mutationsprobe offen liess
+def test_wkt_braucht_etrs_und_transversale_mercator():
+    gut = 'PROJCS["ETRS89 / UTM",PROJECTION["Transverse_Mercator"],PARAMETER["central_meridian",15],PARAMETER["false_easting",500000]]'
+    assert bdd._epsg_aus_wkt(gut) == 25833
+    assert bdd._epsg_aus_wkt(gut.replace("ETRS89", "WGS84")) is None
+    assert bdd._epsg_aus_wkt(gut.replace("Transverse_Mercator", "Lambert")) is None
+
+
+@pytest.mark.parametrize("lon,lat,hinweis", [(5.4, 50.0, True), (15.5, 50.0, True), (10.0, 46.9, True), (10.0, 55.4, True),
+                                             (5.39, 50.0, False), (15.51, 50.0, False), (10.0, 46.89, False), (10.0, 55.41, False)])
+def test_rechteck_um_deutschland_schliesst_seine_raender_ein(monkeypatch, lon, lat, hinweis):
+    monkeypatch.setattr(bdd.laender, "laender_um", lambda *a, **k: ["Bayern"])
+    assert (bdd._land_in_der_naehe(0.0, 0.0, 25832, lon, lat) is not None) == hinweis
+
+
+@pytest.mark.parametrize("hoehe", ["", "<ge:elevation/>", '<ge:elevation xsi:nil="true"/>', '<ge:elevation xsi:nil="true">5</ge:elevation>'])
+def test_gml_ohne_gueltige_hoehe_hat_keine_gok(hoehe):
+    gml = f"""<wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2"
+      xmlns:ge="http://inspire.ec.europa.eu/schemas/ge-core/4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <wfs:member><ge:Borehole gml:id="A">{hoehe}<ge:location><gml:Point srsName="EPSG:25833"><gml:pos>394774 5818338</gml:pos></gml:Point></ge:location>
+      </ge:Borehole></wfs:member></wfs:FeatureCollection>""".encode()
+    doc = bdd.lesen(gml, "a.gml", QUELLE, heute=HEUTE)
+    assert doc["abgelehnt"] == [] and doc["boreholes"][0]["gok_nhn"] is None
+
+
+@pytest.mark.parametrize("von,bis", [("", "2"), ("0", ""), ("x", "2"), ("0", "y")])
+def test_schicht_ohne_lesbare_tiefe_wird_abgelehnt(von, bis):
+    doc = _lang(f"B;{BERLIN};0;1;S\nB;{BERLIN};{von};{bis};U\n")
+    assert [a["zeile"] for a in doc["abgelehnt"]] == [3] and len(doc["boreholes"][0]["layers"]) == 1
+
+
+def test_radius_null_trifft_nur_den_punkt():
+    doc = {"boreholes": [{"code": "A", "x": 394774.0, "y": 5818338.0, "crs_epsg": 25833, "quelle": "T", "fremd_id": "A"},
+                         {"code": "B", "x": 394775.0, "y": 5818338.0, "crs_epsg": 25833, "quelle": "T", "fremd_id": "B"}]}
+    assert [t["id"] for t in bdd.im_umkreis(doc, 394774.0, 5818338.0, 25833, 0.0)["treffer"]] == ["A"]
+
+
+def test_lage_braucht_beide_werte():
+    assert bdd._lage_pruefen(None, 5818338.0, 25833, {})[3] == "ohne Lage"
+    assert bdd._lage_pruefen(394774.0, None, 25833, {})[3] == "ohne Lage"
+
+
+def test_zip_nach_name_oder_inhalt_und_kein_sqlite_ohne_kopf():
+    assert bdd._entpacken_einzeln(_als_zip([("a.csv", b"x")]), "a.dat")[1] == "a.csv"
+    with pytest.raises(ValueError, match="ZIP-Archiv nicht lesbar"):
+        bdd._entpacken_einzeln(b"kein zip", "a.zip")
+    for daten in (b"kurz", b"x" * 32):
+        with pytest.raises(ValueError, match="keine gültige GeoPackage"):
+            bdd._gpkg_oeffnen_ro(daten, "a.gpkg")
+
+
+def test_csv_trenner_bei_gleichstand_das_semikolon():
+    assert bdd._csv_trenner("a,b;c") == ";" and bdd._csv_trenner("a,b,c;d") == "," and bdd._csv_trenner("\n\na;b") == ";"

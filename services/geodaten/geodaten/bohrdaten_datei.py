@@ -10,20 +10,23 @@ Unverhandelbar (AGENTS.md):
   - Niemals Schichten erfinden: ohne Schichtdaten bleibt layers: [] mit Hinweis in issues.
   - soil_class nur ueber boreholeml.bodenart_aus aus erkannten Codes, sonst None.
   - Jede Schicht bekommt confidence = bohrdaten.KONFIDENZ_ARCHIV (0.5).
-  - Zeile ohne Lage, Lage ausserhalb Deutschlands (laender.land_am_punkt), doppelte id oder nicht zuordenbare Zahl
-    kommen mit Zeile und Grund in abgelehnt, werden nie still ausgelassen.
+  - Zeile ohne Lage, Lage weit ausserhalb Deutschlands, doppelte id oder nicht zuordenbare Zahl kommen mit Zeile und
+    Grund in abgelehnt, werden nie still ausgelassen. Nahe am Land (Kueste, Gewaesser: VG2500 ist grob) wird markiert.
   - Luecken, Ueberlappungen oder von >= bis werden in issues markiert, nicht repariert.
   - Nur Koordinatensysteme, die utm_normal kennt; alles andere ValueError mit dem EPSG im Text.
 """
 from __future__ import annotations
+import collections
 import csv
 import hashlib
 import io
+import itertools
 import math
 import re
 import sqlite3
 import struct
 import tempfile
+import urllib.parse
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date
@@ -32,6 +35,12 @@ from . import bohrdaten, boreholeml, laender, utm
 from .utm import utm_normal
 MAX_ENTPACKT = 200 * 1024 * 1024                # 200 MB Grenze beim Entpacken aus ZIP (Schutz vor Zip-Bomben)
 ENDUNGEN = (".xml", ".gml", ".gpkg", ".csv")
+GOK_MIN, GOK_MAX = -50.0, 2963.0                # m NHN: Meeresboden der Kuestengewaesser bis ueber die Zugspitze hinaus
+# VG2500 endet an der groben Kuestenlinie: in MV lagen 2210 von 2467 Bohrungen "ausserhalb" weniger als 1 km vom Land,
+# darunter Brunnen in Stralsund. 25 km schliessen das Kuestenmeer (12 sm) ein; solche Bohrungen werden markiert.
+LAND_RINGE_M = (500.0, 2_500.0, 10_000.0, 25_000.0)
+DEUTSCHLAND_WGS84 = (5.4, 46.9, 15.5, 55.4)     # Laenge/Breite min, max mit Rand: weit daneben spart die Ringe
+_ID_SPALTE_RE = re.compile(r"(?:^|_)(?:id|ident|nr|nummer|schluessel|key)(?:$|_)|(?:id|ident)$", re.IGNORECASE)
 _DOCTYPE_RE = re.compile(rb"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
 _EPSG_ENDE_RE = re.compile(r"(\d+)\s*$")
 _VORSCHLAG_KANDIDATEN: dict[str, tuple[str, ...]] = {
@@ -47,6 +56,7 @@ _VORSCHLAG_KANDIDATEN: dict[str, tuple[str, ...]] = {
     "bis": ("bis", "bottom_depth", "tiefe_bis", "to", "schicht_bis", "unterkante", "uk"),
     "petrographie": ("petrographie", "petro", "rockname", "rock_name", "rockcode", "rock_code", "sep3", "bodenart_code", "hauptbodenart", "symbol"),
     "beschreibung": ("beschreibung", "description_raw", "descriptivetext", "rocknametext", "schichtbeschreibung", "benennung", "text"),
+    "profil": ("profil", "profil_url", "svz_url", "bohrprofil_url", "bohrprofil_pdf_url", "boreholeweblink", "url", "link"),
 }
 _ZUORDNUNG_FELDER = tuple(_VORSCHLAG_KANDIDATEN)
 
@@ -161,8 +171,14 @@ def _entpacken_einzeln(daten: bytes, name: str, max_groesse: int | None = None) 
     return daten, name
 
 
+def _hat_doctype(daten: bytes) -> bool:
+    """DOCTYPE/ENTITY auch in UTF-16, das die Suche in den rohen Bytes nicht saehe."""
+    kodierung = {b"\xff\xfe": "utf-16", b"\xfe\xff": "utf-16", b"<\x00": "utf-16-le", b"\x00<": "utf-16-be"}.get(daten[:2])
+    return bool(_DOCTYPE_RE.search(daten.decode(kodierung, errors="ignore").encode("utf-8") if kodierung else daten))
+
+
 def _xml_sicher_wurzel(daten: bytes, name: str) -> ET.Element:
-    if _DOCTYPE_RE.search(daten):
+    if _hat_doctype(daten):
         raise ValueError(f"{name}: unsicheres XML – DOCTYPE/ENTITY wird abgelehnt")
     try:
         wurzel = ET.fromstring(daten)
@@ -214,6 +230,37 @@ def _spalten_vorschlagen(
     if "epsg" not in vorschlag and epsg is not None:
         vorschlag["epsg"] = epsg
     return vorschlag
+
+
+def _id_spalten(spalten: list[str], vorschlag: dict, ausser: set[str | None]) -> list[str]:
+    """Die vorgeschlagene id-Spalte zuerst, dann alle Spalten, die dem Namen nach eine Kennung sind."""
+    aktuell = vorschlag.get("id")
+    return ([aktuell] if aktuell else []) + [s for s in spalten if s != aktuell and s not in ausser and _ID_SPALTE_RE.search(s)]
+
+
+def _id_festlegen(vorschlag: dict, namen: list[str], zeilen: list[tuple]) -> str | None:
+    """Prueft am Inhalt, ob die vorgeschlagene id je Zeile eindeutig ist; sonst eine andere Spalte oder ein Spaltenpaar.
+    In MV kam BO_IDENT bis zu 204-mal bei verschiedenen Bohrungen vor. Rueckgabe: Hinweis fuer den Nutzer oder None."""
+    def eindeutig(stellen: tuple[int, ...]) -> bool:
+        gesehen: set[tuple] = set()
+        for zeile in zeilen:
+            wert = tuple(zeile[i] for i in stellen)
+            if any(_leerer_wert(v) for v in wert) or wert in gesehen:
+                return False
+            gesehen.add(wert)
+        return True
+
+    aktuell = vorschlag.get("id")
+    if aktuell and eindeutig((namen.index(aktuell),)):
+        return None
+    andere = [i for i, n in enumerate(namen) if n != aktuell]
+    alle = range(len(namen))
+    for stellen in itertools.chain(((i,) for i in andere), itertools.combinations(andere, 2), itertools.combinations(alle, 2)):
+        if eindeutig(stellen):
+            neu = [namen[i] for i in stellen]
+            vorschlag["id"] = neu[0] if len(neu) == 1 else neu
+            return f"Spalte {aktuell} ist nicht je Zeile eindeutig; vorgeschlagen ist {' + '.join(neu)}" if aktuell else None
+    return f"Spalte {aktuell} ist nicht je Zeile eindeutig und keine andere Kennung ist es: bitte prüfen" if aktuell else None
 
 
 # ---------------------------------------------------------------- GeoPackage-Hilfen
@@ -308,8 +355,17 @@ def _gpkg_oeffnen_ro(daten: bytes, name: str):
         tmp.write(daten)
     finally:
         tmp.close()
-    uri = f"file:{pfad.as_posix()}?mode=ro"
-    con = sqlite3.connect(uri, uri=True)
+    uri = f"file:{urllib.parse.quote(pfad.as_posix(), safe='/:')}?mode=ro"
+    con = None
+    try:
+        con = sqlite3.connect(uri, uri=True)
+        con.execute("PRAGMA trusted_schema=OFF")        # fremde Datei: keine Funktionen aus Sichten und Triggern
+        con.execute("PRAGMA query_only=ON")
+    except sqlite3.Error as err:
+        if con is not None:
+            con.close()
+        pfad.unlink(missing_ok=True)
+        raise ValueError(f"{name}: GeoPackage nicht lesbar ({err})") from None
     return con, pfad
 
 
@@ -384,12 +440,20 @@ def felder_vorschlagen(daten: bytes, name: str) -> dict:
         con, pfad = _gpkg_oeffnen_ro(inhalt, inner_name)
         try:
             cur = con.cursor()
-            tabellen, tabelle, spalten, geom_spalte, _, epsg = _gpkg_metadaten(cur, inner_name)
+            tabellen, tabelle, spalten, geom_spalte, pk_spalte, epsg = _gpkg_metadaten(cur, inner_name)
+            vorschlag = _spalten_vorschlagen(spalten, geom_spalte=geom_spalte, epsg=epsg, tabelle=tabelle)
+            id_hinweis = None
+            namen = _id_spalten(spalten, vorschlag, {geom_spalte, pk_spalte})
+            if namen and "von" not in vorschlag:                # Langformat: eine id je Schicht ist richtig
+                liste = ", ".join(_quote_ident(s) for s in namen)
+                id_hinweis = _id_festlegen(vorschlag, namen, cur.execute(f"SELECT {liste} FROM {_quote_ident(tabelle)}").fetchall())
+        except sqlite3.Error as err:
+            raise ValueError(f"{inner_name}: GeoPackage nicht lesbar ({err})") from None
         finally:
             con.close()
             pfad.unlink(missing_ok=True)
-        vorschlag = _spalten_vorschlagen(spalten, geom_spalte=geom_spalte, epsg=epsg, tabelle=tabelle)
         return {
+            "id_hinweis": id_hinweis,
             "datei": inner_name,
             "format": "gpkg",
             "tabellen": tabellen,
@@ -409,7 +473,14 @@ def felder_vorschlagen(daten: bytes, name: str) -> dict:
         if not kopf:
             raise ValueError(f"{inner_name}: CSV-Datei ist leer oder hat keine Kopfzeile")
         vorschlag = _spalten_vorschlagen(kopf)
+        id_hinweis = None
+        namen = _id_spalten(kopf, vorschlag, set())
+        if namen and "von" not in vorschlag:                    # Langformat: eine id je Schicht ist richtig
+            stellen = [kopf.index(n) for n in namen]
+            werte = [tuple(z[i] if i < len(z) else "" for i in stellen) for z in leser if any(s.strip() for s in z)]
+            id_hinweis = _id_festlegen(vorschlag, namen, werte)
         return {
+            "id_hinweis": id_hinweis,
             "datei": inner_name,
             "format": "csv",
             "tabellen": [],
@@ -426,6 +497,7 @@ def felder_vorschlagen(daten: bytes, name: str) -> dict:
     m = _EPSG_ENDE_RE.search(srs or "")
     epsg = boreholeml.HORIZONTAL.get(int(m.group(1)), int(m.group(1))) if m else None
     return {
+        "id_hinweis": None,
         "datei": inner_name,
         "format": fmt,
         "tabellen": [],
@@ -523,6 +595,11 @@ def _bohrung_abschliessen(
             vorhandene_issues.append("Schichten ohne Petrographie (unklassifiziert)")
     if lizenz_fehlt:
         vorhandene_issues.append("Lizenz in der Quelle fehlt (als unbekannt markiert)")
+    gok = b.get("gok_nhn")
+    if gok == 0:
+        vorhandene_issues.append("GOK genau 0 m – vielleicht ein Platzhalter, bitte prüfen")
+    elif gok is not None and not GOK_MIN <= gok <= GOK_MAX:
+        vorhandene_issues.append(f"GOK {gok:g} m NHN liegt außerhalb des in Deutschland Möglichen – bitte prüfen")
     erster_hinweis = (
         f"aus {titel}{f' ({land})' if land else ''}, ID {fremd_id}, {lizenz}, "
         f"abgerufen {heute.strftime('%d.%m.%Y')} – nicht aus dem Gutachten"
@@ -549,23 +626,37 @@ def _bohrung_abschliessen(
     return b
 
 
+def _land_in_der_naehe(x: float, y: float, epsg: int, lon: float, lat: float) -> str | None:
+    """Fuer einen Punkt auf keiner Landesflaeche: der Hinweis, wenn ein Land nah genug liegt, sonst None (ablehnen)."""
+    if not (DEUTSCHLAND_WGS84[0] <= lon <= DEUTSCHLAND_WGS84[2] and DEUTSCHLAND_WGS84[1] <= lat <= DEUTSCHLAND_WGS84[3]):
+        return None
+    for ring in LAND_RINGE_M:
+        if laender.laender_um(x, y, epsg, ring):
+            return f"Lage nicht auf der Landfläche (VG2500, nächstes Land innerhalb {ring / 1000:g} km): Küste, Gewässer oder falsche Koordinate – bitte prüfen"
+    return None
+
+
 def _lage_pruefen(
     rohx: float | None,
     rohy: float | None,
     epsg: int,
     punkt_land: dict[tuple[float, float], str | None],
-) -> tuple[float | None, float | None, int | None, str | None]:
-    """Normalisiert (rohx, rohy, epsg) ueber utm_normal und prueft laender.land_am_punkt."""
+) -> tuple[float | None, float | None, int | None, str | None, str | None]:
+    """Normalisiert (rohx, rohy, epsg) ueber utm_normal und prueft die Lage. Rueckgabe: x, y, epsg, Grund der Ablehnung,
+    Hinweis fuer issues."""
     if rohx is None or rohy is None:
-        return None, None, None, "ohne Lage"
+        return None, None, None, "ohne Lage", None
     nx, ny, nepsg = utm_normal(rohx, rohy, epsg)
     schluessel = (round(nx, 3), round(ny, 3))
+    lon, lat = utm.zu_geo(nx, ny, utm.zone(nepsg))
     if schluessel not in punkt_land:
-        lon, lat = utm.zu_geo(nx, ny, utm.zone(nepsg))
         punkt_land[schluessel] = laender.land_am_punkt(float(lon), float(lat))
-    if not punkt_land[schluessel]:
-        return None, None, None, "Lage außerhalb Deutschlands"
-    return nx, ny, nepsg, None
+    if punkt_land[schluessel]:
+        return nx, ny, nepsg, None, None
+    hinweis = _land_in_der_naehe(nx, ny, nepsg, float(lon), float(lat))
+    if hinweis is None:
+        return None, None, None, "Lage außerhalb Deutschlands", None
+    return nx, ny, nepsg, None, hinweis
 
 
 def _zuordnung_bereinigen(zuordnung: dict | None) -> dict | None:
@@ -573,12 +664,8 @@ def _zuordnung_bereinigen(zuordnung: dict | None) -> dict | None:
         return None
     if not isinstance(zuordnung, dict):
         raise ValueError("zuordnung muss ein Dictionary sein")
-    if isinstance(zuordnung.get("vorschlag"), dict):
-        basis = dict(zuordnung["vorschlag"])
-        for k in ("tabelle", "epsg"):
-            if k in zuordnung and k not in basis and zuordnung[k] is not None:
-                basis[k] = zuordnung[k]
-        return basis
+    if "vorschlag" in zuordnung:
+        raise ValueError("zuordnung: bitte die bestätigten Felder übergeben, nicht das Ergebnis von felder_vorschlagen")
     return dict(zuordnung)
 
 
@@ -604,11 +691,19 @@ def _lesen_boreholeml(
             abgelehnt.append({"zeile": zeile_nr, "grund": f"doppelte id: {fremd_id}"})
             continue
         gesehene_ids.add(fremd_id)
+        if b.get("x") is None or b.get("y") is None:            # eine Bohrung ohne Lage kippt nicht die ganze Datei
+            abgelehnt.append({"zeile": zeile_nr, "grund": "ohne Lage"})
+            continue
+        if b.get("crs_epsg") is None:
+            abgelehnt.append({"zeile": zeile_nr, "grund": "ohne Koordinatensystem"})
+            continue
         epsg = _epsg_normal_pruefen(b.get("crs_epsg"))
-        nx, ny, nepsg, grund = _lage_pruefen(b.get("x"), b.get("y"), epsg, punkt_land)
+        nx, ny, nepsg, grund, lagehinweis = _lage_pruefen(b.get("x"), b.get("y"), epsg, punkt_land)
         if grund:
             abgelehnt.append({"zeile": zeile_nr, "grund": grund})
             continue
+        if lagehinweis:
+            b["issues"] = list(b.get("issues") or []) + [lagehinweis]
         schichten = b.get("layers") or []
         if any(ly.get("top_depth") is None or ly.get("bottom_depth") is None for ly in schichten):
             abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in Schichttiefe"})
@@ -666,7 +761,7 @@ def _lesen_inspire_gml(
         if not ok_x or not ok_y:
             abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in Koordinaten"})
             continue
-        nx, ny, nepsg, grund = _lage_pruefen(rohx, rohy, epsg, punkt_land)
+        nx, ny, nepsg, grund, lagehinweis = _lage_pruefen(rohx, rohy, epsg, punkt_land)
         if grund:
             abgelehnt.append({"zeile": zeile_nr, "grund": grund})
             continue
@@ -701,7 +796,7 @@ def _lesen_inspire_gml(
             "gok_source": "SGD" if gok is not None else None,
             "end_depth": teufe if (teufe is not None and teufe > 0) else None,
             "layers": [],
-            "issues": ["ohne Schichtdaten (INSPIRE ge:Borehole enthält nur Kopfdaten)"],
+            "issues": ["ohne Schichtdaten (INSPIRE ge:Borehole enthält nur Kopfdaten)"] + ([lagehinweis] if lagehinweis else []),
         }
         bohrungen.append(_bohrung_abschliessen(b, quelle_info, heute, inner_name))
     return bohrungen, abgelehnt
@@ -710,15 +805,15 @@ def _lesen_inspire_gml(
 def _tabellen_zeilen_verarbeiten(
     zeilen_iter,
     spalten_index: dict[str, int],
-    z_map: dict[str, str],
+    z_map: dict[str, str | tuple[str, ...]],
     festes_epsg: int | None,
     geom_idx: int | None,
     cur_gpkg: sqlite3.Cursor | None,
     quelle_info: tuple[str, str, str, str, str, str, bool],
     heute: date,
     inner_name: str,
-    start_zeile: int = 1,
 ) -> tuple[list[dict], list[dict]]:
+    """zeilen_iter liefert (Zeilennummer in der Datei, Zeile)."""
     hat_schichten = "von" in z_map or "bis" in z_map
     if hat_schichten and ("von" not in z_map or "bis" not in z_map):
         raise ValueError(f"{inner_name}: für Schichten im Langformat müssen sowohl 'von' als auch 'bis' zugeordnet sein")
@@ -726,13 +821,21 @@ def _tabellen_zeilen_verarbeiten(
     bohrungen_nach_id: dict[str, dict] = {}
     gesehene_ids: set[str] = set()
     abgelehnt: list[dict] = []
+    mehrfach: collections.Counter = collections.Counter()
+    nachzutragen: dict[str, list[str]] = {}             # Hinweise an der Bohrung, deren Zeile nicht gelesen werden konnte
     def zelle(zeile: tuple | list, feld: str) -> object:
         sp = z_map.get(feld)
         if not sp:
             return None
+        if isinstance(sp, tuple):                       # Kennung aus mehreren Spalten: nur vollstaendig gueltig
+            teile = [zeile[spalten_index[s]] if spalten_index[s] < len(zeile) else None for s in sp]
+            return None if any(_leerer_wert(t) for t in teile) else "/".join(str(t).strip() for t in teile)
         idx = spalten_index[sp]
         return zeile[idx] if idx < len(zeile) else None
-    for zeile_nr, zeile in enumerate(zeilen_iter, start=start_zeile):
+    def verloren(nr: int, kennung: str, grund: str) -> None:
+        if hat_schichten:                               # sonst stuende die Bohrung ohne Spur als vollstaendig da
+            nachzutragen.setdefault(kennung, []).append(f"Zeile {nr}: {grund} – Schicht fehlt, Schichtenverzeichnis unvollständig")
+    for zeile_nr, zeile in zeilen_iter:
         roh_id = zelle(zeile, "id")
         if _leerer_wert(roh_id):
             abgelehnt.append({"zeile": zeile_nr, "grund": "fehlende ID"})
@@ -740,12 +843,14 @@ def _tabellen_zeilen_verarbeiten(
         fremd_id = str(roh_id).strip()
         if not hat_schichten and fremd_id in gesehene_ids:
             abgelehnt.append({"zeile": zeile_nr, "grund": f"doppelte id: {fremd_id}"})
+            mehrfach[fremd_id] += 1
             continue
         if "epsg" in z_map:
             roh_epsg = zelle(zeile, "epsg")
             epsg_wert, ok_epsg = _zahl_strikt(roh_epsg)
             if not ok_epsg or epsg_wert is None:
                 abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in epsg"})
+                verloren(zeile_nr, fremd_id, "EPSG nicht lesbar")
                 gesehene_ids.add(fremd_id)
                 continue
             zeilen_epsg = _epsg_normal_pruefen(int(epsg_wert))
@@ -757,6 +862,7 @@ def _tabellen_zeilen_verarbeiten(
             rohy, ok_y = _zahl_strikt(zelle(zeile, "y"))
             if not ok_x or not ok_y:
                 abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in Koordinaten (x/y)"})
+                verloren(zeile_nr, fremd_id, "Koordinaten nicht lesbar")
                 gesehene_ids.add(fremd_id)
                 continue
         if (rohx is None or rohy is None) and geom_idx is not None and geom_idx < len(zeile):
@@ -772,10 +878,12 @@ def _tabellen_zeilen_verarbeiten(
         teufe, ok_teufe = _zahl_strikt(zelle(zeile, "teufe"))
         if not ok_gok:
             abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in gok"})
+            verloren(zeile_nr, fremd_id, "GOK nicht lesbar")
             gesehene_ids.add(fremd_id)
             continue
         if not ok_teufe or (teufe is not None and teufe < 0):
             abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in teufe"})
+            verloren(zeile_nr, fremd_id, "Teufe nicht lesbar")
             gesehene_ids.add(fremd_id)
             continue
         schicht: dict | None = None
@@ -784,6 +892,7 @@ def _tabellen_zeilen_verarbeiten(
             bis, ok_bis = _zahl_strikt(zelle(zeile, "bis"))
             if not ok_von or not ok_bis or von is None or bis is None:
                 abgelehnt.append({"zeile": zeile_nr, "grund": "nicht zuordenbare Zahl in Schichttiefe (von/bis)"})
+                verloren(zeile_nr, fremd_id, "Schichttiefe nicht lesbar")
                 continue
             petro_roh = zelle(zeile, "petrographie")
             beschr_roh = zelle(zeile, "beschreibung")
@@ -796,6 +905,7 @@ def _tabellen_zeilen_verarbeiten(
             )
         if rohx is None or rohy is None:
             abgelehnt.append({"zeile": zeile_nr, "grund": "ohne Lage"})
+            verloren(zeile_nr, fremd_id, "ohne Lage")
             if not hat_schichten:
                 gesehene_ids.add(fremd_id)
             continue
@@ -804,17 +914,25 @@ def _tabellen_zeilen_verarbeiten(
             vorhanden = bohrungen_nach_id[fremd_id]
             if (nx, ny) != (vorhanden["x"], vorhanden["y"]):
                 abgelehnt.append({"zeile": zeile_nr, "grund": f"doppelte id mit abweichender Lage: {fremd_id}"})
+                verloren(zeile_nr, fremd_id, "gleiche ID mit abweichender Lage")
                 continue
             if schicht is not None:
                 vorhanden["layers"].append(schicht)
             continue
         if fremd_id in gesehene_ids:
             abgelehnt.append({"zeile": zeile_nr, "grund": f"doppelte id: {fremd_id}"})
+            mehrfach[fremd_id] += 1
             continue
         gesehene_ids.add(fremd_id)
         roh_name = zelle(zeile, "name")
         kurzname = str(roh_name).strip() if not _leerer_wert(roh_name) else fremd_id
         datum = _datum_text(zelle(zeile, "datum"))
+        roh_profil = zelle(zeile, "profil")
+        profil = None if _leerer_wert(roh_profil) else str(roh_profil).strip()
+        zeilen_hinweise: list[str] = []
+        if profil and not re.match(r"https?://", profil, re.IGNORECASE):    # landet als Link in der Oberflaeche
+            zeilen_hinweise.append(f"Link zum Schichtenverzeichnis nicht verwendet (keine http(s)-Adresse): {profil[:80]}")
+            profil = None
         b = {
             "code": kurzname,
             "name": kurzname,
@@ -827,8 +945,9 @@ def _tabellen_zeilen_verarbeiten(
             "gok_source": "SGD" if gok is not None else None,
             "end_depth": teufe if (teufe is not None and teufe > 0) else None,
             "datum": datum,
+            "profil": profil,
             "layers": [schicht] if schicht is not None else [],
-            "issues": [],
+            "issues": zeilen_hinweise,
         }
         kandidaten.append((zeile_nr, b))
         if hat_schichten:
@@ -851,25 +970,43 @@ def _tabellen_zeilen_verarbeiten(
         if schluessel not in punkt_land:
             punkt_land[schluessel] = laender.land_am_punkt(lon, lat)
         if not punkt_land[schluessel]:
-            abgelehnt.append({"zeile": zeile_nr, "grund": "Lage außerhalb Deutschlands"})
-            continue
+            lagehinweis = _land_in_der_naehe(b["x"], b["y"], b["crs_epsg"], lon, lat)
+            if lagehinweis is None:
+                abgelehnt.append({"zeile": zeile_nr, "grund": "Lage außerhalb Deutschlands"})
+                continue
+            b["issues"].append(lagehinweis)
+        b["layers"].sort(key=lambda ly: ly["top_depth"])    # die Zeilenfolge der Datei sagt nichts ueber die Tiefe
+        b["issues"].extend(nachzutragen.get(b["fremd_id"], []))
+        if mehrfach[b["fremd_id"]]:
+            b["issues"].append(f"ID {b['fremd_id']} steht noch {mehrfach[b['fremd_id']]}-mal in der Datei, diese Zeilen sind abgelehnt – "
+                               "die Zuordnung der ID prüfen")
         abgeschlossen.append(_bohrung_abschliessen(b, quelle_info, heute, inner_name))
     abgelehnt.sort(key=lambda a: a["zeile"])
     return abgeschlossen, abgelehnt
 
 
-def _spalten_aufloesen(spalten: list[str], zuordnung: dict, inner_name: str) -> tuple[dict[str, str], int | None]:
-    """Prueft alle zugeordneten Spaltennamen gegen die echten Spalten der Datei; bestimmt ggf. ein festes EPSG."""
+def _spalten_aufloesen(spalten: list[str], zuordnung: dict, inner_name: str) -> tuple[dict[str, str | tuple[str, ...]], int | None]:
+    """Prueft alle zugeordneten Spaltennamen gegen die echten Spalten der Datei; bestimmt ggf. ein festes EPSG.
+    Die id darf aus mehreren Spalten bestehen (Liste)."""
+    unbekannt = sorted(set(zuordnung) - set(_ZUORDNUNG_FELDER) - {"tabelle"})
+    if unbekannt:                                       # ein Tippfehler darf kein Feld still verschwinden lassen
+        raise ValueError(f"{inner_name}: unbekannte Felder in der Zuordnung: {unbekannt}")
     echte: dict[str, str] = {}
     for s in spalten:
         echte[s] = s
         echte.setdefault(s.lower(), s)
-    z_map: dict[str, str] = {}
+    z_map: dict[str, str | tuple[str, ...]] = {}
     festes_epsg: int | None = None
     for feld in _ZUORDNUNG_FELDER:
         if feld not in zuordnung or _leerer_wert(zuordnung[feld]):
             continue
         wert = zuordnung[feld]
+        if feld == "id" and isinstance(wert, (list, tuple)):
+            fehlen = [w for w in wert if not (echte.get(str(w).strip()) or echte.get(str(w).strip().lower()))]
+            if fehlen or not wert:
+                raise ValueError(f"{inner_name}: zugeordnete Spalte {fehlen or wert!r} für 'id' existiert nicht in {spalten}")
+            z_map["id"] = tuple(echte.get(str(w).strip()) or echte[str(w).strip().lower()] for w in wert)
+            continue
         if feld == "epsg":
             if isinstance(wert, str) and wert.strip() in echte:
                 z_map["epsg"] = echte[wert.strip()]
@@ -897,17 +1034,15 @@ def _lesen_gpkg(
 ) -> tuple[list[dict], list[dict]]:
     con, pfad = _gpkg_oeffnen_ro(daten, inner_name)
     try:
+        # lesen wendet nie still einen Vorschlag an; der Primaerschluessel zaehlt nur die Zeilen, er kennt keine Bohrung
+        if not zuordnung:
+            raise ValueError(f"{inner_name}: GeoPackage-Import erfordert eine ausdrückliche Spaltenzuordnung (zuordnung)")
+        if _leerer_wert(zuordnung.get("id")):
+            raise ValueError(f"{inner_name}: Pflichtfeld 'id' fehlt in der GeoPackage-Zuordnung")
         cur = con.cursor()
-        wunsch_tabelle = str(zuordnung["tabelle"]).strip() if (zuordnung and zuordnung.get("tabelle")) else None
-        _, tabelle, spalten, geom_spalte, pk_spalte, datei_epsg = _gpkg_metadaten(cur, inner_name, wunsch_tabelle)
-        # lesen wendet nie still einen Vorschlag an: ohne zuordnung gelten nur der Standard-Geometrieblob und der PK
-        if zuordnung:
-            z_map, festes_epsg = _spalten_aufloesen(spalten, zuordnung, inner_name)
-            if "id" not in z_map and pk_spalte:
-                z_map["id"] = pk_spalte
-        else:
-            z_map = {"id": pk_spalte or spalten[0]}
-            festes_epsg = None
+        wunsch_tabelle = str(zuordnung["tabelle"]).strip() if zuordnung.get("tabelle") else None
+        _, tabelle, spalten, geom_spalte, _, datei_epsg = _gpkg_metadaten(cur, inner_name, wunsch_tabelle)
+        z_map, festes_epsg = _spalten_aufloesen(spalten, zuordnung, inner_name)
         if ("x" in z_map) ^ ("y" in z_map):
             raise ValueError(f"{inner_name}: x und y müssen gemeinsam zugeordnet werden")
         if "x" not in z_map and not geom_spalte:
@@ -921,7 +1056,7 @@ def _lesen_gpkg(
         geom_idx = spalten_index.get(geom_spalte) if geom_spalte else None
         zeilen = cur.execute(abfrage)
         return _tabellen_zeilen_verarbeiten(
-            zeilen,
+            enumerate(zeilen, start=1),
             spalten_index,
             z_map,
             wirksames_epsg,
@@ -930,8 +1065,9 @@ def _lesen_gpkg(
             quelle_info,
             heute,
             inner_name,
-            start_zeile=1,
         )
+    except sqlite3.Error as err:                        # beschaedigte Datei: mitten im Lesen, nicht erst beim Oeffnen
+        raise ValueError(f"{inner_name}: GeoPackage nicht lesbar ({err})") from None
     finally:
         con.close()
         pfad.unlink(missing_ok=True)
@@ -952,16 +1088,14 @@ def _lesen_csv(
     text, _ = _csv_dekodieren(daten, inner_name)
     trenner = _csv_trenner(text)
     leser = csv.reader(io.StringIO(text), delimiter=trenner)
-    try:
-        kopf_roh = next(leser)
-    except StopIteration:
-        raise ValueError(f"{inner_name}: CSV-Datei ist leer") from None
+    kopf_roh = next((z for z in leser if any(s.strip() for s in z)), None)     # wie felder_vorschlagen
+    if kopf_roh is None:
+        raise ValueError(f"{inner_name}: CSV-Datei ist leer")
     kopf = [s.strip() for s in kopf_roh]
-    if not any(kopf):
-        raise ValueError(f"{inner_name}: CSV-Kopfzeile ist leer")
     z_map, festes_epsg = _spalten_aufloesen(kopf, zuordnung, inner_name)
     spalten_index = {s: i for i, s in enumerate(kopf)}
-    nicht_leere_zeilen = (z for z in leser if any(str(w).strip() for w in z))
+    # line_num: die Zeile der Datei, auch nach Leerzeilen - abgelehnt soll sich dort nachschlagen lassen
+    nicht_leere_zeilen = ((leser.line_num, z) for z in leser if any(str(w).strip() for w in z))
     return _tabellen_zeilen_verarbeiten(
         nicht_leere_zeilen,
         spalten_index,
@@ -972,7 +1106,6 @@ def _lesen_csv(
         quelle_info=quelle_info,
         heute=heute,
         inner_name=inner_name,
-        start_zeile=2,
     )
 
 
