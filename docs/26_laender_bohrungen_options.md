@@ -1,7 +1,7 @@
 ---
 title: "26 Borehole data for Länder without a BoreholeML WFS: survey, options and prototype"
 date: 2026-11-06
-updated: 2026-11-06
+updated: 2026-11-09
 tags: [open-data, boreholeml, wfs, wms, inspire, gbl, bgr, laender, geoldg, bohrdaten]
 aliases: [Länder-Bohrungen Optionen, Bohrdaten WMS, Bohrdaten-Bestandsaufnahme]
 ---
@@ -245,10 +245,12 @@ For the remaining 13 Länder without a BoreholeML WFS (`SH, NI, HB, HE, RP, BY, 
      - Document conversion via `zu_bohrung_kopf(...)` returning a `Bohrung` dictionary with
        `schichten: []` (never inventing layers), `quelle: "WMS-GetFeatureInfo"`, and a clear warning in
        `issues`.
-3. **Rank #2 Follow-up: Option (c) — `bohrdaten_datei.py`**
-   - Add a file importer for user-downloaded `.gpkg` (`MV` `bohrdaten_dl.gpkg`), `.gml` (`HB`
-     `inspire_ge_bohrdaten.gml`), `.xml` (BoreholeML), and `.csv` files with explicit column mapping and
-     `confidence = 0.5` for any archive layers.
+3. **Rank #2 Follow-up (implemented in [`bohrdaten_datei.py`](../services/geodaten/geodaten/bohrdaten_datei.py)): Option (c) — File Importer**
+   - Standalone module [`services/geodaten/geodaten/bohrdaten_datei.py`](../services/geodaten/geodaten/bohrdaten_datei.py)
+     with offline tests in [`tests/test_bohrdaten_datei.py`](../tests/test_bohrdaten_datei.py) for user-downloaded
+     `.gpkg` (`MV` `bohrdaten_dl.gpkg`), `.gml` (`HB` `inspire_ge_bohrdaten.gml` and BGR `GBL-INSPIRE`), `.xml`
+     (BoreholeML 3.0), `.csv`, and `.zip` archives, with explicit column mapping (`felder_vorschlagen` + `lesen`),
+     radius filtering (`im_umkreis`), and `confidence = 0.5` (`KONFIDENZ_ARCHIV`) for any archive `Schichten`.
 4. **Rank #3 Follow-up: Option (e) for `HE`, `RP`, `SL`**
    - Retain `portal-bohrungen` links for Hessen, Rheinland-Pfalz, and Saarland, as no public machine-readable
      service exists.
@@ -271,6 +273,70 @@ against the prototype, from those checks:
 
 Known limit: the Bremen service reaches only about half the radius (hits to 129 m at 250 m, 546 m at 1000 m). The BGR
 covers the rest of the circle, so Bremen hits near the edge can lack their profile link.
+
+### File importer verification report (`bohrdaten_datei.py`, Option c)
+
+[`services/geodaten/geodaten/bohrdaten_datei.py`](../services/geodaten/geodaten/bohrdaten_datei.py) implements the three
+public entry points `felder_vorschlagen(daten, name)`, `lesen(daten, name, quelle, zuordnung=None, heute=None)`, and
+`im_umkreis(doc, x, y, epsg, radius)` using only the Python standard library (`sqlite3` in `mode=ro`, `csv`,
+`xml.etree.ElementTree`, `zipfile`, `struct`) and existing `services/geodaten` helpers (`boreholeml`, `utm`, `laender`,
+`bohrdaten`).
+
+#### What is read and what is not per format
+
+| Format | What is read (`Kopfdaten` / `Schichten`) | What is NOT read or rejected |
+| :--- | :--- | :--- |
+| **`.xml` (BoreholeML 3.0)** | Delegated to [`boreholeml.importieren()`](../services/geodaten/geodaten/boreholeml.py): `Kopfdaten` (`id`, `name`, `location` in `EPSG:25832`/`25833`/`4647`/`5650`/`5555`, `elevation` as `gok_nhn`, `totalLength` as `end_depth`, `groundwater`), plus full `Schichten` (`bml:Interval` with SEP3 `rockName` mapped via `boreholeml.bodenart_aus()`, `confidence = 0.5`). Augmented with `herkunft = "SGD"`, `quelle`, `lizenz`, `namensnennung`, `abgerufen`, and `fremd_id`. | XML containing `<!DOCTYPE` is rejected (`ValueError`). `Bohrungen` without a Lage or a coordinate system, or more than 25 km from any Land, are recorded in `abgelehnt`; one such `Bohrung` does not fail the file. Unrecognized SEP3 codes keep `soil_class = None` with a warning in `issues`. |
+| **`.gml` (INSPIRE `ge:Borehole`)** | `Kopfdaten` from `ge:Borehole`: `ge:inspireId`/`base:localId` (or `gml:id`), `ge:name`, `gml:Point` (`gml:pos` and `srsName`; `gml:coordinates` is not read), `ge:elevation` (`gok_nhn`), and `ge:boreholeLength` (from element text, `swe:value`, or `xlink:href`). `layers` is always `[]` with an explicit hint in `issues` that INSPIRE `ge:Borehole` provides `Kopfdaten` only. | `<!DOCTYPE` is rejected. `ge:logElement` (`xsi:nil="true"` in `HB` and `GBL-INSPIRE`) is not fabricated into `Schichten`. Geographic CRS such as `EPSG:4258` (used in Bremen's `inspire_ge_bohrdaten.zip`) or Gauß-Krüger (`EPSG:31467`) are rejected by `utm.utm_normal()` with a `ValueError` naming the EPSG code. Duplicate IDs, missing geometry, or unparsable numbers go to `abgelehnt`. |
+| **`.gpkg` (OGC GeoPackage)** | Opened read-only (`sqlite3` `mode=ro`). `felder_vorschlagen` inspects `gpkg_contents`, `gpkg_geometry_columns`, `gpkg_spatial_ref_sys` (including custom `srs_id` WKT definitions such as `ETRS89_UTM_Zone_33d8` -> `EPSG:5650`), and `PRAGMA table_info`, returning a non-binding proposal in `vorschlag`. `lesen` extracts 2D point geometry from the OGC GeoPackage binary header (`GP` + WKB Point) and/or explicitly mapped `x`/`y` (`Rechtswert`/`Hochwert`) columns, plus mapped `id` (one column or several), `name`, `gok`, `teufe`, `datum`, `profil` (link to the Schichtenverzeichnis, `http(s)` only), or optional `Schichten` (`von`, `bis`, `petrographie`, `beschreibung`). | `lesen` needs a confirmed `zuordnung` with an `id`, as for CSV (`zuordnung=None` raises `ValueError`): a primary key only counts rows, it does not identify a `Bohrung`. `felder_vorschlagen` checks on the content that the proposed `id` is unique per row and otherwise proposes another column or a pair (`id_hinweis` says so). Non-SQLite bytes and damaged files raise `ValueError`. Rows with duplicate IDs, empty geometry and missing `x`/`y`, a Lage more than 25 km from any Land, or unparsable numeric fields are listed in `abgelehnt` with 1-based row number and reason; the `Bohrung` kept under a duplicated ID says so in `issues`. |
+| **`.csv` (`Kopfdaten` or `Langformat` with `Schichten`)** | Decoded strictly as `utf-8-sig` / `utf-8`, falling back to `cp1252` only on `UnicodeDecodeError`. Delimiter (`;` or `,`) is detected from the header line; decimal commas (`36,25` -> `36.25`) are normalized. Requires an explicit `zuordnung` in `lesen` (`zuordnung=None` raises `ValueError`). Supports both one-row-per-`Bohrung` (`Kopfdaten`) and multi-row `Langformat` grouped by `id` and ordered by depth (`von`, `bis`, `petrographie`, `beschreibung`), mapping `petrographie` exclusively via `boreholeml.bodenart_aus()` (`soil_class = None` + hint if unknown) and setting `confidence = 0.5`. | Never guesses columns without explicit `zuordnung`. Layer defects (`von >= bis`, `Lücke` between consecutive intervals, `Überlappung`) are recorded in `issues` and never auto-repaired. Rows with a duplicate `id` in `Kopfdaten` mode, or a different Lage or unreadable depth for the same `id` in `Langformat`, are recorded in `abgelehnt`; in `Langformat` the `Bohrung` then says in `issues` that its Schichtenverzeichnis is incomplete. |
+| **`.zip` / `.rar`** | `.zip` is unpacked in memory to its one supported data file (`.gpkg`, `.xml`, `.gml`, `.csv`), ignoring companion documentation PDFs (such as `bohrdaten.pdf` and `agb_lung_de.pdf` in `MV`). | An archive with several data files is rejected. Unpacked streams exceeding `MAX_ENTPACKT` (`200 MiB`) are aborted (`ValueError`). `.rar` archives (e.g. `Bohrarchiv_HH.rar`) are rejected with a clear `ValueError` instructing the user to unpack first or use the Hamburg WFS (`HH_WFS_BoreholeML3`). |
+
+#### Verification on Mecklenburg-Vorpommern's real `bohrdaten_dl.zip` (`2026-11-09`)
+
+The statewide archive `https://umweltportal.mv-regierung.de/download/geologie/LBDS/bohrdaten_dl.zip` (`8,293,295 B` ZIP)
+was tested locally outside the repository:
+
+1. **Archive contents & GeoPackage structure:**
+   - Contains `bohrdaten_dl.gpkg` (`41,635,840 B`), `bohrdaten.pdf` (`478,064 B`), and `agb_lung_de.pdf` (`10,204 B`).
+   - `gpkg_contents` lists feature table `bohrdaten` (`data_type = 'features'`, `srs_id = 100000`) and attribute table
+     `layer_styles` (`data_type = 'attributes'`, `srs_id = 0`).
+   - `bohrdaten` has `122,429` rows and `19` columns: `fid` (`INTEGER PRIMARY KEY`), `geom` (`POINT`), `RW`, `HW`,
+     `ZCOORDE` (`Endteufe` in m), `LONGNAME` (`Bohrungsname`), `BO_IDENT` (`Bohrungsschlüssel` LBDS MV), `STRAT_EH`,
+     `DATSICHERH`, `TK25`, `PRJ_ID`, `ZCOORDB` (`Ansatzhöhe` / `GOK` in m NN), `BRGZWECK`, `YRFROMNAME` (`Bohrjahr`),
+     `SVB`, `LOCID`, `PROJEKT`, `TEUFESTUFE`, `SVZ_URL`.
+2. **Coordinate reference system (`CRS`):**
+   - In `gpkg_spatial_ref_sys`, `srs_id = 100000` has `organization = 'NONE'`, `organization_coordsys_id = 100000`,
+     `srs_name = 'ETRS89_UTM_Zone_33d8'`, and a WKT definition with `PROJECTION["Transverse_Mercator"]`,
+     `PARAMETER["central_meridian",15]`, `PARAMETER["scale_factor",0.9996]`, and
+     `PARAMETER["false_easting",33500000]`.
+   - `felder_vorschlagen` resolves this WKT deterministically to `EPSG:5650` (ETRS89 / UTM zone 33N with leading
+     `Zonenkennung` `33`) and proposes:
+     `{'tabelle': 'bohrdaten', 'id': ['PRJ_ID', 'LOCID'], 'name': 'LONGNAME', 'x': 'RW', 'y': 'HW', 'gok': 'ZCOORDB', 'teufe': 'ZCOORDE', 'datum': 'YRFROMNAME', 'profil': 'SVZ_URL', 'epsg': 5650}`.
+   - During `lesen`, `utm.utm_normal(x, y, 5650)` strips the `33_000_000` false easting prefix and stores all valid
+     `Bohrungen` in `crs_epsg = 25833`.
+3. **Identifier:** `BO_IDENT` is not a key of the `Bohrung`: 954 values repeat, up to 204 times, and 7,567 of the 7,660
+   repeated rows have another Lage. `PRJ_ID` + `LOCID` is unique in all `122,429` rows (and is what `SVZ_URL` uses).
+4. **Read vs. rejected rows (`122,429` total):**
+   - **Read (`boreholes`):** all `122,429` (with `layers: []`, `herkunft: "SGD"`, `lizenz: "CC BY-SA 3.0"`); `abgelehnt` is
+     empty.
+   - **Marked in `issues`, not rejected:**
+     - `2,601` lie on no Land of VG2500. Of the first `2,467` looked at, `2,210` are within 1 km of a Land and only 4 further
+       than 20 km; `1,522` have a GOK above 1 m, among them wells and geothermal probes in Stralsund. VG2500 (1:2,500,000)
+       is too coarse for a coast, so a Lage is only rejected more than 25 km from any Land (the territorial sea is 22 km).
+     - `1,173` have a GOK of exactly 0 (possibly a placeholder).
+     - `2` have a GOK outside what is possible in Germany (up to 3,708 m). A wrong value inside that range is not caught
+       here, only by the DGM check once wired (for example GOK above 200 m in MV, where the highest point is 179 m).
+   - `110,743` carry a link to their Schichtenverzeichnis (`SVZ_URL`, `profil`, `schichten = "grafik"`).
+5. **Runtime and memory:**
+   - `felder_vorschlagen(zip_bytes, "bohrdaten_dl.zip")`: `0.95 s`, including the check of the `id`.
+   - `lesen(zip_bytes, "bohrdaten_dl.zip", quelle_mv, zuordnung=vorschlag)` across all `122,429` rows: **`48.7 s`** wall time,
+     RSS `55 MiB` -> `366 MiB`. Slow enough that wiring it needs a background job, not a request.
+   - `im_umkreis(doc, x=398528.0, y=6030275.0, epsg=25833, radius=500.0)` (Bergen auf Rügen, `500 m` radius):
+     **`94 ms`**, **`90` hits** sorted by distance (`82` with `schichten = "grafik"`, `8` with `"keine"`).
+
+Not verified on real files: only `MV` was read. Bremen's `inspire_ge_bohrdaten.zip` is reported in EPSG:4258, which the
+importer rejects as a whole file until geographic coordinates are converted.
 
 Up: [Index](README.md)
 
