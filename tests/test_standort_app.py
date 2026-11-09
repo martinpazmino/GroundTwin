@@ -146,7 +146,7 @@ def test_standort_ohne_dienst_des_landes(client):
     """Bayern: kein Datendienst fuer Bohrungen und DGM - gesagt statt still "0 Bohrungen", mit dem Portal des Landes."""
     sig = client.post("/api/standort", json={"x": 691000.0, "y": 5334000.0, "epsg": 25832}).json()["projekt"]
     s = client.post(f"/api/projekt/{sig}/sgd/abfrage", json={"radius": 250}).json()["sgd"]
-    assert s["treffer"] == [] and s["dienste"] == [] and s["fehler"] == []
+    assert s["treffer"] == [] and s["dienste"] == ["DE-BGR-WMS"] and s["fehler"] == []   # nur der Hinweisdienst
     assert [p["dienst"] for p in s["portale"]] == ["BY", "DE-BGR"] and all(p["url"].startswith("https://") for p in s["portale"])
     r = client.post(f"/api/projekt/{sig}/dgm/abruf", json={})
     assert r.status_code == 400 and "kein DGM-Dienst für diesen Ort" in r.json()["detail"]

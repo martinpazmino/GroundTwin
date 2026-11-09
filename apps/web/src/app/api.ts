@@ -77,7 +77,7 @@ export interface Gelaende {
 /** Bohrung eines Landes aus der Abfrage (docs/23 §2.2). */
 export interface SgdTreffer {
   dienst: string; id: string; name: string; x: number; y: number; gok: number | null; teufe: number | null;
-  datum: string | null; schichten: "boreholeml" | "grafik" | "keine" | "ohne Petrographie"; schichten_n: number | null;
+  datum: string | null; schichten: "boreholeml" | "grafik" | "keine" | "ohne Petrographie" | "portal"; schichten_n: number | null;
   profil: string | null; abstand: number; gutachten?: string; abweichung_lage?: number; abweichung_gok?: number | null;
   uebernommen: boolean; uebernehmbar: boolean;
 }

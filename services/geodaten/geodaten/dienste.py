@@ -1,8 +1,8 @@
 """Register der Dienste der Laender (dienste.json): laden, pruefen, ordnen, speichern - fuer die App und das Werkzeug
 „Dienste der Länder“ (docs/21 §4.8, D98).
 
-Arten: angebunden sind wfs-kopf und wfs-boreholeml (Bohrungen), wcs-dgm (Gelaende) und lod2-kacheln (Gebaeude);
-portal-bohrungen, portal-dgm und portal-gebaeude sind nur Links (ansehen, herunterladen, anfragen). Status:
+Arten: angebunden sind wfs-kopf, wfs-boreholeml und wms-kopf (Bohrungen; wms-kopf nur als Hinweis), wcs-dgm (Gelaende)
+und lod2-kacheln (Gebaeude); portal-bohrungen, portal-dgm und portal-gebaeude sind nur Links. Status:
 "geprueft" (mit Datum, gegen den echten Dienst getestet) oder "ungeprueft" (eingetragen, nicht getestet) - nie still.
 """
 from __future__ import annotations
@@ -25,17 +25,19 @@ STANDARD = Path(__file__).with_name("dienste.json")
 # dort, beginnt sie als Kopie des Registers aus dem Repo
 DATEI = Path(os.environ.get("GEO_AGENT_DIENSTE") or STANDARD)
 # Art -> (Thema, angebunden)
-ARTEN = {"wfs-kopf": ("bohrungen", True), "wfs-boreholeml": ("bohrungen", True), "wcs-dgm": ("dgm", True),
-         "lod2-kacheln": ("gebaeude", True), "portal-bohrungen": ("bohrungen", False),
+ARTEN = {"wfs-kopf": ("bohrungen", True), "wfs-boreholeml": ("bohrungen", True), "wms-kopf": ("bohrungen", True),
+         "wcs-dgm": ("dgm", True), "lod2-kacheln": ("gebaeude", True), "portal-bohrungen": ("bohrungen", False),
          "portal-dgm": ("dgm", False), "portal-gebaeude": ("gebaeude", False)}
 THEMEN = {"bohrungen": "Bohrungen", "dgm": "Gelände (DGM)", "gebaeude": "Gebäude (LoD2)"}
 PFLICHT = ("id", "land", "art", "titel", "anbieter", "url")
 PFLICHT_JE_ART = {"wfs-kopf": ("typen", "systeme", "felder"), "wfs-boreholeml": ("typen", "systeme"),
+                  "wms-kopf": ("typen", "systeme", "felder", "wms_version", "info_format"),
                   "wcs-dgm": ("coverage", "achsen", "system", "raster_m"), "lod2-kacheln": ("system", "format", "kachel_km")}
-FELDER_KOPF = ("id", "name", "x", "y", "gok", "teufe", "datum", "profil")
+FELDER_KOPF = ("id", "name", "x", "y", "gok", "teufe", "datum", "profil", "punkt", "punkt_epsg", "hat_schichten")
 REIHENFOLGE = ("id", "land", "laender", "art", "status", "geprueft", "aktiv", "titel", "anbieter", "url", "hinweis",
-               "typen", "systeme", "felder", "schichten", "coverage", "achsen", "system", "raster_m", "format",
-               "kachel_km", "gebiet_wgs84", "gebiet_beleg", "lizenz", "lizenz_url", "namensnennung", "beleg")
+               "typen", "systeme", "felder", "wms_version", "info_format", "schichten", "coverage", "achsen", "system",
+               "raster_m", "format", "kachel_km", "gebiet_wgs84", "gebiet_beleg", "lizenz", "lizenz_url", "namensnennung",
+               "beleg")
 ZEIT_PRUEFEN = 15
 
 
@@ -183,12 +185,13 @@ def pruefen_live(d: dict, holer=None, ansehen=None) -> dict:
     beginn = time.monotonic()
     gefunden: list[str] = []
     try:
-        if art in ("wfs-kopf", "wfs-boreholeml"):
-            gefunden = _namen(holer(_abfrage(d["url"], {"SERVICE": "WFS", "REQUEST": "GetCapabilities"}), ZEIT_PRUEFEN),
+        if art in ("wfs-kopf", "wfs-boreholeml", "wms-kopf"):
+            kuerzel = "WMS" if art == "wms-kopf" else "WFS"
+            gefunden = _namen(holer(_abfrage(d["url"], {"SERVICE": kuerzel, "REQUEST": "GetCapabilities"}), ZEIT_PRUEFEN),
                               "Name")
             fehlen = [t for t in d.get("typen") or [] if t not in gefunden]
-            ok, meldung = not fehlen, (f"WFS erreichbar, {len(gefunden)} Objektarten" if not fehlen
-                                      else f"WFS erreichbar, aber ohne {', '.join(fehlen)}")
+            ok, meldung = not fehlen, (f"{kuerzel} erreichbar, {len(gefunden)} Objektarten" if not fehlen
+                                      else f"{kuerzel} erreichbar, aber ohne {', '.join(fehlen)}")
         elif art == "wcs-dgm":
             gefunden = _namen(holer(_abfrage(d["url"], {"SERVICE": "WCS", "VERSION": "2.0.1",
                                                         "REQUEST": "GetCapabilities"}), ZEIT_PRUEFEN), "CoverageId")

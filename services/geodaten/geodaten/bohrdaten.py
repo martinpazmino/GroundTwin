@@ -5,6 +5,8 @@ es gibt, steht mit Beleg in dienste.json. Zwei Arten:
   wfs-kopf        Kopfdaten (Lage, GOK, Endteufe, Datum) und das Schichtenverzeichnis als Grafik (Berlin, Brandenburg)
   wfs-boreholeml  BoreholeML mit den freigegebenen Schichtdaten (NRW, Baden-Wuerttemberg) - nur diese lassen sich
                   ins Projekt uebernehmen und modellieren (boreholeml.importieren, Herkunft markiert)
+  wms-kopf        nur ein Hinweis, dass dort gebohrt wurde (bohrdaten_wms.py): fuer Laender ohne eigenen WFS, ersetzt deren
+                  Portal nicht und kommt nie ins Modell
 Doppelte: dieselbe Bohrung im Gutachten und beim Land (Name oder Abstand) - zugleich eine Gegenprobe von Lage und GOK.
 Laender ohne Datendienst stehen als Portal im Register (portal-bohrungen): die Abfrage nennt sie mit Link, statt
 still "0 Bohrungen" zu sagen. Welches Land: aus den Laendergrenzen (laender.py), sonst aus den Rechtecken der Dienste.
@@ -54,6 +56,7 @@ def utm_zu_geo(e: float, n: float, zone: int) -> tuple[float, float]:
 
 
 BOHRDIENSTE = ("wfs-kopf", "wfs-boreholeml")
+HINWEISDIENSTE = ("wms-kopf",)                  # zaehlen nicht als Datendienst: das Portal des Landes bleibt
 
 
 def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRDIENSTE,
@@ -82,8 +85,8 @@ def dienste_am_ort(x: float, y: float, epsg: int, arten: tuple[str, ...] = BOHRD
 
 def ohne_dienst(x: float, y: float, epsg: int, thema: str) -> str:
     """Satz fuer „kein Dienst“: welche Laender angebunden sind und wo die Daten dieses Ortes zu finden sind (Portal)."""
-    arten = tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and verbunden)
-    portal = tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and not verbunden)
+    arten = tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and verbunden and a not in HINWEISDIENSTE)
+    portal =tuple(a for a, (th, verbunden) in register.ARTEN.items() if th == thema and not verbunden)
     mit = sorted({land for d in DIENSTE if d["art"] in arten and d.get("aktiv", True) is not False
                   for land in (d.get("laender") or [d["land"]])}, key=lambda n: (n not in laender.LAENDER, n))
     satz = f"angebunden: {', '.join(mit)}" if mit else "noch kein Land angebunden"
@@ -97,6 +100,7 @@ _DIENSTE_ANFANG = DIENSTE                       # ersetzt ein Test DIENSTE, lies
 # Kurztext je Art fuer die Oberflaeche (Karte, Standort): was der Dienst an diesem Ort liefert
 ART_TEXT = {"wfs-kopf": ("bohrungen", "Bohrungen {land}: nur Kopfdaten, Schichtenverzeichnis als Bild – nicht ins Modell"),
             "wfs-boreholeml": ("bohrungen", "Bohrungen {land}: mit Schichtdaten (BoreholeML) – Modell der Vorerkundung möglich"),
+            "wms-kopf": ("bohrungen", "Bohrungen {land}: nur als Hinweis (Lage, GOK, Teufe) – nicht ins Modell"),
             "wcs-dgm": ("dgm", "Gelände DGM1: {land}"),
             "lod2-kacheln": ("gebaeude", "Gebäude LoD2: {land}"),
             "portal-bohrungen": ("bohrungen", "Bohrungen {land}: kein Datendienst – im Portal ansehen ({titel})"),
@@ -109,12 +113,13 @@ def am_ort(x: float, y: float, epsg: int) -> list[dict]:
     """Alle Dienste der Laender an einem Punkt (Gebiet als Rechteck, an Landesgrenzen auch mehrere):
     [{dienst, art, land, text}]; ohne Bohrdienst ein Eintrag, der das sagt."""
     gefunden = dienste_am_ort(x, y, epsg, tuple(ART_TEXT))
-    mit_dienst = {register.thema(d) for d in gefunden if register.angebunden(d)}
+    daten = [d for d in gefunden if register.angebunden(d) and d["art"] not in HINWEISDIENSTE]
+    mit_dienst = {register.thema(d) for d in daten}
     out = [{"dienst": d["id"], "art": ART_TEXT[d["art"]][0], "land": d["land"],
             "text": ART_TEXT[d["art"]][1].format(land=d["land"], titel=d["titel"]),
             "url": d["url"] if d["art"].startswith("portal-") else "",
             "status": d.get("status", "ungeprueft")}
-           for d in gefunden if register.angebunden(d) or register.thema(d) not in mit_dienst]   # Portal nur ohne Dienst
+           for d in gefunden if d in daten or register.thema(d) not in mit_dienst]   # Portal und Hinweis nur ohne Datendienst
     if not any(o["art"] == "bohrungen" for o in out):
         out.insert(0, {"dienst": "", "art": "bohrungen", "land": "", "url": "", "status": "",
                        "text": f"Bohrungen: kein Dienst für diesen Ort ({ohne_dienst(x, y, epsg, 'bohrungen')})"})
@@ -156,8 +161,10 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
                 "hinweis": d.get("hinweis", ""), "status": d.get("status", "ungeprueft")}
                for d in dienste_am_ort(x, y, epsg, PORTALE, radius=radius)
                if ohne & set(d.get("laender") or []) or (not hier and not am_ort)]
+    hinweise = [d for d in dienste_am_ort(x, y, epsg, HINWEISDIENSTE, radius=radius)
+                if ohne & set(d.get("laender") or []) or (not hier and not am_ort)]   # nur wo kein Land selbst liefert
     treffer, fehler = [], []
-    if not am_ort and not portale:                  # weder Dienst noch Portal: sagen statt still "0 Bohrungen"
+    if not am_ort and not portale and not hinweise:  # weder Dienst noch Portal: sagen statt still "0 Bohrungen"
         fehler.append({"dienst": "Länder", "fehler": f"kein Dienst für diesen Ort ({ohne_dienst(x, y, epsg, 'bohrungen')})"})
     bbox = f"{x - radius:.1f},{y - radius:.1f},{x + radius:.1f},{y + radius:.1f},urn:ogc:def:crs:EPSG::{epsg}"
     for d in am_ort:
@@ -174,15 +181,35 @@ def abfragen(x: float, y: float, epsg: int, radius: float = RADIUS_STANDARD, hol
                 treffer += _kopfdaten(d, typ, daten) if kopf else _boreholeml_kopf(d, daten)
             except (DienstFehler, ValueError) as err:
                 fehler.append({"dienst": d["id"], "fehler": str(err)[:300]})
+    if hinweise:
+        from . import bohrdaten_wms                 # erst hier: das Modul nutzt die Hilfen dieses Moduls
+        for d in hinweise:
+            try:
+                neu, gekappt = bohrdaten_wms.abfrage_dienst(d, x, y, epsg, radius, holer)
+                treffer += _ohne_gleiche(neu, treffer)
+                if gekappt:                         # markiert, nie still gekappt
+                    fehler.append({"dienst": d["id"], "fehler": "mehr Bohrungen, als der Dienst auf einmal liefert: "
+                                                                "die Liste ist unvollständig – Radius verkleinern"})
+            except (DienstFehler, ValueError) as err:
+                fehler.append({"dienst": d["id"], "fehler": str(err)[:300]})
     for t in treffer:
         t["abstand"] = round(math.hypot(t["x"] - x, t["y"] - y), 1) if t["x"] is not None else None
     treffer = sorted((t for t in treffer if t["abstand"] is not None and t["abstand"] <= radius),
                      key=lambda t: t["abstand"])
+    gefragt = am_ort + hinweise
     return {"mitte": [round(x, 2), round(y, 2)], "epsg": epsg, "radius": radius,
-            "zeit": datetime.now().strftime("%Y-%m-%d %H:%M"), "dienste": [d["id"] for d in am_ort],
+            "zeit": datetime.now().strftime("%Y-%m-%d %H:%M"), "dienste": [d["id"] for d in gefragt],
             "treffer": treffer, "fehler": fehler, "portale": portale,
             "quellen": [{"dienst": d["id"], "titel": d["titel"], "land": d["land"], "lizenz": d["lizenz"],
-                         "namensnennung": namensnennung(d), "beleg": d["beleg"]} for d in am_ort]}
+                         "namensnennung": namensnennung(d), "beleg": d["beleg"]} for d in gefragt]}
+
+
+def _ohne_gleiche(neu: list[dict], vorhanden: list[dict]) -> list[dict]:
+    """Ohne die Treffer, die ein Dienst davor schon nennt: die BGR fuehrt auch Bohrungen der Laender (Bremen: dieselbe
+    Lage auf den Zentimeter, die Namen anders geschrieben)."""
+    lagen = [(v["x"], v["y"]) for v in vorhanden if v["x"] is not None]
+    return [t for t in neu if t["x"] is None or not any(math.hypot(t["x"] - vx, t["y"] - vy) <= DOPPELT_ABSTAND
+                                                         for vx, vy in lagen)]
 
 
 def _lokal(el: ET.Element) -> str:
@@ -251,7 +278,7 @@ def _boreholeml_kopf(d: dict, daten: bytes) -> list[dict]:
 def holen(dienst_id: str, ids: list[str], holer=None, heute: date | None = None) -> dict:
     """Ausgewaehlte Bohrungen eines BoreholeML-Dienstes mit Schichtdaten -> Dokument im kanonischen JSON (Herkunft)."""
     d = dienst(dienst_id)
-    if d["art"] == "wfs-kopf":
+    if d["art"] in ("wfs-kopf", "wms-kopf"):
         raise ValueError(f"{d['titel']}: nur Kopfdaten, das Schichtenverzeichnis als Grafik – nicht ins Modell übernehmbar")
     if d["art"] != "wfs-boreholeml":
         raise ValueError(f"{d['titel']}: kein Dienst für Bohrdaten")

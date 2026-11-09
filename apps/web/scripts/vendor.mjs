@@ -5,9 +5,10 @@
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const ziel = new URL("../public/vendor/", import.meta.url).pathname;
+const ziel = fileURLToPath(new URL("../public/vendor/", import.meta.url));          // .pathname: unter Windows /C:/…
 mkdirSync(ziel, { recursive: true });
 const webIfc = dirname(require.resolve("web-ifc"));
 for (const f of ["web-ifc.wasm", "web-ifc-mt.wasm"]) copyFileSync(join(webIfc, f), join(ziel, f));
@@ -16,7 +17,7 @@ console.log("vendor:", ziel);
 // ------------------------------------------------------------------ Icons
 const SAMMLUNGEN = ["mdi", "eos-icons"];
 const INTERN = ["eos-icons:loading"];                  // von BUI selbst benutzt (Ladeanzeige der Knoepfe)
-const src = new URL("../src/", import.meta.url).pathname;
+const src = fileURLToPath(new URL("../src/", import.meta.url));
 const namen = new Set(INTERN);
 for (const f of readdirSync(src, { recursive: true })) {        // src/viewer, src/app
   if (!String(f).endsWith(".ts")) continue;

@@ -552,7 +552,7 @@ async function sgdAbfragen() {
   neu();
   const s = z.sgd;
   melden(`${s.treffer.length} Bohrungen der Länder im Umkreis von ${zahl(s.radius, 0)} m` +
-         (s.fehler.length ? ` – ${s.fehler.length} Dienst(e) ohne Antwort` : ""), s.fehler.length ? "warn" : "ok");
+         (s.fehler.length ? ` – ${s.fehler.length} Meldung(en) der Dienste` : ""), s.fehler.length ? "warn" : "ok");
 }
 
 async function sgdUebernehmen() {
@@ -577,12 +577,13 @@ function nichtUebernehmbar(s: NonNullable<Zustand["sgd"]>) {
   };
   const teile = [
     zahlen("grafik") && `${zahlen("grafik")} nur mit Kopfdaten: das Land gibt das Schichtenverzeichnis nur als Bild heraus (Profil ↗), nicht als Daten`,
+    zahlen("portal") && `${zahlen("portal")} nur als Hinweis: das Schichtenverzeichnis liegt beim Land, der Dienst nennt nur die Kopfdaten`,
     zahlen("keine") && `${zahlen("keine")} ohne Schichtenverzeichnis`,
     zahlen("ohne Petrographie") && `${zahlen("ohne Petrographie")} mit Schichten ohne Petrographie`,
   ].filter(Boolean);
   return html`<p class="leise klein sgd-warum">Nicht übernehmbar: ${teile.join("; ")}. Ohne Schichten entsteht kein Modell –
     sie zu erfinden wäre falsch. Lage, GOK und Teufe sehen Sie hier; die Schichten im Profil des Landes. Übernehmbar sind
-    Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg).</p>`;
+    Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg, Hamburg).</p>`;
 }
 
 function sgdSchichten(t: SgdTreffer) {
@@ -590,6 +591,7 @@ function sgdSchichten(t: SgdTreffer) {
   if (t.uebernommen) return html`<span class="ok">✓ im Projekt</span>`;
   if (t.schichten === "boreholeml") return html`${t.schichten_n} Schichten`;
   if (t.schichten === "grafik" && t.profil) return html`<a href=${t.profil} target="_blank" rel="noopener">Profil ↗</a>`;
+  if (t.schichten === "portal") return html`<span class="leise" title="Nur ein Hinweis: das Schichtenverzeichnis liegt beim Land, nicht in diesem Dienst">beim Land</span>`;
   return html`<span class="leise">${t.schichten === "ohne Petrographie" ? "ohne Petrographie" : "keine Schichten"}</span>`;
 }
 
@@ -686,7 +688,7 @@ function sgdTeil(z: Zustand) {
       ${s.treffer.length > zeigen.length ? html`<p class="leise klein">… und ${s.treffer.length - zeigen.length} weitere (Umkreis verkleinern)</p>` : nothing}` : nothing}
     ${waehlbar ? html`<button class="primaer" ?disabled=${!sgdWahl.size} @click=${sgdUebernehmen}>
       Ausgewählte übernehmen (${sgdWahl.size})</button>
-      <p class="leise klein">Nur Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg); sie kommen mit Quelle und Lizenz ins Projekt.</p>` : nothing}
+      <p class="leise klein">Nur Bohrungen mit Schichtdaten in BoreholeML (NRW, Baden-Württemberg, Hamburg); sie kommen mit Quelle und Lizenz ins Projekt.</p>` : nothing}
     ${nichtUebernehmbar(s)}
     ${s.quellen.map((q) => html`<p class="leise klein">Quelle: ${q.namensnennung} · <a href=${q.beleg} target="_blank" rel="noopener">Dienst</a></p>`)}
     <button class="link klein" @click=${async () => { const z2 = await versuchen(() => api.sgdVerwerfen(S.sig)); if (z2) { zustandUebernehmen(z2); neu(); } }}>Abfrage verwerfen</button>`;

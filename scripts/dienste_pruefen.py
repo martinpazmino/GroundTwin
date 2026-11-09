@@ -24,7 +24,7 @@ from geodaten import netz  # noqa: E402
 from geodaten.bohrdaten import DIENSTE, DienstFehler  # noqa: E402
 
 ZEIT = 30
-DIENST_ART = {"wfs-kopf": "WFS", "wfs-boreholeml": "WFS", "wcs-dgm": "WCS"}
+DIENST_ART = {"wfs-kopf": "WFS", "wfs-boreholeml": "WFS", "wms-kopf": "WMS", "wcs-dgm": "WCS"}
 
 
 def pruef_url(d: dict) -> str:
