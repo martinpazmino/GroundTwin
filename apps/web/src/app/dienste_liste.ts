@@ -16,7 +16,7 @@ export function portalListe(portale: Sgd["portale"]) {
   if (!portale?.length) return nothing;
   const laender = [...new Set(portale.map((p) => p.land).filter((l) => l !== "Deutschland"))];
   return html`<div class="portale" role="note">
-    <p class="klein">Kein Datendienst für ${laender.length ? laender.join(", ") : "diesen Ort"} – die Bohrungen im Portal ansehen:</p>
+    <p class="klein">Kein Datendienst mit Schichtdaten für ${laender.length ? laender.join(", ") : "diesen Ort"} – die Bohrungen im Portal ansehen:</p>
     <ul class="dienste klein" aria-label="Portale der Länder">${portale.map((p) => html`<li>
       <a href=${p.url} target="_blank" rel="noopener noreferrer">${p.titel}</a> <span class="leise">(${p.land})</span>
       ${p.status === "ungeprueft" ? ungeprueft : nothing}

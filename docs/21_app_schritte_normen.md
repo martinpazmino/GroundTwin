@@ -453,6 +453,10 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
   - The other 12 have no public data service with Schichtdaten: their portal (viewer, download or request) is a
     **link**, marked *ungeprüft* (entered, not tested against the service), plus the Bohrpunktkarte of the BGR for all
     of Germany.
+  - Länder without their own WFS (Bayern, Sachsen, Niedersachsen, Schleswig-Holstein, Sachsen-Anhalt, Thüringen,
+    Mecklenburg-Vorpommern, Bremen) also get a **hint** through WMS-GetFeatureInfo (art `wms-kopf`, D104, BGR; Bremen
+    with its own service): Lage, GOK, Teufe and a profile link where the service has one. Never Schichten, never into
+    the model, and the portal stays. Hessen, Rheinland-Pfalz and Saarland have no such service.
 - **Which Land:** from the borders of the Länder (VG2500 of the BKG, `geodaten/laender.py`), no longer from the
   rectangles of the services, which overlap (Berlin asked Brandenburg too; a click in Saxony-Anhalt named Brandenburg).
   The query looks at the centre and eight points on the radius: at a border **both** Länder are asked (lesson S20).
@@ -461,7 +465,8 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
 
 **The list:**
 
-- Name, distance, GOK, Endteufe, and the Schichten: *n Schichten*, *Profil ↗* or *keine*.
+- Name, distance, GOK, Endteufe, and the Schichten: *n Schichten*, *Profil ↗*, *beim Land* (hint: the Land holds a
+  Schichtenverzeichnis, the service only the head data) or *keine*.
 - The sources and licenses: Berlin dl-de/zero-2.0, Brandenburg and NRW dl-de/by-2.0 with the required
   attribution.
 
@@ -487,7 +492,7 @@ Phase P2 of the open data plan ([23](23_open_data_integration.md), D85, D88, D91
   the project: a Gutachten with the zone prefix (EPSG 4647/5650) gets them with the prefix, and the Gegenprobe compares
   in one system (lesson S17).
 - Where a Land has no data service (for example Bayern), the query names its portal and the Bohrpunktkarte of the BGR
-  as links (*Kein Datendienst für Bayern – die Bohrungen im Portal ansehen*), instead of showing 0 Bohrungen; at a
+  as links (*Kein Datendienst mit Schichtdaten für Bayern – die Bohrungen im Portal ansehen*), instead of showing 0 Bohrungen; at a
   border, only for the Land without a service. Only when neither a service nor a portal exists does it say *kein Dienst
   für diesen Ort* (with the connected Länder).
 - Their codes carry the Land (`NW-14`).

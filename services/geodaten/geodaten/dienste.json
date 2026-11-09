@@ -1,7 +1,7 @@
 {
  "format": "groundtwin-dienste/2",
- "stand": "2026-11-07",
- "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2), Geländemodelle und LoD2-Gebäude der Vermessungsverwaltungen (§2.4). Angebunden sind wfs-kopf, wfs-boreholeml, wcs-dgm und lod2-kacheln; portal-* sind nur Links. status: geprueft (gegen den echten Dienst, mit Datum) oder ungeprueft (eingetragen, nicht getestet). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88). Pflege mit dem Werkzeug „Dienste der Länder“ (docs/21 §4.8).",
+ "stand": "2026-11-09",
+ "beschreibung": "Dienste der Länder: Bohrdaten der Staatlichen Geologischen Dienste (docs/23 §2.2), Geländemodelle und LoD2-Gebäude der Vermessungsverwaltungen (§2.4). Angebunden sind wfs-kopf, wfs-boreholeml, wms-kopf (nur als Hinweis, nie ins Modell), wcs-dgm und lod2-kacheln; portal-* sind nur Links. status: geprueft (gegen den echten Dienst, mit Datum) oder ungeprueft (eingetragen, nicht getestet). Abgefragt wird nur auf Klick: die Anfrage sendet die Lage des Projekts an den Dienst (D88). Pflege mit dem Werkzeug „Dienste der Länder“ (docs/21 §4.8).",
  "geprueft_nicht_aufgenommen": [
   {
    "land": "Baden-Württemberg",
@@ -84,6 +84,61 @@
    "lizenz_url": "",
    "namensnennung": "Bundesanstalt für Geowissenschaften und Rohstoffe (BGR)",
    "beleg": "https://www.bgr.bund.de/EN/Themen/Geodatenmanagement/Bohrpunktkarte-Deutschland/bohrpunktkarte-deutschland_node_en.html"
+  },
+  {
+   "id": "DE-BGR-WMS",
+   "land": "Deutschland",
+   "laender": [
+    "Bayern",
+    "Sachsen",
+    "Niedersachsen",
+    "Schleswig-Holstein",
+    "Sachsen-Anhalt",
+    "Thüringen",
+    "Mecklenburg-Vorpommern",
+    "Bremen",
+    "Hamburg",
+    "Berlin",
+    "Brandenburg",
+    "Baden-Württemberg",
+    "Nordrhein-Westfalen"
+   ],
+   "art": "wms-kopf",
+   "status": "geprueft",
+   "geprueft": "2026-11-09",
+   "titel": "Bohrungen Deutschland (BGR, GBL, WMS-GetFeatureInfo)",
+   "anbieter": "Bundesanstalt für Geowissenschaften und Rohstoffe (BGR) und Staatliche Geologische Dienste",
+   "url": "https://services.bgr.de/wms/geologie/gbl/",
+   "hinweis": "Nur als Hinweis: Kopfdaten, keine Schichtdaten, nicht ins Modell. Gefragt nur für Länder ohne eigenen WFS.",
+   "typen": [
+    "0"
+   ],
+   "systeme": [
+    25832
+   ],
+   "felder": {
+    "id": "gml_ID",
+    "name": "shortName",
+    "punkt": "point",
+    "punkt_epsg": 25832,
+    "gok": "surfaceLevel",
+    "teufe": "totalLength",
+    "datum": "drillingDate",
+    "profil": "boreholeWebLink",
+    "hat_schichten": "layerData"
+   },
+   "wms_version": "1.3.0",
+   "info_format": "text/xml",
+   "gebiet_wgs84": [
+    5.866,
+    47.2704,
+    15.0377,
+    55.0572
+   ],
+   "lizenz": "BGR-AGB",
+   "lizenz_url": "https://www.bgr.bund.de/AGB",
+   "namensnennung": "Datenquelle: GBL, © Staatliche Geologische Dienste, 2016",
+   "beleg": "https://services.bgr.de/wms/geologie/gbl/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities"
   },
   {
    "id": "SH",
@@ -372,7 +427,7 @@
    "titel": "Bohrdatenbank Land Bremen (GDfB)",
    "anbieter": "Geologischer Dienst für Bremen (GDfB) am MARUM",
    "url": "https://www.gdfb.de/",
-   "hinweis": "Download und WMS der Bohrdatenbank im Geodatenkatalog verzeichnet (CC BY, INSPIRE) – noch nicht angebunden.",
+   "hinweis": "Download der Bohrdatenbank im Geodatenkatalog verzeichnet (CC BY, INSPIRE). Der WMS ist als Hinweis angebunden (HB-WMS).",
    "gebiet_wgs84": [
     8.4814,
     53.0104,
@@ -383,6 +438,49 @@
    "lizenz_url": "",
    "namensnennung": "Geologischer Dienst für Bremen (GDfB) am MARUM",
    "beleg": "https://geoportal.bremen.de/geoportal/"
+  },
+  {
+   "id": "HB-WMS",
+   "land": "Bremen",
+   "laender": [
+    "Bremen"
+   ],
+   "art": "wms-kopf",
+   "status": "geprueft",
+   "geprueft": "2026-11-09",
+   "titel": "Bohrdatenbank Land Bremen (WMS-GetFeatureInfo)",
+   "anbieter": "GeoInformation Bremen / Geologischer Dienst für Bremen (GDfB)",
+   "url": "https://geodienste.bremen.de/wms_bohrdatenbank",
+   "hinweis": "Nur als Hinweis: Kopfdaten und Link zum Bohrprofil (PDF), keine Schichtdaten, nicht ins Modell.",
+   "typen": [
+    "Bohrpunkte_Bremen"
+   ],
+   "systeme": [
+    25832
+   ],
+   "felder": {
+    "id": "akbez",
+    "name": "shortname",
+    "x": "x_4647",
+    "y": "y_4647",
+    "punkt_epsg": 4647,
+    "gok": "hoehe_bohransatz",
+    "teufe": "endtiefe",
+    "datum": "bohrung_bis",
+    "profil": "bohrprofil_pdf_url"
+   },
+   "wms_version": "1.1.1",
+   "info_format": "application/vnd.ogc.gml",
+   "gebiet_wgs84": [
+    8.4814,
+    53.0104,
+    8.983,
+    53.6062
+   ],
+   "lizenz": "CC BY",
+   "lizenz_url": "",
+   "namensnennung": "Freie Hansestadt Bremen, GeoInformation Bremen",
+   "beleg": "https://geodienste.bremen.de/wms_bohrdatenbank?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities"
   },
   {
    "id": "HB-DGM",

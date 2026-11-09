@@ -20,7 +20,7 @@ interface Pruefung { id: string; ok: boolean; meldung: string; dauer_ms: number;
 type Sicht = "alle" | "angebunden" | "links" | "ungeprueft" | "fehler";
 
 const ART_NAME: Record<string, string> = {
-  "wfs-kopf": "WFS – nur Kopfdaten", "wfs-boreholeml": "WFS – BoreholeML mit Schichten", "wcs-dgm": "WCS – DGM",
+  "wfs-kopf": "WFS – nur Kopfdaten", "wfs-boreholeml": "WFS – BoreholeML mit Schichten", "wms-kopf": "WMS – nur Hinweis (Kopfdaten)", "wcs-dgm": "WCS – DGM",
   "lod2-kacheln": "LoD2-Kacheln", "portal-bohrungen": "Portal (Link)", "portal-dgm": "Portal (Link)",
   "portal-gebaeude": "Portal (Link)",
 };

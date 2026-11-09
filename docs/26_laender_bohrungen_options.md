@@ -253,12 +253,24 @@ For the remaining 13 Länder without a BoreholeML WFS (`SH, NI, HB, HE, RP, BY, 
    - Retain `portal-bohrungen` links for Hessen, Rheinland-Pfalz, and Saarland, as no public machine-readable
      service exists.
 
-### Files Changed When Integrating `bohrdaten_wms.py` (After Approval)
+### Wired into the app (2026-11-09, D104)
 
-- `services/geodaten/geodaten/bohrdaten_wms.py` *(created in this task)*
-- `tests/test_bohrdaten_wms.py` *(created in this task)*
-- `services/geodaten/geodaten/dienste.json` *(after parallel task completes: switch `HH` to `wfs-boreholeml`, add `wms-kopf` entries for `HB` and `DE-BGR` / state fallbacks, update `MV` hint)*
-- `services/geodaten/geodaten/bohrdaten.py` *(after approval: dispatch `typ == "wms-kopf"` in `abfragen()` to `bohrdaten_wms.abfragen_wms()`)*
+`bohrdaten_wms.py` is now called from `bohrdaten.abfragen`; the services are the registry entries `DE-BGR-WMS` and
+`HB-WMS` (art `wms-kopf`), checked live on 2026-11-09 at nine places (zones 32 and 33, Land borders). What changed
+against the prototype, from those checks:
+
+- **`FEATURE_COUNT` 1000 instead of 50.** The answer is not ordered: with 50, central München gave 43 of the 191
+  Bohrungen within 250 m. 1000 answers in under 6 s. An answer that reaches it is reported as incomplete in the list.
+- **The BGR is asked only for Länder without their own WFS.** It also holds Bohrungen of Hamburg, Berlin, Brandenburg,
+  Baden-Württemberg and NRW, which those Länder deliver better themselves.
+- **Bremen asks both.** At 500 m the BGR had 360 Bohrungen and the Bremen service 72, with 41 of them at exactly the same
+  place under another spelling (`2918/05/0001`, `2918_05_0001`). A hit within 3 m of one from an earlier service is
+  dropped, and the Bremen one stays because it has the profile PDF.
+- **Attribution as the services prescribe it** in their Capabilities: BGR *Datenquelle: GBL, © Staatliche Geologische
+  Dienste, 2016* under its AGB; Bremen *CC BY, Freie Hansestadt Bremen, GeoInformation Bremen* (no licence version given).
+
+Known limit: the Bremen service reaches only about half the radius (hits to 129 m at 250 m, 546 m at 1000 m). The BGR
+covers the rest of the circle, so Bremen hits near the edge can lack their profile link.
 
 Up: [Index](README.md)
 

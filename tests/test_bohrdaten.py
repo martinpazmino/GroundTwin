@@ -83,6 +83,8 @@ def attrappe(aufrufe: list | None = None):
             return bml_nw(url.split("RESOURCEID=")[1].split("&")[0].split(","))
         if "bml3.nrw.de" in url:
             return bml_nw(["DABO_1", "DABO_2"])
+        if "services.bgr.de" in url:
+            return b'<FeatureInfoResponse xmlns="http://www.esri.com/wms"/>'  # Hinweisdienst: nichts im Umkreis
         return AUSNAHME
     return holer
 
@@ -110,7 +112,7 @@ def test_dienste_am_ort_und_systeme():
         bd.dienste_am_ort(4594774.3, 5818338.1, 31468)
     for d in bd.DIENSTE:                                                                 # jede Angabe mit Beleg
         assert d["beleg"].startswith("https://") and d["namensnennung"] and d["status"] in ("geprueft", "ungeprueft")
-        if d["art"] in bd.BOHRDIENSTE + ("wcs-dgm", "lod2-kacheln"):                     # angebunden: geprueft, Lizenz
+        if d["art"] in bd.BOHRDIENSTE + bd.HINWEISDIENSTE + ("wcs-dgm", "lod2-kacheln"):                     # angebunden: geprueft, Lizenz
             assert d["status"] == "geprueft" and d["geprueft"] and d["lizenz"]
 
 
@@ -163,7 +165,8 @@ def test_an_der_landesgrenze_beide_dienste_und_fehler_je_dienst():
 def test_grenze_zu_einem_land_ohne_dienst_nennt_dessen_portal():
     # NRW an der Grenze zu Niedersachsen (bei x = 428500): NW abgefragt, fuer Niedersachsen das Portal und die BGR-Karte
     erg = bd.abfragen(428300.0, 5800000.0, 25832, 500, holer=attrappe())
-    assert erg["dienste"] == ["NW"] and [p["dienst"] for p in erg["portale"]] == ["NI", "DE-BGR"]   # bundesweit zuletzt
+    assert erg["dienste"] == ["NW", "DE-BGR-WMS"]                                     # der Hinweis nur für Niedersachsen
+    assert [p["dienst"] for p in erg["portale"]] == ["NI", "DE-BGR"]                  # bundesweit zuletzt
     nur_nrw = bd.abfragen(368120.0, 5724400.0, 25832, 250, holer=attrappe())
     assert nur_nrw["portale"] == []
 
@@ -186,7 +189,7 @@ def test_hamburg_hat_den_boreholeml_wfs():
 
 def test_land_ohne_datendienst_nennt_portale():
     erg = bd.abfragen(691567.3, 5334734.3, 25832, 250, holer=attrappe())              # München: Bayern
-    assert erg["dienste"] == [] and erg["fehler"] == [] and erg["treffer"] == []
+    assert erg["dienste"] == ["DE-BGR-WMS"] and erg["fehler"] == [] and erg["treffer"] == []   # nur der Hinweisdienst
     portale = {p["dienst"]: p for p in erg["portale"]}
     assert set(portale) == {"BY", "DE-BGR"} and portale["BY"]["url"].startswith("https://www.umweltatlas.bayern.de")
     assert all(p["status"] == "ungeprueft" for p in portale.values())
