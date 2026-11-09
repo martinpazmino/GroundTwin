@@ -21,6 +21,8 @@ license **AGPL-3.0-or-later** (D79).
   why not Vercel, variables, memory, CI.
 - `docs/23_open_data_integration.md`: open data and open-source integration (BoreholeML, BGR Bohrpunktkarte, DGM +
   LoD2 Umgebungsmodell, 3D Tiles, Cesium/OSM): evaluation and plan P0–P6.
+- `docs/25_laender_dgm_lod2_research.md`, `docs/26_laender_bohrungen_options.md`: DGM1/LoD2 and Bohrungen of the
+  Länder without a service (survey, live checks, options; `bohrdaten_wms.py` prototype, not wired).
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
@@ -56,7 +58,7 @@ license **AGPL-3.0-or-later** (D79).
   touching it.
 - Gelände (D89, D92, docs/21 §4.4): `services/geodaten` (package `geodaten`) reads the user's DGM files (XYZ, ASCII,
   GeoTIFF, ZIP) without network, or fetches the DGM1 of the Land on a click (`dgm_dienst.py`, WCS of Brandenburg with
-  Berlin and NRW in `dienste.json`); the GOK check marks, a missing GOK is applied on a click (`gok_quelle` DGM, IFC
+  Berlin, NRW, NI and MV in `dienste.json`); the GOK check marks, a missing GOK is applied on a click (`gok_quelle` DGM, IFC
   `CPset_Herkunft.Hoehe`); never replaces a GOK from the PDF. The top of the model follows the DGM, exact at the
   GOK (`services/modeler/baugrundmodell/umgebung.py`, setting `gelaende_dgm`), terrain around it as
   `IfcGeographicElement` TERRAIN. Tests `tests/test_gelaende*.py`, `tests/test_dgm_dienst*.py`.
@@ -65,7 +67,7 @@ license **AGPL-3.0-or-later** (D79).
   `werkzeuge/boreholeml_codes.py`, mapped by official names, P15); import marks the origin. Must stay valid against
   the official XSD: `tests/test_boreholeml.py` (needs network; opengis only over https, X31).
 - Bohrungen der Länder (D91, docs/21 §4.5): `geodaten/bohrdaten.py` + `dienste.json` (services with license and
-  evidence; all 16 Länder, D98: 4 with data services, the other 12 as portal links marked *ungeprueft*; the Land from
+  evidence; all 16 Länder, D98: 5 with Bohrungen services (NW, BW, HH with Schichten; BE, BB Kopf; DGM also NI, MV; LoD2 also NI, BY, RP, MV, SN, docs/25), the other 11 as portal links marked *ungeprueft*; the Land from
   VG2500 borders in `geodaten/laender.py`, at a border both); query **only on a click**; Gegenprobe against the Gutachten; import only BoreholeML with Schichtdaten into
   `fremd.json` (codes `NW-…`, `herkunft` SGD, never exported back). Tests use the service dummy of
   `tests/test_bohrdaten.py`; two tests ask the real services (skip offline). Every request goes through
@@ -77,8 +79,8 @@ license **AGPL-3.0-or-later** (D79).
   password or with `GEO_AGENT_DIENSTE_BEARBEITEN=1`; online only saved entries are checked (no address from the
   request). `GEO_AGENT_DIENSTE` puts the registry elsewhere. Tests `tests/test_dienste_werkzeug.py` (on a copy).
   Untested links stay *ungeprueft* until someone checks them; never mark a link geprueft without a check.
-- Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (1 × 1 km, AdV profile, UTM +
-  DHHN2016) of Berlin, Brandenburg and NRW on a click (`dienste.json`, per tile the first service that has it) into
+- Gebäude (D86, D93, docs/21 §4.6): `geodaten/gebaeude.py` reads the LoD2 CityGML tiles (AdV profile, UTM +
+  DHHN2016) of BE, BB, NW, NI (1 km) and BY, RP, MV, SN (2 km, `kachel_km`) on a click (`dienste.json`, per grid and tile the first service that has it) into
   `gebaeude.json`; IFC context as `IfcBuildingElementProxy` with the license of its service, viewer button *Gebäude*; the Länder of the
   cut-out (radius = half its diagonal), the Land of the centre first.
   Tests `tests/test_gebaeude*.py`.

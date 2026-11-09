@@ -167,14 +167,20 @@ def abrufen(x0: float, y0: float, x1: float, y1: float, epsg: int, holer=None,
               if int(d["system"]) == system]
     if not am_ort:
         raise ValueError(f"kein LoD2-Dienst für diesen Ort ({ohne_dienst(*mitte, system, 'gebaeude')})")
-    ks = kacheln(x0n, y0n, x1n, y1n)
+    # jedes Land hat sein Kachelraster (1 km: NRW, Berlin, NI; 2 km mit geraden Kilometern: BY, RP, MV, SN);
+    # je Raster: je Kachel der erste Dienst, der sie hat
+    raster: dict[int, list[dict]] = {}
+    for d in am_ort:
+        raster.setdefault(int(d.get("kachel_km") or 1), []).append(d)
+    auftraege = [(km, k, gruppe) for km, gruppe in raster.items() for k in kacheln(x0n, y0n, x1n, y1n, km)]
+    ks = [k for _, k, _ in auftraege]
     if len(ks) > MAX_KACHELN:
         raise ValueError(f"Ausschnitt braucht {len(ks)} Kacheln (höchstens {MAX_KACHELN}) – Rand verkleinern")
     gebaeude: dict[str, dict] = {}
     genutzt: dict[str, dict] = {}
     fehler, ohne = [], []
-    for e, n in ks:
-        for d in am_ort:
+    for km, (e, n), gruppe in auftraege:
+        for d in gruppe:
             try:
                 daten = holer(d["url"].format(e=e, n=n), ZEIT)
                 gefunden = list(lesen(daten, d.get("format", "gml")))

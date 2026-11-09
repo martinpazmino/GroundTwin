@@ -6,6 +6,13 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **LoD2 of Bayern, Rheinland-Pfalz, Mecklenburg-Vorpommern and Sachsen** (2 × 2 km tiles: each service on its own grid)
+  and **Bohrungen with Schichtdaten from Hamburg** (BoreholeML 3.0 WFS of the Geologisches Landesamt).
+- **DGM1 vom Land for Niedersachsen and Mecklenburg-Vorpommern, LoD2 for Niedersachsen** (WCS / 1-km tiles, CC BY 4.0),
+  surveyed and checked live for all 13 Länder without a service (docs/25); first work of Antigravity, rechecked by Claude.
+- Survey of borehole sources of the Länder without a WFS and a WMS-GetFeatureInfo prototype for head data
+  (`geodaten/bohrdaten_wms.py`, BGR for 13 Länder and Bremen; not yet in the app; docs/26).
+- Plausibility report per Bohrung in the Bohrungen step (`ui/plausibilitaet.py`, docs/21 §2.1).
 - **Plausibility report per Bohrung** (`ui/plausibilitaet.py`, `plausibilitaet` in `server/arbeitsplatz.py`, *Bohrungen* step in `apps/web/src/app/schritt_bohrungen.ts`, `tests/test_plausibilitaet.py`, [docs/21 §2.1](docs/21_app_schritte_normen.md#21-plausibility-report-per-bohrung)): checks the effective (corrected) values for `reihenfolge`, `luecke`/`ueberlappung`, `beginn`, `endteufe`, `duenn`, `grundwasser`, `gok_fehlt` and `gok_nachbarn` without modifying data.
 - **Agent team** for development (`agenten/`, docs/24): one command for all checks with a short verdict, a docs
   link/number check and a session state; Gemini agents through the API (review of a diff, diagnosis of a failing check

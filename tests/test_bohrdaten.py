@@ -170,10 +170,18 @@ def test_grenze_zu_einem_land_ohne_dienst_nennt_dessen_portal():
 
 def test_kein_dienst_sagt_was_angebunden_ist_und_wo_die_daten_sind():
     satz = bd.ohne_dienst(691567.3, 5334734.3, 25832, "dgm")                          # München
-    assert satz.startswith("angebunden: Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")
+    assert satz.startswith("angebunden: Berlin, Brandenburg, Mecklenburg-Vorpommern, Niedersachsen, "
+                            "Nordrhein-Westfalen; im Portal des Landes: ")   # MV und NI seit 2026-11-07
     assert "https://" in satz and "Deutschland" not in satz
     assert bd.ohne_dienst(691567.3, 5334734.3, 25832, "bohrungen").startswith(
-        "angebunden: Baden-Württemberg, Berlin, Brandenburg, Nordrhein-Westfalen; im Portal des Landes: ")
+        "angebunden: Baden-Württemberg, Berlin, Brandenburg, Hamburg, Nordrhein-Westfalen; im Portal des Landes: ")
+
+
+def test_hamburg_hat_den_boreholeml_wfs():
+    # seit 2026-11-07: BoreholeML 3.0 mit Schichtdaten statt Portal-Link (docs/26)
+    am = bd.dienste_am_ort(565790.0, 5934030.0, 25832)                              # Hamburg, Rathaus
+    assert [(d["id"], d["art"], d["status"]) for d in am] == [("HH", "wfs-boreholeml", "geprueft")]
+    assert am[0]["lizenz"] == "dl-de/by-2.0" and "Hamburg" in bd.namensnennung(am[0])
 
 
 def test_land_ohne_datendienst_nennt_portale():
