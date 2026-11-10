@@ -13,7 +13,7 @@ from pathlib import Path
 
 from . import doku
 
-PYTHON_PFADE = ["server", "ui", "services/geodaten", "services/modeler/baugrundmodell", "agenten", "tests", "scripts"]
+PYTHON_PFADE = ["server", "ui", "services/geodaten", "services/modeler/baugrundmodell", "services/analyse", "agenten", "tests", "scripts"]
 
 
 def suiten(repo: Path, web: bool = False, schnell: bool = False) -> list[tuple[str, list[str], Path]]:
@@ -28,6 +28,8 @@ def suiten(repo: Path, web: bool = False, schnell: bool = False) -> list[tuple[s
     s.append(("pytest", [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"], repo))
     if (repo / "services/modeler/tests").exists():
         s.append(("modellierer", [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"], repo / "services/modeler"))
+    if (repo / "services/analyse/tests").exists():
+        s.append(("analyse", [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"], repo / "services/analyse"))
     if web and shutil.which("npm"):
         s.append(("web", ["npm", "run", "build"], repo / "apps/web"))
     return s

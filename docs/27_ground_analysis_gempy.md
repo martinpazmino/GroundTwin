@@ -3,7 +3,7 @@ title: "27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)"
 date: 2026-11-10
 tags: [ground-analysis, gempy, implicit-modelling, uncertainty, cross-validation, orientations, plan]
 aliases: [Ground Analysis, GemPy integration, N4 implicit model]
-status: proposal
+status: g1-built
 ---
 
 # 27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)
@@ -15,6 +15,11 @@ A new component, **Ground Analysis**, answers the question the layer model ([18]
 - what was measured with it on this project's data;
 - how to solve the missing dip of the layers;
 - the component, its place in the system and the phases.
+
+> [!IMPORTANT]
+> **Status 2026-11-10: phase G1 is built** in [`services/analyse`](../services/analyse) (package `baugrundanalyse`):
+> Kreuzprobe, Unsicherheit and virtuelle Bohrung, on the command line, without GemPy (§6.1). The app (G2) and GemPy
+> (G3) are not built.
 
 > [!NOTE]
 > Summary:
@@ -213,7 +218,7 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 
 | Phase | Content | Accepted when | GemPy |
 |---|---|---|---|
-| **G1 Kreuzprobe and Unsicherheit** | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
+| **G1 Kreuzprobe and Unsicherheit** (**built**, §6.1) | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
 | **G2 App** | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
 | **G3 Implicit method** | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
 | **G4 Structures** | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
@@ -221,6 +226,62 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 
 G1 and G2 stand on their own and give the yardstick for G3: the implicit method is kept only where the Kreuzprobe
 shows it predicts better on real projects.
+
+### 6.1 G1 as built (2026-11-10)
+
+`python -m baugrundanalyse <extraktion.json> [...] [--einheiten e.json] [--methode idw|tps] [--laeufe n] [--punkt x y]
+[--bericht analyse.json]`, with `services/modeler` on the search path. Tests: `cd services/analyse && python -m pytest
+tests` (15, offline; part of `python -m agenten pruefen` and of the CI).
+
+**Kreuzprobe** (`kreuzprobe.py`). For each Bohrung the layer model is computed without it, with the same Einheiten,
+contacts and rules (free boundaries, censoring, trimming, extent), and read at its position. Compared are measured
+values only:
+
+- exact bases: error per Einheit, per Bohrung and overall, for IDW and for the spline;
+- presence: how often an Einheit is predicted present or missing against the Bohrung;
+- Bohrungen that end inside an Einheit: whether the predicted base stays below the Endteufe;
+- the GOK, when no DGM is used.
+
+It needs three Bohrungen. Hints it gives: the other method predicts at least 20 % better; an Einheit is predicted
+wrongly present or missing; **Bohrungen their neighbours do not let expect**. For the last one, each of the three
+Bohrungen with the largest error is tested on its own: it is flagged when its error is above 0.5 m and above three
+times the median error of the others, computed *without* it. A wrong Bohrung also spoils the prediction of its
+neighbours, so comparing against the errors with it would hide it. The hint asks (*Linse, Rinne oder Fehler in Tiefen
+oder Lage?*): the cross-check cannot tell geology from a data error.
+
+**Unsicherheit** (`unsicherheit.py`). Two parts per node and Einheit, σ² = σ²(Messung) + σ²(Abstand):
+
+- *Messung*: Monte Carlo. Every exact boundary is shifted by a normal distribution (0.10 m by default; the order of
+  the boundaries in a Bohrung is kept) and the layer model is computed again. At the Bohrungen only this part is left.
+- *Abstand*: the errors e of the Kreuzprobe at the distance d to the nearest Bohrung that reaches the base give
+  c = median(e²/d) / 0.455 (a linear variogram; the median, so that one Bohrung does not decide everything), and
+  σ² = c · d at a node. With fewer than five errors for an Einheit, the value of all Einheiten together is used.
+
+This changes the plan in one point: a Monte Carlo over the contact depths alone gave about 0.06 m everywhere, also far
+from any Bohrung, which would have looked exact and been wrong. The distance part comes from the measured prediction
+error of the same model. Also reported: the volume per Einheit with its 5 % and 95 % values (measurement part only)
+and the difference to the other interpolation method. An Einheit whose base no Bohrung reaches gets no number. The
+assumptions are part of the result.
+
+**Virtuelle Bohrung** (`virtuell.py`). The model read at a point (linear in the triangle of the mesh, so with the
+DGM top, the trimming and the limited extent of lenses): Einheiten with depths, thickness, σ of the base and its
+95 % range, the nearest Bohrung and its distance. Outside the model it refuses. It is marked as *Modell, keine Messung*.
+
+Measured:
+
+| Case | Bohrungen | Kreuzprobe IDW / TPS (mean error) | Time: Kreuzprobe, Unsicherheit (100 runs) |
+|---|---|---|---|
+| `geneigt` | 9 | 0.66 m / 0.00 m (Sand: 0.78 m / 0.00 m, as in §3.1) | 0.01 s, 0.5 s |
+| `demo` | 12 | 0.51 m / 0.24 m | 0.06 s, 1.0 s |
+| `trasse` (5 km) | 51 | 0.38 m / 0.08 m | 0.7 s, 11 s |
+| Hamburg Rathaus (real, 38 Bohrungen, 26 Einheiten) | 38 | 3.24 m / 3.70 m | 2.4 s, 4.2 s (50 runs) |
+
+- A Bohrung of `geneigt` with all boundaries 3 m too deep is found with the spline (its error 3.00 m, the others
+  0.00 m without it). With IDW it is not: IDW itself is 0.6 to 1.6 m off on inclined layers.
+- Hamburg: the Kreuzprobe names one Bohrung 76 m beside the prediction of its neighbours, and reports 188 wrong
+  predictions of presence in 26 Einheiten. That is the honest picture of an automatic correlation on inner-city fill.
+- A mutation probe of the three modules: the tests reject 55 of 66 simple operator changes; the rest are limits at
+  exactly a threshold.
 
 ## 7. Risks
 

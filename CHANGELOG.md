@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Ground Analysis, phase G1** (`services/analyse`, docs/27): Kreuzprobe (how well the layer model predicts a Bohrung it
+  has not seen; names Bohrungen their neighbours do not let expect), Unsicherheit per Einheit and node, and the virtuelle
+  Bohrung at any point, on the command line.
 - **Hints of Bohrungen for Länder without their own WFS** in *Bohrungen der Länder* (WMS-GetFeatureInfo of the BGR, and
   Bremen): Lage, GOK, Teufe and a profile link where there is one. Only a hint: no Schichten, never into the model, and
   the portal of the Land stays (decision D104, docs/26).

@@ -201,7 +201,8 @@ left out) is noted.
    legend.
 2. Layer-cake: no faults, folds or repeated bodies; N4 (GemPy) for that: plan and measurements in
    [27](27_ground_analysis_gempy.md).
-3. Uncertainty only as the maximum distance to a Bohrung; next: kriging with variance per vertex and
+3. Uncertainty in the model only as the maximum distance to a Bohrung (a cross-check and a σ per node exist in
+   [27 §6.1](27_ground_analysis_gempy.md#61-g1-as-built-2026-11-10), on the command line); next: kriging with variance per vertex and
    colour in the viewer.
 4. **Coordinates are still the bottleneck** (Berlin 5/7; the rest of the corpus 0):
    [07](07_coordinates.md) and N2 Geoslice from the Längsschnitt
