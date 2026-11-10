@@ -199,7 +199,8 @@ left out) is noted.
    Schmelzwassersand) with the same class are merged → today the engineer corrects it with
    `--einheiten`; later, finer classes from the description (Nebenanteile, colour, genesis) and the
    legend.
-2. Layer-cake: no faults, folds or repeated bodies; N4 (GemPy) for that.
+2. Layer-cake: no faults, folds or repeated bodies; N4 (GemPy) for that: plan and measurements in
+   [27](27_ground_analysis_gempy.md).
 3. Uncertainty only as the maximum distance to a Bohrung; next: kriging with variance per vertex and
    colour in the viewer.
 4. **Coordinates are still the bottleneck** (Berlin 5/7; the rest of the corpus 0):
