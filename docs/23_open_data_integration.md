@@ -296,7 +296,7 @@ BGR Bohrpunktkarte, the geoportals of the Länder, Cesium, OpenStreetMap) to add
 | cjio | MIT | CityJSON, where a Land delivers it | P4 |
 | [3DCityDB](https://github.com/3dcitydb/3dcitydb) v5 + [pg2b3dm](https://github.com/Geodan/pg2b3dm) | Apache-2.0 / MIT | City models in PostGIS and their 3D Tiles, if GroundTwin ever keeps its own city database (Supabase) | Later |
 | [CesiumJS](https://github.com/CesiumGS/cesium) | Apache-2.0 | Consumer of the 3D Tiles export | P6 |
-| GemPy | EUPL-1.2 | Implicit geological modelling ([architecture](ARCHITECTURE_BAUGRUNDMODELL.md) F5); compatibility of the EUPL with the AGPL to be checked before use | Later |
+| GemPy | EUPL-1.2 | Implicit geological modelling ([architecture](ARCHITECTURE_BAUGRUNDMODELL.md) F5); the EUPL-1.2 lists the AGPL v3 as compatible; plan in [27](27_ground_analysis_gempy.md) | Planned (27) |
 
 All of these licenses can be combined with the AGPL-3.0-or-later of GroundTwin (Apache-2.0, MIT and
 BSD into AGPLv3; EUPL-1.2 to be checked). New dependencies go into `THIRD_PARTY_LICENSES.md`.

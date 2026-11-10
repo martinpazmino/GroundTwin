@@ -88,7 +88,7 @@ tests without a PDF.
 | three.js, numpy, shapely, openpyxl | MIT / BSD | No |
 | Streamlit | Apache-2.0 | No |
 | Supabase (self-hosted) | Apache-2.0 | No |
-| GemPy (if used) | **[to be verified]** | Review before integrating it |
+| GemPy (if used) | EUPL-1.2 (`gempy`, `gempy_engine`; read 2026-11-10) | Optional dependency, no code copied; the EUPL names the AGPL v3 as a compatible licence ([27 §8](27_ground_analysis_gempy.md#8-licence)) |
 
 ## 6. Other requirements once third parties come
 

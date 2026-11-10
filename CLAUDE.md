@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D104 (D100–D103 proposed).
+- `docs/11_decisions.md`: decisions D1–D106 (D100–D103, D105, D106 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -23,6 +23,12 @@ license **AGPL-3.0-or-later** (D79).
   LoD2 Umgebungsmodell, 3D Tiles, Cesium/OSM): evaluation and plan P0–P6.
 - `docs/25_laender_dgm_lod2_research.md`, `docs/26_laender_bohrungen_options.md`: DGM1/LoD2 and Bohrungen of the
   Länder without a service (survey, live checks, options; `bohrdaten_wms.py`, wired as a hint, D104).
+- `docs/27_ground_analysis_gempy.md`: component Ground Analysis. **G1 built** in `services/analyse` (package
+  `baugrundanalyse`, CLI `python -m baugrundanalyse`, tests `cd services/analyse && python -m pytest tests`): Kreuzprobe
+  (leave-one-out of the layer model, flags Bohrungen their neighbours do not let expect), Unsicherheit (Monte Carlo of
+  the boundaries + distance part calibrated by the Kreuzprobe), virtuelle Bohrung. Reads the model, never changes the
+  Bohrungen. Not built: the app (G2), GemPy as an optional third method (G3: one group per Einheit; orientation from
+  the contacts, else horizontal, always marked; D105, D106).
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
