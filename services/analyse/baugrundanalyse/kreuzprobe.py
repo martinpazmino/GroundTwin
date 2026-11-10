@@ -12,6 +12,11 @@ from baugrundmodell.flaechen import schichtmodell
 from scipy.spatial import cKDTree
 
 METHODEN = ("idw", "tps")
+NAMEN = {"idw": "IDW", "tps": "Dünnplatten-Spline"}
+
+
+def _m(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
 MIN_BOHRUNGEN = 3              # mit zwei Bohrungen sagt eine nur sich selbst voraus: keine Kreuzprobe
 PRAESENZ_MIN = 0.05            # m: ab dieser Maechtigkeit gilt eine Einheit an der Stelle als vorhergesagt
 AUFFAELLIG_MIN = 0.5           # m und ...
@@ -139,11 +144,11 @@ def _hinweise(m, k: dict) -> list[str]:
     if k["beste"] and eigene and k["beste"] != k["methode_modell"] and eigene["gesamt"]["n"]:
         b = k["methoden"][k["beste"]]["gesamt"]["mae"]
         if b < 0.8 * eigene["gesamt"]["mae"]:
-            h.append(f"Methode {k['beste']} sagt die Bohrungen besser voraus ({b:.2f} m statt "
-                     f"{eigene['gesamt']['mae']:.2f} m mittlerer Fehler) – in den Modelleinstellungen wählbar")
+            h.append(f"{NAMEN.get(k['beste'], k['beste'])} sagt die Bohrungen besser voraus ({_m(b)} m statt "
+                     f"{_m(eigene['gesamt']['mae'])} m mittlerer Fehler) – unter Erweitert als Interpolation wählbar")
     if eigene:
         if eigene["auffaellig"]:
-            liste = ", ".join(f"{a['bohrung']} ({a['fehler_m']:.2f} m)".replace(".", ",") for a in eigene["auffaellig"])
+            liste = ", ".join(f"{a['bohrung']} ({_m(a['fehler_m'])} m)" for a in eigene["auffaellig"])
             h.append(f"Bohrungen, die ihre Nachbarn nicht erwarten lassen: {liste} neben der Vorhersage – Linse, Rinne "
                      "oder Fehler in Tiefen oder Lage? prüfen")
         fv = sum(e["praesenz"]["falsch_vorhanden"] + e["praesenz"]["falsch_fehlend"] for e in eigene["einheiten"])

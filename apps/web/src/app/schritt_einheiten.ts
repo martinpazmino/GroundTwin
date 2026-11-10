@@ -4,6 +4,7 @@
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { hilfe } from "./hilfe";
+import { analyseTeil } from "./analyse";
 import { einheitenProfil } from "./profil";
 import { S, aendern, gehe, neu } from "./store";
 
@@ -150,7 +151,8 @@ export function schrittEinheiten() {
                   <tr><td>${s.bohrung}</td><td class="zahl">${zahl(s.von, 2)}–${zahl(s.bis, 2)}</td><td>${s.bodenart ?? "unklassifiziert"}</td>
                     <td>${s.beschreibung || html`<span class="leise">–</span>`}</td></tr>`)}</tbody>
               </table>
-            </section>` : nothing}` : nothing}
+            </section>` : nothing}
+          ${analyseTeil()}` : nothing}
       </div>
     </div>`;
 }

@@ -85,6 +85,15 @@ class GebaeudeAbruf(BaseModel):
     rand: float | None = None
 
 
+class Analyse(BaseModel):
+    laeufe: int = 100
+
+
+class Punkt2(BaseModel):
+    x: float
+    y: float
+
+
 class SgdAuswahl(BaseModel):
     auswahl: list[dict]
 
@@ -302,6 +311,14 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def modell(sig: str):
         erg = ap.modell(sig)
         return {**erg, "zustand": ap.zustand(sig)}
+
+    @app.post("/api/projekt/{sig}/analyse")
+    def analyse(sig: str, a: Analyse):
+        return ap.analyse(sig, a.laeufe)                   # Ground Analysis (docs/27 G2): liest das Modell
+
+    @app.post("/api/projekt/{sig}/analyse/punkt")
+    def analyse_punkt(sig: str, p: Punkt2):
+        return ap.virtuelle_bohrung(sig, p.x, p.y)
 
     @app.post("/api/projekt/{sig}/einchecken")
     def einchecken(sig: str, k: Kommentar):

@@ -27,6 +27,8 @@ from collections import Counter, OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from ui import pipeline as pl
 from ui import plausibilitaet as pb
 from ui import projekt as pj
@@ -36,6 +38,11 @@ if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
 from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
+
+_ANALYSE = str(Path(__file__).resolve().parents[1] / "services" / "analyse")
+if _ANALYSE not in sys.path:
+    sys.path.insert(0, _ANALYSE)
+import baugrundanalyse as ga  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -135,6 +142,7 @@ class Arbeitsplatz:
         self._extraktion = threading.Lock()               # der Extraktor ist nicht fuer parallele Laeufe gebaut
         self._auftraege: dict[str, Auftrag] = {}
         self._modelle: OrderedDict[str, tuple[object, dict]] = OrderedDict()
+        self._analysen: OrderedDict[str, dict] = OrderedDict()   # Ground Analysis je Modell (docs/27 G2)
         self._dgm: OrderedDict[tuple, gelaende.Raster] = OrderedDict()
         self._dgm_sperre = threading.Lock()              # Cache wird von mehreren Projekten (Threads) benutzt
 
@@ -501,6 +509,52 @@ class Arbeitsplatz:
             return {"schluessel": schluessel, "fehler": "", "bericht": bericht, "ifc": f"/dateien/modelle/{name}",
                     "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"])),
                     "nicht_im_modell": vorb.nicht_im_modell + bericht["ausgeschlossen"]}
+
+    # ------------------------------------------------------------ Ground Analysis (docs/27, G2)
+    def _analyse_rechnen(self, sig: str, laeufe: int | None) -> tuple[object, dict]:
+        """Modell (aus dem Speicher) und seine Analyse; die Analyse liest das Modell und aendert nichts.
+        laeufe None: die vorhandene Analyse des Modells, sonst 50 Laeufe."""
+        erg = self.modell(sig)
+        if erg["fehler"]:
+            raise ValueError(erg["fehler"])
+        schluessel = erg["schluessel"]
+        m = self._modelle[schluessel][0]
+        a = self._analysen.get(schluessel)
+        if laeufe is None:
+            laeufe = a["laeufe"] if a else 50
+        if a is None or a["laeufe"] < laeufe:
+            k = ga.kreuzprobe(m)                           # ValueError unter drei Bohrungen
+            u = ga.unsicherheit(m, k, laeufe=laeufe)
+            a = {"laeufe": laeufe, "schluessel": schluessel, "kreuzprobe": k, "unsicherheit": u}
+            self._analysen[schluessel] = a
+            while len(self._analysen) > MODELLE_IM_SPEICHER:
+                self._analysen.popitem(last=False)
+        self._analysen.move_to_end(schluessel)
+        return m, a
+
+    def analyse(self, sig: str, laeufe: int = 100) -> dict:
+        laeufe = max(10, min(int(laeufe), 500))
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, laeufe)
+            except ValueError as err:
+                return {"fehler": str(err)}
+            k, u = a["kreuzprobe"], a["unsicherheit"]
+            sig_knoten = u["_sigma"]
+            return {"fehler": "", "schluessel": a["schluessel"], "epsg": m.epsg,
+                    "mitte": [round(m.ursprung[0], 2), round(m.ursprung[1], 2)],
+                    "bohrungen": [{"code": b.code, "x": round(b.x, 2), "y": round(b.y, 2)} for b in m.bohrungen],
+                    "kreuzprobe": {x: v for x, v in k.items() if not x.startswith("_")},
+                    "unsicherheit": ga.unsicherheit_zusammenfassung(u),
+                    "sigma_max_m": round(float(np.nanmax(sig_knoten)), 2) if np.isfinite(sig_knoten).any() else None}
+
+    def virtuelle_bohrung(self, sig: str, x: float, y: float) -> dict:
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, None)
+                return {"fehler": "", **ga.virtuelle_bohrung(m, x, y, a["unsicherheit"])}
+            except ValueError as err:
+                return {"fehler": str(err)}
 
     def einchecken(self, sig: str, kommentar: str) -> dict:
         with self.sperre(sig):

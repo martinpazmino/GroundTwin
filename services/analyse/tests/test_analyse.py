@@ -29,7 +29,7 @@ def test_kreuzprobe_geneigte_ebenen_tps_exakt_idw_nicht():
     assert k["methoden"]["tps"]["gesamt"]["mae"] < 0.01 and k["methoden"]["tps"]["gesamt"]["n"] == 27
     assert einheit(k, "idw", "Sand")["mae"] == pytest.approx(0.78, abs=0.02)
     assert k["beste"] == "tps" and k["methode_modell"] == "idw"
-    assert any("tps sagt die Bohrungen besser voraus" in h for h in k["hinweise"])
+    assert any("Dünnplatten-Spline sagt die Bohrungen besser voraus" in h for h in k["hinweise"])
     assert einheit(k, "idw", "Ton")["n"] == 0                              # Unterkante von keiner Bohrung erreicht
     assert k["methoden"]["idw"]["gelaende"]["n"] == 9                      # ohne DGM wird auch die GOK vorhergesagt
     json.dumps({x: v for x, v in k.items() if not x.startswith("_")})
@@ -186,7 +186,7 @@ def test_kreuzprobe_endteufe_je_bohrung_und_genau_drei_bohrungen():
 def test_kreuzprobe_hinweise_nur_wenn_sie_zutreffen():
     assert kreuzprobe(modell("geneigt", methode="tps"))["hinweise"] == []   # Modell nutzt schon die bessere Methode
     h = kreuzprobe(modell("geneigt"))["hinweise"]
-    assert len(h) == 1 and "0.00 m statt 0.66 m" in h[0]
+    assert len(h) == 1 and "(0,00 m statt 0,66 m" in h[0]
 
 
 def test_unsicherheit_faktor_je_einheit_und_methodenvergleich():

@@ -184,6 +184,39 @@ export interface ProjektKurz {
 /** Reife des Projekts (docs/23 §2.3): Gutachten, Vorerkundung (nur Daten der Länder) oder gemischt. */
 export interface Reifegrad { stufe: "Gutachten" | "Vorerkundung" | "gemischt"; anzahl: Record<string, number> }
 
+/** Ground Analysis (docs/27 G2): Kreuzprobe und Unsicherheit zum gerechneten Modell. */
+export interface Fehlermass { n: number; mae: number | null; rmse: number | null; max: number | null; bias: number | null }
+export interface KreuzMethode {
+  gesamt: Fehlermass;
+  einheiten: (Fehlermass & { name: string; praesenz: { richtig: number; falsch_vorhanden: number; falsch_fehlend: number };
+              endteufe_verletzt: { bohrung: string; um_m: number }[] })[];
+  bohrungen: { code: string; abstand_naechste_m: number; n: number; mae: number | null; max: number | null; auffaellig: boolean }[];
+  gelaende: Fehlermass | null;
+  auffaellig: { bohrung: string; fehler_m: number; median_der_anderen_ohne_sie_m: number }[];
+}
+export interface UnsicherheitEinheit {
+  name: string; unterkante_bezifferbar: boolean; c_m2_je_m: number | null; kreuz_fehler: number; c_aus: string | null;
+  sigma_mittel_m: number | null; sigma_p95_m: number | null; sigma_max_m: number | null; sigma_messung_mittel_m: number | null;
+  volumen_m3: { modell: number; p5: number | null; p95: number | null };
+  methoden_differenz_m: { gegen: string; median: number | null; p95: number | null; max: number | null };
+}
+export interface AnalyseErgebnis {
+  fehler: string; schluessel?: string; epsg?: number | null; mitte?: [number, number];
+  bohrungen?: { code: string; x: number; y: number }[];
+  kreuzprobe?: { methode_modell: string; bohrungen: number; beste: string | null; hinweise: string[];
+                 methoden: Record<string, KreuzMethode> };
+  unsicherheit?: { laeufe: number; methode: string; sigma_exakt_m: number; einheiten: UnsicherheitEinheit[];
+                   hinweise: string[]; annahmen: string[] };
+  sigma_max_m?: number | null;
+}
+export interface VirtuelleBohrung {
+  fehler: string; x?: number; y?: number; gok_nhn?: number; endteufe_m?: number; naechste_bohrung?: string; abstand_m?: number;
+  schichten?: { einheit: string; bodenarten: string[]; oben_nhn: number; unten_nhn: number; tiefe_oben_m: number;
+                tiefe_unten_m: number; maechtigkeit_m: number; sigma_unten_m: number | null; unten_95_nhn: [number, number] | null;
+                unterkante_offen: boolean }[];
+  hinweise?: string[]; herkunft?: string;
+}
+
 export type Op = Record<string, unknown> & { op: string };
 export type { Kalibrierung };
 
@@ -253,6 +286,8 @@ export const api = {
     anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/sgd/uebernehmen`, json({ auswahl })),
   sgdVerwerfen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/sgd`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
+  analyse: (sig: string, laeufe = 100) => anfrage<AnalyseErgebnis>(`/api/projekt/${sig}/analyse`, json({ laeufe })),
+  analysePunkt: (sig: string, x: number, y: number) => anfrage<VirtuelleBohrung>(`/api/projekt/${sig}/analyse/punkt`, json({ x, y })),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,
 };

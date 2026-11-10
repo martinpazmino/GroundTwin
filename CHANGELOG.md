@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Ground Analysis in the app** (phase G2, docs/27 §6.2): step Einheiten → Erweitert, Kreuzprobe, Unsicherheit per Einheit
+  and virtuelle Bohrung on a click.
 - **Ground Analysis, phase G1** (`services/analyse`, docs/27): Kreuzprobe (how well the layer model predicts a Bohrung it
   has not seen; names Bohrungen their neighbours do not let expect), Unsicherheit per Einheit and node, and the virtuelle
   Bohrung at any point, on the command line.

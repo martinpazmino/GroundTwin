@@ -589,6 +589,20 @@ try {
   await warte(() => window.app.modell?.bericht?.einheiten.some((e) => e.name === "Kieslinse") && !window.app.rechnet, null, 180000);
   pruefe("Einheit umbenannt (Vorgabe) und neu gerechnet", (await stand()).modell.einheiten.includes("Kieslinse"));
   await page.screenshot({ path: `${aus}/D2_einheiten.png` });
+  // Ground Analysis (docs/27 G2): unter Erweitert, erst auf Klick; Kreuzprobe, Unsicherheit, virtuelle Bohrung
+  await page.locator("details.analyse > summary").click();
+  await page.getByRole("button", { name: "Analyse rechnen" }).click();
+  await warte(() => document.querySelectorAll("details.analyse table").length >= 2 || document.querySelector("details.analyse p.warn"), null, 120000);
+  await page.getByRole("button", { name: "Bohren" }).click();
+  await warte(() => document.querySelectorAll("details.analyse table").length >= 3 || document.querySelector("details.analyse p.warn"), null, 60000);
+  const ga = await page.evaluate(() => {
+    const d = document.querySelector("details.analyse");
+    return { tabellen: d.querySelectorAll("table").length, warn: d.querySelector("p.warn")?.textContent ?? "",
+             sigma: [...d.querySelectorAll("table")[2]?.querySelectorAll("tbody tr td:nth-child(4)") ?? []].map((x) => x.textContent) };
+  });
+  pruefe("Ground Analysis: Kreuzprobe, Unsicherheit und virtuelle Bohrung mit ± σ", ga.tabellen === 3 && !ga.warn
+    && ga.sigma.some((s) => /\d/.test(s)), JSON.stringify(ga));
+  await page.locator("details.analyse").screenshot({ path: `${aus}/D3_analyse.png` });
   await page.getByRole("button", { name: /Weiter: Modell/ }).click();
   await warte(() => window.baugrund?.geladen && !window.app.rechnet, null, 240000);
   await ruhe(3000);

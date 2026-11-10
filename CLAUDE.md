@@ -27,7 +27,8 @@ license **AGPL-3.0-or-later** (D79).
   `baugrundanalyse`, CLI `python -m baugrundanalyse`, tests `cd services/analyse && python -m pytest tests`): Kreuzprobe
   (leave-one-out of the layer model, flags Bohrungen their neighbours do not let expect), Unsicherheit (Monte Carlo of
   the boundaries + distance part calibrated by the Kreuzprobe), virtuelle Bohrung. Reads the model, never changes the
-  Bohrungen. Not built: the app (G2), GemPy as an optional third method (G3: one group per Einheit; orientation from
+  Bohrungen. **G2 built**: section *Ground Analysis* in Einheiten → Erweitert (`apps/web/src/app/analyse.ts`,
+  `POST /api/projekt/{sig}/analyse`, `/analyse/punkt`, tests `tests/test_analyse_app.py`). Not built: GemPy as an optional third method (G3: one group per Einheit; orientation from
   the contacts, else horizontal, always marked; D105, D106).
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
@@ -118,7 +119,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (54 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (55 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

@@ -434,3 +434,9 @@ ul.dienste a { color: #8fc6ff; }
 }
 
 .karte-info a { color: #8fc6ff; }
+
+/* Ground Analysis (docs/27 G2) */
+.analyse h4 { margin: 0.9rem 0 0.35rem; font-size: 0.92rem; }
+.analyse .hinweis { margin: 0.3rem 0; padding: 0.3rem 0.5rem; border-left: 3px solid #7a5518; background: rgba(180, 83, 9, 0.08); }
+.analyse input.mittel { width: 9rem; }
+.analyse .zahl.warn { color: var(--warn); }

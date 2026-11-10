@@ -3,7 +3,7 @@ title: "27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)"
 date: 2026-11-10
 tags: [ground-analysis, gempy, implicit-modelling, uncertainty, cross-validation, orientations, plan]
 aliases: [Ground Analysis, GemPy integration, N4 implicit model]
-status: g1-built
+status: g2-built
 ---
 
 # 27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)
@@ -17,9 +17,12 @@ A new component, **Ground Analysis**, answers the question the layer model ([18]
 - the component, its place in the system and the phases.
 
 > [!IMPORTANT]
-> **Status 2026-11-10: phase G1 is built** in [`services/analyse`](../services/analyse) (package `baugrundanalyse`):
-> Kreuzprobe, Unsicherheit and virtuelle Bohrung, on the command line, without GemPy (§6.1). The app (G2) and GemPy
-> (G3) are not built.
+> **Status 2026-11-10: phases G1 and G2 are built.**
+> - G1 is in [`services/analyse`](../services/analyse) (package `baugrundanalyse`): Kreuzprobe, Unsicherheit and
+>   virtuelle Bohrung, without GemPy (§6.1).
+> - G2 puts them in the app, step *Einheiten → Erweitert* (§6.2).
+>
+> GemPy (G3) is not built.
 
 > [!NOTE]
 > Summary:
@@ -219,7 +222,7 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 | Phase | Content | Accepted when | GemPy |
 |---|---|---|---|
 | **G1 Kreuzprobe and Unsicherheit** (**built**, §6.1) | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
-| **G2 App** | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
+| **G2 App** (**built**, §6.2) | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
 | **G3 Implicit method** | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
 | **G4 Structures** | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
 | **G5 Later** | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | yes |
@@ -282,6 +285,28 @@ Measured:
   predictions of presence in 26 Einheiten. That is the honest picture of an automatic correlation on inner-city fill.
 - A mutation probe of the three modules: the tests reject 55 of 66 simple operator changes; the rest are limits at
   exactly a threshold.
+
+### 6.2 G2 as built (2026-11-10)
+
+- **Server** (`server/arbeitsplatz.py`): `analyse(sig, laeufe)` and `virtuelle_bohrung(sig, x, y)`.
+  - Both use the model already computed for the step (the same key as the IFC), and keep the analysis per model key
+    (six models).
+  - Routes: `POST /api/projekt/{sig}/analyse` and `/analyse/punkt`.
+  - Nothing in the project is changed. Under three Bohrungen, or without a model, the answer is a `fehler` text.
+- **App** (`apps/web/src/app/analyse.ts`): a folded section *Ground Analysis* at the end of the Einheiten step. It is
+  computed only on a click (*Analyse rechnen*: 100 runs) and shows:
+  - the Kreuzprobe per method;
+  - the hints;
+  - per Einheit: the cross-check error, σ of the base (mean and 95 %), the presence errors, the volume with its
+    5–95 % range and the difference to the other interpolation;
+  - a virtuelle Bohrung at a Rechtswert/Hochwert, prefilled with the centre of the model.
+
+  When the model changes, the section says so instead of showing old numbers.
+- **Tests**: `tests/test_analyse_app.py` (the demo project: Kreuzprobe, Unsicherheit and the virtuelle Bohrung through
+  the API; the project unchanged; refused without a model). The end-to-end check of the app has one more check:
+  55 instead of 54.
+- **Not yet**: colour by σ in the viewer, and a click in the viewer that sets the virtuelle Bohrung. Both need σ per
+  node in the IFC or a second channel to the viewer.
 
 ## 7. Risks
 
