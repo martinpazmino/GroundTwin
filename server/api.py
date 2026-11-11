@@ -165,7 +165,8 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
 
     @app.get("/api/info")
     def info():
-        return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "lizenz": LIZENZ, "quellcode": quellcode,
+        return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "implizit": pl.implizit_verfuegbar(),
+                "lizenz": LIZENZ, "quellcode": quellcode,
                 "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]
                 + [{"name": k, "titel": v[0], "standort": True} for k, v in STANDORT_BEISPIELE.items()]}
 

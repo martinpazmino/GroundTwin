@@ -738,7 +738,8 @@ makes it again (download, GeoPackage read with sqlite3, UTM 32 → WGS84 with py
 - Editor of the *Vorgabe*: rename, merge Bodenarten, reorder.
 - Log of all Bohrungen per Einheit, in m NHN.
 - When an Einheit is chosen, all the **descriptions from the PDF** that make it up.
-- Model settings (IDW/TPS, Puffer, Raster, Basis, relative GOK, Gelände aus dem DGM), each with its **?**, folded
+- Model settings (IDW/TPS, *implizit* with GemPy when installed, Puffer, Raster, Basis, relative GOK, Gelände aus
+  dem DGM), each with its **?**, folded
   under *Erweitert* below the Einheiten (open as soon as one differs from the default).
 - **Ground Analysis** (folded, computed only on a click; [27 §6.2](27_ground_analysis_gempy.md#62-g2-as-built-2026-11-10)):
   - the Kreuzprobe for IDW and the spline, with the method of the model and the best one marked;

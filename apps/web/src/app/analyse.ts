@@ -8,7 +8,7 @@ import { S, neu, versuchen } from "./store";
 
 const zahl = (v: number | null | undefined, s = 2) =>
   v === null || v === undefined ? "–" : v.toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s });
-const NAME: Record<string, string> = { idw: "IDW", tps: "Dünnplatten-Spline" };
+const NAME: Record<string, string> = { idw: "IDW", tps: "Dünnplatten-Spline", implizit: "implizit (GemPy)" };
 
 let ergebnis: AnalyseErgebnis | null = null;     // zum Modell mit diesem Schlüssel
 let fuer = "";

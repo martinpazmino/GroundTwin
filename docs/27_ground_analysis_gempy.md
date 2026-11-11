@@ -3,7 +3,7 @@ title: "27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)"
 date: 2026-11-10
 tags: [ground-analysis, gempy, implicit-modelling, uncertainty, cross-validation, orientations, plan]
 aliases: [Ground Analysis, GemPy integration, N4 implicit model]
-status: g2-built
+status: g3-built
 ---
 
 # 27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)
@@ -17,12 +17,13 @@ A new component, **Ground Analysis**, answers the question the layer model ([18]
 - the component, its place in the system and the phases.
 
 > [!IMPORTANT]
-> **Status 2026-11-10: phases G1 and G2 are built.**
+> **Status 2026-11-11: phases G1, G2 and G3 are built.**
 > - G1 is in [`services/analyse`](../services/analyse) (package `baugrundanalyse`): Kreuzprobe, Unsicherheit and
 >   virtuelle Bohrung, without GemPy (§6.1).
 > - G2 puts them in the app, step *Einheiten → Erweitert* (§6.2).
+> - G3 adds the implicit method with GemPy as an optional third interpolation (§6.3).
 >
-> GemPy (G3) is not built.
+> G4 (structures set by the engineer) is not built.
 
 > [!NOTE]
 > Summary:
@@ -223,7 +224,7 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 |---|---|---|---|
 | **G1 Kreuzprobe and Unsicherheit** (**built**, §6.1) | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
 | **G2 App** (**built**, §6.2) | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
-| **G3 Implicit method** | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
+| **G3 Implicit method** (**built**, §6.3) | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
 | **G4 Structures** | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
 | **G5 Later** | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | yes |
 
@@ -307,6 +308,66 @@ Measured:
   55 instead of 54.
 - **Not yet**: colour by σ in the viewer, and a click in the viewer that sets the virtuelle Bohrung. Both need σ per
   node in the IFC or a second channel to the viewer.
+
+### 6.3 G3 as built (2026-11-11)
+
+**Design.** GemPy is a third interpolator of the layer model. It is not a separate model.
+
+- The modeler has a registry, `flaechen.ERWEITERUNGEN`, and never imports GemPy.
+  [`baugrundanalyse/implizit.py`](../services/analyse/baugrundanalyse/implizit.py) registers `"implizit"` when GemPy
+  is installed.
+- Each surface (GOK without a DGM, then each base) gets its own scalar field: one group with one element, so every
+  Einheit can pinch out (§3.2).
+- The field is read in vertical columns at the nodes of the TIN. The crossing is found in three passes, 24, 12 and
+  12 steps: at most 3.5 cm from 48/16/16, in half the time.
+- Everything else stays the layer model: free boundaries, censoring, trimming, extent of lenses, closed solids, IFC.
+
+**Orientation** (D106, `orientierung()`):
+
+- 3 or more contacts not in a line: the plane through them.
+- Contacts in a line (a Trasse): the dip along the line, horizontal across it.
+- Steeper than 30°, or fewer than 3 contacts: horizontal.
+
+The report carries the source, the dip and the dip direction per Einheit (`parameter.orientierung`). The IFC names
+the method.
+
+**Checks per surface:**
+
+- exactly one crossing per column, and at most 5 cm off at the data;
+- otherwise that surface is computed by the thin-plate spline, with a hint naming why (folded, or off at the
+  Bohrungen);
+- the data values are set exactly afterwards.
+
+**Ground Analysis:**
+
+- The Kreuzprobe adds the method of the model, so for an implicit model it compares IDW, TPS and implizit.
+- The Monte Carlo of the Unsicherheit uses the spline as a stand-in: 100 runs with GemPy take minutes. This is stated
+  in the assumptions.
+
+**Optional install:**
+
+- `requirements-analyse.txt` (`gempy`, `gempy_engine`, `python-dotenv`, pinned in `constraints.txt`);
+- Docker `--build-arg ANALYSE=1`;
+- a CI job of its own (*Ground Analysis mit GemPy*).
+
+Without GemPy, the choice *Implizit (GemPy)* in *Einheiten → Erweitert* is greyed out with the reason, and a project
+set to it says so instead of computing.
+
+**Measured** (mean / maximum error of the Kreuzprobe in m; model and Kreuzprobe times with GemPy):
+
+| Case | IDW | TPS | implizit | Model, Kreuzprobe |
+|---|---|---|---|---|
+| `geneigt` | 0.66 / 1.21 | 0.00 / 0.00 | 0.00 / 0.01 | 6 s, 6 s |
+| `auskeilen` | 0.69 / 1.57 | 0.22 / 1.24 | 0.22 / 1.19 | 8 s, 26 s |
+| `linse` | 0.42 / 2.25 | 0.15 / 2.25 | 0.15 / 2.24 | 6 s, 12 s |
+| `demo` | 0.51 / 1.95 | 0.24 / 1.84 | 0.24 / 1.70 | 12 s, 39 s |
+
+All four: contacts exact (0.000 m), all solids closed, the IFC valid in METRE (test).
+
+**Reading.** On layer-cake data the implicit method equals the spline: the same mean error, a slightly smaller
+maximum. It costs 10 to 100 times the time. It earns its place only where the spline cannot follow the geometry:
+structures of G4 (an eroding Rinne, onlap). So it stays optional and is never the default (D105). Which method fits a
+site is the job of the Kreuzprobe.
 
 ## 7. Risks
 

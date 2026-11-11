@@ -29,6 +29,20 @@ jobs:
       - run: python -m pytest tests -q
         working-directory: services/analyse
 
+  implizit:
+    name: Ground Analysis mit GemPy (optional, docs/27 G3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-analyse.txt -c constraints.txt
+      - run: python -m pytest tests -q
+        working-directory: services/analyse
+      - run: python -m pytest tests/test_analyse_app.py -q
+
   web:
     name: Oberfläche (TypeScript, Vite)
     runs-on: ubuntu-latest

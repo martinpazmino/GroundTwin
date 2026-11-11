@@ -12,7 +12,8 @@ from scipy.spatial import cKDTree
 
 from . import __version__
 from .einheiten import (Bohrung, Einheit, Kontakt, bohrungen_aus_extraktion, kontakte, korrelieren)
-from .flaechen import MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, netz, schichtmodell
+from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, hinweise_holen, hinweise_starten, netz,
+                       schichtmodell)
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe
 from .koerper import koerper, pruefen, volumen_prismen
 from .normen import deuten, farbinfo
@@ -133,13 +134,18 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
         gel.update(gelaende_info or {})
         if gel.get("hinweis"):
             hinweise.append(gel["hinweis"])
+    hinweise_starten()
     sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben)
+    hinweise += hinweise_holen()
+    erweiterung = ERWEITERUNGEN.get(methode)
     m = Modell(epsg, ursprung, bohrungen, ausgeschlossen, einheiten, ks, punkte, dreiecke, rand, sm["flaechen"],
                sm["abstand"], basis, {"methode": methode, "raster_m": raster, "puffer_m": puffer,
                                       "basis_nhn": basis, "flaeche_m2": float(flaeche), "ausdehnung_m": ausdehnung,
                                       "durchmesser_auto_m": standard_durchmesser(ausdehnung),
                                       "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel,
-                                      "reifegrad": grad, "herkunft": je_herkunft},
+                                      "reifegrad": grad, "herkunft": je_herkunft,
+                                      **({"orientierung": erweiterung.beschreiben(einheiten, ks, bohrungen)}
+                                         if hasattr(erweiterung, "beschreiben") else {})},
                hinweise=hinweise, max_abweichung=sm["max_abweichung_bohrungen"],
                zensurpunkte=sum(len(z) for z in sm["zensur"]), ausgeduennt=sm["ausgeduennt"], zuordnung=zuordnung)
     m.dgm = gelaende if oben is not None else None
@@ -269,7 +275,9 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
     p = m.parameter
     aus.geomodell(f"Baugrundmodell (Layer-Cake, {p['methode'].upper()})", einheiten, {
         "Verfahren": "Layer-Cake: Einheiten per Schichtfolgen-Korrelation, Flaechen exakt an den Bohrungen",
-        "Interpolation": {"idw": "IDW p=2", "tps": "Duennplatten-Spline"}.get(p["methode"], p["methode"]),
+        "Interpolation": {"idw": "IDW p=2", "tps": "Duennplatten-Spline",
+                          "implizit": "implizit (GemPy, ein Skalarfeld je Flaeche; Orientierung siehe Bericht)"
+                          }.get(p["methode"], p["methode"]),
         "Raster_m": round(p["raster_m"], 2), "Puffer_m": round(p["puffer_m"], 1),
         "Modellbasis_NHN": round(m.basis, 2), "Lagebezug": f"EPSG:{m.epsg}" if m.epsg else "lokal (ohne Georeferenz)",
         "Bohrungen_im_Modell": ", ".join(b.code for b in m.bohrungen),

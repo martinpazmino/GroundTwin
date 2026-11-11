@@ -236,7 +236,7 @@ async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
 const json = (daten: unknown): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(daten) });
 
 export const api = {
-  info: () => anfrage<{ version: string; ocr: boolean; lizenz: string; quellcode: string;
+  info: () => anfrage<{ version: string; ocr: boolean; implizit?: boolean; lizenz: string; quellcode: string;
                         beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
   beispiel: (name: string) =>

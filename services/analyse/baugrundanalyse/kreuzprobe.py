@@ -12,7 +12,7 @@ from baugrundmodell.flaechen import schichtmodell
 from scipy.spatial import cKDTree
 
 METHODEN = ("idw", "tps")
-NAMEN = {"idw": "IDW", "tps": "Dünnplatten-Spline"}
+NAMEN = {"idw": "IDW", "tps": "Dünnplatten-Spline", "implizit": "implizit (GemPy)"}
 
 
 def _m(x: float) -> str:
@@ -81,7 +81,11 @@ def _auffaellige(m, methode: str, groesste: dict[int, float]) -> list[dict]:
     return out
 
 
-def kreuzprobe(m, methoden: tuple[str, ...] = METHODEN) -> dict:
+def kreuzprobe(m, methoden: tuple[str, ...] | None = None) -> dict:
+    """methoden: Vorgabe IDW und Spline, dazu die Methode des Modells (z. B. implizit)."""
+    if methoden is None:
+        eigene = m.parameter.get("methode", "idw")
+        methoden = METHODEN + ((eigene,) if eigene not in METHODEN else ())
     nb, n = len(m.bohrungen), len(m.einheiten)
     if nb < MIN_BOHRUNGEN:
         raise ValueError(f"Kreuzprobe braucht mindestens {MIN_BOHRUNGEN} Bohrungen im Modell (vorhanden: {nb})")

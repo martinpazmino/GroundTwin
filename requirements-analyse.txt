@@ -1,0 +1,5 @@
+# Optional (docs/27 G3): Ground Analysis mit der impliziten Methode (GemPy, EUPL-1.2). Ohne diese Datei laeuft alles;
+# nur die Interpolation "implizit" ist dann gesperrt. Installieren: pip install -r requirements-analyse.txt -c constraints.txt
+gempy
+gempy_engine
+python-dotenv

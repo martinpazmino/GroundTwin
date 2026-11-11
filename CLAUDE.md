@@ -28,8 +28,12 @@ license **AGPL-3.0-or-later** (D79).
   (leave-one-out of the layer model, flags Bohrungen their neighbours do not let expect), Unsicherheit (Monte Carlo of
   the boundaries + distance part calibrated by the Kreuzprobe), virtuelle Bohrung. Reads the model, never changes the
   Bohrungen. **G2 built**: section *Ground Analysis* in Einheiten → Erweitert (`apps/web/src/app/analyse.ts`,
-  `POST /api/projekt/{sig}/analyse`, `/analyse/punkt`, tests `tests/test_analyse_app.py`). Not built: GemPy as an optional third method (G3: one group per Einheit; orientation from
-  the contacts, else horizontal, always marked; D105, D106).
+  `POST /api/projekt/{sig}/analyse`, `/analyse/punkt`, tests `tests/test_analyse_app.py`). **G3 built**: interpolation
+  `implizit` (`baugrundanalyse/implizit.py` registers into `baugrundmodell.flaechen.ERWEITERUNGEN`; one scalar field per
+  surface; orientation from the contacts, along a line, else horizontal, in `parameter.orientierung`; folded or
+  inexact surface → spline with a hint); optional `requirements-analyse.txt` (GemPy, EUPL-1.2), Docker
+  `--build-arg ANALYSE=1`, CI job; tests `services/analyse/tests/test_implizit.py` (skip without GemPy). Measured: equal
+  to the spline on layer-cake data, 10–100× slower; never the default (D105, D106). Not built: G4 (structures).
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 

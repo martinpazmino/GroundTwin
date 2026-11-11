@@ -57,6 +57,8 @@ def unsicherheit(m, kreuz: dict | None = None, laeufe: int = 100, sigma_exakt: f
     kreuz = kreuz or kreuzprobe(m)
     n, nb = len(m.einheiten), len(m.bohrungen)
     methode = m.parameter.get("methode", "idw")
+    # implizit: 100 Laeufe mit GemPy dauern Minuten; die Messstreuung rechnet der Spline als Stellvertreter
+    mc_methode = "tps" if methode not in ("idw", "tps") else methode
     xy_b = m.punkte[:nb]
     oben = m.flaechen[0]
     rng = np.random.default_rng(seed)
@@ -64,7 +66,7 @@ def unsicherheit(m, kreuz: dict | None = None, laeufe: int = 100, sigma_exakt: f
     quadrat = np.zeros_like(m.flaechen)
     volumen = np.zeros((laeufe, n))
     for r in range(laeufe):
-        f = schichtmodell(m.bohrungen, _verschoben(m, rng, sigma_exakt), m.punkte, xy_b, m.basis, methode, oben=oben)["flaechen"]
+        f = schichtmodell(m.bohrungen, _verschoben(m, rng, sigma_exakt), m.punkte, xy_b, m.basis, mc_methode, oben=oben)["flaechen"]
         summe += f
         quadrat += f * f
         volumen[r] = [volumen_prismen(m.punkte, m.dreiecke, f[j], f[j + 1]) for j in range(n)]
@@ -81,7 +83,7 @@ def unsicherheit(m, kreuz: dict | None = None, laeufe: int = 100, sigma_exakt: f
         d_stuetz[j + 1] = baum.query(m.punkte)[0]
         abstand[j + 1] = np.sqrt(c[j] * d_stuetz[j + 1])
     sigma = np.sqrt(messung ** 2 + abstand ** 2)
-    andere = "tps" if methode == "idw" else "idw"
+    andere = "tps" if methode != "tps" else "idw"
     f2 = schichtmodell(m.bohrungen, m.kontakte, m.punkte, xy_b, m.basis, andere, oben=oben)["flaechen"]
     einheiten = []
     for j, e in enumerate(m.einheiten):
@@ -117,7 +119,9 @@ def unsicherheit(m, kreuz: dict | None = None, laeufe: int = 100, sigma_exakt: f
                          "zwischen den Bohrungen wächst die Streuung mit der Wurzel des Abstands zur nächsten Bohrung, "
                          "die die Unterkante erreicht; der Faktor stammt aus der Kreuzprobe dieses Modells",
                          "Gelände (GOK, DGM) und Lage der Bohrungen gelten als gegeben",
-                         "die Volumenspanne enthält nur den Anteil der Messung, nicht den des Abstands"],
+                         "die Volumenspanne enthält nur den Anteil der Messung, nicht den des Abstands"]
+            + (["Messstreuung mit dem Dünnplatten-Spline gerechnet (implizit wäre für 100 Läufe zu langsam)"]
+               if mc_methode != methode else []),
             "_sigma": sigma, "_sigma_messung": messung, "_sigma_abstand": abstand, "_abstand_stuetz": d_stuetz}
 
 

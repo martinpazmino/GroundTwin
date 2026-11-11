@@ -16,6 +16,8 @@ and the web-ifc WASM); everything else is installed with `pip` / `npm`.
 | Pillow | images | MIT-CMU (HPND) |
 | [certifi](https://github.com/certifi/python-certifi) | root certificates (Mozilla) for the services of the Länder | MPL-2.0 |
 | RapidOCR, OpenCV (optional, `requirements-ocr.txt`) | OCR of scans | Apache-2.0 |
+| [GemPy](https://github.com/gempy-project/gempy), `gempy_engine` (optional, `requirements-analyse.txt`) | implicit interpolation of the Ground Analysis (docs/27 G3); used as a library, no code copied | EUPL-1.2 (lists the AGPL v3 as compatible, Art. 5 and appendix) |
+| python-dotenv (with GemPy) | dependency of `gempy_engine` | BSD-3-Clause |
 | [That Open Engine](https://github.com/ThatOpen) (`@thatopen/components`, `-front`, `fragments`, `ui`, `ui-obc`) | 3D viewer and BIM interface | MIT |
 | three.js, camera-controls, iconify-icon | 3D, camera, icons | MIT |
 | [web-ifc](https://github.com/ThatOpen/engine_web-ifc) (`dist/vendor/*.wasm`) | reading IFC in the browser | MPL-2.0 |

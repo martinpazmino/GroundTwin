@@ -676,8 +676,8 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
     elif art == "einstellungen":
         felder = Einstellungen.__dataclass_fields__
         neu = {k: v for k, v in op.items() if k in felder}
-        if neu.get("methode", "idw") not in ("idw", "tps"):
-            raise ValueError("Interpolation: idw oder tps")
+        if neu.get("methode", "idw") not in ("idw", "tps", "implizit"):
+            raise ValueError("Interpolation: idw, tps oder implizit")
         p.einstellungen = {**p.einstellungen, **neu}
     elif art == "durchmesser":
         d = zahl(op.get("wert"))

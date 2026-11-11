@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Implicit interpolation with GemPy** (Ground Analysis G3, docs/27 §6.3), optional (`requirements-analyse.txt`): one
+  scalar field per surface, orientation from the contacts, exact at the Bohrungen, spline for folded surfaces.
 - **Ground Analysis in the app** (phase G2, docs/27 §6.2): step Einheiten → Erweitert, Kreuzprobe, Unsicherheit per Einheit
   and virtuelle Bohrung on a click.
 - **Ground Analysis, phase G1** (`services/analyse`, docs/27): Kreuzprobe (how well the layer model predicts a Bohrung it

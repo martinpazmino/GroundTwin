@@ -47,6 +47,9 @@ function einstellungen() {
         <span>Interpolation ${hilfe("methode")}</span>
         <label class="inline"><input type="radio" name="methode" .checked=${e.methode === "idw"} @change=${() => setzen("methode", "idw")}> IDW</label>
         <label class="inline"><input type="radio" name="methode" .checked=${e.methode === "tps"} @change=${() => setzen("methode", "tps")}> Dünnplatten-Spline</label>
+        <label class="inline" title=${S.info?.implizit ? "GemPy: je Fläche ein Skalarfeld, Orientierung aus den Kontakten (docs/27)" : "GemPy ist auf diesem Server nicht installiert (requirements-analyse.txt)"}><input
+          type="radio" name="methode" ?disabled=${!S.info?.implizit && e.methode !== "implizit"} .checked=${e.methode === "implizit"}
+          @change=${() => setzen("methode", "implizit")}> Implizit (GemPy)</label>
       </div>
       ${autoFeld("puffer", "Puffer", "m", Number(p.puffer_m ?? 20), "puffer")}
       ${autoFeld("raster", "Raster", "m", Number(p.raster_m ?? 5), "raster")}

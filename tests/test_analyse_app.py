@@ -49,3 +49,21 @@ def test_analyse_ohne_modell_oder_mit_zu_wenig_bohrungen(client):
     assert a["fehler"] and "Bohrung" in a["fehler"]
     v = client.post(f"/api/projekt/{sig}/analyse/punkt", json={"x": 600000.0, "y": 5800000.0}).json()
     assert v["fehler"]
+
+
+def test_interpolation_implizit_ueber_die_app(client):
+    """docs/27 G3: mit GemPy ist "implizit" wählbar, das Modell bleibt exakt und nennt die Orientierung je Einheit."""
+    info = client.get("/api/info").json()
+    sig = client.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
+    r = client.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "einstellungen", "methode": "implizit"}]})
+    assert r.status_code == 200, r.text
+    m = client.post(f"/api/projekt/{sig}/modell").json()
+    if not info["implizit"]:                                     # ohne GemPy: klare Meldung statt Modell
+        assert "GemPy" in m["fehler"]
+        return
+    assert m["fehler"] == "" and m["bericht"]["parameter"]["methode"] == "implizit"
+    assert m["bericht"]["pruefungen"]["max_abweichung_an_bohrungen_m"] <= 0.05
+    assert m["bericht"]["pruefungen"]["alle_koerper_geschlossen"]
+    assert len(m["bericht"]["parameter"]["orientierung"]) == len(m["bericht"]["einheiten"])
+    falsch = client.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "einstellungen", "methode": "kriging"}]})
+    assert falsch.status_code == 400 and "implizit" in falsch.text
