@@ -781,6 +781,42 @@ try {
     await page.screenshot({ path: `${aus}/F_standort.png` });
   }
 
+  // ---------------------------------------------------------------- H: Homogenbereiche (VOB/C, docs/28)
+  {
+    const post = (pfad, daten) => page.request.post(url + pfad, { data: daten }).then((r) => r.json());   // mit Anmeldung
+    const hsig = (await post("/api/beispiel", { name: "demo" })).projekt;
+    await post(`/api/projekt/${hsig}/aendern`, { ops: [{ op: "homogenbereiche", atv: "DIN 18300", zuordnung: null }] });
+    await page.goto(`${url}/#/${hsig}/einheiten`);
+    await page.reload();
+    await page.waitForSelector("table.einheiten", { timeout: 240000 });
+    await ruhe(800);
+    const hb = page.locator("details.homogenbereiche");
+    if (!(await hb.evaluate((d) => d.open))) await hb.locator("summary").click();
+    await page.getByRole("button", { name: /Vorschlag: je Einheit/ }).click();
+    await page.waitForFunction(() => Object.keys(window.app?.z?.homogenbereiche?.["DIN 18300"] ?? {}).length > 0, null, { timeout: 30000 });
+    const felder = page.locator("table.hb-zuordnung input");
+    const zweiter = await felder.nth(1).inputValue();
+    await felder.nth(2).fill(zweiter);
+    await felder.nth(2).press("Tab");
+    await page.waitForFunction((b) => Object.values(window.app?.z?.homogenbereiche?.["DIN 18300"] ?? {}).filter((x) => x === b).length === 2,
+      zweiter, { timeout: 30000 });
+    const kennwerte = await page.locator("ul.hb-kennwerte li").count();
+    const nEinheiten = await felder.count();
+    await page.getByLabel(/Homogenbereiche DIN 18300/).check();
+    await page.waitForFunction(() => window.app?.z?.hb_modell === "DIN 18300", null, { timeout: 30000 });
+    await page.screenshot({ path: `${aus}/H_homogenbereiche.png` });
+    await page.goto(`${url}/#/${hsig}/modell`);
+    await page.reload();
+    await warte(() => window.baugrund?.geladen && !window.app?.rechnet && window.baugrund.einheiten.length > 0, null, 240000);
+    const v = await page.evaluate(() => ({ einheiten: window.baugrund.einheiten,
+      liste: window.baugrund.modellname.startsWith("Homogenbereiche DIN 18300") }));
+    pruefe("Homogenbereiche DIN 18300: Zuordnung, 13 Kennwerte, IFC aus Bereichen im Viewer",
+      kennwerte === 13 && v.einheiten.includes(zweiter) && v.einheiten.length === nEinheiten - 1 && v.liste,
+      JSON.stringify({ kennwerte, ...v }));
+    await page.screenshot({ path: `${aus}/H_modell.png` });
+    await post(`/api/projekt/${hsig}/aendern`, { ops: [{ op: "homogenbereiche", atv: "DIN 18300", zuordnung: null }] });
+  }
+
   // ---------------------------------------------------------------- G: Werkzeug „Dienste der Länder“ (ohne Speichern)
   await page.goto(`${url}/dienste.html`);
   await page.waitForSelector("table.matrix .chip", { timeout: 60000 });

@@ -15,7 +15,8 @@ from .einheiten import (Bohrung, Einheit, Kontakt, bohrungen_aus_extraktion, kon
 from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, hinweise_holen, hinweise_starten, netz,
                        orientierungen_setzen,
                        schichtmodell)
-from .ifc4x3 import IfcAusgabe, farbe, hexfarbe
+from . import homogenbereiche as hb
+from .ifc4x3 import IfcAusgabe, farbe, hexfarbe, rgb_aus
 from .koerper import koerper, pruefen, volumen_prismen
 from .normen import deuten, farbinfo
 from .umgebung import UMGEBUNG_STANDARD, oberkante, ring
@@ -247,6 +248,89 @@ def einheit_schichten(m: Modell, j: int) -> list[dict]:
     return out
 
 
+def schicht_einheiten(m: Modell, b: Bohrung) -> dict[int, list[str]]:
+    """Index der Schicht im PDF -> Einheiten, in denen sie an dieser Bohrung liegt (Ueberdeckung > 1 cm).
+
+    Nach der Hoehe, nicht nach dem Abschnitt: ein Abschnitt kann sich auf zwei Einheiten verteilen (Sand ueber und
+    unter einer Kieslinse, die hier fehlt)."""
+    bi = next(i for i, x in enumerate(m.bohrungen) if x is b)
+    out: dict[int, list[str]] = {}
+    for k, s in enumerate(b.schichten):
+        oben, unten = b.gok - s["von"], b.gok - s["bis"]
+        for j, e in enumerate(m.einheiten):
+            ok, uk = float(m.flaechen[j][bi]), float(m.flaechen[j + 1][bi])
+            if min(oben, ok) - max(unten, uk) > 0.01:
+                out.setdefault(k, []).append(e.name)
+    return out
+
+
+def _schicht_psets(hb_psets: dict[str, dict], einheiten: list[str]) -> dict:
+    """Psets einer Bodenschicht: die ihrer Einheit; liegt sie in mehreren, je ATV alle Bereiche mit Hinweis."""
+    if len(einheiten) == 1:
+        return hb_psets.get(einheiten[0], {})
+    out = {}
+    for name in (hb_psets.get(einheiten[0]) if einheiten else {}) or {}:
+        ps = [hb_psets[e][name] for e in einheiten]
+        bereiche = list(dict.fromkeys(p["Homogenbereich"] for p in ps))
+        out[name] = {**ps[0], "Homogenbereich": " / ".join(bereiche),
+                     "Einheiten_im_Bereich": ", ".join(einheiten),
+                     "Hinweis": f"Schicht liegt an dieser Bohrung in {len(einheiten)} Einheiten: {', '.join(einheiten)}"}
+    return out
+
+
+def _hb_pset(code: str, je: dict[str, str], einheit: str) -> dict:
+    """Pset je ATV: welcher Homogenbereich, welche Kennwerte die ATV verlangt (Werte stehen im Gutachten)."""
+    bereich = je.get(einheit)
+    return {"ATV": code, "Gewerk": hb.gewerk(code), "Homogenbereich": bereich or "nicht zugeordnet",
+            "Einheiten_im_Bereich": ", ".join(e for e, b in je.items() if b == bereich) if bereich else einheit,
+            "Kennwerte_erforderlich": hb.kennwerte_text(code),
+            "Quelle_Kennwerte": "VOB/C-Matrix der Kennwerte je ATV (homogenbereiche.json, docs/28)"}
+
+
+def _als_homogenbereiche(m: Modell, einheiten: list[dict], code: str, je: dict[str, str]) -> tuple[list[dict], list[str]]:
+    """Die Koerper der Einheiten je Homogenbereich zu einem Stratum zusammenfassen (Geometrie unveraendert)."""
+    nach_name = {e["name"]: e for e in einheiten}
+    gruppen, hinweise = hb.bereiche(je, [e["name"] for e in einheiten])
+    out = []
+    for n, g in enumerate(gruppen):
+        teile = [nach_name[x] for x in g["einheiten"]]
+        if g["bereich"] is None:                          # ohne Bereich: Einheit bleibt, markiert
+            e = dict(teile[0])
+            e["name"] = f"{e['name']} (ohne Homogenbereich)"
+            e["beschreibung"] = f"Einheit ohne Homogenbereich ({code})"
+            e["eigenschaften"] = {**e["eigenschaften"], "Reihenfolge": n + 1}      # Reihenfolge im Bereichsmodell
+            out.append(e)
+            continue
+        ks = [m.koerper[t["_j"]] for t in teile]
+        out.append({
+            "name": g["bereich"], "rgb": rgb_aus(hb.farbe(n)), "beschreibung": f"Homogenbereich {code} {g['bereich']}",
+            "teile": [(t["knoten"], t["flaechen"], t["geschlossen"]) for t in teile],
+            "geschlossen": all(t["geschlossen"] for t in teile),
+            "pset": hb.pset_name(code),
+            "eigenschaften": {
+                **_hb_pset(code, je, g["einheiten"][0]),
+                "Bodenarten": ", ".join(dict.fromkeys(b for k in ks for b in k["bodenarten"])),
+                "Volumen_m3": round(sum(k["volumen_m3"] for k in ks), 1),
+                "Koerper": len(teile), "Farbe": hb.farbe(n), "Reihenfolge": n + 1,
+                "Benennungen": "; ".join(t["eigenschaften"]["Benennungen"] for t in teile if t["eigenschaften"]["Benennungen"]),
+                "Hinweise": "; ".join(h for t in teile for h in [t["eigenschaften"]["Hinweise"]] if h)},
+            "psets": {"CPset_Modelleinheiten": {
+                f"Einheit_{i + 1}": f"{t['name']} ({', '.join(m.koerper[t['_j']]['bodenarten'])}, "
+                                    f"{m.koerper[t['_j']]['volumen_m3']:.1f} m3)" for i, t in enumerate(teile)},
+                **{name: w for name, w in _andere_atv(teile).items() if name != hb.pset_name(code)}}})
+    return out, hinweise
+
+
+def _andere_atv(teile: list[dict]) -> dict:
+    """Psets der anderen ATV fuer einen Bereich: nur wenn alle Einheiten dort im selben Bereich liegen."""
+    out = {}
+    for name in (teile[0].get("psets") or {}):
+        werte = [t["psets"][name]["Homogenbereich"] for t in teile]
+        if len(set(werte)) == 1:
+            out[name] = teile[0]["psets"][name]
+    return out
+
+
 def _benennungen(schichten: list[dict]) -> str:
     """Benennungen nach Norm mit Haeufigkeit: 'Mittelsand, schwach schluffig (3x); Feinsand (1x)'."""
     zaehler: dict[str, int] = {}
@@ -261,14 +345,23 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   projekt: str = "Baugrundmodell aus Gutachten", pruefstand: str | None = None,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
                   umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
-                  gebaeude_info: dict | None = None) -> dict:
+                  gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
+                  nur_homogenbereiche: str | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
     durchmesser: Saeulen aller Bohrungen in m (None = automatisch nach Modellgroesse); durchmesser_je: je Code.
     umgebung: Gelaende aus dem DGM so weit um das Modellgebiet (m; 0 = keines), nur wenn die Oberkante aus dem DGM kommt.
     gebaeude: LoD2-Gebaeude der Umgebung im System des Modells (geodaten.gebaeude), gebaeude_info: Quelle und Lizenz.
+    homogenbereiche: {ATV: {Einheit: Bereich}} (docs/28): je Einheit und Bodenschicht ein Pset je ATV.
+    nur_homogenbereiche: ATV, nach der das Modell aus Homogenbereichen statt Einheiten besteht (gleiche Koerper, je
+    Bereich zusammengefasst; Einheiten ohne Bereich bleiben einzeln und sind markiert).
     """
+    homogenbereiche = hb.pruefen(homogenbereiche) or {}
+    if nur_homogenbereiche and nur_homogenbereiche not in homogenbereiche:
+        raise ValueError(f"keine Homogenbereiche für {nur_homogenbereiche} zugeordnet")
+    namen = [e.name for e in m.einheiten]
+    hb_psets = {e: {hb.pset_name(code): _hb_pset(code, je, e) for code, je in homogenbereiche.items()} for e in namen}
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
     n = len(m.einheiten)
@@ -295,9 +388,17 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                 "Beschreibungen": " | ".join(f"{s['bohrung']} {s['von']:.2f}-{s['bis']:.2f} m: {s['beschreibung'] or '-'}"
                                              for s in schichten),
                 "Benennungen": _benennungen(schichten),
-                "Hinweise": "; ".join(k["hinweise"])}})
+                "Hinweise": "; ".join(k["hinweise"])},
+            "psets": hb_psets.get(k["name"], {}), "_j": j})
     p = m.parameter
-    aus.geomodell(f"Baugrundmodell (Layer-Cake, {p['methode'].upper()})", einheiten, {
+    titel = f"Baugrundmodell (Layer-Cake, {p['methode'].upper()})"
+    hb_hinweise: list[str] = []
+    if nur_homogenbereiche:
+        einheiten, hb_hinweise = _als_homogenbereiche(m, einheiten, nur_homogenbereiche, homogenbereiche[nur_homogenbereiche])
+        titel = f"Homogenbereiche {nur_homogenbereiche} ({hb.gewerk(nur_homogenbereiche)})"
+    for e in einheiten:
+        e.pop("_j", None)
+    aus.geomodell(titel, einheiten, {
         "Verfahren": "Layer-Cake: Einheiten per Schichtfolgen-Korrelation, Flaechen exakt an den Bohrungen",
         "Interpolation": {"idw": "IDW p=2", "tps": "Duennplatten-Spline",
                           "implizit": "implizit (GemPy, ein Skalarfeld je Flaeche; Orientierung siehe Bericht)"
@@ -311,7 +412,9 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
         "Gelaende": gelaende_text(p.get("gelaende") or {}),
         "Reifegrad": p.get("reifegrad"),
         "Herkunft_Bohrungen": ", ".join(f"{h} {n}" for h, n in sorted((p.get("herkunft") or {}).items())),
-        "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise)})
+        "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise + hb_hinweise),
+        "Modellart": f"Homogenbereiche {nur_homogenbereiche}" if nur_homogenbereiche else "Einheiten",
+        "Homogenbereiche_ATV": ", ".join(homogenbereiche) or None})
     gelaende = None
     if m.dgm is not None and umgebung > 0:
         gelaende = ring(m.dgm, m.punkte, m.rand, m.flaechen[0], m.ursprung, umgebung, schritt=p["raster_m"])
@@ -338,7 +441,9 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                         dm, quelle = float(durchmesser), "manuell (Projekt)"
                     else:
                         dm, quelle = auto, "automatisch (Darstellung nach Modellgroesse)"
+                    je_schicht = schicht_einheiten(m, vb)
                     aus.bohrung(d["document"], b, (vb.x - m.ursprung[0], vb.y - m.ursprung[1]), vb.lage, vb.hoehe,
+                                psets_je_schicht=[_schicht_psets(hb_psets, je_schicht.get(i, [])) for i in range(len(b["layers"]))],
                                 durchmesser=dm, durchmesser_quelle=quelle)
     n_gebaeude = 0
     if gebaeude:

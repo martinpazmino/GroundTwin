@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Homogenbereiche (VOB/C)** (docs/28): Einheiten per Gewerk (ATV) to Homogenbereiche in the step
+  Einheiten, with the Kennwerte each ATV asks for; IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten,
+  and a model of Homogenbereiche only.
 - **Grundwasserfläche** (Ground Analysis G5, docs/27 §6.6): a surface through the water levels of the Bohrungen, dry
   Bohrungen as a check, hints instead of silent assumptions, shown blue in the viewer; not in the IFC and not a design
   water level.
@@ -107,6 +110,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed
+- Colours of Fels and geological Benennungen after DIN 4023 Tabelle 2 and 3 (e.g. Mergelstein and
+  Geschiebemergel violettblau, Löß oliv), replacing display choices (docs/28 §5).
 - **The UI puts the first use case in front** (decision D99): a Gutachten shown interactively and checked for
   plausibility, also against the Bohrungen of the Länder. Nothing was removed.
   - Start page with **two paths of the same weight**: *Gutachten* (drop the PDF) and *Standort* (a point on the map).

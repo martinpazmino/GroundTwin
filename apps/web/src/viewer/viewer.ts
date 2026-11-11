@@ -77,7 +77,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   // Status fuer automatische Pruefungen (scripts/check.mjs, scripts/check_app.mjs)
   const status = {
     geladen: false, ladungen: 0, einheiten: [] as string[], bohrsaeulen: 0, marken: 0, fehler: "", auswahl: "",
-    gelaende: 0, gelaendeSichtbar: true, gebaeude: 0, gebaeudeSichtbar: true, reifegrad: "",
+    gelaende: 0, gelaendeSichtbar: true, gebaeude: 0, gebaeudeSichtbar: true, reifegrad: "", modellname: "",
     kamera: {} as Record<string, unknown>, lage: {} as Record<string, unknown>,
     ereignisse: protokoll, renders: 0,
     instanz: Math.random().toString(36).slice(2, 8),
@@ -309,6 +309,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       status.geladen = true;
       status.ladungen += 1;
       status.einheiten = daten.einheiten.map((e) => e.name);
+      status.modellname = daten.modellname;
       status.bohrsaeulen = daten.bohrsaeulen.length;
       status.gelaende = daten.gelaende.length;
       reifegradZeigen(String(daten.modell.Reifegrad ?? ""));
@@ -708,9 +709,9 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
           ${mitApp() ? "" : BUI.html`
             <label class="datei"><input type="file" accept=".ifc" @change=${dateiGewaehlt}><span>IFC-Datei öffnen …</span></label>`}
         </bim-panel-section>
-        <bim-panel-section label=${`Einheiten (${einheiten.length})`} icon="mdi:layers-outline">
+        <bim-panel-section label=${`${daten?.modellname.startsWith("Homogenbereiche") ? "Homogenbereiche" : "Einheiten"} (${einheiten.length})`} icon="mdi:layers-outline">
           ${einheiten.length ? BUI.html`<ul id="einheiten" class="liste">${einheiten.map((e) => {
-            const vol = Number(e.psets.CPset_Modelleinheit?.Volumen_m3 ?? 0);
+            const vol = e.volumen;
             const an = nurEinheit === null ? sichtbar.get(e.localId) !== false : nurEinheit === e.localId;
             return BUI.html`<li data-id=${String(e.localId)} class=${an ? "" : "aus"} @click=${() => einheitWaehlen(e.localId)}>
               <input type="checkbox" .checked=${sichtbar.get(e.localId) !== false} aria-label=${`${e.name} sichtbar`}

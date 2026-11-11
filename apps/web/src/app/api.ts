@@ -133,6 +133,8 @@ export interface Zustand {
   unterlage: (Unterlage & { seite: number; seiten: number; sha: string }) | null;
   reihe: ReiheZeile[]; reihe_standard: number;
   vorgabe: { name: string; bodenarten: string[] }[] | null;
+  homogenbereiche?: Record<string, Record<string, string>> | null;   // je ATV {Einheit: Bereich} (docs/28)
+  hb_modell?: string | null;
   eincheckungen: Eincheckung[]; pruefstand: Pruefstand; eingecheckt: string | null; seit_einchecken_geaendert: boolean;
   bohrungen: Bohrung[]; klassen: Klasse[];
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
@@ -242,6 +244,7 @@ export const api = {
   info: () => anfrage<{ version: string; ocr: boolean; implizit?: boolean; lizenz: string; quellcode: string;
                         beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
+  homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
   beispiel: (name: string) =>
     anfrage<{ projekt?: string; auftrag?: string; schritt?: "gutachten" | "bohrungen" | "lage" | "einheiten" | "modell" }>(
       "/api/beispiel", json({ name })),
@@ -309,4 +312,13 @@ export type Grundwasser = {
   ueber_gelaende_knoten?: number;
   flaeche?: { name: string; punkte: [number, number, number][]; dreiecke: [number, number, number][]; z_min: number;
     z_max: number } | null;
+};
+
+/** Kennwerte je ATV der VOB/C für Homogenbereiche (docs/28). */
+export type HbDaten = {
+  atv: { code: string; gewerk: string }[];
+  kennwerte: { nr: string; name: string }[];
+  matrix: Record<string, Record<string, string>>;
+  quelle: string;
+  legende: Record<string, string>;
 };

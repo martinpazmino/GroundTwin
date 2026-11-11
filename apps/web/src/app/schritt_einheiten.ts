@@ -5,6 +5,7 @@ import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { hilfe } from "./hilfe";
 import { analyseTeil } from "./analyse";
+import { homogenbereicheTeil } from "./homogenbereiche";
 import { einheitenProfil } from "./profil";
 import { S, aendern, gehe, neu } from "./store";
 
@@ -153,6 +154,7 @@ export function schrittEinheiten() {
     <div class="schritt-einheiten">
       <div class="spalte">
         ${vorgabeTeil()}
+        ${homogenbereicheTeil()}
         ${einstellungen()}
       </div>
       <div class="spalte breit">

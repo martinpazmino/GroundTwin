@@ -38,7 +38,7 @@ the app's interface. This table explains them.
 | **GWM (Grundwassermessstelle)** | Groundwater observation well (piezometer) |
 | **Grundwasser (GW)** | Groundwater; *angetroffen* = encountered while drilling, *Ruhewasserspiegel* = stabilised level |
 | **HGW / MGW / Bemessungswasserstand** | Highest / mean / design Grundwasser level |
-| **Homogenbereich** | Ground unit with homogeneous properties (DIN 18300 ff.) |
+| **Homogenbereich** | Ground unit with homogeneous properties for one Gewerk (VOB/C, DIN 18300 ff.); in the app a mapping of Einheiten per ATV ([28](28_homogenbereiche.md)) |
 | **Kornbereich, Nebenanteil, Konsistenz, Kalkgehalt** | Grain range (f/m/g), secondary fraction (schwach/stark), consistency (weich…fest), lime content (k+, k++) |
 | **Kurzzeichen** | DIN 4023 abbreviation (S, G, U, T, mS, fs' …) |
 | **Lage** | Position of a Bohrung (coordinates or station); the app step that places the Bohrungen |

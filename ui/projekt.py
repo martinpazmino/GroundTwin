@@ -23,6 +23,7 @@ if _MODELLIERER not in sys.path:
     sys.path.insert(0, _MODELLIERER)
 
 from baugrundmodell.ifc4x3 import FARBEN  # noqa: E402,F401  (Farben nach DIN 4023, fuer aeltere Aufrufer)
+from baugrundmodell import homogenbereiche as hb  # noqa: E402
 from baugrundmodell.modell import standard_durchmesser  # noqa: E402
 from baugrundmodell.normen import (UNKLASSIFIZIERT, bekannt, deuten, farbinfo, klassen_liste,  # noqa: E402
                                    vorschlag)
@@ -77,6 +78,8 @@ class Projekt:
     ueberhoehung: int = 5
     schritt: str = "bohrungen"              # zuletzt offener Schritt der App
     geoldg: dict = field(default_factory=dict)  # Untersuchung fuer die Fristen nach GeolDG: {beginn, abschluss, behoerde}
+    homogenbereiche: dict | None = None     # je ATV {Einheit: Homogenbereich} (VOB/C, docs/28)
+    hb_modell: str | None = None            # ATV, nach der das IFC nur aus Homogenbereichen besteht (None = Einheiten)
     angelegt: str = ""
     geaendert: str = ""
 
@@ -696,6 +699,21 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         p.erzeugt = True
     elif art == "auto":
         p.auto = bool(op["wert"])
+    elif art == "homogenbereiche":                       # Zuordnung Einheit -> Bereich fuer eine ATV (docs/28)
+        code = str(op.get("atv") or "")
+        hb.gewerk(code)
+        alle = {**(p.homogenbereiche or {}), code: op.get("zuordnung") or {}}
+        p.homogenbereiche = hb.pruefen(alle)
+        if p.hb_modell and p.hb_modell not in (p.homogenbereiche or {}):
+            p.hb_modell = None
+        n = len((p.homogenbereiche or {}).get(code, {}))
+        meldung = f"Homogenbereiche {code}: {n} Einheiten zugeordnet" if n else f"Homogenbereiche {code} entfernt"
+    elif art == "hb_modell":                             # IFC aus Homogenbereichen (ATV) oder aus Einheiten (None)
+        w = op.get("wert") or None
+        if w is not None and w not in (p.homogenbereiche or {}):
+            raise ValueError(f"für {w} sind keine Homogenbereiche zugeordnet")
+        p.hb_modell = w
+        meldung = f"IFC-Modell aus Homogenbereichen {w}" if w else "IFC-Modell aus Einheiten"
     elif art == "geoldg":                                # Beginn/Abschluss der Untersuchung (Fristen §§ 8-10 GeolDG)
         p.geoldg = geoldg_angaben({**p.geoldg, **{k: op[k] for k in ("beginn", "abschluss", "behoerde") if k in op}})
         meldung = "Angaben zur Untersuchung übernommen"

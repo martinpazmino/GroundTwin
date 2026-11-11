@@ -163,6 +163,13 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         """Lebenszeichen fuer die Plattform (ohne Anmeldung, ohne Daten)."""
         return {"ok": True, "version": VERSION}
 
+    @app.get("/api/homogenbereiche")
+    def homogenbereiche_daten():
+        from baugrundmodell import homogenbereiche as hb      # Kennwerte je ATV der VOB/C (docs/28), mit Quelle
+        d = hb.daten()
+        return {"atv": d["atv"], "kennwerte": d["kennwerte"], "matrix": d["matrix"], "quelle": d["quelle"],
+                "legende": d["legende"]}
+
     @app.get("/api/info")
     def info():
         return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "implizit": pl.implizit_verfuegbar(),

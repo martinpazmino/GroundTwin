@@ -2,6 +2,7 @@
   "format": "geo_agent-normen/1",
   "beschreibung": "Mini-Datenbank fuer die Deutung von Schichtbeschreibungen: Kurzzeichen, Benennungen und Farben der Boden- und Felsarten nach DIN 4023, DIN EN ISO 14688-1 und DIN EN ISO 14689, Bodengruppen nach DIN 18196. 'beleg' sagt, woher ein Eintrag stammt: Norm (aus Sekundaerquellen bestaetigt), 'praxis' (in Legenden veroeffentlichter Gutachten gebraeuchlich, nicht aus dem Normtext bestaetigt) oder 'darstellung' (Farbton nur fuer die Anzeige gewaehlt, keine Normfarbe). Quellen und Pruefstand: docs/21_normen_bodenansprache.md.",
   "quellen": {
+    "DIN4023-Tab2-3": "DIN 4023 Tabelle 2 'Kurzformen, Zeichen und Farben fuer Felsarten nach DIN EN ISO 14689' und Tabelle 3 'Kurzformen, Zeichen und Farben fuer gebraeuchliche, geologische Benennungen von Boden und Fels' (Bilder vom Nutzer, 2026-11-11): Farbnamen uebernommen, Hex-Werte als Darstellung dieser Namen gewaehlt",
     "DIN4023": "DIN 4023:2023-02 Geotechnische Erkundung und Untersuchung - Zeichnerische Darstellung der Ergebnisse von Bohrungen und sonstigen direkten Aufschluessen (Anhang B: Kurzformen nach DIN 4023 und Kurzzeichen nach DIN EN ISO 14688-1)",
     "ISO14688": "DIN EN ISO 14688-1 Benennung, Beschreibung und Klassifizierung von Boden - Teil 1: Benennung und Beschreibung",
     "ISO14688-2": "DIN EN ISO 14688-2 Benennung, Beschreibung und Klassifizierung von Boden - Teil 2: Grundlagen fuer Bodenklassifizierungen",
@@ -71,13 +72,13 @@
     },
     "Mudde": {
       "art": "organisch", "din4023": "F", "neben": "o", "adjektiv": "organisch",
-      "farbe": "#a8669e", "farbname": "lila", "din6164": "11:4:4", "beleg": "DIN4023",
+      "farbe": "#a8669e", "farbname": "lila", "din6164": "11:4:4", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "F = Mudde (Faulschlamm); als Nebenanteil o = organisch.",
       "woerter": ["mudde", "faulschlamm", "seekreide", "kalkmudde", "torfmudde", "detritusmudde"]
     },
     "Mutterboden": {
       "art": "organisch", "din4023": "Mu",
-      "farbe": "#b08442", "farbname": "gelblichbraun", "din6164": "4:5:3", "beleg": "DIN4023",
+      "farbe": "#b08442", "farbname": "gelblichbraun", "din6164": "4:5:3", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "woerter": ["mutterboden", "oberboden", "humus", "humusboden"]
     },
     "Auffuellung": {
@@ -90,35 +91,35 @@
     },
     "Geschiebemergel": {
       "art": "geologisch", "din4023": "Mg",
-      "farbe": "#7f9d5a", "farbname": "graugrün", "beleg": "darstellung",
+      "farbe": "#5b63a8", "farbname": "violettblau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Mg = Geschiebemergel nach DIN 4023 (aeltere Ausgaben, praxis); in DIN EN ISO 14688-1 ist Mg dagegen 'made ground' (Auffuellung): Kurzzeichen Mg allein ist mehrdeutig. Meist Schluff, sandig, tonig, kiesig, kalkhaltig.",
       "haupt": "Schluff",
       "woerter": ["geschiebemergel"]
     },
     "Geschiebelehm": {
       "art": "geologisch", "din4023": "Lg",
-      "farbe": "#a4a35e", "farbname": "gelbgrün", "beleg": "darstellung",
+      "farbe": "#9a9a9a", "farbname": "grau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Lg = Geschiebelehm (praxis); entkalkter Geschiebemergel.",
       "haupt": "Schluff",
       "woerter": ["geschiebelehm"]
     },
     "Loess": {
       "art": "geologisch", "din4023": "Lö",
-      "farbe": "#e3c27a", "farbname": "hellocker", "beleg": "darstellung",
+      "farbe": "#a9a650", "farbname": "oliv", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Lö = Löss (praxis); meist leicht plastischer Schluff (UL).",
       "haupt": "Schluff",
       "woerter": ["löss", "löß", "loess", "loss"]
     },
     "Loesslehm": {
       "art": "geologisch", "din4023": "Löl",
-      "farbe": "#c9a15e", "farbname": "ocker", "beleg": "darstellung",
+      "farbe": "#8c8a3c", "farbname": "oliv", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Löl = Lösslehm (praxis); entkalkter Löss, meist mittelplastischer Schluff (UM).",
       "haupt": "Schluff",
       "woerter": ["lösslehm", "lößlehm", "loesslehm", "losslehm"]
     },
     "Lehm": {
       "art": "geologisch",
-      "farbe": "#b09a5e", "farbname": "gelbbraun", "beleg": "darstellung",
+      "farbe": "#8f8f8f", "farbname": "grau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Lehm ist keine Hauptbodenart der Norm: Gemisch aus Sand, Schluff und Ton (meist Schluff, sandig, tonig). Als Vorschlag gilt Schluff nur geschaetzt.",
       "haupt": "Schluff",
       "woerter": ["lehm", "auelehm", "hanglehm", "verwitterungslehm", "auenlehm", "schwemmlehm"]
@@ -132,7 +133,7 @@
     },
     "Klei": {
       "art": "geologisch",
-      "farbe": "#6e5f8f", "farbname": "dunkelviolett", "beleg": "darstellung",
+      "farbe": "#a8669e", "farbname": "lila", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
       "hinweis": "Klei: Marschenboden (Ton/Schluff, oft organisch).",
       "haupt": "Ton",
       "woerter": ["klei", "marschenklei"]
@@ -151,13 +152,13 @@
     "unklassifiziert": {"art": "unbekannt", "farbe": "#e6e6e6", "farbname": "hellgrau", "beleg": "darstellung", "woerter": []}
   },
   "fels": {
-    "Sandstein": {"kurz": "Sst", "farbe": "#d9822b", "farbname": "orange", "beleg": "DIN4023 (teilweise bestaetigt)", "verwandt": "Sand"},
-    "Schluffstein": {"kurz": "Ust", "farbe": "#77733a", "farbname": "dunkeloliv", "beleg": "darstellung", "verwandt": "Schluff"},
-    "Tonstein": {"kurz": "Tst", "farbe": "#5f4d86", "farbname": "dunkelviolett", "beleg": "darstellung", "verwandt": "Ton"},
-    "Mergelstein": {"kurz": "Mst", "farbe": "#6f8f7f", "farbname": "graugrün", "beleg": "darstellung", "verwandt": "Mergel"},
-    "Kalkstein": {"kurz": "Kst", "farbe": "#5f8fbf", "farbname": "blau", "beleg": "darstellung"},
-    "Konglomerat": {"kurz": "Ko", "farbe": "#e0b52a", "farbname": "gelb", "beleg": "DIN4023", "verwandt": "Kies"},
-    "Brekzie": {"kurz": "Br", "farbe": "#d8a820", "farbname": "gelb", "beleg": "DIN4023", "verwandt": "Kies"},
+    "Sandstein": {"kurz": "Sst", "farbe": "#d9822b", "farbname": "orange", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Sand"},
+    "Schluffstein": {"kurz": "Ust", "farbe": "#94913f", "farbname": "oliv", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Schluff"},
+    "Tonstein": {"kurz": "Tst", "farbe": "#7d65a8", "farbname": "violett", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Ton"},
+    "Mergelstein": {"kurz": "Mst", "farbe": "#5b63a8", "farbname": "violettblau", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Mergel"},
+    "Kalkstein": {"kurz": "Kst", "farbe": "#2f4f9f", "farbname": "dunkelblau", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)"},
+    "Konglomerat": {"kurz": "Ko", "farbe": "#e0b52a", "farbname": "gelb", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Kies"},
+    "Brekzie": {"kurz": "Br", "farbe": "#d8a820", "farbname": "gelb", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Kies"},
     "Dolomit": {"farbe": "#7f9fbf", "farbname": "graublau", "beleg": "darstellung"},
     "Tonschiefer": {"farbe": "#4f4a63", "farbname": "dunkelgrau", "beleg": "darstellung"},
     "Quarzit": {"farbe": "#d8cfc0", "farbname": "hellgrau", "beleg": "darstellung"},
@@ -273,5 +274,25 @@
     "Gr": "Kies (DIN EN ISO 14688-1) - als Farbkuerzel klein geschrieben: grau",
     "H": "Torf oder Humus (DIN 4023)",
     "Schotter": "Tragschicht/Auffuellung oder natuerlicher Kies (Flussschotter, Terrassenschotter)"
+  },
+  "geologische_benennungen": {
+    "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
+    "hinweis": "Referenz; Benennungen ohne eigene Modellklasse (klasse null) werden nicht erkannt. Anthropogene Boeden: Tabelle 3 nennt keine Farbe, das Modell zeigt Auffuellung grau (Darstellung).",
+    "eintraege": [
+    {"benennung": "Oberboden (Mutterboden)", "kurz": "Mu", "farbname": "gelblichbraun", "klasse": "Mutterboden"},
+    {"benennung": "Verwitterungslehm, Hanglehm", "kurz": "L", "farbname": "grau", "klasse": "Lehm"},
+    {"benennung": "Hangschutt", "kurz": "Lx", "farbname": "grau", "klasse": null},
+    {"benennung": "Geschiebelehm", "kurz": "Lg", "farbname": "grau", "klasse": "Geschiebelehm"},
+    {"benennung": "Geschiebemergel", "kurz": "Mg", "farbname": "violettblau", "klasse": "Geschiebemergel"},
+    {"benennung": "Löß", "kurz": "Lö", "farbname": "oliv", "klasse": "Loess"},
+    {"benennung": "Lößlehm", "kurz": "Löl", "farbname": "oliv", "klasse": "Loesslehm"},
+    {"benennung": "Klei, Schlick", "kurz": "Kl", "farbname": "lila", "klasse": "Klei"},
+    {"benennung": "Wiesenkalk, Seekalk, Seekreide, Kalkmudde", "kurz": "Wk", "farbname": "hellblau", "klasse": null},
+    {"benennung": "Bänderton", "kurz": "Bt", "farbname": "violett", "klasse": null},
+    {"benennung": "Mudde (Faulschlamm)", "kurz": "F", "farbname": "lila", "klasse": "Mudde"},
+    {"benennung": "Anthropogene Böden", "kurz": "A", "farbname": null, "klasse": "Auffuellung"},
+    {"benennung": "Kreidestein", "kurz": "Krst", "farbname": "hellblau", "klasse": null},
+    {"benennung": "Kalktuff", "kurz": "Kltf", "farbname": "hellblau", "klasse": null}
+    ]
   }
 }

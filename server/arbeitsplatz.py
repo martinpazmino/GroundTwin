@@ -432,6 +432,7 @@ class Arbeitsplatz:
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
                 "vorgabe": p.vorgabe, "eincheckungen": p.eincheckungen,
+                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell,
                 "pruefstand": pj.pruefstand(docs, p),
                 "plausibilitaet": pb.pruefen(docs, p),
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
@@ -464,8 +465,14 @@ class Arbeitsplatz:
     # ------------------------------------------------------------ Modell
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:
         """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser und Gebaeude (gehoeren zum IFC, nicht zur Geometrie)."""
-        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand")], sort_keys=True)
+        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand"),
+                         self._hb_fuer_ifc(p)], sort_keys=True)
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
+
+    @staticmethod
+    def _hb_fuer_ifc(p: pj.Projekt) -> dict:
+        """Homogenbereiche fuer ifc_schreiben (docs/28): Psets je ATV und auf Wunsch das Modell nur aus Bereichen."""
+        return {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
 
     def modell(self, sig: str) -> dict:
         """Modell rechnen (oder aus dem Speicher) und das IFC fuer den Viewer ablegen."""
@@ -504,7 +511,7 @@ class Arbeitsplatz:
             if not ziel.exists():
                 ziel.write_bytes(pl.ifc_bytes(m, vorb.docs, durchmesser=p.durchmesser,
                                               durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                              **self._gebaeude_fuer_ifc(sig, p, m)))
+                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p)))
                 alte = sorted((self.web / "modelle").glob("*.ifc"), key=lambda f: f.stat().st_mtime)[:-20]
                 for f in alte:
                     f.unlink(missing_ok=True)
@@ -647,7 +654,7 @@ class Arbeitsplatz:
                 letzter = p.eincheckungen[-1] if p.eincheckungen else None
                 inhalt = pl.ifc_bytes(m, vorb.docs, pruefstand=pj.stand_text(letzter) if letzter else "nicht eingecheckt",
                                       durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                      **self._gebaeude_fuer_ifc(sig, p, m))
+                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p))
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
 

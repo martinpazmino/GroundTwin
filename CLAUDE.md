@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D106 (D100–D103, D105, D106 proposed).
+- `docs/11_decisions.md`: decisions D1–D107 (D100–D103, D105–D107 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -41,6 +41,13 @@ license **AGPL-3.0-or-later** (D79).
   (`/analyse/flaeche/{j}`), virtuelle Bohrung by a click. **G5**: `grundwasser.py` *Grundwasserfläche* from the water
   levels (dry Bohrungen as a check, never in the IFC, not a design level; `/analyse/grundwasser`). Not built with
   reasons (docs/27 §6.7): dip in the MC, faults, Kennwerte, gempy_probability.
+- `docs/28_homogenbereiche.md`: Homogenbereiche (VOB/C, D107): per ATV a mapping Einheit → Bereich (project
+  `homogenbereiche`, ops `homogenbereiche` / `hb_modell`), Kennwerte matrix per ATV in
+  `services/modeler/baugrundmodell/homogenbereiche.json` (Abbildung 8 from the user, read per cell, check against the
+  ATV), IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten (by height; a split Schicht names both),
+  model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked). DIN 4023 Tab. 2/3
+  colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
+  `tests/test_homogenbereiche_app.py`.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
@@ -130,7 +137,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (57 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (58 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

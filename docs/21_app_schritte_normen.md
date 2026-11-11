@@ -741,6 +741,8 @@ makes it again (download, GeoPackage read with sqlite3, UTM 32 → WGS84 with py
 - Model settings (IDW/TPS, *implizit* with GemPy when installed, Puffer, Raster, Basis, relative GOK, Gelände aus
   dem DGM), each with its **?**, folded
   under *Erweitert* below the Einheiten (open as soon as one differs from the default).
+- **Homogenbereiche (VOB/C)** (folded, open with data; [28](28_homogenbereiche.md)): per ATV a Bereich for each
+  Einheit, the Kennwerte the ATV asks for, and the choice of the IFC model (Einheiten or Homogenbereiche).
 - **Ground Analysis** (folded, computed only on a click; [27 §6.2](27_ground_analysis_gempy.md#62-g2-as-built-2026-11-10)):
   - the Kreuzprobe for IDW and the spline, with the method of the model and the best one marked;
   - its hints;
