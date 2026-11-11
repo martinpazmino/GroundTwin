@@ -31,6 +31,7 @@ def test_analyse_zum_modell_und_virtuelle_bohrung(client):
     assert a["unsicherheit"]["laeufe"] == 20 and len(a["unsicherheit"]["einheiten"]) >= 5
     assert "_sigma" not in json.dumps(a) and a["sigma_max_m"] > 0
     assert len(a["bohrungen"]) == 12 and len(a["mitte"]) == 2
+    assert 1 <= len(a["vorschlaege"]) <= 3 and all(v["grund"] and v["abstand_naechste_bohrung_m"] > 0 for v in a["vorschlaege"])
     vorher = client.get(f"/api/projekt/{sig}").json()
 
     b = a["bohrungen"][0]

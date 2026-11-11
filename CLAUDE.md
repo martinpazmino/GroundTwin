@@ -33,7 +33,10 @@ license **AGPL-3.0-or-later** (D79).
   surface; orientation from the contacts, along a line, else horizontal, in `parameter.orientierung`; folded or
   inexact surface → spline with a hint); optional `requirements-analyse.txt` (GemPy, EUPL-1.2), Docker
   `--build-arg ANALYSE=1`, CI job; tests `services/analyse/tests/test_implizit.py` (skip without GemPy). Measured: equal
-  to the spline on layer-cake data, 10–100× slower; never the default (D105, D106). Not built: G4 (structures).
+  to the spline on layer-cake data, 10–100× slower; never the default (D105, D106). **G4**: a Rinne showed the limit is
+  information, not the method (all three methods ~4 m off, two edge Bohrungen → 0.3 m) → `vorschlag.py`
+  *Erkundungsvorschlag* (where the next Bohrung helps most: σ of the bases + unsure extent; validated: 1.35 m vs 2.44 m
+  random), in the app under Ground Analysis.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 

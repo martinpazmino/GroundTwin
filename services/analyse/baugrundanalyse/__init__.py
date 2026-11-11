@@ -6,8 +6,9 @@ from .kreuzprobe import kreuzprobe
 from .unsicherheit import unsicherheit
 from .unsicherheit import zusammenfassung as unsicherheit_zusammenfassung
 from .virtuell import virtuelle_bohrung
+from .vorschlag import vorschlaege
 
-__all__ = ["kreuzprobe", "unsicherheit", "unsicherheit_zusammenfassung", "virtuelle_bohrung", "analyse"]
+__all__ = ["kreuzprobe", "unsicherheit", "unsicherheit_zusammenfassung", "virtuelle_bohrung", "vorschlaege", "analyse"]
 
 
 def analyse(m, laeufe: int = 100, sigma_exakt: float | None = None, seed: int = 1) -> dict:

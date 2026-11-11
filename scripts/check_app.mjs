@@ -593,14 +593,15 @@ try {
   await page.locator("details.analyse > summary").click();
   await page.getByRole("button", { name: "Analyse rechnen" }).click();
   await warte(() => document.querySelectorAll("details.analyse table").length >= 2 || document.querySelector("details.analyse p.warn"), null, 120000);
-  await page.getByRole("button", { name: "Bohren" }).click();
-  await warte(() => document.querySelectorAll("details.analyse table").length >= 3 || document.querySelector("details.analyse p.warn"), null, 60000);
+  await page.getByRole("button", { name: "Bohren", exact: true }).click();
+  await warte(() => document.querySelector("details.analyse table.virtuell") || document.querySelector("details.analyse p.warn"), null, 60000);
   const ga = await page.evaluate(() => {
     const d = document.querySelector("details.analyse");
     return { tabellen: d.querySelectorAll("table").length, warn: d.querySelector("p.warn")?.textContent ?? "",
-             sigma: [...d.querySelectorAll("table")[2]?.querySelectorAll("tbody tr td:nth-child(4)") ?? []].map((x) => x.textContent) };
+             vorschlaege: d.querySelectorAll("table.vorschlag tbody tr").length,
+             sigma: [...d.querySelectorAll("table.virtuell tbody tr td:nth-child(4)")].map((x) => x.textContent) };
   });
-  pruefe("Ground Analysis: Kreuzprobe, Unsicherheit und virtuelle Bohrung mit ± σ", ga.tabellen === 3 && !ga.warn
+  pruefe("Ground Analysis: Kreuzprobe, Unsicherheit, Erkundungsvorschlag und virtuelle Bohrung mit ± σ", ga.tabellen >= 3 && !ga.warn && ga.vorschlaege >= 1
     && ga.sigma.some((s) => /\d/.test(s)), JSON.stringify(ga));
   await page.locator("details.analyse").screenshot({ path: `${aus}/D3_analyse.png` });
   await page.getByRole("button", { name: /Weiter: Modell/ }).click();

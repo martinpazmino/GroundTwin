@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Erkundungsvorschlag** (Ground Analysis G4, docs/27 §6.4): where the next Bohrung improves the model most, from the
+  uncertainty of the bases and of the extent of the Einheiten; validated on a Rinne against random positions.
 - **Implicit interpolation with GemPy** (Ground Analysis G3, docs/27 §6.3), optional (`requirements-analyse.txt`): one
   scalar field per surface, orientation from the contacts, exact at the Bohrungen, spline for folded surfaces.
 - **Ground Analysis in the app** (phase G2, docs/27 §6.2): step Einheiten → Erweitert, Kreuzprobe, Unsicherheit per Einheit

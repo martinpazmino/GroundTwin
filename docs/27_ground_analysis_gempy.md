@@ -3,7 +3,7 @@ title: "27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)"
 date: 2026-11-10
 tags: [ground-analysis, gempy, implicit-modelling, uncertainty, cross-validation, orientations, plan]
 aliases: [Ground Analysis, GemPy integration, N4 implicit model]
-status: g3-built
+status: g4-built
 ---
 
 # 27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)
@@ -22,8 +22,8 @@ A new component, **Ground Analysis**, answers the question the layer model ([18]
 >   virtuelle Bohrung, without GemPy (§6.1).
 > - G2 puts them in the app, step *Einheiten → Erweitert* (§6.2).
 > - G3 adds the implicit method with GemPy as an optional third interpolation (§6.3).
->
-> G4 (structures set by the engineer) is not built.
+> - G4 was tested on a Rinne and changed course: the limit was missing information, not the method. What was built
+>   is the **Erkundungsvorschlag**, which points to where the next Bohrung helps most (§6.4).
 
 > [!NOTE]
 > Summary:
@@ -225,8 +225,8 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 | **G1 Kreuzprobe and Unsicherheit** (**built**, §6.1) | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
 | **G2 App** (**built**, §6.2) | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
 | **G3 Implicit method** (**built**, §6.3) | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
-| **G4 Structures** | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
-| **G5 Later** | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | yes |
+| **G4 Structures** (**tested and redirected**, §6.4) | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
+| **G5 Later** (unchanged) | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | yes |
 
 G1 and G2 stand on their own and give the yardstick for G3: the implicit method is kept only where the Kreuzprobe
 shows it predicts better on real projects.
@@ -368,6 +368,61 @@ All four: contacts exact (0.000 m), all solids closed, the IFC valid in METRE (t
 maximum. It costs 10 to 100 times the time. It earns its place only where the spline cannot follow the geometry:
 structures of G4 (an eroding Rinne, onlap). So it stays optional and is never the default (D105). Which method fits a
 site is the job of the Kreuzprobe.
+
+### 6.4 G4: a Rinne between the Bohrungen, and the Erkundungsvorschlag (2026-11-11)
+
+**Test of the premise.** The plan for G4 assumed a structure that the layer model cannot represent and GemPy can. A
+synthetic Rinne tests this, with the truth known:
+
+- the Rinne is 20 m wide, its bottom at 28 m NHN;
+- it erodes the Sand down into the Geschiebemergel and is filled with Torf;
+- 3 × 3 Bohrungen 40 m apart, and only the middle column lies in the Rinne.
+
+Mean error of the Torf thickness in m (x = 22 to 78, along one line):
+
+| | IDW | TPS | implizit (GemPy) |
+|---|---|---|---|
+| 3 × 3 Bohrungen | 3.49 | 4.10 | 4.20 |
+| plus 2 Bohrungen near the edges (x = 38, 62) | 0.45 | 0.33 | 0.33 |
+
+- All three methods draw the Rinne about 40 m wide: they end it halfway to the next Bohrung without it.
+- The implicit method is no better. No data say where the edges are, and ERODE cannot invent them.
+- Two more Bohrungen cut the error by a factor of 10 for every method.
+
+**Change of course.** G4 did not build structures set by the engineer, because they would be guessed. It built what
+the measurement asks for: an **Erkundungsvorschlag** saying where the next Bohrung helps most.
+
+**How it works** ([`vorschlag.py`](../services/analyse/baugrundanalyse/vorschlag.py)). A score per node, the sum of
+two parts:
+
+- *the position of the bases*: the root of the sum of the squared σ of all bases (from the Unsicherheit);
+- *the extent*: for each Einheit missing in some Bohrungen, how unsure the model is whether it is there (the share
+  "vorhanden" of the neighbours, the same IDW that limits its extent; most unsure at 0.5), weighted by its mean
+  thickness.
+
+The points are picked greedily: the highest score first, then one Bohrung spacing around it is blocked. No point lies
+closer than a quarter of the spacing to an existing Bohrung. Each point says why: *Ausdehnung von Torf unsicher*,
+*Unterkante Sand ± 0,40 m*.
+
+**Validated against the truth.** Two Bohrungen added on the Rinne case; mean error of the Torf thickness over the whole
+area, TPS:
+
+| Added | Error [m] |
+|---|---|
+| none | 2.98 |
+| 2 random (median of 20 draws; best draw) | 2.44 (1.53) |
+| **2 at the proposed points** (one on each edge: x = 31 and 69) | **1.35** |
+| 2 at the true edges (x = 38, 62; unknown in practice) | 1.16 |
+
+With half a spacing as the block radius, both points fell on the same edge (1.86 m). One full spacing puts one point on
+each edge. That is the value used (`SPERRE`).
+
+**Where it is.** The analysis returns `vorschlaege` (three points). The app lists them under the Unsicherheit, and
+*virtuell bohren* shows the model at that point. Tests: `services/analyse/tests/test_vorschlag.py` (the Rinne: one
+point per edge, and better than the median of random draws). The end-to-end check verifies that the list appears.
+
+**What the proposal does not know:** access, utilities, the building site. It is a hint for planning the next
+investigation (DIN EN 1997-2 asks for one where the ground is not clear), not a plan.
 
 ## 7. Risks
 

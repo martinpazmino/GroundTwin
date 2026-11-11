@@ -208,6 +208,8 @@ export interface AnalyseErgebnis {
   unsicherheit?: { laeufe: number; methode: string; sigma_exakt_m: number; einheiten: UnsicherheitEinheit[];
                    hinweise: string[]; annahmen: string[] };
   sigma_max_m?: number | null;
+  vorschlaege?: { x: number; y: number; wert_m: number; lage_m: number; ausdehnung_m: number;
+                  abstand_naechste_bohrung_m: number; grund: string }[];
 }
 export interface VirtuelleBohrung {
   fehler: string; x?: number; y?: number; gok_nhn?: number; endteufe_m?: number; naechste_bohrung?: string; abstand_m?: number;

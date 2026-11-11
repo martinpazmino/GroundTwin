@@ -79,6 +79,21 @@ function einheitenTabelle(a: AnalyseErgebnis) {
     </table>`;
 }
 
+function vorschlagTeil(a: AnalyseErgebnis) {
+  const v = a.vorschlaege ?? [];
+  if (!v.length) return nothing;
+  return html`
+    <h4>Wo die nächste Bohrung am meisten bringt ${hilfe("erkundung")}</h4>
+    <table class="tabelle kompakt vorschlag">
+      <thead><tr><th>#</th><th>Rechtswert</th><th>Hochwert</th><th>Grund</th><th title="nächste vorhandene Bohrung">Abstand [m]</th><th></th></tr></thead>
+      <tbody>${v.map((p, i) => html`<tr>
+        <td>${i + 1}</td><td class="zahl">${zahl(p.x, 1)}</td><td class="zahl">${zahl(p.y, 1)}</td><td class="klein">${p.grund}</td>
+        <td class="zahl">${zahl(p.abstand_naechste_bohrung_m, 0)}</td>
+        <td><button class="link" @click=${() => { punkt = { x: String(p.x), y: String(p.y) }; bohren(); }}>virtuell bohren</button></td></tr>`)}</tbody>
+    </table>
+    <p class="leise klein">Ein Vorschlag aus der Unsicherheit des Modells – Zugang, Leitungen und Baufeld kennt es nicht.</p>`;
+}
+
 function virtuellTeil(a: AnalyseErgebnis) {
   const v = virtuell;
   return html`
@@ -92,7 +107,7 @@ function virtuellTeil(a: AnalyseErgebnis) {
     ${v?.fehler ? html`<p class="warn">${v.fehler}</p>` : nothing}
     ${v && !v.fehler ? html`
       <p class="klein">GOK ${zahl(v.gok_nhn)} m NHN · ${zahl(v.abstand_m, 1)} m von ${v.naechste_bohrung} · <span class="leise">${v.herkunft}</span></p>
-      <table class="tabelle kompakt">
+      <table class="tabelle kompakt virtuell">
         <thead><tr><th>Tiefe [m]</th><th>Einheit</th><th>Unterkante [m NHN]</th><th>± σ [m]</th><th>95 % [m NHN]</th></tr></thead>
         <tbody>${v.schichten!.map((s) => html`<tr>
           <td class="zahl">${zahl(s.tiefe_oben_m)}–${zahl(s.tiefe_unten_m)}</td><td>${s.einheit}</td>
@@ -126,6 +141,7 @@ export function analyseTeil() {
         ${einheitenTabelle(a)}
         <details class="klein"><summary class="leise">Annahmen</summary>
           <ul>${a.unsicherheit!.annahmen.map((x) => html`<li>${x}</li>`)}</ul></details>
+        ${vorschlagTeil(a)}
         ${virtuellTeil(a)}` : nothing}
     </details>`;
 }

@@ -546,6 +546,7 @@ class Arbeitsplatz:
                     "bohrungen": [{"code": b.code, "x": round(b.x, 2), "y": round(b.y, 2)} for b in m.bohrungen],
                     "kreuzprobe": {x: v for x, v in k.items() if not x.startswith("_")},
                     "unsicherheit": ga.unsicherheit_zusammenfassung(u),
+                    "vorschlaege": ga.vorschlaege(m, u, anzahl=3),
                     "sigma_max_m": round(float(np.nanmax(sig_knoten)), 2) if np.isfinite(sig_knoten).any() else None}
 
     def virtuelle_bohrung(self, sig: str, x: float, y: float) -> dict:
