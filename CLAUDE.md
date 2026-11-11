@@ -45,7 +45,8 @@ license **AGPL-3.0-or-later** (D79).
   `homogenbereiche`, ops `homogenbereiche` / `hb_modell`), Kennwerte matrix per ATV in
   `services/modeler/baugrundmodell/homogenbereiche.json` (Abbildung 8 from the user, read per cell, check against the
   ATV), IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten (by height; a split Schicht names both),
-  model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked). DIN 4023 Tab. 2/3
+  model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked); proposal per ATV
+  (`hb.vorschlag_fuer`, `/homogenbereiche/vorschlag`: Verhalten, then Bodengruppe/Steine by the ATV's Kennwerte; a click). DIN 4023 Tab. 2/3
   colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
   `tests/test_homogenbereiche_app.py`.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,

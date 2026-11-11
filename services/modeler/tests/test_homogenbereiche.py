@@ -103,3 +103,30 @@ def test_modell_nur_aus_homogenbereichen(tmp_path):
     assert gm["Modellart"] == "Homogenbereiche DIN 18300" and "ohne Homogenbereich" in gm["Hinweise"]
     with pytest.raises(ValueError, match="keine Homogenbereiche"):
         ifc_schreiben(m, tmp_path / "x.ifc", docs, homogenbereiche=zu, nur_homogenbereiche="DIN 18304")
+
+
+def test_vorschlag_je_anwendungsfall():
+    """Der Vorschlag haengt von den Kennwerten der ATV ab: wenige Kennwerte -> nur das Verhalten; sonst Bodengruppe bzw.
+    Hauptbodenart getrennt; Mineralogie/Abrasivitaet -> dazu Steine/Bloecke. Gleiche Einheiten fallen zusammen."""
+    from baugrundmodell.modell import bericht
+    docs, m, n, _ = _modell()
+    b = bericht(m)["einheiten"]
+    gk1 = hb.vorschlag_fuer("DIN 18300 GK 1", b)
+    assert gk1["stufe"] == "grob" and [g["einheiten"] for g in gk1["bereiche"]] == [
+        ["Auffuellung"], ["Sand 1", "Kies", "Sand 2"], ["Torf"], ["Geschiebemergel", "Ton"]]
+    erd = hb.vorschlag_fuer("DIN 18300", b)
+    assert erd["stufe"] == "standard" and ["Sand 1", "Sand 2"] in [g["einheiten"] for g in erd["bereiche"]]
+    assert ["Kies"] in [g["einheiten"] for g in erd["bereiche"]]
+    assert all(g["grund"] for g in erd["bereiche"]) and erd["zuordnung"]["Sand 2"] == erd["zuordnung"]["Sand 1"]
+    assert hb.vorschlag_fuer("DIN 18324", b)["stufe"] == "fein"
+    assert [g["name"] for g in gk1["bereiche"]] == ["B1", "B2", "B3", "B4"]          # von oben nummeriert
+    # Bodengruppe aus den Beschreibungen trennt, was nach der Bodenart gleich waere; Unbekanntes bleibt einzeln
+    e = [{"name": "S1", "bodenarten": ["Sand"], "schichten": [{"beschreibung": "Mittelsand, SE", "bodenart": "Sand"}]},
+         {"name": "S2", "bodenarten": ["Sand"], "schichten": [{"beschreibung": "Sand, schluffig, SU*", "bodenart": "Sand"}]},
+         {"name": "S3", "bodenarten": ["Sand"], "schichten": [{"beschreibung": "Feinsand, SE", "bodenart": "Sand"}]},
+         {"name": "X", "bodenarten": ["unklassifiziert"], "schichten": []},
+         {"name": "Y", "bodenarten": ["unklassifiziert"], "schichten": []}]
+    v = hb.vorschlag_fuer("DIN 18300", e)
+    assert v["zuordnung"]["S1"] == v["zuordnung"]["S3"] != v["zuordnung"]["S2"]
+    assert v["zuordnung"]["X"] != v["zuordnung"]["Y"]
+    assert hb.vorschlag_fuer("DIN 18300 GK 1", e)["zuordnung"]["S2"] == v["zuordnung"]["S1"]

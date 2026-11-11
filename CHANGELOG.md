@@ -8,7 +8,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ### Added
 - **Homogenbereiche (VOB/C)** (docs/28): Einheiten per Gewerk (ATV) to Homogenbereiche in the step
   Einheiten, with the Kennwerte each ATV asks for; IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten,
-  and a model of Homogenbereiche only.
+  and a model of Homogenbereiche only. A proposal per Anwendungsfall merges Einheiten that behave alike for the
+  chosen ATV (how fine follows from its Kennwerte), with a reason per Bereich, applied on a click.
 - **Grundwasserfläche** (Ground Analysis G5, docs/27 §6.6): a surface through the water levels of the Bohrungen, dry
   Bohrungen as a check, hints instead of silent assumptions, shown blue in the viewer; not in the IFC and not a design
   water level.

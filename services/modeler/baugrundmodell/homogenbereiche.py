@@ -84,6 +84,96 @@ def vorschlag(einheiten: list[str]) -> dict[str, str]:
     return {e: vorlage.format(n=i + 1) for i, e in enumerate(einheiten)}
 
 
+# ---------------------------------------------------------------- Vorschlag je Anwendungsfall (docs/28 §6)
+# Verhalten im Bau aus der Bodenart der Einheit (normen.json, Feld "art"); nur Einheiten gleichen Verhaltens koennen
+# einen Bereich bilden. Unbekanntes bleibt immer einzeln.
+_NICHTBINDIG = {"Kies", "Sand", "Steine", "Bloecke"}
+_BINDIG_BODEN = {"Schluff", "Ton"}
+VERHALTEN_TEXT = {"anthropogen": "anthropogen (Auffüllung)", "organisch": "organisch", "fels": "Fels",
+                  "nichtbindig": "nichtbindig", "bindig": "bindig", "unbekannt": "nicht klassifiziert"}
+
+
+def _verhalten(bodenarten: list[str]) -> str:
+    from .normen import KLASSEN
+    arten = set()
+    for b in bodenarten:
+        art = KLASSEN.get(b, {}).get("art", "unbekannt")
+        if art == "boden":
+            arten.add("nichtbindig" if b in _NICHTBINDIG else "bindig" if b in _BINDIG_BODEN else "unbekannt")
+        elif art == "geologisch":
+            arten.add("bindig")                   # Geschiebemergel, Loess, Lehm, Klei, Mergel: feinkoernig gepraegt
+        else:
+            arten.add(art)
+    return arten.pop() if len(arten) == 1 else "unbekannt"     # gemischte Einheit: nicht zusammenlegen
+
+
+def stufe(code: str) -> tuple[str, str]:
+    """Wie fein ein Vorschlag fuer die ATV unterscheidet, aus ihren Kennwerten (nicht je ATV festgelegt)."""
+    nr = {k["nr"] for k in kennwerte(code)}
+    if len(nr) <= 7:
+        return "grob", f"{len(nr)} Kennwerte: nur das Verhalten (nichtbindig, bindig, organisch, anthropogen, Fels)"
+    if nr & {"4", "18"}:
+        return "fein", ("Mineralogie bzw. Abrasivität verlangt (Kennwert 4/18): dazu Bodengruppe bzw. Bodenart und "
+                        "Steine/Blöcke getrennt")
+    return "standard", "dazu die Bodengruppe DIN 18196 (sonst die Hauptbodenart) getrennt"
+
+
+def merkmale(einheit: dict) -> dict:
+    """Verhalten, haeufigste genannte Bodengruppe und Steine/Bloecke einer Einheit (Bericht: name, bodenarten, schichten)."""
+    from collections import Counter
+
+    from .normen import deuten
+    gruppen: Counter = Counter()
+    steine = 0
+    for s in einheit.get("schichten") or []:
+        d = deuten(s.get("beschreibung"), s.get("bodenart"))
+        if d.bodengruppe:
+            gruppen[d.bodengruppe.strip("[]")] += 1
+        if any(a.klasse in ("Steine", "Bloecke") for a in d.nebenanteile) or d.klasse in ("Steine", "Bloecke"):
+            steine += 1
+    n = len(einheit.get("schichten") or [])
+    g = gruppen.most_common(1)[0][0] if gruppen else None
+    return {"verhalten": _verhalten(list(einheit.get("bodenarten") or [])), "bodengruppe": g,
+            "bodengruppe_anteil": f"{gruppen[g]}/{n}" if g else None, "steinig": n > 0 and steine * 2 >= n,
+            "hauptbodenart": (einheit.get("bodenarten") or ["?"])[0]}
+
+
+def vorschlag_fuer(code: str, einheiten: list[dict]) -> dict:
+    """Vorschlag fuer eine ATV: Einheiten, die sich fuer dieses Gewerk gleich verhalten, in einem Bereich.
+
+    einheiten: wie bericht()["einheiten"] (Reihenfolge von oben). Ergebnis: Zuordnung, Bereiche mit Begruendung, Stufe.
+    Ein Vorschlag, nie still angewendet: uebernommen wird er erst mit einem Klick.
+    """
+    st, regel = stufe(code)
+    schluessel: dict[str, tuple] = {}
+    begruendung: dict[tuple, str] = {}
+    for e in einheiten:
+        m = merkmale(e)
+        v = m["verhalten"]
+        if v == "unbekannt":
+            k, grund = ("einzeln", e["name"]), "nicht eindeutig klassifiziert: eigener Bereich"
+        elif st == "grob" or v in ("anthropogen", "organisch", "fels"):
+            k, grund = (v,), VERHALTEN_TEXT[v]
+        else:
+            art = m["bodengruppe"] or m["hauptbodenart"]
+            k = (v, art) + ((m["steinig"],) if st == "fein" else ())
+            grund = f"{VERHALTEN_TEXT[v]}, " + (f"Bodengruppe {m['bodengruppe']} ({m['bodengruppe_anteil']} Schichten)"
+                                                if m["bodengruppe"] else f"Hauptbodenart {m['hauptbodenart']}")
+            if st == "fein":
+                grund += ", mit Steinen/Blöcken" if m["steinig"] else ", ohne Steine/Blöcke"
+        schluessel[e["name"]] = k
+        begruendung.setdefault(k, grund)
+    namen: dict[tuple, str] = {}
+    for e in einheiten:                                    # Namen in der Reihenfolge der obersten Einheit
+        k = schluessel[e["name"]]
+        if k not in namen:
+            namen[k] = daten()["namensvorlage"].format(n=len(namen) + 1)
+    zuordnung = {e["name"]: namen[schluessel[e["name"]]] for e in einheiten}
+    bereiche_ = [{"name": namen[k], "einheiten": [e["name"] for e in einheiten if schluessel[e["name"]] == k],
+                  "grund": begruendung[k]} for k in namen]
+    return {"atv": code, "stufe": st, "regel": regel, "zuordnung": zuordnung, "bereiche": bereiche_}
+
+
 def bereiche(je: dict[str, str], einheiten: list[str]) -> tuple[list[dict], list[str]]:
     """Bereiche in Modellreihenfolge (nach ihrer obersten Einheit) mit ihren Einheiten, und Hinweise.
 

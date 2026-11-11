@@ -469,6 +469,17 @@ class Arbeitsplatz:
                          self._hb_fuer_ifc(p)], sort_keys=True)
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
 
+    def hb_vorschlag(self, sig: str, atv: str) -> dict:
+        """Vorschlag der Homogenbereiche fuer eine ATV aus den Einheiten des Modells (docs/28 §6); aendert nichts."""
+        from baugrundmodell import homogenbereiche as hb
+        erg = self.modell(sig)
+        if erg["fehler"]:
+            return {"fehler": erg["fehler"]}
+        try:
+            return {"fehler": "", **hb.vorschlag_fuer(atv, erg["bericht"]["einheiten"])}
+        except ValueError as err:
+            return {"fehler": str(err)}
+
     @staticmethod
     def _hb_fuer_ifc(p: pj.Projekt) -> dict:
         """Homogenbereiche fuer ifc_schreiben (docs/28): Psets je ATV und auf Wunsch das Modell nur aus Bereichen."""

@@ -440,3 +440,7 @@ ul.dienste a { color: #8fc6ff; }
 .analyse .hinweis { margin: 0.3rem 0; padding: 0.3rem 0.5rem; border-left: 3px solid #7a5518; background: rgba(180, 83, 9, 0.08); }
 .analyse input.mittel { width: 9rem; }
 .analyse .zahl.warn { color: var(--warn); }
+
+/* Homogenbereiche: Vorschlag je Anwendungsfall (docs/28 §6) */
+.hb-vorschlag { border: 1px solid var(--linie); border-radius: 4px; padding: 0.4rem 0.6rem; margin: 0.4rem 0; }
+.hb-vorschlag table { margin: 0.3rem 0; }

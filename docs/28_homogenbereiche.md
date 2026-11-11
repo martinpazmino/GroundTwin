@@ -15,7 +15,8 @@ and to another for Bohrarbeiten. This note describes the second way to build the
 
 > [!NOTE]
 > - The planner assigns the Einheiten to Homogenbereiche, per ATV (step *Einheiten*, folded section
->   *Homogenbereiche (VOB/C)*). Nothing is proposed silently: the only proposal is one Bereich per Einheit.
+>   *Homogenbereiche (VOB/C)*). For each ATV a proposal with reasons merges Einheiten that behave alike for that
+>   Gewerk (§5); it is applied only on a click.
 > - The IFC carries the assignment as Pset `CPset_Homogenbereich_<ATV>` on every Einheit and on every Bodenschicht of
 >   the Bohrsäulen.
 > - On request the model consists of the Homogenbereiche only: the same closed bodies, grouped per Bereich.
@@ -107,7 +108,33 @@ Checked: IFC without validation errors, unit METRE, all bodies closed, volume of
   returns the matrix with its source.
 - Tests: `services/modeler/tests/test_homogenbereiche.py`, `tests/test_homogenbereiche_app.py`.
 
-## 5. The other tables (DIN 4023 Tabelle 2 and 3)
+## 5. Proposal per Anwendungsfall (2026-11-11)
+
+When the chosen ATV has no assignment yet, the section shows a **proposal for that ATV**, with a reason per Bereich; it
+is applied only with *Vorschlag übernehmen* (or the link *Vorschlag für <ATV>*) and can then be changed per Einheit.
+`GET /api/projekt/{sig}/homogenbereiche/vorschlag?atv=…` (`hb.vorschlag_fuer`) changes nothing.
+
+Rule (general, from the data, not one per ATV):
+
+1. **Verhalten** of each Einheit from its Bodenarten (`normen.json`, field `art`): nichtbindig (Kies, Sand, Steine,
+   Blöcke), bindig (Schluff, Ton and the geological fine-grained soils such as Geschiebemergel, Löß, Lehm, Klei),
+   organisch, anthropogen, Fels. An Einheit with mixed or unknown Bodenarten stays a Bereich of its own.
+2. **How fine** follows from the Kennwerte the ATV asks for (matrix §2):
+   - at most 7 Kennwerte (DIN 18300 GK 1, DIN 18320): *grob*, only the Verhalten;
+   - Mineralogie or Abrasivität asked (rows 4 or 18: DIN 18301, 18312, 18319, 18324): *fein*, also the Bodengruppe
+     (else Hauptbodenart) and Steine/Blöcke (in at least half of the Schichten) apart;
+   - otherwise *standard*: also the Bodengruppe DIN 18196, the one named most often in the descriptions of the Einheit
+     (`normen.deuten`), else the Hauptbodenart.
+   Anthropogen, organisch and Fels are grouped by Verhalten at every level.
+3. Einheiten with the same key form one Bereich; names B1, B2, … in the order of the uppermost Einheit.
+
+On the demo: DIN 18300 → Sand 1 + Sand 2 together, Kies apart; DIN 18300 GK 1 and DIN 18320 → Sand 1 + Kies + Sand 2
+and Geschiebemergel + Ton together. Tests: `test_vorschlag_je_anwendungsfall` in both test files.
+
+Limits: the proposal knows only what the Gutachten descriptions say (Bodenart, Bodengruppe, Steine). Kennwerte values,
+Konsistenz, Lagerungsdichte or the Gutachter's own Homogenbereiche are not used; the planner decides.
+
+## 6. The other tables (DIN 4023 Tabelle 2 and 3)
 
 The user also gave DIN 4023 *Tabelle 2* (Kurzformen, Zeichen und Farben für Felsarten nach DIN EN ISO 14689) and
 *Tabelle 3* (… für gebräuchliche, geologische Benennungen von Boden und Fels). They correct colours in

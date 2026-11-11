@@ -54,3 +54,13 @@ def test_zuordnen_und_ifc_aus_homogenbereichen(client):
     r = aendern({"op": "homogenbereiche", "atv": "DIN 18300", "zuordnung": None})
     z = r.json()["zustand"]
     assert z["homogenbereiche"] is None and z["hb_modell"] is None
+
+
+def test_vorschlag_je_anwendungsfall_ueber_die_app(client):
+    sig = client.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
+    v = client.get(f"/api/projekt/{sig}/homogenbereiche/vorschlag", params={"atv": "DIN 18300 GK 1"}).json()
+    assert v["fehler"] == "" and v["stufe"] == "grob" and len(v["bereiche"]) < len(v["zuordnung"])
+    assert client.get(f"/api/projekt/{sig}/homogenbereiche/vorschlag", params={"atv": "DIN 1"}).json()["fehler"]
+    # nur ein Vorschlag: das Projekt bleibt ohne Zuordnung, bis er übernommen wird
+    r = client.post(f"/api/projekt/{sig}/aendern", json={"ops": []})
+    assert r.json()["zustand"]["homogenbereiche"] is None

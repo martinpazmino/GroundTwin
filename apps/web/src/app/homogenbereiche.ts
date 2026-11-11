@@ -2,7 +2,7 @@
 // zeigen, die die ATV verlangt, und das IFC wahlweise nur aus Homogenbereichen schreiben. Eingeklappt, offen mit Daten.
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { api, type HbDaten } from "./api";
+import { api, type HbDaten, type HbVorschlag } from "./api";
 import { hilfe } from "./hilfe";
 import { S, aendern, neu, versuchen } from "./store";
 
@@ -16,6 +16,20 @@ async function laden() {
   laedt = true;
   daten = (await versuchen(() => api.homogenbereicheDaten())) ?? null;
   laedt = false;
+  neu();
+}
+
+// Vorschlag je Anwendungsfall: beim Wechsel der ATV geholt und gezeigt, übernommen erst mit einem Klick
+let vorschlag: HbVorschlag | null = null;
+let vorschlagFuer = "";                           // ATV + Modellschlüssel, zu dem er gehört
+
+async function vorschlagHolen() {
+  const sig = S.sig;
+  if (!sig) return;
+  const kennung = `${atv}|${S.modell?.schluessel ?? ""}`;
+  if (vorschlagFuer === kennung) return;
+  vorschlagFuer = kennung;
+  vorschlag = (await versuchen(() => api.hbVorschlag(sig, atv))) ?? null;
   neu();
 }
 
@@ -42,6 +56,8 @@ export function homogenbereicheTeil() {
     if (!g) bereiche.push((g = { name: n, einheiten: [] }));
     g.einheiten.push(e);
   }
+  if (offen && !Object.keys(je).length) void vorschlagHolen();        // noch keine Zuordnung: Vorschlag zeigen
+  const vs = vorschlag && !vorschlag.fehler && vorschlag.atv === atv ? vorschlag : null;
   const fremd = Object.keys(je).filter((e) => !einheiten.includes(e));
   const ohne = einheiten.filter((e) => !je[e]);
   return html`
@@ -51,11 +67,21 @@ export function homogenbereicheTeil() {
         ? Object.keys(alle).join(", ") : "Einheiten je Gewerk zuordnen"}</span></summary>
       <div class="einstellung">
         <span>Gewerk (ATV) ${hilfe("homogenbereiche")}</span>
-        <select @change=${(e: Event) => { atv = (e.target as HTMLSelectElement).value; neu(); }}>
+        <select @change=${(e: Event) => { atv = (e.target as HTMLSelectElement).value; vorschlag = null; neu(); }}>
           ${(daten?.atv ?? [{ code: "DIN 18300", gewerk: "Erdarbeiten" }]).map((a) => html`
             <option value=${a.code} .selected=${a.code === atv}>${a.code} ${a.gewerk}${alle[a.code] ? " ✓" : ""}</option>`)}
         </select>
       </div>
+      ${vs && !Object.keys(je).length ? html`
+        <div class="hb-vorschlag">
+          <p class="klein"><b>Vorschlag für ${atv}</b> <span class="leise">(${vs.stufe}: ${vs.regel})</span></p>
+          <table class="tabelle kompakt">
+            <tbody>${vs.bereiche!.map((g) => html`<tr><td><b>${g.name}</b></td><td>${g.einheiten.join(", ")}</td>
+              <td class="leise klein">${g.grund}</td></tr>`)}</tbody>
+          </table>
+          <button @click=${() => setzen(vs.zuordnung!)}>Vorschlag übernehmen</button>
+          <span class="leise klein">danach je Einheit änderbar</span>
+        </div>` : nothing}
       <table class="tabelle kompakt hb-zuordnung">
         <thead><tr><th>Einheit</th><th>Homogenbereich</th></tr></thead>
         <tbody>${b.einheiten.map((e) => html`<tr>
@@ -72,6 +98,8 @@ export function homogenbereicheTeil() {
       <div class="zeile knopfzeile">
         <button class="link" @click=${() => setzen(Object.fromEntries(einheiten.map((e, i) => [e, `B${i + 1}`])))}
           title="Je Einheit ein eigener Bereich (B1, B2, … von oben); zusammenfassen durch gleiche Namen">Vorschlag: je Einheit ein Bereich</button>
+        <button class="link" @click=${async () => { vorschlagFuer = ""; await vorschlagHolen(); if (vorschlag?.zuordnung) await setzen(vorschlag.zuordnung); }}
+          title="Einheiten, die sich für dieses Gewerk gleich verhalten, in einem Bereich (Begründung oben, wenn noch nichts zugeordnet ist)">Vorschlag für ${atv}</button>
         ${Object.keys(je).length ? html`<button class="link" @click=${() => setzen(null)}>Zuordnung ${atv} löschen</button>` : nothing}
       </div>
       ${fremd.length ? html`<p class="warn klein">Zugeordnet, aber nicht mehr im Modell: ${fremd.join(", ")}</p>` : nothing}

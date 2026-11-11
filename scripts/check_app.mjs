@@ -792,6 +792,8 @@ try {
     await ruhe(800);
     const hb = page.locator("details.homogenbereiche");
     if (!(await hb.evaluate((d) => d.open))) await hb.locator("summary").click();
+    await page.waitForSelector(".hb-vorschlag", { timeout: 30000 });
+    const vorschlagBereiche = await page.locator(".hb-vorschlag tbody tr").count();
     await page.getByRole("button", { name: /Vorschlag: je Einheit/ }).click();
     await page.waitForFunction(() => Object.keys(window.app?.z?.homogenbereiche?.["DIN 18300"] ?? {}).length > 0, null, { timeout: 30000 });
     const felder = page.locator("table.hb-zuordnung input");
@@ -810,9 +812,9 @@ try {
     await warte(() => window.baugrund?.geladen && !window.app?.rechnet && window.baugrund.einheiten.length > 0, null, 240000);
     const v = await page.evaluate(() => ({ einheiten: window.baugrund.einheiten,
       liste: window.baugrund.modellname.startsWith("Homogenbereiche DIN 18300") }));
-    pruefe("Homogenbereiche DIN 18300: Zuordnung, 13 Kennwerte, IFC aus Bereichen im Viewer",
-      kennwerte === 13 && v.einheiten.includes(zweiter) && v.einheiten.length === nEinheiten - 1 && v.liste,
-      JSON.stringify({ kennwerte, ...v }));
+    pruefe("Homogenbereiche DIN 18300: Vorschlag fasst zusammen, Zuordnung, 13 Kennwerte, IFC aus Bereichen im Viewer",
+      kennwerte === 13 && vorschlagBereiche > 0 && vorschlagBereiche < nEinheiten && v.einheiten.includes(zweiter) && v.einheiten.length === nEinheiten - 1 && v.liste,
+      JSON.stringify({ kennwerte, vorschlagBereiche, ...v }));
     await page.screenshot({ path: `${aus}/H_modell.png` });
     await post(`/api/projekt/${hsig}/aendern`, { ops: [{ op: "homogenbereiche", atv: "DIN 18300", zuordnung: null }] });
   }

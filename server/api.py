@@ -324,6 +324,10 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def analyse(sig: str, a: Analyse):
         return ap.analyse(sig, a.laeufe)                   # Ground Analysis (docs/27 G2): liest das Modell
 
+    @app.get("/api/projekt/{sig}/homogenbereiche/vorschlag")
+    def hb_vorschlag(sig: str, atv: str):
+        return ap.hb_vorschlag(sig, atv)                   # je Anwendungsfall (docs/28 §6), nur ein Vorschlag
+
     @app.get("/api/projekt/{sig}/analyse/grundwasser")
     def analyse_grundwasser(sig: str):
         return ap.grundwasser(sig)                         # Grundwasserflaeche (docs/27 G5), nicht im IFC

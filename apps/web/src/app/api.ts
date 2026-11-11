@@ -245,6 +245,8 @@ export const api = {
                         beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
   homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
+  hbVorschlag: (sig: string, atv: string) =>
+    anfrage<HbVorschlag>(`/api/projekt/${sig}/homogenbereiche/vorschlag?atv=${encodeURIComponent(atv)}`),
   beispiel: (name: string) =>
     anfrage<{ projekt?: string; auftrag?: string; schritt?: "gutachten" | "bohrungen" | "lage" | "einheiten" | "modell" }>(
       "/api/beispiel", json({ name })),
@@ -321,4 +323,10 @@ export type HbDaten = {
   matrix: Record<string, Record<string, string>>;
   quelle: string;
   legende: Record<string, string>;
+};
+
+/** Vorschlag der Homogenbereiche für eine ATV, mit Begründung je Bereich (docs/28 §6). */
+export type HbVorschlag = {
+  fehler: string; atv?: string; stufe?: string; regel?: string; zuordnung?: Record<string, string>;
+  bereiche?: { name: string; einheiten: string[]; grund: string }[];
 };
