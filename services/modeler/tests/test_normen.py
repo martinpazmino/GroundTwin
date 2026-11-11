@@ -123,3 +123,12 @@ def test_farben_nach_din4023_tabelle_2_und_3():
     assert all("Tabelle" in d["fels"][n]["beleg"] for n in ("Mergelstein", "Kalkstein"))
     kurz = {e["kurz"]: e for e in d["geologische_benennungen"]["eintraege"]}
     assert kurz["Mg"]["klasse"] == "Geschiebemergel" and kurz["Bt"]["farbname"] == "violett" and kurz["A"]["farbname"] is None
+    # jede Benennung der Tabelle 3 hat eine Modellklasse und wird in einer Beschreibung erkannt
+    assert all(e["klasse"] for e in d["geologische_benennungen"]["eintraege"])
+    for text, klasse, name in (("Hangschutt, steinig", "Hangschutt", "Hangschutt"), ("Bänderton, steif", "Baenderton", "Bänderton"),
+                               ("Seekreide, weich", "Wiesenkalk", "Wiesenkalk"), ("Kalkmudde", "Wiesenkalk", "Wiesenkalk"),
+                               ("Kreidestein, verwittert", "Fels (Kreidestein)", "Kreidestein"),
+                               ("Kalktuff", "Fels (Kalktuff)", "Kalktuff"), ("Mudde", "Mudde", "Mudde")):
+        x = deuten(text)
+        assert (x.klasse, x.hauptanteil) == (klasse, name), text
+    assert deuten("Seekreide").farbname == "hellblau" and deuten("Bänderton").farbname == "violett"

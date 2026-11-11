@@ -287,7 +287,7 @@ def bodenart_aus(petro: str | None, genese: str | None) -> tuple[str | None, str
         treffer = [next(_NUR_IMPORT[p] for p in _kette(petro, CODES["petrographie_eltern"]) if p in _NUR_IMPORT)]
     if not treffer:
         return None, (f"Petrographie „{petro}“ keiner Bodenart zugeordnet" if petro else "keine Petrographie angegeben")
-    andere = [k for k in treffer[1:] if k not in ("Glimmerton", "Lauenburger Ton")]   # Namen, keine Lithologie
+    andere = [k for k in treffer[1:] if k not in ("Glimmerton", "Lauenburger Ton", "Fels (Kreidestein)")]   # Namen, keine Lithologie
     return treffer[0], (f"mehrdeutig ({', '.join(treffer[:1] + andere)}) – {treffer[0]} angenommen" if andere else "")
 
 

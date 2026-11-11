@@ -154,9 +154,10 @@ darstellung`):
 | Klei (Kl) | dunkelviolett | lila (Tab. 3) |
 
 Sandstein, Konglomerat, Brekzie, Mutterboden and Mudde were confirmed. The colour names come from the tables; the hex
-values are a display of those names. Tabelle 3 is kept as a reference (`geologische_benennungen`) including the
-Benennungen without a model class of their own (Hangschutt Lx, Wiesenkalk Wk, Bänderton Bt, Kreidestein Krst, Kalktuff
-Kltf); they are not recognised in descriptions yet. Anthropogene Böden (A) have no colour in the table; Auffüllung stays
+values are a display of those names. Tabelle 3 is kept as a reference (`geologische_benennungen`) with the model
+class of each Benennung. The five that had no class were added and are recognised in descriptions: Hangschutt (Lx),
+Wiesenkalk with Seekalk, Seekreide and Kalkmudde (Wk), Bänderton (Bt) as geological classes; Kreidestein (Krst) and
+Kalktuff (Kltf) as Felsarten. Anthropogene Böden (A) have no colour in the table; Auffüllung stays
 grey (display).
 
 ---

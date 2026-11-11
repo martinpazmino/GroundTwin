@@ -4,7 +4,7 @@
  "quelle": {
   "url": "https://schemas.bgr.de/boreholeml/codelists/v2/",
   "lizenz": "MIT, AK BoreholeML4 (https://gitlab.opencode.de/ak-boreholeml4/boreholeml)",
-  "erzeugt": "2026-11-02",
+  "erzeugt": "2026-11-11",
   "versionen": {
    "RockNameList": "version 2.2 - date: 2026-01-30 - designed for BoreholeML 3.2.0",
    "GeoGenesisList": "version 2.2 - date: 2026-01-30 - designed for BoreholeML 3.2.0",
@@ -191,6 +191,44 @@
     "liste": "GeoGenesisList"
    },
    "hinweis": "Klei als Marschenton"
+  },
+  "Hangschutt": {
+   "petrographie": {
+    "code": "l",
+    "name": "Lockergestein",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "hgx",
+    "name": "Hangschutt",
+    "liste": "GeoGenesisList"
+   },
+   "hinweis": "Petrographie des Hangschutts nicht bestimmt"
+  },
+  "Wiesenkalk": {
+   "petrographie": {
+    "code": "K",
+    "name": "Kalk, fein, locker",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "ka",
+    "name": "Wiesenkalk",
+    "liste": "GeoGenesisList"
+   },
+   "hinweis": "auch Seekalk, Seekreide, Kalkmudde (DIN 4023 Tabelle 3: Wk)"
+  },
+  "Baenderton": {
+   "petrographie": {
+    "code": "T",
+    "name": "Ton",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "glä",
+    "name": "Bänderton/-mergel",
+    "liste": "GeoGenesisList"
+   }
   },
   "Glimmerton": {
    "petrographie": {
@@ -385,6 +423,28 @@
     "liste": "RockNameList"
    },
    "genese": null
+  },
+  "Fels (Kreidestein)": {
+   "petrographie": {
+    "code": "Kst",
+    "name": "Kalkstein",
+    "liste": "RockNameList"
+   },
+   "genese": null,
+   "hinweis": "Kreidestein als Kalkstein (kein eigener Name in der Codeliste)"
+  },
+  "Fels (Kalktuff)": {
+   "petrographie": {
+    "code": "Kst",
+    "name": "Kalkstein",
+    "liste": "RockNameList"
+   },
+   "genese": {
+    "code": "kt",
+    "name": "Travertin",
+    "liste": "GeoGenesisList"
+   },
+   "hinweis": "Kalktuff als Travertin"
   }
  },
  "konsistenz": {

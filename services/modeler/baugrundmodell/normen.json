@@ -138,6 +138,27 @@
       "haupt": "Ton",
       "woerter": ["klei", "marschenklei"]
     },
+    "Hangschutt": {
+      "art": "geologisch",
+      "farbe": "#9a9a9a", "farbname": "grau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
+      "hinweis": "Hangschutt (Lx): Lehm mit Steinen am Hang.",
+      "haupt": "Schluff",
+      "woerter": ["hangschutt"]
+    },
+    "Wiesenkalk": {
+      "art": "geologisch",
+      "farbe": "#8fc4e8", "farbname": "hellblau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
+      "hinweis": "Wiesenkalk, Seekalk, Seekreide, Kalkmudde (Wk).",
+      "haupt": "Schluff",
+      "woerter": ["wiesenkalk", "seekalk", "seekreide", "kalkmudde"]
+    },
+    "Baenderton": {
+      "art": "geologisch",
+      "farbe": "#7d65a8", "farbname": "violett", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
+      "hinweis": "Bänderton (Bt): gebänderter Beckenton.",
+      "haupt": "Ton",
+      "woerter": ["bänderton", "baenderton"]
+    },
     "Glimmerton": {"art": "geologisch", "farbe": "#8a74b0", "farbname": "violett", "beleg": "darstellung", "haupt": "Ton", "woerter": ["glimmerton", "glimmerschluff"]},
     "Lauenburger Ton": {"art": "geologisch", "farbe": "#6b5596", "farbname": "violett", "beleg": "darstellung", "haupt": "Ton", "woerter": ["lauenburger"]},
     "Beton": {"art": "anthropogen", "farbe": "#c8c8c8", "farbname": "hellgrau", "beleg": "darstellung", "woerter": ["beton", "stahlbeton", "magerbeton"]},
@@ -156,6 +177,8 @@
     "Schluffstein": {"kurz": "Ust", "farbe": "#94913f", "farbname": "oliv", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Schluff"},
     "Tonstein": {"kurz": "Tst", "farbe": "#7d65a8", "farbname": "violett", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Ton"},
     "Mergelstein": {"kurz": "Mst", "farbe": "#5b63a8", "farbname": "violettblau", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Mergel"},
+    "Kreidestein": {"kurz": "Krst", "farbe": "#8fc4e8", "farbname": "hellblau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)"},
+    "Kalktuff": {"kurz": "Kltf", "farbe": "#9ccbe8", "farbname": "hellblau", "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)"},
     "Kalkstein": {"kurz": "Kst", "farbe": "#2f4f9f", "farbname": "dunkelblau", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)"},
     "Konglomerat": {"kurz": "Ko", "farbe": "#e0b52a", "farbname": "gelb", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Kies"},
     "Brekzie": {"kurz": "Br", "farbe": "#d8a820", "farbname": "gelb", "beleg": "DIN4023 Tabelle 2 (Felsarten nach DIN EN ISO 14689; Vorlage des Nutzers 2026-11-11)", "verwandt": "Kies"},
@@ -277,22 +300,22 @@
   },
   "geologische_benennungen": {
     "beleg": "DIN4023 Tabelle 3 (gebraeuchliche geologische Benennungen; Vorlage des Nutzers 2026-11-11)",
-    "hinweis": "Referenz; Benennungen ohne eigene Modellklasse (klasse null) werden nicht erkannt. Anthropogene Boeden: Tabelle 3 nennt keine Farbe, das Modell zeigt Auffuellung grau (Darstellung).",
+    "hinweis": "Referenz der Tabelle mit der Modellklasse je Benennung. Anthropogene Boeden: Tabelle 3 nennt keine Farbe, das Modell zeigt Auffuellung grau (Darstellung).",
     "eintraege": [
     {"benennung": "Oberboden (Mutterboden)", "kurz": "Mu", "farbname": "gelblichbraun", "klasse": "Mutterboden"},
     {"benennung": "Verwitterungslehm, Hanglehm", "kurz": "L", "farbname": "grau", "klasse": "Lehm"},
-    {"benennung": "Hangschutt", "kurz": "Lx", "farbname": "grau", "klasse": null},
+    {"benennung": "Hangschutt", "kurz": "Lx", "farbname": "grau", "klasse": "Hangschutt"},
     {"benennung": "Geschiebelehm", "kurz": "Lg", "farbname": "grau", "klasse": "Geschiebelehm"},
     {"benennung": "Geschiebemergel", "kurz": "Mg", "farbname": "violettblau", "klasse": "Geschiebemergel"},
     {"benennung": "Löß", "kurz": "Lö", "farbname": "oliv", "klasse": "Loess"},
     {"benennung": "Lößlehm", "kurz": "Löl", "farbname": "oliv", "klasse": "Loesslehm"},
     {"benennung": "Klei, Schlick", "kurz": "Kl", "farbname": "lila", "klasse": "Klei"},
-    {"benennung": "Wiesenkalk, Seekalk, Seekreide, Kalkmudde", "kurz": "Wk", "farbname": "hellblau", "klasse": null},
-    {"benennung": "Bänderton", "kurz": "Bt", "farbname": "violett", "klasse": null},
+    {"benennung": "Wiesenkalk, Seekalk, Seekreide, Kalkmudde", "kurz": "Wk", "farbname": "hellblau", "klasse": "Wiesenkalk"},
+    {"benennung": "Bänderton", "kurz": "Bt", "farbname": "violett", "klasse": "Baenderton"},
     {"benennung": "Mudde (Faulschlamm)", "kurz": "F", "farbname": "lila", "klasse": "Mudde"},
     {"benennung": "Anthropogene Böden", "kurz": "A", "farbname": null, "klasse": "Auffuellung"},
-    {"benennung": "Kreidestein", "kurz": "Krst", "farbname": "hellblau", "klasse": null},
-    {"benennung": "Kalktuff", "kurz": "Kltf", "farbname": "hellblau", "klasse": null}
+    {"benennung": "Kreidestein", "kurz": "Krst", "farbname": "hellblau", "klasse": "Fels (Kreidestein)"},
+    {"benennung": "Kalktuff", "kurz": "Kltf", "farbname": "hellblau", "klasse": "Fels (Kalktuff)"}
     ]
   }
 }

@@ -34,6 +34,9 @@ BODENART = {
     "Loess": ("Schluff", "Löss", ""), "Loesslehm": ("Lehm", "Lösslehm", ""),
     "Lehm": ("Lehm", None, ""), "Mergel": ("Mergel", None, ""),
     "Klei": ("Ton", "Marsch", "Klei als Marschenton"),
+    "Hangschutt": ("Lockergestein", "Hangschutt", "Petrographie des Hangschutts nicht bestimmt"),
+    "Wiesenkalk": ("Kalk, fein, locker", "Wiesenkalk", "auch Seekalk, Seekreide, Kalkmudde (DIN 4023 Tabelle 3: Wk)"),
+    "Baenderton": ("Ton", "Bänderton/-mergel", ""),
     "Glimmerton": ("Ton", None, "lithostratigraphischer Name nicht kodiert"),
     "Lauenburger Ton": ("Ton", None, "lithostratigraphischer Name nicht kodiert"),
     "Beton": ("Künstlicher Feststoff", "Anthropogene Bildungen", ""),
@@ -48,6 +51,9 @@ BODENART = {
     "Fels (Tonschiefer)": ("Tonschiefer", None, ""), "Fels (Quarzit)": ("Quarzit", None, ""),
     "Fels (Granit)": ("Granit", None, ""), "Fels (Gneis)": ("Gneis", None, ""), "Fels (Basalt)": ("Basalt", None, ""),
     "Fels (Gips)": ("Gips", None, ""), "Fels (Anhydrit)": ("Anhydrit", None, ""),
+    # nach Kalkstein: beim Import ohne Genese bleibt Kst = Kalkstein
+    "Fels (Kreidestein)": ("Kalkstein", None, "Kreidestein als Kalkstein (kein eigener Name in der Codeliste)"),
+    "Fels (Kalktuff)": ("Kalkstein", "Travertin", "Kalktuff als Travertin"),
 }
 # Deutung nach Norm (normen.py) -> Name in der Codeliste; Hinweis, wo die Begriffe nicht gleich sind
 KONSISTENZ = {w: (w, "") for w in ("breiig", "weich", "steif", "halbfest", "fest")}

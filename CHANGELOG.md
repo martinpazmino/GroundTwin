@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Geological Benennungen of DIN 4023 Tabelle 3 recognised in descriptions: Hangschutt, Wiesenkalk (Seekalk,
+  Seekreide, Kalkmudde), Bänderton, Kreidestein, Kalktuff (docs/28 §6).
 - **Homogenbereiche (VOB/C)** (docs/28): Einheiten per Gewerk (ATV) to Homogenbereiche in the step
   Einheiten, with the Kennwerte each ATV asks for; IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten,
   and a model of Homogenbereiche only. A proposal per Anwendungsfall merges Einheiten that behave alike for the
