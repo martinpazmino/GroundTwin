@@ -17,6 +17,8 @@ and to another for Bohrarbeiten. This note describes the second way to build the
 > - The planner assigns the Einheiten to Homogenbereiche, per ATV (step *Einheiten*, folded section
 >   *Homogenbereiche (VOB/C)*). For each ATV a proposal with reasons merges Einheiten that behave alike for that
 >   Gewerk (§5); it is applied only on a click.
+> - What the layer descriptions say about the asked Kennwerte is shown per Bereich and written to the IFC; laboratory
+>   values stay open (§6).
 > - The IFC carries the assignment as Pset `CPset_Homogenbereich_<ATV>` on every Einheit and on every Bodenschicht of
 >   the Bohrsäulen.
 > - On request the model consists of the Homogenbereiche only: the same closed bodies, grouped per Bereich.
@@ -118,14 +120,15 @@ Rule (general, from the data, not one per ATV):
 
 1. **Verhalten** of each Einheit from its Bodenarten (`normen.json`, field `art`): nichtbindig (Kies, Sand, Steine,
    Blöcke), bindig (Schluff, Ton and the geological fine-grained soils such as Geschiebemergel, Löß, Lehm, Klei),
-   organisch, anthropogen, Fels. An Einheit with mixed or unknown Bodenarten stays a Bereich of its own.
+   organisch, anthropogen (Auffüllung), befestigt (Beton, Asphalt, Schwarzdecke, Pflaster: bound layers, never merged
+   with fill), Fels (also `Fels (Tonstein)`). An Einheit with mixed or unknown Bodenarten stays a Bereich of its own.
 2. **How fine** follows from the Kennwerte the ATV asks for (matrix §2):
    - at most 7 Kennwerte (DIN 18300 GK 1, DIN 18320): *grob*, only the Verhalten;
    - Mineralogie or Abrasivität asked (rows 4 or 18: DIN 18301, 18312, 18319, 18324): *fein*, also the Bodengruppe
      (else Hauptbodenart) and Steine/Blöcke (in at least half of the Schichten) apart;
    - otherwise *standard*: also the Bodengruppe DIN 18196, the one named most often in the descriptions of the Einheit
-     (`normen.deuten`), else the Hauptbodenart.
-   Anthropogen, organisch and Fels are grouped by Verhalten at every level.
+     (`normen.deuten`) if at least half of its Schichten name it, else the Hauptbodenart.
+   Anthropogen, befestigt, organisch and Fels are grouped by Verhalten at every level.
 3. Einheiten with the same key form one Bereich; names B1, B2, … in the order of the uppermost Einheit.
 
 On the demo: DIN 18300 → Sand 1 + Sand 2 together, Kies apart; DIN 18300 GK 1 and DIN 18320 → Sand 1 + Kies + Sand 2
@@ -134,7 +137,58 @@ and Geschiebemergel + Ton together. Tests: `test_vorschlag_je_anwendungsfall` in
 Limits: the proposal knows only what the Gutachten descriptions say (Bodenart, Bodengruppe, Steine). Kennwerte values,
 Konsistenz, Lagerungsdichte or the Gutachter's own Homogenbereiche are not used; the planner decides.
 
-## 6. The other tables (DIN 4023 Tabelle 2 and 3)
+## 6. Kennwerte from the descriptions (2026-11-11)
+
+The extraction reads the Bohrprofile, not the Kennwerte tables of the Gutachten text. What the layer descriptions say
+is still used, per Homogenbereich (without an assignment: per Einheit), `hb.kennwerte_bereich`:
+
+| Kennwert | From the description | Kind |
+|---|---|---|
+| 1 ortsübliche Bezeichnung | Benennung after the norm (`normen.deuten`) | Ansprache |
+| 3a, 3b Steine, Blöcke | "steinig", "Blöcke" named | named only, no Massenanteil |
+| 10a Plastizität | from the Bodengruppe (TL/UL leicht, TM/UM mittel, TA/UA ausgeprägt) | derived |
+| 11a Konsistenz | weich, steif … | Ansprache |
+| 13 Lagerungsdichte | locker, mitteldicht … | Ansprache |
+| 14 Kalkgehalt | kalkfrei … | Ansprache |
+| 16 organischer Anteil | humos, organisch, torfig named | named only, no Glühverlust |
+| 17 organische Böden | Benennung of Torf, Mudde, Mutterboden | Ansprache |
+| 19 Bodengruppe | DIN 18196 where named | as written |
+
+Each entry carries the share of the Schichten that name it (`steif (5/8), weich (1/8)`). Everything else (2
+Korngrößenverteilung, 3c, 4, 5 Dichte, 6, 7 undrainierte Scherfestigkeit, 8, 9 Wassergehalt, 10b, 11b, 12, 15, 18) is a
+laboratory or table value and stays **offen**; nothing is estimated.
+
+- App: under the Kennwerte of the ATV, *Aus den Beschreibungen*: per Bereich how many of the asked Kennwerte are
+  addressed, and the table. `GET /api/projekt/{sig}/homogenbereiche/kennwerte?atv=…`.
+- IFC: in `CPset_Homogenbereich_<ATV>` one property `Kennwert_<nr>_<name>` per addressed Kennwert, `Kennwerte_offen`
+  and `Kennwerte_Herkunft`.
+- **Measured on the real examples** (DIN 18300, 13 Kennwerte): Talheim, whose descriptions follow the norm (34 of 65
+  Schichten with Konsistenz, 8 with Bodengruppe): up to 4 of 13 per Einheit. Berlin V-67b (short field descriptions):
+  1 or 2 of 13. The descriptions cover the Ansprache, never the numbers a tender needs; those need the text of the
+  Gutachten.
+
+## 7. The real examples through Ground Analysis and Homogenbereiche (2026-11-11, not blind)
+
+The two real examples in `data/beispiele` are training data (their PDFs were open during development), so this is a
+run on real data, not a blind test.
+
+| | Berlin V-67b (5 Bohrungen in the model, georeferenced) | Talheim (8 Bohrungen, Reihe) |
+|---|---|---|
+| Kreuzprobe, mean error | IDW 0.78 m, spline 0.80 m (10 contacts) | 5.99 m (19 contacts) |
+| Flagged Bohrungen | 422C-461 (2.3 m) and 422C-460 (1.6 m) against 0.2 m for the others | none |
+| σ of the bases | 0.5–0.9 m (95 %) | 5–10 m |
+| Grundwasser | 2 levels, 32.45–32.65 m NHN | 3 levels, surface above the terrain at half of the nodes |
+| Proposal DIN 18300 | Sand 1–3 → B1, Kies 1–2 → B2, Auffüllung → B3 | Mutterboden, Schwarzdecke, Auffüllung, Schluff, Tonstein each apart |
+
+- **Berlin** behaves as on synthetic data. Two Bohrungen are flagged as not expected from their neighbours; the hint
+  asks to check their depths and Lage. Why they differ was not examined.
+- **Talheim** has no coordinates: the Bohrungen stand in a row with assumed spacing on sloping ground. The numbers are
+  not a property of the ground. The analysis now says so (*schematische Lage … nur zur Anschauung*); before, it gave
+  them without a warning.
+- The run found two faults in the proposal, fixed: `Fels (Tonstein)` counted as unknown, and Schwarzdecke was merged
+  with Auffüllung. A Bodengruppe named in 1 of 9 Schichten no longer decides the Bereich.
+
+## 8. The other tables (DIN 4023 Tabelle 2 and 3)
 
 The user also gave DIN 4023 *Tabelle 2* (Kurzformen, Zeichen und Farben für Felsarten nach DIN EN ISO 14689) and
 *Tabelle 3* (… für gebräuchliche, geologische Benennungen von Boden und Fels). They correct colours in

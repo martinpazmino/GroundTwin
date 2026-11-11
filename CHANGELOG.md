@@ -6,8 +6,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Homogenbereiche: what the layer descriptions say about the Kennwerte an ATV asks for (Konsistenz, Bodengruppe,
+  Lagerungsdichte …), per Bereich with the share of Schichten, in the app and the IFC; laboratory values stay open
+  (docs/28 §6). Ground Analysis warns when the Lage is only schematic (docs/28 §7).
 - Geological Benennungen of DIN 4023 Tabelle 3 recognised in descriptions: Hangschutt, Wiesenkalk (Seekalk,
-  Seekreide, Kalkmudde), Bänderton, Kreidestein, Kalktuff (docs/28 §6).
+  Seekreide, Kalkmudde), Bänderton, Kreidestein, Kalktuff (docs/28 §8).
 - **Homogenbereiche (VOB/C)** (docs/28): Einheiten per Gewerk (ATV) to Homogenbereiche in the step
   Einheiten, with the Kennwerte each ATV asks for; IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten,
   and a model of Homogenbereiche only. A proposal per Anwendungsfall merges Einheiten that behave alike for the
@@ -114,7 +117,7 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 
 ### Changed
 - Colours of Fels and geological Benennungen after DIN 4023 Tabelle 2 and 3 (e.g. Mergelstein and
-  Geschiebemergel violettblau, Löß oliv), replacing display choices (docs/28 §5).
+  Geschiebemergel violettblau, Löß oliv), replacing display choices (docs/28 §8).
 - **The UI puts the first use case in front** (decision D99): a Gutachten shown interactively and checked for
   plausibility, also against the Bohrungen of the Länder. Nothing was removed.
   - Start page with **two paths of the same weight**: *Gutachten* (drop the PDF) and *Standort* (a point on the map).

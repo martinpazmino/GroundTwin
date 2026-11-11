@@ -2,7 +2,7 @@
 // zeigen, die die ATV verlangt, und das IFC wahlweise nur aus Homogenbereichen schreiben. Eingeklappt, offen mit Daten.
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
-import { api, type HbDaten, type HbVorschlag } from "./api";
+import { api, type HbDaten, type HbKennwerte, type HbVorschlag } from "./api";
 import { hilfe } from "./hilfe";
 import { S, aendern, neu, versuchen } from "./store";
 
@@ -33,6 +33,20 @@ async function vorschlagHolen() {
   neu();
 }
 
+// Kennwerte aus den Beschreibungen je Bereich: neu geholt, wenn ATV, Modell oder Zuordnung wechseln
+let werte: HbKennwerte | null = null;
+let werteFuer = "";
+
+async function werteHolen() {
+  const sig = S.sig;
+  if (!sig) return;
+  const kennung = `${atv}|${S.modell?.schluessel ?? ""}|${JSON.stringify(S.z?.homogenbereiche?.[atv] ?? {})}`;
+  if (werteFuer === kennung) return;
+  werteFuer = kennung;
+  werte = (await versuchen(() => api.hbKennwerte(sig, atv))) ?? null;
+  neu();
+}
+
 function setzen(zuordnung: Record<string, string> | null) {
   return aendern([{ op: "homogenbereiche", atv, zuordnung }]);
 }
@@ -58,6 +72,8 @@ export function homogenbereicheTeil() {
   }
   if (offen && !Object.keys(je).length) void vorschlagHolen();        // noch keine Zuordnung: Vorschlag zeigen
   const vs = vorschlag && !vorschlag.fehler && vorschlag.atv === atv ? vorschlag : null;
+  if (offen) void werteHolen();
+  const kwerte = werte && !werte.fehler && werte.atv === atv ? werte : null;
   const fremd = Object.keys(je).filter((e) => !einheiten.includes(e));
   const ohne = einheiten.filter((e) => !je[e]);
   return html`
@@ -112,8 +128,22 @@ export function homogenbereicheTeil() {
           const art = daten!.matrix[atv][k.nr];
           return html`<li>${k.nr} ${k.name}${art !== "erforderlich" ? html` <span class="leise">(${art})</span>` : nothing}</li>`;
         })}</ul>
-        <p class="leise klein">Die Werte stehen im Gutachten; das IFC nennt je Bereich, welche anzugeben sind.
-          Quelle der Matrix: ${daten!.quelle}</p>` : nothing}
+        <p class="leise klein">Quelle der Matrix: ${daten!.quelle}</p>` : nothing}
+      ${kwerte ? html`
+        <h4>Aus den Beschreibungen ${hilfe("hb_kennwerte")}</h4>
+        ${kwerte.bereiche!.map((g) => html`
+          <details class="hb-werte">
+            <summary><b>${g.name}</b>${g.ohne_bereich ? html` <span class="leise">(ohne Bereich)</span>` : nothing}
+              <span class="leise klein">${g.einheiten.join(", ")} · ${g.belegt} von ${g.verlangt} Kennwerten angesprochen ·
+                ${g.schichten} Schichten</span></summary>
+            <table class="tabelle kompakt">
+              <tbody>${g.kennwerte.map((k) => html`<tr>
+                <td>${k.nr} ${k.name}</td>
+                <td class=${k.wert ? "" : "leise"}>${k.wert ?? "offen – nicht im Extrakt"}</td></tr>`)}</tbody>
+            </table>
+          </details>`)}
+        <p class="leise klein">Ansprache aus den Schichtbeschreibungen mit dem Anteil der Schichten; keine Laborwerte.
+          Offene Kennwerte stehen im Text oder in den Anlagen des Gutachtens. Das IFC trägt beides je Bereich.</p>` : nothing}
       <div class="einstellung">
         <span>IFC-Modell</span>
         <label class="inline"><input type="radio" name="hb-modell" .checked=${!S.z?.hb_modell}

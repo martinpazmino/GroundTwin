@@ -278,13 +278,30 @@ def _schicht_psets(hb_psets: dict[str, dict], einheiten: list[str]) -> dict:
     return out
 
 
-def _hb_pset(code: str, je: dict[str, str], einheit: str) -> dict:
-    """Pset je ATV: welcher Homogenbereich, welche Kennwerte die ATV verlangt (Werte stehen im Gutachten)."""
+def _hb_pset(code: str, je: dict[str, str], einheit: str, schichten_je: dict[str, list[dict]] | None = None) -> dict:
+    """Pset je ATV: welcher Homogenbereich, welche Kennwerte die ATV verlangt, und was die Beschreibungen des
+    Bereichs dazu hergeben (Ansprache mit Haeufigkeit; Laborwerte stehen nur im Gutachten und bleiben offen)."""
     bereich = je.get(einheit)
-    return {"ATV": code, "Gewerk": hb.gewerk(code), "Homogenbereich": bereich or "nicht zugeordnet",
-            "Einheiten_im_Bereich": ", ".join(e for e, b in je.items() if b == bereich) if bereich else einheit,
-            "Kennwerte_erforderlich": hb.kennwerte_text(code),
-            "Quelle_Kennwerte": "VOB/C-Matrix der Kennwerte je ATV (homogenbereiche.json, docs/28)"}
+    im_bereich = [e for e, b in je.items() if b == bereich] if bereich else [einheit]
+    out = {"ATV": code, "Gewerk": hb.gewerk(code), "Homogenbereich": bereich or "nicht zugeordnet",
+           "Einheiten_im_Bereich": ", ".join(im_bereich),
+           "Kennwerte_erforderlich": hb.kennwerte_text(code),
+           "Quelle_Kennwerte": "VOB/C-Matrix der Kennwerte je ATV (homogenbereiche.json, docs/28)"}
+    if schichten_je is not None:
+        kb = hb.kennwerte_bereich(code, [s for e in im_bereich for s in schichten_je.get(e, [])])
+        for z in kb["kennwerte"]:
+            if z["wert"] is not None:
+                out[f"Kennwert_{z['nr']}_{_ifc_name(z['name'])}"] = z["wert"]
+        out["Kennwerte_offen"] = "; ".join(f"{z['nr']} {z['name']}" for z in kb["kennwerte"] if z["wert"] is None) or None
+        out["Kennwerte_Herkunft"] = (f"aus {kb['schichten']} Schichtbeschreibungen des Bereichs (Ansprache, Anteil der "
+                                     "Schichten in Klammern); keine Laborwerte")
+    return out
+
+
+def _ifc_name(text: str) -> str:
+    """'Massenanteil an Steinen > 63–200 mm' -> 'Massenanteil_an_Steinen_63_200_mm' (Name einer IFC-Eigenschaft)."""
+    import re
+    return re.sub(r"[^0-9A-Za-zÄÖÜäöüß]+", "_", text).strip("_")
 
 
 def _als_homogenbereiche(m: Modell, einheiten: list[dict], code: str, je: dict[str, str]) -> tuple[list[dict], list[str]]:
@@ -308,7 +325,7 @@ def _als_homogenbereiche(m: Modell, einheiten: list[dict], code: str, je: dict[s
             "geschlossen": all(t["geschlossen"] for t in teile),
             "pset": hb.pset_name(code),
             "eigenschaften": {
-                **_hb_pset(code, je, g["einheiten"][0]),
+                **_hb_pset(code, je, g["einheiten"][0], {t["name"]: einheit_schichten(m, t["_j"]) for t in teile}),
                 "Bodenarten": ", ".join(dict.fromkeys(b for k in ks for b in k["bodenarten"])),
                 "Volumen_m3": round(sum(k["volumen_m3"] for k in ks), 1),
                 "Koerper": len(teile), "Farbe": hb.farbe(n), "Reihenfolge": n + 1,
@@ -361,7 +378,9 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
     if nur_homogenbereiche and nur_homogenbereiche not in homogenbereiche:
         raise ValueError(f"keine Homogenbereiche für {nur_homogenbereiche} zugeordnet")
     namen = [e.name for e in m.einheiten]
-    hb_psets = {e: {hb.pset_name(code): _hb_pset(code, je, e) for code, je in homogenbereiche.items()} for e in namen}
+    schichten_je = {e.name: einheit_schichten(m, j) for j, e in enumerate(m.einheiten)} if homogenbereiche else {}
+    hb_psets = {e: {hb.pset_name(code): _hb_pset(code, je, e, schichten_je) for code, je in homogenbereiche.items()}
+                for e in namen}
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
     n = len(m.einheiten)

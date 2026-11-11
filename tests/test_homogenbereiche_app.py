@@ -64,3 +64,15 @@ def test_vorschlag_je_anwendungsfall_ueber_die_app(client):
     # nur ein Vorschlag: das Projekt bleibt ohne Zuordnung, bis er übernommen wird
     r = client.post(f"/api/projekt/{sig}/aendern", json={"ops": []})
     assert r.json()["zustand"]["homogenbereiche"] is None
+
+
+def test_kennwerte_aus_den_beschreibungen_ueber_die_app(client):
+    """Talheim (echte Daten): Konsistenz und Bodengruppe stehen in den Beschreibungen, Laborwerte bleiben offen."""
+    sig = client.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
+    k = client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 18300 GK 1"}).json()
+    assert k["fehler"] == "" and not k["zugeordnet"] and k["bereiche"]
+    werte = [z["wert"] for b in k["bereiche"] for z in b["kennwerte"] if z["nr"] == "11a" and z["wert"]]
+    assert werte and any("steif" in w or "weich" in w for w in werte)
+    k2 = client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 18300"}).json()
+    assert all(z["wert"] is None for b in k2["bereiche"] for z in b["kennwerte"] if z["nr"] in ("2", "5", "7", "9"))
+    assert client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 1"}).json()["fehler"]

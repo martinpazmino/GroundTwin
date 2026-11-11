@@ -326,7 +326,11 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
 
     @app.get("/api/projekt/{sig}/homogenbereiche/vorschlag")
     def hb_vorschlag(sig: str, atv: str):
-        return ap.hb_vorschlag(sig, atv)                   # je Anwendungsfall (docs/28 §6), nur ein Vorschlag
+        return ap.hb_vorschlag(sig, atv)                   # je Anwendungsfall (docs/28 §5), nur ein Vorschlag
+
+    @app.get("/api/projekt/{sig}/homogenbereiche/kennwerte")
+    def hb_kennwerte(sig: str, atv: str):
+        return ap.hb_kennwerte(sig, atv)                   # Ansprache aus den Beschreibungen je Bereich (docs/28 §6)
 
     @app.get("/api/projekt/{sig}/analyse/grundwasser")
     def analyse_grundwasser(sig: str):

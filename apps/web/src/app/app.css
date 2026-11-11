@@ -441,6 +441,8 @@ ul.dienste a { color: #8fc6ff; }
 .analyse input.mittel { width: 9rem; }
 .analyse .zahl.warn { color: var(--warn); }
 
-/* Homogenbereiche: Vorschlag je Anwendungsfall (docs/28 §6) */
+/* Homogenbereiche: Vorschlag je Anwendungsfall (docs/28 §5) */
 .hb-vorschlag { border: 1px solid var(--linie); border-radius: 4px; padding: 0.4rem 0.6rem; margin: 0.4rem 0; }
 .hb-vorschlag table { margin: 0.3rem 0; }
+.hb-werte { margin: 0.2rem 0; }
+.hb-werte summary { cursor: pointer; }

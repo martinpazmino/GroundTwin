@@ -239,3 +239,17 @@ def test_virtuelle_bohrung_bereich_95_je_schicht():
         assert s["unten_95_nhn"][0] == pytest.approx(s["unten_nhn"] - 1.96 * s["sigma_unten_m"], abs=0.03)
         assert s["unten_95_nhn"][1] == pytest.approx(s["unten_nhn"] + 1.96 * s["sigma_unten_m"], abs=0.03)
     assert v["hinweise"] == ["unterste Einheit: Unterkante = Modellbasis (keine Bohrung erreicht sie)"]
+
+
+def test_hinweis_bei_schematischer_lage():
+    """docs/28 §7: ohne vermessene Abstaende (Reihe) gelten Kreuzprobe und Unsicherheit nur zur Anschauung."""
+    from baugrundmodell import synthetisch as syn
+    from baugrundmodell.modell import bauen
+
+    from baugrundanalyse import kreuzprobe
+    m = bauen([syn.dokument(syn.FAELLE["geneigt"]())])
+    assert not any("schematische Lage" in h for h in kreuzprobe(m)["hinweise"])
+    for b in m.bohrungen[:3]:
+        b.lage = "schematisch"
+    h = kreuzprobe(m)["hinweise"]
+    assert any("schematische Lage (3 von" in x and "nur zur Anschauung" in x for x in h)

@@ -470,7 +470,7 @@ class Arbeitsplatz:
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
 
     def hb_vorschlag(self, sig: str, atv: str) -> dict:
-        """Vorschlag der Homogenbereiche fuer eine ATV aus den Einheiten des Modells (docs/28 §6); aendert nichts."""
+        """Vorschlag der Homogenbereiche fuer eine ATV aus den Einheiten des Modells (docs/28 §5); aendert nichts."""
         from baugrundmodell import homogenbereiche as hb
         erg = self.modell(sig)
         if erg["fehler"]:
@@ -479,6 +479,27 @@ class Arbeitsplatz:
             return {"fehler": "", **hb.vorschlag_fuer(atv, erg["bericht"]["einheiten"])}
         except ValueError as err:
             return {"fehler": str(err)}
+
+    def hb_kennwerte(self, sig: str, atv: str) -> dict:
+        """Je Homogenbereich der ATV (ohne Zuordnung: je Einheit), was die Beschreibungen zu den verlangten
+        Kennwerten hergeben (docs/28 §6); liest nur."""
+        from baugrundmodell import homogenbereiche as hb
+        with self.sperre(sig):
+            erg = self.modell(sig)
+            if erg["fehler"]:
+                return {"fehler": erg["fehler"]}
+            _, p = self.laden(sig)
+            einheiten = erg["bericht"]["einheiten"]
+            try:
+                je = (p.homogenbereiche or {}).get(atv) or {}
+                gruppen, _ = hb.bereiche(je, [e["name"] for e in einheiten])
+                schichten = {e["name"]: e["schichten"] for e in einheiten}
+                return {"fehler": "", "atv": atv, "zugeordnet": bool(je), "bereiche": [
+                    {"name": g["bereich"] or g["einheiten"][0], "ohne_bereich": g["bereich"] is None,
+                     "einheiten": g["einheiten"],
+                     **hb.kennwerte_bereich(atv, [s for e in g["einheiten"] for s in schichten[e]])} for g in gruppen]}
+            except ValueError as err:
+                return {"fehler": str(err)}
 
     @staticmethod
     def _hb_fuer_ifc(p: pj.Projekt) -> dict:

@@ -147,6 +147,12 @@ def kreuzprobe(m, methoden: tuple[str, ...] | None = None) -> dict:
 
 def _hinweise(m, k: dict) -> list[str]:
     h = []
+    schema = [b.code for b in m.bohrungen if b.lage == "schematisch"]
+    if schema:                                              # Reihe ohne Lageplan: Abstaende sind gesetzt, nicht gemessen
+        h.append(f"schematische Lage ({len(schema)} von {len(m.bohrungen)} Bohrungen): die Abstände sind nicht vermessen – "
+                 "Kreuzprobe, Unsicherheit und Erkundungsvorschlag gelten nur zur Anschauung")
+    if any(b.hoehe.startswith("relativ") for b in m.bohrungen):
+        h.append("relative Höhen (GOK unbekannt): Fehler in m beziehen sich auf Tiefen unter dem gesetzten Gelände")
     eigene = k["methoden"].get(k["methode_modell"])
     if eigene and not eigene["gesamt"]["n"]:
         h.append("keine exakte Unterkante in den Bohrungen: die Kreuzprobe hat nichts zu vergleichen")

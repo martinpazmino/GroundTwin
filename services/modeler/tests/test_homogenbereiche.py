@@ -130,3 +130,47 @@ def test_vorschlag_je_anwendungsfall():
     assert v["zuordnung"]["S1"] == v["zuordnung"]["S3"] != v["zuordnung"]["S2"]
     assert v["zuordnung"]["X"] != v["zuordnung"]["Y"]
     assert hb.vorschlag_fuer("DIN 18300 GK 1", e)["zuordnung"]["S2"] == v["zuordnung"]["S1"]
+
+
+def test_kennwerte_aus_den_beschreibungen(tmp_path):
+    """docs/28 §6: Ansprache aus den Beschreibungen je verlangtem Kennwert mit Haeufigkeit; Laborwerte bleiben offen;
+    im IFC als Kennwert_… und Kennwerte_offen."""
+    s = [{"beschreibung": "Schluff, stark tonig, schwach steinig, steif, TA", "bodenart": "Schluff"},
+         {"beschreibung": "Schluff, tonig, weich-steif, TM", "bodenart": "Schluff"},
+         {"beschreibung": "Schluff, sandig", "bodenart": "Schluff"}]
+    w = hb.kennwerte_aus_beschreibung(s)
+    assert "TA (1/3)" in w["19"] and "TM (1/3)" in w["19"]
+    assert "ausgeprägt plastisch (1/3)" in w["10a"] and "steif (1/3)" in w["11a"]
+    assert w["3a"].startswith("Steine genannt (1/3)") and "kein Massenanteil" in w["3a"]
+    assert "13" not in w and "14" not in w                       # nicht genannt: keine Angabe erfunden
+    kb = hb.kennwerte_bereich("DIN 18300", s)
+    je = {k["nr"]: k["wert"] for k in kb["kennwerte"]}
+    assert kb["verlangt"] == 13 and je["19"] and je["1"] and je["3a"]
+    assert all(je[n] is None for n in ("2", "5", "7", "9", "10b", "11b", "13", "16"))     # Laborwerte: offen
+    assert kb["belegt"] == sum(v is not None for v in je.values())
+    assert hb.kennwerte_bereich("DIN 18300", [])["belegt"] == 0
+    # IFC: Demo ohne Angaben in den Beschreibungen -> nur die Bezeichnung, der Rest offen
+    docs, m, n, zu = _modell()
+    ifc_schreiben(m, tmp_path / "k.ifc", docs, homogenbereiche=zu, nur_homogenbereiche="DIN 18300")
+    f = ifcopenshell.open(str(tmp_path / "k.ifc"))
+    _gueltig(f)
+    ps = ue.get_psets({x.Name: x for x in _strata(f)}["B2"])["CPset_Homogenbereich_DIN18300"]
+    assert "Kennwert_1_ortsübliche_Bezeichnung" in ps and "19 Bodengruppe" in ps["Kennwerte_offen"]
+    assert "keine Laborwerte" in ps["Kennwerte_Herkunft"]
+
+
+def test_vorschlag_fels_befestigt_und_einzelne_bodengruppe():
+    """Gefunden am echten Beispiel Talheim (docs/28 §7): Fels (Tonstein) ist Fels, Schwarzdecke ist keine Auffuellung,
+    eine Bodengruppe in 1 von 9 Schichten entscheidet nicht."""
+    s = lambda t, b: {"beschreibung": t, "bodenart": b}
+    e = [{"name": "Schwarzdecke", "bodenarten": ["Schwarzdecke"], "schichten": [s("Schwarzdecke", "Schwarzdecke")]},
+         {"name": "Auffuellung", "bodenarten": ["Auffuellung"], "schichten": [s("Anschüttung, Schluff", "Auffuellung")]},
+         {"name": "Schluff 1", "bodenarten": ["Schluff"], "schichten": [s("Schluff, tonig, TA", "Schluff")] + [s("Schluff", "Schluff")] * 8},
+         {"name": "Schluff 2", "bodenarten": ["Schluff"], "schichten": [s("Schluff, sandig", "Schluff")]},
+         {"name": "Fels (Tonstein)", "bodenarten": ["Fels (Tonstein)"], "schichten": [s("Tonstein, verwittert", "Fels (Tonstein)")]}]
+    v = hb.vorschlag_fuer("DIN 18300", e)
+    z = v["zuordnung"]
+    assert z["Schwarzdecke"] != z["Auffuellung"]
+    assert z["Schluff 1"] == z["Schluff 2"]                         # TA nur in 1 von 9: Hauptbodenart gilt
+    grund = {g["name"]: g["grund"] for g in v["bereiche"]}
+    assert grund[z["Fels (Tonstein)"]] == "Fels" and grund[z["Schwarzdecke"]].startswith("befestigt")

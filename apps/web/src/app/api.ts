@@ -245,6 +245,8 @@ export const api = {
                         beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
   homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
+  hbKennwerte: (sig: string, atv: string) =>
+    anfrage<HbKennwerte>(`/api/projekt/${sig}/homogenbereiche/kennwerte?atv=${encodeURIComponent(atv)}`),
   hbVorschlag: (sig: string, atv: string) =>
     anfrage<HbVorschlag>(`/api/projekt/${sig}/homogenbereiche/vorschlag?atv=${encodeURIComponent(atv)}`),
   beispiel: (name: string) =>
@@ -325,8 +327,15 @@ export type HbDaten = {
   legende: Record<string, string>;
 };
 
-/** Vorschlag der Homogenbereiche für eine ATV, mit Begründung je Bereich (docs/28 §6). */
+/** Vorschlag der Homogenbereiche für eine ATV, mit Begründung je Bereich (docs/28 §5). */
 export type HbVorschlag = {
   fehler: string; atv?: string; stufe?: string; regel?: string; zuordnung?: Record<string, string>;
   bereiche?: { name: string; einheiten: string[]; grund: string }[];
+};
+
+/** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */
+export type HbKennwerte = {
+  fehler: string; atv?: string; zugeordnet?: boolean;
+  bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
+    kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
 };

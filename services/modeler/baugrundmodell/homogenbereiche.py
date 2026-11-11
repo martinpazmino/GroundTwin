@@ -84,12 +84,15 @@ def vorschlag(einheiten: list[str]) -> dict[str, str]:
     return {e: vorlage.format(n=i + 1) for i, e in enumerate(einheiten)}
 
 
-# ---------------------------------------------------------------- Vorschlag je Anwendungsfall (docs/28 §6)
+# ---------------------------------------------------------------- Vorschlag je Anwendungsfall (docs/28 §5)
 # Verhalten im Bau aus der Bodenart der Einheit (normen.json, Feld "art"); nur Einheiten gleichen Verhaltens koennen
 # einen Bereich bilden. Unbekanntes bleibt immer einzeln.
 _NICHTBINDIG = {"Kies", "Sand", "Steine", "Bloecke"}
 _BINDIG_BODEN = {"Schluff", "Ton"}
-VERHALTEN_TEXT = {"anthropogen": "anthropogen (Auffüllung)", "organisch": "organisch", "fels": "Fels",
+_BEFESTIGT = {"Beton", "Asphalt", "Schwarzdecke", "Pflaster"}        # gebundene Schichten, kein Boden
+MIN_ANTEIL_GRUPPE = 0.5        # Bodengruppe trennt nur, wenn mindestens die Haelfte der Schichten sie nennt
+VERHALTEN_TEXT = {"anthropogen": "anthropogen (Auffüllung)", "befestigt": "befestigt (Beton, Asphalt, Pflaster)",
+                  "organisch": "organisch", "fels": "Fels",
                   "nichtbindig": "nichtbindig", "bindig": "bindig", "unbekannt": "nicht klassifiziert"}
 
 
@@ -97,8 +100,10 @@ def _verhalten(bodenarten: list[str]) -> str:
     from .normen import KLASSEN
     arten = set()
     for b in bodenarten:
-        art = KLASSEN.get(b, {}).get("art", "unbekannt")
-        if art == "boden":
+        art = "fels" if b.startswith("Fels") else KLASSEN.get(b, {}).get("art", "unbekannt")   # auch "Fels (Tonstein)"
+        if b in _BEFESTIGT:
+            arten.add("befestigt")
+        elif art == "boden":
             arten.add("nichtbindig" if b in _NICHTBINDIG else "bindig" if b in _BINDIG_BODEN else "unbekannt")
         elif art == "geologisch":
             arten.add("bindig")                   # Geschiebemergel, Loess, Lehm, Klei, Mergel: feinkoernig gepraegt
@@ -111,7 +116,7 @@ def stufe(code: str) -> tuple[str, str]:
     """Wie fein ein Vorschlag fuer die ATV unterscheidet, aus ihren Kennwerten (nicht je ATV festgelegt)."""
     nr = {k["nr"] for k in kennwerte(code)}
     if len(nr) <= 7:
-        return "grob", f"{len(nr)} Kennwerte: nur das Verhalten (nichtbindig, bindig, organisch, anthropogen, Fels)"
+        return "grob", f"{len(nr)} Kennwerte: nur das Verhalten (nichtbindig, bindig, organisch, anthropogen, befestigt, Fels)"
     if nr & {"4", "18"}:
         return "fein", ("Mineralogie bzw. Abrasivität verlangt (Kennwert 4/18): dazu Bodengruppe bzw. Bodenart und "
                         "Steine/Blöcke getrennt")
@@ -133,6 +138,8 @@ def merkmale(einheit: dict) -> dict:
             steine += 1
     n = len(einheit.get("schichten") or [])
     g = gruppen.most_common(1)[0][0] if gruppen else None
+    if g and gruppen[g] < MIN_ANTEIL_GRUPPE * n:            # einzelne Nennung: traegt die Einheit nicht
+        g = None
     return {"verhalten": _verhalten(list(einheit.get("bodenarten") or [])), "bodengruppe": g,
             "bodengruppe_anteil": f"{gruppen[g]}/{n}" if g else None, "steinig": n > 0 and steine * 2 >= n,
             "hauptbodenart": (einheit.get("bodenarten") or ["?"])[0]}
@@ -152,7 +159,7 @@ def vorschlag_fuer(code: str, einheiten: list[dict]) -> dict:
         v = m["verhalten"]
         if v == "unbekannt":
             k, grund = ("einzeln", e["name"]), "nicht eindeutig klassifiziert: eigener Bereich"
-        elif st == "grob" or v in ("anthropogen", "organisch", "fels"):
+        elif st == "grob" or v in ("anthropogen", "befestigt", "organisch", "fels"):
             k, grund = (v,), VERHALTEN_TEXT[v]
         else:
             art = m["bodengruppe"] or m["hauptbodenart"]
@@ -172,6 +179,56 @@ def vorschlag_fuer(code: str, einheiten: list[dict]) -> dict:
     bereiche_ = [{"name": namen[k], "einheiten": [e["name"] for e in einheiten if schluessel[e["name"]] == k],
                   "grund": begruendung[k]} for k in namen]
     return {"atv": code, "stufe": st, "regel": regel, "zuordnung": zuordnung, "bereiche": bereiche_}
+
+
+# ---------------------------------------------------------------- Kennwerte aus den Beschreibungen (docs/28 §6)
+# Was die Schichtbeschreibungen des Extrakts hergeben: nur Ansprache (Worte), keine Laborwerte. Je Kennwert die
+# Angaben mit ihrer Haeufigkeit; alles andere bleibt offen und wird so genannt.
+_PLASTIZITAET = {"L": "leicht plastisch", "M": "mittelplastisch", "A": "ausgeprägt plastisch"}
+NUR_LABOR = "nicht im Extrakt (Laborwert bzw. Tabelle im Gutachtentext)"
+
+
+def _haeufig(werte: list[str], n: int) -> str:
+    from collections import Counter
+    return ", ".join(f"{w} ({k}/{n})" for w, k in Counter(werte).most_common(4))
+
+
+def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
+    """Kennwert-Nr -> Angabe aus den Beschreibungen ("steif (5/8), weich (1/8)"); nur was genannt ist."""
+    from .normen import deuten
+    n = len(schichten)
+    ds = [deuten(s.get("beschreibung"), s.get("bodenart")) for s in schichten]
+    out: dict[str, str] = {}
+
+    def setze(nr: str, werte: list[str], zusatz: str = "") -> None:
+        if werte:
+            out[nr] = _haeufig(werte, n) + zusatz
+
+    setze("1", [d.benennung for d in ds if d.benennung])
+    setze("3a", ["Steine genannt" for d in ds if any(a.klasse == "Steine" for a in d.nebenanteile) or d.klasse == "Steine"],
+          " – nur Ansprache, kein Massenanteil")
+    setze("3b", ["Blöcke genannt" for d in ds if any(a.klasse == "Bloecke" for a in d.nebenanteile) or d.klasse == "Bloecke"],
+          " – nur Ansprache, kein Massenanteil")
+    gruppen = [d.bodengruppe.strip("[]") for d in ds if d.bodengruppe]
+    setze("10a", [_PLASTIZITAET[g[1]] for g in gruppen if g[0] in "TU" and len(g) > 1 and g[1] in _PLASTIZITAET],
+          " – aus der Bodengruppe")
+    setze("11a", [d.konsistenz for d in ds if d.konsistenz])
+    setze("13", [d.lagerung for d in ds if d.lagerung], " – Ansprache")
+    setze("14", [d.kalk for d in ds if d.kalk], " – Ansprache")
+    setze("16", ["organische Anteile genannt" for d in ds
+                 if any(a.klasse in ("Torf", "Mudde") or "humos" in a.text or "organ" in a.text for a in d.nebenanteile)],
+          " – nur Ansprache, kein Glühverlust")
+    setze("17", [d.benennung for d in ds if d.benennung and d.klasse in ("Torf", "Mudde", "Mutterboden")])
+    setze("19", [d.bodengruppe for d in ds if d.bodengruppe])
+    return out
+
+
+def kennwerte_bereich(code: str, schichten: list[dict]) -> dict:
+    """Fuer eine ATV: je verlangtem Kennwert die Angabe aus den Beschreibungen oder offen."""
+    aus = kennwerte_aus_beschreibung(schichten)
+    zeilen = [{"nr": k["nr"], "name": k["name"], "art": k["art"], "wert": aus.get(k["nr"])} for k in kennwerte(code)]
+    return {"schichten": len(schichten), "kennwerte": zeilen,
+            "belegt": sum(z["wert"] is not None for z in zeilen), "verlangt": len(zeilen)}
 
 
 def bereiche(je: dict[str, str], einheiten: list[str]) -> tuple[list[dict], list[str]]:
