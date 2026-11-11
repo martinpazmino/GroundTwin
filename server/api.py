@@ -317,6 +317,14 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def analyse(sig: str, a: Analyse):
         return ap.analyse(sig, a.laeufe)                   # Ground Analysis (docs/27 G2): liest das Modell
 
+    @app.get("/api/projekt/{sig}/analyse/grundwasser")
+    def analyse_grundwasser(sig: str):
+        return ap.grundwasser(sig)                         # Grundwasserflaeche (docs/27 G5), nicht im IFC
+
+    @app.get("/api/projekt/{sig}/analyse/flaeche/{j}")
+    def analyse_flaeche(sig: str, j: int):
+        return ap.analyse_flaeche(sig, j)                  # Unterkante mit sigma fuer den Viewer
+
     @app.post("/api/projekt/{sig}/analyse/punkt")
     def analyse_punkt(sig: str, p: Punkt2):
         return ap.virtuelle_bohrung(sig, p.x, p.y)

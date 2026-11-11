@@ -98,6 +98,21 @@ def hinweise_holen() -> list[str]:
     return h
 
 
+def orientierungen_setzen(vorgaben: dict[int, tuple[float, float]] | None) -> None:
+    """Eingegebene Orientierung je Unterkante j: (Fallrichtung, Fallwinkel) in Grad; None = keine (docs/27 G4)."""
+    _lauf.orientierungen = dict(vorgaben or {})
+
+
+def orientierungen_holen() -> dict[int, tuple[float, float]]:
+    return dict(getattr(_lauf, "orientierungen", None) or {})
+
+
+def orientierung_vorgabe() -> tuple[float, float] | None:
+    """Fuer Erweiterungen: eingegebene Orientierung der Flaeche, die gerade interpoliert wird (sonst None)."""
+    j = getattr(_lauf, "flaeche", None)
+    return None if j is None else orientierungen_holen().get(j)
+
+
 def interpolieren(ziel: np.ndarray, xy: np.ndarray, z: np.ndarray, methode: str = "idw") -> np.ndarray:
     """Exakter Interpolator: IDW (p=2) oder Duennplatten-Spline (tps, linearer Trend; braucht 3 nicht
     kollineare Punkte, sonst IDW); weitere aus ERWEITERUNGEN."""
@@ -173,25 +188,29 @@ def schichtmodell(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]], punkt
     if oben is None:
         oben = interpolieren(punkte, xy_b, np.array([b.gok for b in bohrungen]), methode)
 
-    def flaeche(daten: dict[int, float]) -> np.ndarray:
+    def flaeche(daten: dict[int, float], j: int) -> np.ndarray:
         if not daten:
             return np.full(len(punkte), basis)
         bi = np.array(sorted(daten))
-        return interpolieren(punkte, xy_b[bi], np.array([daten[i] for i in bi]), methode)
+        _lauf.flaeche = j                                  # fuer orientierung_vorgabe der Erweiterungen
+        try:
+            return interpolieren(punkte, xy_b[bi], np.array([daten[i] for i in bi]), methode)
+        finally:
+            _lauf.flaeche = None
 
     exakt = [{bi: kontakte[bi][j].z for bi in range(nb) if kontakte[bi][j].art == "exakt"} for j in range(n)]
     vorl = []
     for j in range(n):
         d = exakt[j] or {bi: (kontakte[bi][j].lo + kontakte[bi][j].hi) / 2
                          for bi in range(nb) if kontakte[bi][j].art == "frei"}
-        vorl.append(flaeche(d)[:nb])
+        vorl.append(flaeche(d, j)[:nb])
     frei = _freie_grenzen(bohrungen, kontakte, vorl)
     zensur: list[dict[int, float]] = [{} for _ in range(n)]
     roh: list[np.ndarray | None] = [None] * n
     geaendert = set(range(n))
     for _ in range(ZENSUR_RUNDEN):
         for j in geaendert:                               # nur Flaechen mit neuen Stuetzpunkten neu rechnen
-            roh[j] = flaeche({**exakt[j], **{bi: z for (bi, jj), z in frei.items() if jj == j}, **zensur[j]})
+            roh[j] = flaeche({**exakt[j], **{bi: z for (bi, jj), z in frei.items() if jj == j}, **zensur[j]}, j)
         flaechen = verschneiden(oben, roh, basis)
         geaendert = set()
         for bi in range(nb):

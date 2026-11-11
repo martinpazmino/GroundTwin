@@ -131,14 +131,15 @@ def implizit_verfuegbar() -> bool:
 
 def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: str = "idw",
                  puffer: float | None = None, raster: float | None = None, basis: float | None = None,
-                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None):
+                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None,
+                 orientierung: dict[str, dict] | None = None):
     """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes. gelaende: DGM-Raster fuer die Oberkante.
     methode "implizit": GemPy (docs/27 G3), nur wenn installiert."""
     if methode == "implizit" and not implizit_verfuegbar():
         raise ValueError("Interpolation implizit braucht GemPy (pip install -r requirements-analyse.txt) – "
                          "unter Erweitert IDW oder Dünnplatten-Spline wählen")
     return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung,
-                 gelaende=gelaende, gelaende_info=gelaende_info)
+                 gelaende=gelaende, gelaende_info=gelaende_info, orientierung=orientierung)
 
 
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,

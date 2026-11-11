@@ -8,7 +8,7 @@ Unterkante unter der Endteufe bleibt.
 from __future__ import annotations
 
 import numpy as np
-from baugrundmodell.flaechen import schichtmodell
+from baugrundmodell.flaechen import orientierungen_holen, orientierungen_setzen, schichtmodell
 from scipy.spatial import cKDTree
 
 METHODEN = ("idw", "tps")
@@ -45,8 +45,13 @@ def vorhersage(m, ohne: int, methode: str, ausser: frozenset[int] = frozenset())
     xy = m.punkte[:nb]                                      # das Netz fuehrt die Bohrungen zuerst (flaechen.netz)
     punkte = np.vstack([xy[rest], xy[ohne:ohne + 1]])
     oben = np.r_[m.flaechen[0][rest], m.flaechen[0][ohne]] if m.dgm is not None else None   # DGM: Gelaende bekannt
-    sm = schichtmodell([m.bohrungen[i] for i in rest], [m.kontakte[i] for i in rest], punkte, xy[rest], m.basis,
-                       methode, oben=oben)
+    vorher = orientierungen_holen()
+    orientierungen_setzen({int(j): tuple(v) for j, v in (m.parameter.get("orientierung_vorgabe") or {}).items()})
+    try:                                                    # eingegebene Orientierung gilt auch ohne die Bohrung
+        sm = schichtmodell([m.bohrungen[i] for i in rest], [m.kontakte[i] for i in rest], punkte, xy[rest], m.basis,
+                           methode, oben=oben)
+    finally:
+        orientierungen_setzen(vorher)
     return sm["flaechen"][:, -1]
 
 

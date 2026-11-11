@@ -40,6 +40,7 @@ class Einstellungen:
     basis: float | None = None
     gok_relativ: bool = True                # fehlt die GOK bei allen: 0 m (relativ, markiert)
     gelaende_dgm: bool = True               # mit DGM: Oberkante aus dem DGM, an den Bohrungen auf die GOK (docs/21 §4.4)
+    orientierung: dict | None = None        # implizit: je Einheit {"fallrichtung", "fallwinkel"} in Grad (docs/27 G4)
 
 
 @dataclass
@@ -678,6 +679,8 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         neu = {k: v for k, v in op.items() if k in felder}
         if neu.get("methode", "idw") not in ("idw", "tps", "implizit"):
             raise ValueError("Interpolation: idw, tps oder implizit")
+        if "orientierung" in neu:
+            neu["orientierung"] = orientierung_pruefen(neu["orientierung"])
         p.einstellungen = {**p.einstellungen, **neu}
     elif art == "durchmesser":
         d = zahl(op.get("wert"))
@@ -793,6 +796,31 @@ def reihe_aendern(docs: list[dict], p: Projekt, op: dict) -> None:
 # ---------------------------------------------------------------- Kalibrierung der Unterlage
 def _strecke_px(s: dict) -> float:
     return math.hypot(float(s["u2"]) - float(s["u1"]), float(s["v2"]) - float(s["v1"]))
+
+
+MAX_FALLWINKEL = 80.0                     # wie implizit.MAX_EINGABE_GRAD: steiler bildet die Saeulenabtastung nicht ab
+
+
+def orientierung_pruefen(o: dict | None) -> dict | None:
+    """{Einheit: {"fallrichtung": 0..360, "fallwinkel": 0..80}} in Grad; ein Eintrag ohne Werte faellt weg."""
+    if not o:
+        return None
+    if not isinstance(o, dict):
+        raise ValueError("Orientierung: je Einheit Fallrichtung und Fallwinkel")
+    out = {}
+    for name, v in o.items():
+        v = v or {}
+        r, w = zahl(v.get("fallrichtung")), zahl(v.get("fallwinkel"))
+        if r is None and w is None:
+            continue
+        if r is None or w is None:
+            raise ValueError(f"Orientierung {name}: Fallrichtung und Fallwinkel angeben")
+        if not 0 <= r <= 360:
+            raise ValueError(f"Orientierung {name}: Fallrichtung 0–360°")
+        if not 0 <= w <= MAX_FALLWINKEL:
+            raise ValueError(f"Orientierung {name}: Fallwinkel 0–{MAX_FALLWINKEL:.0f}°")
+        out[str(name)] = {"fallrichtung": round(r % 360.0, 1), "fallwinkel": round(w, 1)}
+    return out or None
 
 
 def kalibrierung_pruefen(k: dict | None, art: str) -> dict | None:

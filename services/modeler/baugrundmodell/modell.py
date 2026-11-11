@@ -13,6 +13,7 @@ from scipy.spatial import cKDTree
 from . import __version__
 from .einheiten import (Bohrung, Einheit, Kontakt, bohrungen_aus_extraktion, kontakte, korrelieren)
 from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, hinweise_holen, hinweise_starten, netz,
+                       orientierungen_setzen,
                        schichtmodell)
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe
 from .koerper import koerper, pruefen, volumen_prismen
@@ -78,10 +79,13 @@ def standard_raster(flaeche: float) -> float:
 
 def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str = "idw",
           raster: float | None = None, puffer: float | None = None, basis: float | None = None,
-          ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None) -> Modell:
+          ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None,
+          orientierung: dict[str, dict] | None = None) -> Modell:
     """ursprung: fester lokaler Nullpunkt (App: bleibt beim Verschieben von Bohrungen stehen, die Ansicht springt nicht).
 
     gelaende: DGM-Raster (x0, y0, dx, dy, z, epsg) fuer die Oberkante (umgebung.py); gelaende_info: Name und Quelle.
+    orientierung: je Einheit {"fallrichtung", "fallwinkel"} in Grad, eingegeben (docs/27 G4); nutzt nur eine
+    Erweiterung, die danach fragt (implizit); steht mit Quelle "Eingabe" im Bericht.
     """
     bohrungen, ausgeschlossen, epsg = bohrungen_aus_extraktion(docs)
     if not bohrungen:
@@ -134,23 +138,43 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
         gel.update(gelaende_info or {})
         if gel.get("hinweis"):
             hinweise.append(gel["hinweis"])
-    hinweise_starten()
-    sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben)
-    hinweise += hinweise_holen()
     erweiterung = ERWEITERUNGEN.get(methode)
+    vorgaben = _orientierungen(orientierung, einheiten, hinweise) if hasattr(erweiterung, "beschreiben") else {}
+    hinweise_starten()
+    orientierungen_setzen(vorgaben)
+    try:
+        sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben)
+        beschrieben = erweiterung.beschreiben(einheiten, ks, bohrungen) if hasattr(erweiterung, "beschreiben") else None
+    finally:
+        orientierungen_setzen(None)
+    hinweise += hinweise_holen()
     m = Modell(epsg, ursprung, bohrungen, ausgeschlossen, einheiten, ks, punkte, dreiecke, rand, sm["flaechen"],
                sm["abstand"], basis, {"methode": methode, "raster_m": raster, "puffer_m": puffer,
                                       "basis_nhn": basis, "flaeche_m2": float(flaeche), "ausdehnung_m": ausdehnung,
                                       "durchmesser_auto_m": standard_durchmesser(ausdehnung),
                                       "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel,
                                       "reifegrad": grad, "herkunft": je_herkunft,
-                                      **({"orientierung": erweiterung.beschreiben(einheiten, ks, bohrungen)}
-                                         if hasattr(erweiterung, "beschreiben") else {})},
+                                      **({"orientierung": beschrieben} if beschrieben is not None else {}),
+                                      **({"orientierung_vorgabe": {str(j): list(v) for j, v in vorgaben.items()}}
+                                         if vorgaben else {})},
                hinweise=hinweise, max_abweichung=sm["max_abweichung_bohrungen"],
                zensurpunkte=sum(len(z) for z in sm["zensur"]), ausgeduennt=sm["ausgeduennt"], zuordnung=zuordnung)
     m.dgm = gelaende if oben is not None else None
     _koerper(m)
     return m
+
+
+def _orientierungen(orientierung: dict[str, dict] | None, einheiten: list[Einheit],
+                    hinweise: list[str]) -> dict[int, tuple[float, float]]:
+    """Eingegebene Orientierungen nach Einheit-Index; unbekannte Namen werden gemeldet, nicht still verworfen."""
+    out: dict[int, tuple[float, float]] = {}
+    namen = {e.name: j for j, e in enumerate(einheiten)}
+    for name, v in (orientierung or {}).items():
+        if name not in namen:
+            hinweise.append(f"Orientierung für '{name}' nicht verwendet: keine solche Einheit im Modell")
+            continue
+        out[namen[name]] = (float(v["fallrichtung"]) % 360.0, float(v["fallwinkel"]))
+    return out
 
 
 def _gelaende(r, bohrungen: list[Bohrung], epsg: int | None, punkte: np.ndarray, ursprung: tuple[float, float],

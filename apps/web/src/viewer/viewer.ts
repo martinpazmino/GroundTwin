@@ -17,7 +17,7 @@ import { eigenschaften, inhalt, type Inhalt, type Psets } from "./baugrund";
 import * as KAMERA from "./kamera";
 import { esc, LageEditor } from "./lage";
 import { tipp } from "./tipp";
-import { ausSzene, hoeheAusSzene, koordinatenText, rahmen } from "./rahmen";
+import { ausSzene, hoeheAusSzene, koordinatenText, rahmen, zuSzene } from "./rahmen";
 import { ereignis, empfaengerSetzen, mitApp, projektSetzen, protokoll, type Args, type Nadel } from "./kanal";
 
 // Geotechnik-Klassen und Gelaende: der IfcImporter verwirft sie sonst (Architektur 8.2)
@@ -461,6 +461,8 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     clipper.deleteAll();
     modellPlatzieren();
     editor.neuAufbauen();
+    unsicherheitAufbauen();
+    wasserAufbauen();
     KAMERA.szeneAktualisieren();
     await KAMERA.einpassen();
     await fragments.core.update(true);
@@ -950,8 +952,129 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     leisteNeu();
   }
 
+  // ------------------------------------------------------------------ Ground Analysis (docs/27 G2)
+  // Unterkante einer Einheit, gefaerbt nach der Streuung sigma (gruen 0 -> gelb -> rot = Maximum), ueber dem Modell
+  type Unsicherheit = { name: string; punkte: [number, number, number][]; dreiecke: [number, number, number][];
+                        sigma: (number | null)[]; sigma_max: number };
+  let unsicherheitDaten: Unsicherheit | null = null;
+  let unsicherheitNetz: THREE.Mesh | null = null;
+  const legende = document.createElement("div");
+  legende.className = "sigma-legende";
+  legende.hidden = true;
+  huelle.querySelector("bim-viewport")?.appendChild(legende);
+  function sigmaFarbe(s: number | null, max: number, ziel: THREE.Color) {
+    if (s === null || !Number.isFinite(s)) return ziel.setRGB(0.55, 0.55, 0.6);       // nicht bezifferbar: grau
+    const t = Math.min(1, Math.max(0, s / Math.max(max, 1e-6)));
+    return t < 0.5 ? ziel.setRGB(0.2 + 1.4 * t, 0.75, 0.25) : ziel.setRGB(0.9, 0.75 - 1.3 * (t - 0.5), 0.2);
+  }
+  function unsicherheitAufbauen() {
+    if (unsicherheitNetz) {
+      world.scene.three.remove(unsicherheitNetz);
+      unsicherheitNetz.geometry.dispose();
+      (unsicherheitNetz.material as THREE.Material).dispose();
+      unsicherheitNetz = null;
+    }
+    const d = unsicherheitDaten;
+    legende.hidden = !d;
+    if (!d) { neuZeichnen(3); return; }
+    const pos = new Float32Array(d.punkte.length * 3);
+    const farben = new Float32Array(d.punkte.length * 3);
+    const v = new THREE.Vector3(), c = new THREE.Color();
+    d.punkte.forEach(([e, n, h], i) => {
+      zuSzene(e, n, h, v).toArray(pos, i * 3);
+      sigmaFarbe(d.sigma[i], d.sigma_max, c).toArray(farben, i * 3);
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.BufferAttribute(farben, 3));
+    g.setIndex(d.dreiecke.flat());
+    g.computeVertexNormals();
+    // ueber den Koerpern gezeichnet (die Unterkante liegt im Modell): ohne Tiefentest, leicht durchscheinend
+    unsicherheitNetz = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
+    unsicherheitNetz.name = "Unsicherheit";
+    unsicherheitNetz.renderOrder = 999;
+    world.scene.three.add(unsicherheitNetz);
+    const zahl = (x: number) => x.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    legende.innerHTML = `<b>σ Unterkante ${esc(d.name)}</b><div class="sigma-balken"></div>
+      <div class="sigma-skala"><span>0</span><span>${zahl(d.sigma_max / 2)}</span><span>${zahl(d.sigma_max)} m</span></div>`;
+    neuZeichnen(6);
+  }
+  /** Unterkante mit sigma zeigen (null = weg). */
+  function unsicherheit(d: Unsicherheit | null) {
+    unsicherheitDaten = d;
+    unsicherheitAufbauen();
+  }
+
+  // Grundwasserflaeche (docs/27 G5): blau, durchscheinend, ueber den Koerpern gezeichnet
+  type Wasser = { punkte: [number, number, number][]; dreiecke: [number, number, number][] };
+  let wasserDaten: Wasser | null = null;
+  let wasserNetz: THREE.Mesh | null = null;
+  function wasserAufbauen() {
+    if (wasserNetz) {
+      world.scene.three.remove(wasserNetz);
+      wasserNetz.geometry.dispose();
+      (wasserNetz.material as THREE.Material).dispose();
+      wasserNetz = null;
+    }
+    const d = wasserDaten;
+    if (!d) { neuZeichnen(3); return; }
+    const pos = new Float32Array(d.punkte.length * 3);
+    const v = new THREE.Vector3();
+    d.punkte.forEach(([e, n, h], i) => zuSzene(e, n, h, v).toArray(pos, i * 3));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setIndex(d.dreiecke.flat());
+    wasserNetz = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x2f7fd8, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }));
+    wasserNetz.name = "Grundwasser";
+    wasserNetz.renderOrder = 998;
+    world.scene.three.add(wasserNetz);
+    neuZeichnen(6);
+  }
+  /** Grundwasserflaeche zeigen (null = weg). */
+  function grundwasser(d: Wasser | null) {
+    wasserDaten = d;
+    wasserAufbauen();
+  }
+
+  // Ein Klick waehlt einen Punkt (virtuelle Bohrung): Treffer im Modell, sonst auf der Rasterebene; Esc bricht ab
+  let punktWahl: ((p: { e: number; n: number } | null) => void) | null = null;
+  let auswahlVorher = true;                                        // Highlighter vor der Punktwahl (Lage-Modus: aus)
+  function punktWaehlen(): Promise<{ e: number; n: number } | null> {
+    punktWahl?.(null);
+    meldung("Punkt im Modell anklicken – Esc bricht ab", 8000);
+    flaeche.style.cursor = "crosshair";
+    if (!punktWahl) auswahlVorher = highlighter.enabled;
+    highlighter.enabled = false;                                   // der Klick waehlt einen Punkt, kein Bauteil
+    return new Promise((fertig) => { punktWahl = fertig; });
+  }
+  function punktWahlEnde(p: { e: number; n: number } | null) {
+    const f = punktWahl;
+    punktWahl = null;
+    flaeche.style.cursor = "";
+    $("meldung").hidden = true;
+    if (f) highlighter.enabled = auswahlVorher;
+    f?.(p);
+  }
+
   // ------------------------------------------------------------------ Maus und Tastatur
   const flaeche = world.renderer.three.domElement;
+  let druck: { x: number; y: number } | null = null;
+  flaeche.addEventListener("pointerdown", (ev) => { druck = { x: ev.clientX, y: ev.clientY }; });
+  flaeche.addEventListener("click", async (ev) => {
+    if (!punktWahl || !druck || Math.hypot(ev.clientX - druck.x, ev.clientY - druck.y) > 4) return;   // gezogen
+    const r = flaeche.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    KAMERA.strahl(strahl, ndc);
+    const eigene = unsicherheitNetz ? strahl.intersectObject(unsicherheitNetz, false) : [];
+    let p: THREE.Vector3 | null = eigene[0]?.point ?? null;
+    if (!p && modell?.object.visible) p = (await caster.castRay({ position: ndc }).catch(() => null))?.point ?? null;
+    if (!p) p = strahl.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -raster.three.position.y), new THREE.Vector3());
+    if (!p) return;
+    const a = ausSzene(p);
+    punktWahlEnde({ e: a.e, n: a.n });
+  });
   flaeche.addEventListener("dblclick", async () => {
     if (editor.aktiv) return;
     if (schnittWerkzeug) {
@@ -968,6 +1091,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     if (ev.code === "Delete" && editor.loeschen()) return;          // Lage-Modus: Punkt bzw. gesetzte Lage
     if (ev.code === "Delete" || ev.code === "Backspace") clipper.delete(world);
     if (ev.key === "Escape") {
+      if (punktWahl) { punktWahlEnde(null); return; }
       if (editor.escape()) return;
       if (editor.aktiv && lageKnopf) await lageModus(false);
       else await auswahlAufheben();
@@ -1080,6 +1204,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
   const api = {
     world, editor, rahmen, KAMERA, status, ausSzene, hoeheAusSzene,
     setzen, lageModus, ueberhoehen, fokus, meldung, groesseGeaendert, nadelWaehlen,
+    unsicherheit, grundwasser, punktWaehlen, tafel: eigenschaftenZeigen,
     ansicht: KAMERA.ansicht,
     modell: () => modell,
     /** Einstellung "Kanten und Schatten" (Pruefungen schalten sie fuer SwiftShader ab). */

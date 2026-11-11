@@ -101,3 +101,33 @@ def test_ohne_anmeldung_klare_meldung():
     flaechen.ERWEITERUNGEN.pop("implizit", None)
     with pytest.raises(ValueError, match="nicht verfügbar"):
         bauen([syn.dokument(syn.geneigt())], methode="implizit")
+
+
+def test_pol_aus_fallrichtung_und_fallwinkel():
+    p = implizit.pol_aus(90.0, 30.0)                      # faellt nach Osten: Pol nach Osten und oben
+    assert p == pytest.approx([0.5, 0.0, math.cos(math.radians(30))], abs=1e-9)
+    assert implizit.pol_aus(0.0, 0.0) == pytest.approx([0, 0, 1])
+
+
+def test_eingegebene_orientierung_gilt_und_bleibt_exakt():
+    """docs/27 G4: eine eingegebene Orientierung ersetzt die berechnete, die Kontakte bleiben exakt; die Kreuzprobe
+    rechnet mit derselben Eingabe; ein unbekannter Name wird gemeldet."""
+    docs = [syn.dokument(syn.FAELLE["geneigt"]())]
+    ohne = bauen(docs, methode="implizit")
+    name = ohne.einheiten[0].name
+    mit = bauen(docs, methode="implizit", orientierung={name: {"fallrichtung": 0, "fallwinkel": 20},
+                                                        "Gibtsnicht": {"fallrichtung": 0, "fallwinkel": 5}})
+    o = mit.parameter["orientierung"][0]
+    assert o["quelle"] == "Eingabe" and o["fallen_grad"] == 20 and o["fallrichtung_grad"] == 0
+    assert mit.parameter["orientierung"][1]["quelle"] != "Eingabe"
+    assert mit.parameter["orientierung_vorgabe"] == {"0": [0.0, 20.0]}
+    assert any("Gibtsnicht" in h for h in mit.hinweise)
+    assert mit.max_abweichung <= implizit.TOLERANZ
+    nb = len(mit.bohrungen)
+    d = np.abs(mit.flaechen[1] - ohne.flaechen[1])
+    assert d[:nb].max() <= 1e-6 and d.max() > 0.5            # an den Bohrungen gleich, dazwischen anders
+    assert flaechen.orientierungen_holen() == {}             # nach dem Lauf keine Vorgabe uebrig
+    # Kreuzprobe mit der Eingabe: eine Vorhersage entsteht mit der Vorgabe, danach ist sie wieder weg
+    from baugrundanalyse.kreuzprobe import vorhersage
+    f_mit, f_ohne = vorhersage(mit, 0, "implizit"), vorhersage(ohne, 0, "implizit")
+    assert abs(f_mit[1] - f_ohne[1]) > 1e-3 and flaechen.orientierungen_holen() == {}

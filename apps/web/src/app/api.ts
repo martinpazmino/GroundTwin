@@ -121,6 +121,7 @@ export interface Geoldg {
 export interface Einstellungen {
   methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
   gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
+  orientierung?: Record<string, { fallrichtung: number; fallwinkel: number }> | null;   // implizit, je Einheit (docs/27 G4)
 }
 
 export interface Zustand {
@@ -289,7 +290,23 @@ export const api = {
   sgdVerwerfen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/sgd`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
   analyse: (sig: string, laeufe = 100) => anfrage<AnalyseErgebnis>(`/api/projekt/${sig}/analyse`, json({ laeufe })),
+  analyseFlaeche: (sig: string, j: number) => anfrage<{ fehler: string; name?: string; punkte?: [number, number, number][];
+    dreiecke?: [number, number, number][]; sigma?: (number | null)[]; sigma_max?: number; hinweis?: string }>(
+    `/api/projekt/${sig}/analyse/flaeche/${j}`),
+  analyseGrundwasser: (sig: string) => anfrage<Grundwasser>(`/api/projekt/${sig}/analyse/grundwasser`),
   analysePunkt: (sig: string, x: number, y: number) => anfrage<VirtuelleBohrung>(`/api/projekt/${sig}/analyse/punkt`, json({ x, y })),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,
+};
+
+/** Grundwasserfläche aus den Wasserständen der Bohrungen (docs/27 G5); nicht im IFC. */
+export type Grundwasser = {
+  fehler: string; gemessen?: number; trocken?: number; methode?: string; hinweise?: string[];
+  staende?: { code: string; art: "gemessen" | "trocken" | "ohne Angabe"; z?: number; tiefe_m?: number; spanne_m?: number;
+    bis_z?: number }[];
+  widersprueche?: { code: string; trocken_bis_z: number; flaeche_z: number; differenz_m: number }[];
+  kreuzprobe?: { mae_m: number; max_m: number; je_bohrung: { code: string; fehler_m: number }[] } | null;
+  ueber_gelaende_knoten?: number;
+  flaeche?: { name: string; punkte: [number, number, number][]; dreiecke: [number, number, number][]; z_min: number;
+    z_max: number } | null;
 };

@@ -2,7 +2,7 @@
 // voraus, die es nicht gesehen hat?), Unsicherheit je Einheit und die virtuelle Bohrung an einem Punkt. Liest nur das
 // gerechnete Modell; geändert wird nichts. Gerechnet wird erst auf Klick (je nach Größe einige Sekunden).
 import { html, nothing } from "lit";
-import { api, type AnalyseErgebnis, type KreuzMethode, type VirtuelleBohrung } from "./api";
+import { api, type AnalyseErgebnis, type Grundwasser, type KreuzMethode, type VirtuelleBohrung } from "./api";
 import { hilfe } from "./hilfe";
 import { S, neu, versuchen } from "./store";
 
@@ -144,4 +144,109 @@ export function analyseTeil() {
         ${vorschlagTeil(a)}
         ${virtuellTeil(a)}` : nothing}
     </details>`;
+}
+
+
+// ------------------------------------------------------------------ im Viewer (Schritt Modell, unter Erweitert)
+let viewerEinheit = 0;
+let viewerAn = "";                                // Name der gezeigten Einheit ("" = keine)
+let viewerFuer = "";                              // Schluessel des Modells, zu dem sie gehoert
+
+const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
+
+async function flaecheZeigen() {
+  const sig = S.sig;
+  if (!sig || !S.viewer) return;
+  const f = await versuchen(() => api.analyseFlaeche(sig, viewerEinheit), "Unsicherheit wird gerechnet …");
+  if (!f) return;
+  if (f.fehler) { S.viewer.meldung(f.fehler, 6000); return; }
+  S.viewer.unsicherheit({ name: f.name!, punkte: f.punkte!, dreiecke: f.dreiecke!, sigma: f.sigma!, sigma_max: f.sigma_max! });
+  viewerAn = f.name!;
+  viewerFuer = S.modell?.schluessel ?? "";
+  if (f.hinweis) S.viewer.meldung(f.hinweis, 6000);
+  neu();
+}
+
+function flaecheWeg() {
+  S.viewer?.unsicherheit(null);
+  viewerAn = "";
+  neu();
+}
+
+let wasser: Grundwasser | null = null;            // gezeigte Grundwasserflaeche (null = keine)
+let wasserFuer = "";
+
+async function wasserZeigen() {
+  const sig = S.sig;
+  if (!sig || !S.viewer) return;
+  const g = await versuchen(() => api.analyseGrundwasser(sig), "Grundwasserfläche …");
+  if (!g) return;
+  if (g.fehler) { S.viewer.meldung(g.fehler, 6000); return; }
+  wasser = g;
+  wasserFuer = S.modell?.schluessel ?? "";
+  S.viewer.grundwasser(g.flaeche ?? null);
+  if (!g.flaeche) S.viewer.meldung(g.hinweise?.[0] ?? "keine Grundwasserfläche", 6000);
+  neu();
+}
+
+function wasserWeg() {
+  S.viewer?.grundwasser(null);
+  wasser = null;
+  neu();
+}
+
+function wasserTeil() {
+  if (wasser && wasserFuer !== (S.modell?.schluessel ?? "")) { S.viewer?.grundwasser(null); wasser = null; }   // Modell neu
+  const g = wasser;
+  const z = (x: number, s = 2) => x.toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s });
+  return html`
+    <div class="zeile">
+      <button @click=${wasserZeigen}>Grundwasserfläche zeigen</button>${hilfe("grundwasser")}
+      ${g ? html`<button class="link" @click=${wasserWeg}>Grundwasser ausblenden</button>` : nothing}
+    </div>
+    ${g ? html`<div class="klein grundwasser">
+      <p>${g.gemessen} gemessene${g.trocken ? `, ${g.trocken} trockene` : ""} von ${g.staende?.length ?? 0} Bohrungen
+        ${g.flaeche ? html` · ${z(g.flaeche.z_min)} bis ${z(g.flaeche.z_max)} m NHN` : nothing}
+        ${g.kreuzprobe ? html` · Kreuzprobe ⌀ ${z(g.kreuzprobe.mae_m)} m, max. ${z(g.kreuzprobe.max_m)} m` : nothing}</p>
+      ${(g.hinweise ?? []).length ? html`<ul class="hinweise">${g.hinweise!.map((h) => html`<li>${h}</li>`)}</ul>` : nothing}
+    </div>` : nothing}`;
+}
+
+async function punktImViewer() {
+  const sig = S.sig;
+  const v = S.viewer;
+  if (!sig || !v) return;
+  const p = await v.punktWaehlen();
+  if (!p) return;
+  const b = await versuchen(() => api.analysePunkt(sig, p.e, p.n), "Virtuelle Bohrung …");
+  if (!b) return;
+  if (b.fehler) { v.meldung(b.fehler, 6000); return; }
+  const z = (x: number | null | undefined, s = 2) => (x === null || x === undefined ? "–" : x.toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s }));
+  const zeilen = b.schichten!.map((s) => `<tr><td>${z(s.tiefe_oben_m)}–${z(s.tiefe_unten_m)} m</td><td>${esc(s.einheit)}</td>
+    <td>${s.sigma_unten_m === null ? (s.unterkante_offen ? "offen" : "–") : `± ${z(s.sigma_unten_m)} m`}</td></tr>`).join("");
+  v.tafel(`Virtuelle Bohrung`, `<p>${z(b.x, 1)} / ${z(b.y, 1)} · GOK ${z(b.gok_nhn)} m NHN · ${z(b.abstand_m, 1)} m von ${esc(b.naechste_bohrung ?? "")}</p>
+    <table><tr><th>Tiefe</th><th>Einheit</th><th>Unterkante</th></tr>${zeilen}</table>
+    <p><i>${esc(b.herkunft ?? "")}</i></p>`);
+}
+
+/** Abschnitt im Schritt Modell (unter Erweitert): Unsicherheit einer Unterkante im Viewer, virtuelle Bohrung per Klick. */
+export function analyseViewerTeil() {
+  const b = S.modell?.bericht;
+  if (!b || S.modell?.fehler) return nothing;
+  if (viewerEinheit >= b.einheiten.length) viewerEinheit = 0;
+  if (viewerAn && viewerFuer !== (S.modell?.schluessel ?? "")) { S.viewer?.unsicherheit(null); viewerAn = ""; }   // Modell neu
+  return html`
+    <section class="abschnitt-flach analyse-viewer">
+      <h3>Ground Analysis im Viewer ${hilfe("analyse")}</h3>
+      <div class="zeile">
+        <select @change=${(e: Event) => { viewerEinheit = Number((e.target as HTMLSelectElement).value); }}>
+          ${b.einheiten.map((x, j) => html`<option value=${j} .selected=${j === viewerEinheit}>${x.name}</option>`)}
+        </select>
+        <button @click=${flaecheZeigen}>Unsicherheit zeigen</button>
+        ${viewerAn ? html`<button class="link" @click=${flaecheWeg}>Unsicherheit ausblenden</button>` : nothing}
+      </div>
+      ${viewerAn ? html`<p class="leise klein">Gezeigt: Unterkante ${viewerAn}, gefärbt nach σ (grün sicher, rot unsicher).</p>` : nothing}
+      <div class="zeile"><button @click=${punktImViewer}>Virtuelle Bohrung: Punkt im Viewer wählen</button>${hilfe("virtuell")}</div>
+      ${wasserTeil()}
+    </section>`;
 }

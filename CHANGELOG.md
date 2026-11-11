@@ -6,6 +6,13 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- **Grundwasserfläche** (Ground Analysis G5, docs/27 §6.6): a surface through the water levels of the Bohrungen, dry
+  Bohrungen as a check, hints instead of silent assumptions, shown blue in the viewer; not in the IFC and not a design
+  water level.
+- **Orientation entered per Einheit** for the implicit method (docs/27 §6.5): Fallrichtung and Fallwinkel replace the
+  fitted plane; source `Eingabe` in the report and the IFC; the Kreuzprobe uses it too.
+- **Ground Analysis in the viewer** (docs/27 §6.2): the base of an Einheit coloured by σ, and the virtuelle Bohrung by a
+  click in the viewer.
 - **Erkundungsvorschlag** (Ground Analysis G4, docs/27 §6.4): where the next Bohrung improves the model most, from the
   uncertainty of the bases and of the extent of the Einheiten; validated on a Rinne against random positions.
 - **Implicit interpolation with GemPy** (Ground Analysis G3, docs/27 §6.3), optional (`requirements-analyse.txt`): one

@@ -624,6 +624,45 @@ try {
   pruefe("BoreholeML: ohne Koordinaten gesperrt (Knopf aus, Server 400)",
     bml === 400 && (await page.locator(".export-liste .knopf.aus", { hasText: "BoreholeML" }).count()) === 1 &&
     /^0 von \d+ Bohrungen/.test(bmlText), `${bml} · ${bmlText}`);
+  // Ground Analysis im Viewer (docs/27 G2): Unterkante nach sigma gefaerbt, virtuelle Bohrung per Klick
+  await page.getByRole("button", { name: "Unsicherheit zeigen" }).click();
+  await warte(() => window.viewer?.world.scene.three.children.some((o) => o.name === "Unsicherheit"), null, 120000);
+  const legende = await page.locator(".sigma-legende").innerText();
+  await page.getByRole("button", { name: /Punkt im Viewer wählen/ }).click();
+  await ruhe(400);
+  // Ziel: ein Knoten der gezeigten Flaeche nahe ihrer Mitte, auf den Bildschirm projiziert (die Mitte der Leinwand
+  // kann je nach Kamera neben dem Modell liegen)
+  const ziel = await page.evaluate(() => {
+    const w = window.viewer.world;
+    const netz = w.scene.three.children.find((o) => o.name === "Unsicherheit");
+    const pos = netz.geometry.getAttribute("position");
+    netz.geometry.computeBoundingBox();
+    const mitte = netz.geometry.boundingBox.getCenter(netz.position.clone());
+    let best = 0, d = Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const dd = (pos.getX(i) - mitte.x) ** 2 + (pos.getZ(i) - mitte.z) ** 2;
+      if (dd < d) { d = dd; best = i; }
+    }
+    const v = mitte.clone().set(pos.getX(best), pos.getY(best), pos.getZ(best)).project(w.camera.three);
+    const r = w.renderer.three.domElement.getBoundingClientRect();
+    return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+  });
+  await page.mouse.click(ziel.x, ziel.y);
+  await warte(() => document.getElementById("auswahl-name")?.textContent === "Virtuelle Bohrung", null, 60000).catch(() => {});
+  const tafel = await page.locator("#auswahl-inhalt").innerText().catch(() => "");
+  pruefe("Ground Analysis im Viewer: Unterkante nach σ gefärbt, virtuelle Bohrung per Klick",
+    /σ Unterkante/.test(legende) && /Modell \(virtuelle Bohrung/.test(tafel) && /±/.test(tafel), `${legende.split("\n")[0]} · ${tafel.slice(0, 60)} · ${await page.locator("#meldung").innerText().catch(() => "")}`);
+  await page.screenshot({ path: `${aus}/D4_analyse_viewer.png` });
+  await page.getByRole("button", { name: "Unsicherheit ausblenden" }).click();
+  // Grundwasserflaeche (docs/27 G5): mit Staenden blau im Viewer, ohne Staende ehrlich "keine"
+  await page.getByRole("button", { name: "Grundwasserfläche zeigen" }).click();
+  await page.locator(".grundwasser").waitFor({ timeout: 60000 }).catch(() => {});
+  const gw = await page.locator(".grundwasser").innerText().catch(() => "");
+  const gwNetz = await page.evaluate(() => window.viewer?.world.scene.three.children.some((o) => o.name === "Grundwasser"));
+  const gemessen = Number((gw.match(/(\d+) gemessene/) ?? [])[1] ?? -1);
+  pruefe("Grundwasserfläche: Stände gezählt, Fläche nur mit Ständen, Hinweis Bohrzeit",
+    gemessen >= 0 && gwNetz === gemessen > 0 && /Bemessungswasserstand|keine Bohrung/.test(gw), gw.slice(0, 120));
+  if (gwNetz) await page.getByRole("button", { name: "Grundwasser ausblenden" }).click();
   // GeolDG (P6, D96): Abschluss der Untersuchung -> Frist der Fachdaten; Paket mit Pruefliste und Modell (ohne
   // Koordinaten kein BoreholeML: das steht im LIESMICH)
   const abschluss = page.getByLabel("Abschluss der Untersuchung", { exact: true });     // nicht der Knopf "Hilfe: …"

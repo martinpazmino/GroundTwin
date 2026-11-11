@@ -402,6 +402,7 @@ class Arbeitsplatz:
         e = pj.einstellungen(p)
         eingabe = {"docs": pl.ohne_pruefvermerke(vorb.docs), "vorgabe": p.vorgabe, "methode": e.methode,
                    "puffer": e.puffer, "raster": e.raster, "basis": e.basis, "ursprung": list(ursprung),
+                   **({"orientierung": e.orientierung} if e.orientierung and e.methode == "implizit" else {}),
                    "dgm": p.dgm.get("stand") if self._mit_dgm(p) else None}
         return hashlib.sha256(json.dumps(eingabe, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -486,7 +487,8 @@ class Arbeitsplatz:
                     e = pj.einstellungen(p)
                     try:
                         m = pl.modell_bauen(vorb.docs, p.vorgabe, e.methode, e.puffer, e.raster, e.basis, ursprung,
-                                            *self._dgm_fuer_modell(sig, p))
+                                            *self._dgm_fuer_modell(sig, p),
+                                            orientierung=e.orientierung if e.methode == "implizit" else None)
                         self._modelle[schluessel] = (m, pl.bericht(m))
                         while len(self._modelle) > MODELLE_IM_SPEICHER:
                             self._modelle.popitem(last=False)
@@ -548,6 +550,52 @@ class Arbeitsplatz:
                     "unsicherheit": ga.unsicherheit_zusammenfassung(u),
                     "vorschlaege": ga.vorschlaege(m, u, anzahl=3),
                     "sigma_max_m": round(float(np.nanmax(sig_knoten)), 2) if np.isfinite(sig_knoten).any() else None}
+
+    def grundwasser(self, sig: str) -> dict:
+        """Grundwasserflaeche aus den Wasserstaenden (docs/27 G5): Staende, Pruefungen, Flaeche fuer den Viewer."""
+        with self.sperre(sig):
+            erg = self.modell(sig)
+            if erg["fehler"]:
+                return {"fehler": erg["fehler"]}
+            docs, p = self.laden(sig)
+            vorb, _, _ = self.vorbereitung(docs, p)
+            m = self._modelle[erg["schluessel"]][0]
+            g = ga.grundwasser(m, vorb.docs)
+            z = g.pop("z")
+            flaeche = None
+            if z is not None:
+                flaeche = {"name": "Grundwasser",
+                           "punkte": [[round(float(m.punkte[k, 0] + m.ursprung[0]), 2),
+                                       round(float(m.punkte[k, 1] + m.ursprung[1]), 2), round(float(z[k]), 3)]
+                                      for k in range(len(m.punkte))],
+                           "dreiecke": m.dreiecke.tolist(), "z_min": round(float(z.min()), 2), "z_max": round(float(z.max()), 2)}
+            return {"fehler": "", **g, "flaeche": flaeche}
+
+    def analyse_flaeche(self, sig: str, j: int) -> dict:
+        """Unterkante der Einheit j mit sigma je Knoten fuer den Viewer: nur Dreiecke, in denen sie vorkommt."""
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, None)
+            except ValueError as err:
+                return {"fehler": str(err)}
+            if not 0 <= j < len(m.einheiten):
+                return {"fehler": f"keine Einheit {j}"}
+            s = a["unsicherheit"]["_sigma"][j + 1]
+            da = (m.flaechen[j] - m.flaechen[j + 1]) >= 0.005
+            dreiecke = m.dreiecke[da[m.dreiecke].any(axis=1)]
+            if not len(dreiecke):
+                return {"fehler": f"{m.einheiten[j].name} kommt im Modell nicht vor"}
+            knoten = np.unique(dreiecke)
+            neu = np.full(len(m.punkte), -1)
+            neu[knoten] = np.arange(len(knoten))
+            werte = [None if not np.isfinite(v) else round(float(v), 3) for v in s[knoten]]
+            endlich = [v for v in werte if v is not None]
+            return {"fehler": "", "name": m.einheiten[j].name,
+                    "punkte": [[round(float(m.punkte[k, 0] + m.ursprung[0]), 2), round(float(m.punkte[k, 1] + m.ursprung[1]), 2),
+                                round(float(m.flaechen[j + 1][k]), 3)] for k in knoten],
+                    "dreiecke": neu[dreiecke].tolist(), "sigma": werte,
+                    "sigma_max": max(endlich) if endlich else 0.0,
+                    "hinweis": "" if endlich else "Unterkante nicht bezifferbar (keine Bohrung erreicht sie)"}
 
     def virtuelle_bohrung(self, sig: str, x: float, y: float) -> dict:
         with self.sperre(sig):

@@ -3,7 +3,7 @@ title: "27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)"
 date: 2026-11-10
 tags: [ground-analysis, gempy, implicit-modelling, uncertainty, cross-validation, orientations, plan]
 aliases: [Ground Analysis, GemPy integration, N4 implicit model]
-status: g4-built
+status: g5-built
 ---
 
 # 27 Ground Analysis: GemPy and the analysis of the Baugrundmodell (plan)
@@ -17,13 +17,17 @@ A new component, **Ground Analysis**, answers the question the layer model ([18]
 - the component, its place in the system and the phases.
 
 > [!IMPORTANT]
-> **Status 2026-11-11: phases G1, G2 and G3 are built.**
+> **Status 2026-11-11: phases G1 to G4 are built, and of G5 the Grundwasserfläche.**
 > - G1 is in [`services/analyse`](../services/analyse) (package `baugrundanalyse`): Kreuzprobe, Unsicherheit and
 >   virtuelle Bohrung, without GemPy (§6.1).
 > - G2 puts them in the app, step *Einheiten → Erweitert* (§6.2).
 > - G3 adds the implicit method with GemPy as an optional third interpolation (§6.3).
 > - G4 was tested on a Rinne and changed course: the limit was missing information, not the method. What was built
 >   is the **Erkundungsvorschlag**, which points to where the next Bohrung helps most (§6.4).
+> - Then: σ coloured on a base and the virtuelle Bohrung by a click, both in the viewer (§6.2); the orientation entered
+>   per Einheit for the implicit method (§6.5); the **Grundwasserfläche** from the water levels (§6.6).
+> - Not built, each with its reason: dip in the Monte Carlo, faults, Kennwerte fields, `gempy_probability` (§6.7). A
+>   test on a real Gutachten with Ground Analysis still needs a PDF from the user.
 
 > [!NOTE]
 > Summary:
@@ -223,10 +227,10 @@ PDF / Länder ─► Bohrungen (reviewed) ─► Einheiten ─► baugrundmodell
 | Phase | Content | Accepted when | GemPy |
 |---|---|---|---|
 | **G1 Kreuzprobe and Unsicherheit** (**built**, §6.1) | leave-one-out per Einheit for IDW and TPS; Monte Carlo over the contact depths (σ by contact type: exact, free, censored) and over the method; virtuelle Bohrung; result in the report | the synthetic cases give the errors of §3.1 (IDW 0.78 m, TPS 0.00 m on `geneigt`); a run on 12 Bohrungen under 10 s; tests offline | no |
-| **G2 App** (**built**, §6.2) | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
+| **G2 App** (**built**, viewer part included, §6.2) | section *Ground Analysis* under *Erweitert*, result table, viewer colour by uncertainty, virtuelle Bohrung by click; `apps/web/dist` | end-to-end check extended; nothing changes for a project that never opens the section | no |
 | **G3 Implicit method** (**built**, §6.3) | `implizit.py` and `orientierung.py`; `methode="implizit"`; fallback per Einheit; optional install | contacts within 5 cm on `geneigt`, `auskeilen`, `linse`; `demo` passes with the lens indicator; folded surfaces rejected; the regression of the modeler unchanged for IDW and TPS; IFC valid, unit METRE | yes |
-| **G4 Structures** (**tested and redirected**, §6.4) | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
-| **G5 Later** (unchanged) | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | yes |
+| **G4 Structures** (**tested and redirected**, §6.4; orientation input **built**, §6.5; dip in the Monte Carlo **not built**, §6.7) | groups set by the engineer: a Rinne that erodes (`ERODE`), onlap; orientation entered per Einheit; dip in the Monte Carlo | a synthetic Rinne case that N3 cannot represent and GemPy does, with the contacts exact | yes |
+| **G5 Later** (Grundwasserfläche **built**, §6.6; the rest **not built**, §6.7) | faults, Kennwerte fields, Grundwasserfläche, `gempy_probability` once it follows the engine | each justified by a real case | Grundwasserfläche: no |
 
 G1 and G2 stand on their own and give the yardstick for G3: the implicit method is kept only where the Kreuzprobe
 shows it predicts better on real projects.
@@ -306,8 +310,16 @@ Measured:
 - **Tests**: `tests/test_analyse_app.py` (the demo project: Kreuzprobe, Unsicherheit and the virtuelle Bohrung through
   the API; the project unchanged; refused without a model). The end-to-end check of the app has one more check:
   55 instead of 54.
-- **Not yet**: colour by σ in the viewer, and a click in the viewer that sets the virtuelle Bohrung. Both need σ per
-  node in the IFC or a second channel to the viewer.
+- **In the viewer** (built after the section, 2026-11-11): step *Modell → Erweitert*, section *Ground Analysis im
+  Viewer*. σ does not go into the IFC; it reaches the viewer on a second channel.
+  - *Unsicherheit zeigen*: `GET /api/projekt/{sig}/analyse/flaeche/{j}` returns the base of Einheit j where it exists
+    (triangles with thickness ≥ 5 mm), in ETRS89/UTM and m NHN, with σ per node. The viewer draws it over the solids
+    (the base lies inside the model), coloured green → yellow → red up to the largest σ, grey where σ cannot be given,
+    with a legend. It follows the Überhöhung and goes away when the model changes.
+  - *Virtuelle Bohrung: Punkt im Viewer wählen*: the next click in the viewer picks a point (on the σ surface, else on
+    the model, else on the grid plane; Esc cancels). The selection of Bauteile is off meanwhile. The panel shows the
+    column at that point with ± σ per base.
+  - Tests: `tests/test_analyse_app.py` (the surface endpoint), one end-to-end check (legend, panel with ±).
 
 ### 6.3 G3 as built (2026-11-11)
 
@@ -424,13 +436,67 @@ point per edge, and better than the median of random draws). The end-to-end chec
 **What the proposal does not know:** access, utilities, the building site. It is a hint for planning the next
 investigation (DIN EN 1997-2 asks for one where the ground is not clear), not a plan.
 
+### 6.5 Orientation entered per Einheit (G4, 2026-11-11)
+
+§4 solved the missing dip with a plane through the contacts. Sometimes the engineer knows better: the Gutachten, a
+geological map or an outcrop gives the dip. Now it can be entered.
+
+- **Where**: step *Einheiten → Erweitert*, when *Implizit (GemPy)* is chosen. A table lists each Einheit with the
+  computed orientation and its source, and two fields: Fallrichtung (azimuth from north, clockwise, 0–360°) and
+  Fallwinkel (0–80°). Empty fields = from the contacts.
+- **How it flows**: the project setting `orientierung` (`ui/projekt.py`, checked: both values, ranges) → `bauen(...,
+  orientierung=)` → `flaechen.orientierungen_setzen` for the run. The modeler tells an extension which surface it
+  interpolates; `implizit` reads `flaechen.orientierung_vorgabe()` and uses the pole of the entered plane instead of
+  the fitted one. The model keeps it in `parameter.orientierung_vorgabe`, so the Kreuzprobe uses the same input when it
+  leaves a Bohrung out. The report and the IFC name the source `Eingabe`. A name that is not an Einheit is reported.
+- **What does not change**: the contacts stay exact. An entered plane that does not fit the contacts (more than 5 cm
+  off) falls back to the spline for that surface, with a hint, as for any implicit surface.
+- **Measured** on `geneigt` (9 Bohrungen): an entered dip of 20° to the north changes the first base by up to 3.9 m
+  between the Bohrungen and by 0.00 m at them.
+- Tests: `services/analyse/tests/test_implizit.py` (pole convention; input used, exact, recorded, used by the
+  Kreuzprobe, reset after the run), `tests/test_analyse_app.py` (ranges refused, source `Eingabe` through the app).
+
+### 6.6 Grundwasserfläche (G5, 2026-11-11)
+
+The extraction already reads the water levels of each Bohrung (`groundwater`, rules W1–W4 in
+[16](16_lessons_learned.md)) and "kein Grundwasser" as data (W2). `baugrundanalyse/grundwasser.py` makes a surface of
+them. It needs no GemPy.
+
+- **Surface**: through the measured levels (m NHN = GOK − depth), with the method of the model (implicit: the spline;
+  water has no orientation from layer contacts). One level: a horizontal plane, with a hint. Several levels in one
+  Bohrung (Anschnitt and Ruhewasser): the highest counts, the range is reported above 10 cm.
+- **Checks, marked and never hidden**:
+  - a dry Bohrung whose Endteufe lies below the surface contradicts it (listed per Bohrung);
+  - the surface above the terrain (more than 5 cm): confined water or levels of different days;
+  - relative GOK: the levels are relative as well;
+  - from four levels on, a leave-one-out shows how well the level is predicted between the Bohrungen.
+- **Always said**: levels at drilling time are snapshots of different days and seasons; this is not a design water
+  level (Bemessungswasserstand).
+- **Where**: `GET /api/projekt/{sig}/analyse/grundwasser`; step *Modell → Erweitert*, *Grundwasserfläche zeigen*
+  draws it blue and translucent in the viewer, with the counts, the range in m NHN and the hints. It does not go into
+  the IFC and does not change the model.
+- **Measured**: Berlin V-67b (real data) has two levels (32.45 and 32.65 m NHN); the surface lies between them over the
+  whole model. The demo has none, and the app says so instead of drawing a surface.
+- Tests: `services/analyse/tests/test_grundwasser.py` (flat water exact, dry Bohrung contradicts, one level, range,
+  above terrain, model unchanged), `tests/test_analyse_app.py` (Berlin, demo), one end-to-end check.
+
+### 6.7 Not built, and why (2026-11-11)
+
+| Item | Why not now | What would change it |
+|---|---|---|
+| Dip varied in the Monte Carlo | For the implicit method the Monte Carlo already uses the spline as a stand-in: 100 GemPy runs take minutes (§6.3, 10–100× slower). The dip only acts away from the Bohrungen (at them every contact is exact), and there the distance part of σ, calibrated by the Kreuzprobe, already measures how far a prediction misses. An entered dip is checked the same way: the Kreuzprobe runs with it (§6.5). | a project where the Kreuzprobe with and without an entered dip differs clearly; then a few GemPy runs at ± the stated dip uncertainty, not 100 |
+| Faults (`gempy` fault groups) | No Gutachten so far shows a fault, and Bohrprofile do not carry one. A fault needs its trace and throw from the engineer, and N3 cannot cut solids along it. | a real case with a known fault |
+| Kennwerte fields per Einheit (kriging) | The extraction reads Schichten, not the Kennwerte tables of a Gutachten. Kriging needs many values per Einheit; with none, a field would be invented. | an extraction of Kennwerte (docs/18 §8 point 5) and a project with enough values |
+| `gempy_probability` | The σ of §6.1 already comes without it, calibrated by the Kreuzprobe. The package is a separate install that must follow `gempy_engine`; adding it would only repeat the Monte Carlo with a heavier stack. | a question σ cannot answer (e.g. a probability that an Einheit exists at a point, beyond the IDW presence of §6.4) |
+| Blind test of Ground Analysis on a real Gutachten | needs a new PDF from the user; the blind-test rule (freeze before opening) applies | the user uploads a Gutachten |
+
 ## 7. Risks
 
 | Risk | Answer |
 |---|---|
 | GemPy is not exact at noisy data, and its surfaces can fold (§3.1) | check after every run; fallback per Einheit; never the default method |
 | A layer cake forced into one group gives wrong models that look plausible (§3.2) | the adapter always builds one group per Einheit unless the engineer groups them |
-| An assumed dip is taken for a measured one | source per Einheit in the UI, the report and the IFC; dip varied in the uncertainty run |
+| An assumed dip is taken for a measured one | source per Einheit (contacts, horizontal or `Eingabe`) in the UI, the report and the IFC; the Kreuzprobe runs with the same orientation (§6.5); dip not varied in the uncertainty run (§6.7) |
 | A new heavy dependency | optional; core install is `gempy`, `gempy_engine`, numpy, pydantic; no PyTorch, no viewer |
 | The uncertainty looks more exact than it is | it is a spread under stated assumptions (σ per contact type, methods compared), shown with those assumptions; with one or two Bohrungen no Kreuzprobe is given |
 | API changes (GemPy v3 is recent; versions by date) | pinned version; the adapter is the only file that imports it; its tests run only when GemPy is installed |

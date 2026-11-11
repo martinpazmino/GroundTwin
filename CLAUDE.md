@@ -36,7 +36,11 @@ license **AGPL-3.0-or-later** (D79).
   to the spline on layer-cake data, 10–100× slower; never the default (D105, D106). **G4**: a Rinne showed the limit is
   information, not the method (all three methods ~4 m off, two edge Bohrungen → 0.3 m) → `vorschlag.py`
   *Erkundungsvorschlag* (where the next Bohrung helps most: σ of the bases + unsure extent; validated: 1.35 m vs 2.44 m
-  random), in the app under Ground Analysis.
+  random), in the app under Ground Analysis. Orientation entered per Einheit (Fallrichtung/Fallwinkel, setting
+  `orientierung`, source `Eingabe`, `flaechen.orientierung_vorgabe`). Viewer (Modell → Erweitert): base coloured by σ
+  (`/analyse/flaeche/{j}`), virtuelle Bohrung by a click. **G5**: `grundwasser.py` *Grundwasserfläche* from the water
+  levels (dry Bohrungen as a check, never in the IFC, not a design level; `/analyse/grundwasser`). Not built with
+  reasons (docs/27 §6.7): dip in the MC, faults, Kennwerte, gempy_probability.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
@@ -126,7 +130,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (55 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (57 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except
