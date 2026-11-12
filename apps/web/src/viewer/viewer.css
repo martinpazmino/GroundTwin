@@ -272,3 +272,10 @@ body.waehlt .nadel, body.waehlt .punktmarke { pointer-events: none; }   /* Bildp
   .viewer-rahmen.seite-auf { grid-template-columns: 16rem 1fr; }
   .viewer-rahmen.seite-auf #seitenleiste { display: block; }
 }
+
+/* Ground Analysis: Legende der Streuung (docs/27 G2) */
+.sigma-legende { position: absolute; left: 12px; top: 56px; z-index: 6; padding: 6px 9px; border-radius: 6px;
+  background: rgba(20, 23, 28, 0.88); border: 1px solid #3a404a; color: #d8dce2; font-size: 12px; min-width: 190px; }
+.sigma-balken { height: 9px; margin: 5px 0 2px; border-radius: 3px;
+  background: linear-gradient(90deg, rgb(51, 191, 64), rgb(230, 191, 51), rgb(230, 26, 51)); }
+.sigma-skala { display: flex; justify-content: space-between; color: #9aa1ab; }

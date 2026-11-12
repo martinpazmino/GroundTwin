@@ -20,6 +20,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # OpenCV (OCR) braucht libGL und GLib (Debian trixie: libglib2.0-0t64, aeltere: libglib2.0-0); sonst nichts
 ARG OCR=1
+# Ground Analysis mit der impliziten Methode (GemPy, docs/27 G3): --build-arg ANALYSE=1
+ARG ANALYSE=0
 RUN if [ "$OCR" = "1" ]; then \
       apt-get update \
       && apt-get install -y --no-install-recommends libgl1 \
@@ -28,9 +30,10 @@ RUN if [ "$OCR" = "1" ]; then \
     fi
 
 WORKDIR /app
-COPY requirements-server.txt requirements-ocr.txt constraints.txt ./
+COPY requirements-server.txt requirements-ocr.txt requirements-analyse.txt constraints.txt ./
 RUN pip install -r requirements-server.txt -c constraints.txt \
- && if [ "$OCR" = "1" ]; then pip install -r requirements-ocr.txt -c constraints.txt; fi
+ && if [ "$OCR" = "1" ]; then pip install -r requirements-ocr.txt -c constraints.txt; fi \
+ && if [ "$ANALYSE" = "1" ]; then pip install -r requirements-analyse.txt -c constraints.txt; fi
 
 COPY . .
 RUN useradd --create-home --uid 1000 groundtwin && mkdir -p /data && chown groundtwin:groundtwin /data \

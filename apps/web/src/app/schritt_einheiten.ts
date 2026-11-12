@@ -4,6 +4,8 @@
 import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { hilfe } from "./hilfe";
+import { analyseTeil } from "./analyse";
+import { homogenbereicheTeil } from "./homogenbereiche";
 import { einheitenProfil } from "./profil";
 import { S, aendern, gehe, neu } from "./store";
 
@@ -46,7 +48,11 @@ function einstellungen() {
         <span>Interpolation ${hilfe("methode")}</span>
         <label class="inline"><input type="radio" name="methode" .checked=${e.methode === "idw"} @change=${() => setzen("methode", "idw")}> IDW</label>
         <label class="inline"><input type="radio" name="methode" .checked=${e.methode === "tps"} @change=${() => setzen("methode", "tps")}> Dünnplatten-Spline</label>
+        <label class="inline" title=${S.info?.implizit ? "GemPy: je Fläche ein Skalarfeld, Orientierung aus den Kontakten (docs/27)" : "GemPy ist auf diesem Server nicht installiert (requirements-analyse.txt)"}><input
+          type="radio" name="methode" ?disabled=${!S.info?.implizit && e.methode !== "implizit"} .checked=${e.methode === "implizit"}
+          @change=${() => setzen("methode", "implizit")}> Implizit (GemPy)</label>
       </div>
+      ${e.methode === "implizit" ? orientierungTeil() : nothing}
       ${autoFeld("puffer", "Puffer", "m", Number(p.puffer_m ?? 20), "puffer")}
       ${autoFeld("raster", "Raster", "m", Number(p.raster_m ?? 5), "raster")}
       ${autoFeld("basis", "Modellbasis", "m NHN", Math.floor(Number(p.basis_nhn ?? 0)), "basis")}
@@ -62,6 +68,43 @@ function einstellungen() {
         Basis ${zahl(Number(p.basis_nhn), 2)} m NHN · Fläche ${zahl(Number(p.flaeche_m2) / 1e4, 2)} ha ·
         Gelände ${gelaendeText(p.gelaende as unknown as Record<string, unknown> | undefined)}</p>` : nothing}
     </details>`;
+}
+
+// Orientierung je Einheit fuer die implizite Methode: berechnet (Quelle im Bericht) oder eingegeben (docs/27 G4)
+type Orientierung = { einheit: string; quelle: string; fallen_grad: number | null; fallrichtung_grad?: number | null };
+function orientierungTeil() {
+  const b = S.modell?.bericht;
+  const liste = ((b?.parameter as unknown as Record<string, unknown>)?.orientierung ?? []) as Orientierung[];
+  if (!b || !liste.length) return html`<p class="leise klein">Orientierung je Einheit: nach dem Rechnen hier eingebbar.</p>`;
+  const eingabe = { ...(S.z!.einstellungen.orientierung ?? {}) };
+  const setzen = (name: string, feld: "fallrichtung" | "fallwinkel", roh: string) => {
+    const alt = eingabe[name] ?? { fallrichtung: NaN, fallwinkel: NaN };
+    const w = roh.trim() === "" ? NaN : Number(roh.replace(",", "."));
+    const neu = { ...alt, [feld]: w };
+    if (Number.isNaN(neu.fallrichtung) && Number.isNaN(neu.fallwinkel)) delete eingabe[name];
+    else if (Number.isNaN(neu.fallrichtung) || Number.isNaN(neu.fallwinkel)) { eingabe[name] = neu; return; }   // zweiten Wert abwarten
+    else eingabe[name] = neu;
+    const fertig = Object.fromEntries(Object.entries(eingabe).filter(([, v]) => !Number.isNaN(v.fallrichtung) && !Number.isNaN(v.fallwinkel)));
+    void aendern([{ op: "einstellungen", orientierung: Object.keys(fertig).length ? fertig : null }]);
+  };
+  const feld = (name: string, art: "fallrichtung" | "fallwinkel", wert: number | undefined, titel: string) => html`
+    <input type="number" step="any" min="0" max=${art === "fallwinkel" ? 80 : 360} class="kurz" title=${titel}
+      placeholder="–" .value=${live(wert === undefined || Number.isNaN(wert) ? "" : String(wert))}
+      @change=${(ev: Event) => setzen(name, art, (ev.target as HTMLInputElement).value)}>`;
+  return html`
+    <div class="einstellung">
+      <span>Orientierung je Einheit ${hilfe("orientierung")}</span>
+      <table class="klein orientierung">
+        <thead><tr><th>Einheit</th><th>berechnet</th><th>Fallrichtung °</th><th>Fallwinkel °</th></tr></thead>
+        <tbody>${liste.map((o) => html`<tr>
+          <td>${o.einheit}</td>
+          <td class="leise">${o.quelle === "Eingabe" ? "Eingabe" : o.fallen_grad === null ? o.quelle
+            : `${zahl(o.fallen_grad, 1)}°${o.fallrichtung_grad != null ? ` nach ${zahl(o.fallrichtung_grad, 0)}°` : ""} (${o.quelle})`}</td>
+          <td>${feld(o.einheit, "fallrichtung", eingabe[o.einheit]?.fallrichtung, "Fallrichtung: Azimut von Nord im Uhrzeigersinn")}</td>
+          <td>${feld(o.einheit, "fallwinkel", eingabe[o.einheit]?.fallwinkel, "Fallwinkel gegen die Horizontale, 0–80°")}</td>
+        </tr>`)}</tbody>
+      </table>
+    </div>`;
 }
 
 function vorgabeTeil() {
@@ -111,6 +154,7 @@ export function schrittEinheiten() {
     <div class="schritt-einheiten">
       <div class="spalte">
         ${vorgabeTeil()}
+        ${homogenbereicheTeil()}
         ${einstellungen()}
       </div>
       <div class="spalte breit">
@@ -150,7 +194,8 @@ export function schrittEinheiten() {
                   <tr><td>${s.bohrung}</td><td class="zahl">${zahl(s.von, 2)}–${zahl(s.bis, 2)}</td><td>${s.bodenart ?? "unklassifiziert"}</td>
                     <td>${s.beschreibung || html`<span class="leise">–</span>`}</td></tr>`)}</tbody>
               </table>
-            </section>` : nothing}` : nothing}
+            </section>` : nothing}
+          ${analyseTeil()}` : nothing}
       </div>
     </div>`;
 }

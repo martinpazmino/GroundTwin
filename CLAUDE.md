@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D106 (D100–D103, D105, D106 proposed).
+- `docs/11_decisions.md`: decisions D1–D107 (D100–D103, D105–D107 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -27,8 +27,30 @@ license **AGPL-3.0-or-later** (D79).
   `baugrundanalyse`, CLI `python -m baugrundanalyse`, tests `cd services/analyse && python -m pytest tests`): Kreuzprobe
   (leave-one-out of the layer model, flags Bohrungen their neighbours do not let expect), Unsicherheit (Monte Carlo of
   the boundaries + distance part calibrated by the Kreuzprobe), virtuelle Bohrung. Reads the model, never changes the
-  Bohrungen. Not built: the app (G2), GemPy as an optional third method (G3: one group per Einheit; orientation from
-  the contacts, else horizontal, always marked; D105, D106).
+  Bohrungen. **G2 built**: section *Ground Analysis* in Einheiten → Erweitert (`apps/web/src/app/analyse.ts`,
+  `POST /api/projekt/{sig}/analyse`, `/analyse/punkt`, tests `tests/test_analyse_app.py`). **G3 built**: interpolation
+  `implizit` (`baugrundanalyse/implizit.py` registers into `baugrundmodell.flaechen.ERWEITERUNGEN`; one scalar field per
+  surface; orientation from the contacts, along a line, else horizontal, in `parameter.orientierung`; folded or
+  inexact surface → spline with a hint); optional `requirements-analyse.txt` (GemPy, EUPL-1.2), Docker
+  `--build-arg ANALYSE=1`, CI job; tests `services/analyse/tests/test_implizit.py` (skip without GemPy). Measured: equal
+  to the spline on layer-cake data, 10–100× slower; never the default (D105, D106). **G4**: a Rinne showed the limit is
+  information, not the method (all three methods ~4 m off, two edge Bohrungen → 0.3 m) → `vorschlag.py`
+  *Erkundungsvorschlag* (where the next Bohrung helps most: σ of the bases + unsure extent; validated: 1.35 m vs 2.44 m
+  random), in the app under Ground Analysis. Orientation entered per Einheit (Fallrichtung/Fallwinkel, setting
+  `orientierung`, source `Eingabe`, `flaechen.orientierung_vorgabe`). Viewer (Modell → Erweitert): base coloured by σ
+  (`/analyse/flaeche/{j}`), virtuelle Bohrung by a click. **G5**: `grundwasser.py` *Grundwasserfläche* from the water
+  levels (dry Bohrungen as a check, never in the IFC, not a design level; `/analyse/grundwasser`). Not built with
+  reasons (docs/27 §6.7): dip in the MC, faults, Kennwerte, gempy_probability.
+- `docs/28_homogenbereiche.md`: Homogenbereiche (VOB/C, D107): per ATV a mapping Einheit → Bereich (project
+  `homogenbereiche`, ops `homogenbereiche` / `hb_modell`), Kennwerte matrix per ATV in
+  `services/modeler/baugrundmodell/homogenbereiche.json` (Abbildung 8 from the user, read per cell, check against the
+  ATV), IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten (by height; a split Schicht names both),
+  model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked); proposal per ATV
+  (`hb.vorschlag_fuer`, `/homogenbereiche/vorschlag`: Verhalten, then Bodengruppe/Steine by the ATV's Kennwerte; a click); Kennwerte from the
+  descriptions per Bereich (`hb.kennwerte_bereich`, `/homogenbereiche/kennwerte`, IFC `Kennwert_…`, `Kennwerte_offen`;
+  Ansprache only, laboratory values stay open). DIN 4023 Tab. 2/3
+  colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
+  `tests/test_homogenbereiche_app.py`.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
@@ -118,7 +140,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (54 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (58 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

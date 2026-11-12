@@ -1,0 +1,316 @@
+{
+ "format": 1,
+ "beschreibung": "Homogenbereiche nach VOB/C: die Kennwerte, die je ATV (Gewerk) fuer Boden anzugeben sind. Ein Homogenbereich fasst Boden mit vergleichbaren Eigenschaften fuer ein Gewerk zusammen; welche Schichten zusammengehoeren, entscheidet der Planer je Gewerk.",
+ "quelle": "Abbildung 8 'Matrix mit den erforderlichen Kennwerten zur Baugrundbeschreibung fuer die jeweiligen ATV der VOB Teil C fuer Boden' (Kapitel 6 'Beschreibung von Homogenbereichen in der VOB/C', S. 29 einer Veroeffentlichung), vom Nutzer am 2026-11-11 als Bild bereitgestellt; Zellen je Grauwert ausgelesen (docs/28). Gegen die geltende Fassung der jeweiligen ATV pruefen.",
+ "legende": {
+  "erforderlich": "grau",
+  "ergänzend (Vortrieb mit Schildmaschinen)": "dunkelgrau: ergaenzend fuer Vortriebe mit Schildmaschinen",
+  "erforderlich (in der Vorlage heller dargestellt – prüfen)": "hellgrau in der Vorlage (DIN 18312 und DIN 18313, Dichte); Bedeutung nicht in der Legende",
+  "erforderlich (Bodengruppe nach DIN 18915)": "Zelle mit Text 'DIN 18915' (Landschaftsbau: Bodengruppen nach DIN 18915 statt DIN 18196)"
+ },
+ "atv": [
+  {
+   "code": "DIN 18300",
+   "gewerk": "Erdarbeiten"
+  },
+  {
+   "code": "DIN 18300 GK 1",
+   "gewerk": "Erdarbeiten, Geotechnische Kategorie 1 (DIN 4020)"
+  },
+  {
+   "code": "DIN 18301",
+   "gewerk": "Bohrarbeiten"
+  },
+  {
+   "code": "DIN 18304",
+   "gewerk": "Ramm-, Rüttel- und Pressarbeiten"
+  },
+  {
+   "code": "DIN 18311",
+   "gewerk": "Nassbaggerarbeiten"
+  },
+  {
+   "code": "DIN 18312",
+   "gewerk": "Untertagebauarbeiten"
+  },
+  {
+   "code": "DIN 18313",
+   "gewerk": "Schlitzwandarbeiten mit stützenden Flüssigkeiten"
+  },
+  {
+   "code": "DIN 18319",
+   "gewerk": "Rohrvortriebsarbeiten"
+  },
+  {
+   "code": "DIN 18320",
+   "gewerk": "Landschaftsbauarbeiten"
+  },
+  {
+   "code": "DIN 18321",
+   "gewerk": "Düsenstrahlarbeiten"
+  },
+  {
+   "code": "DIN 18324",
+   "gewerk": "Horizontalspülbohrarbeiten"
+  }
+ ],
+ "kennwerte": [
+  {
+   "nr": "1",
+   "name": "ortsübliche Bezeichnung"
+  },
+  {
+   "nr": "2",
+   "name": "Korngrößenverteilung"
+  },
+  {
+   "nr": "3a",
+   "name": "Massenanteil an Steinen > 63–200 mm"
+  },
+  {
+   "nr": "3b",
+   "name": "Massenanteil an Steinen > 200–630 mm"
+  },
+  {
+   "nr": "3c",
+   "name": "Massenanteil an Steinen > 630 mm"
+  },
+  {
+   "nr": "4",
+   "name": "Mineralogische Zusammensetzung der Steine und Blöcke"
+  },
+  {
+   "nr": "5",
+   "name": "Dichte"
+  },
+  {
+   "nr": "6",
+   "name": "Kohäsion"
+  },
+  {
+   "nr": "7",
+   "name": "undrainierte Scherfestigkeit"
+  },
+  {
+   "nr": "8",
+   "name": "Sensitivität"
+  },
+  {
+   "nr": "9",
+   "name": "Wassergehalt"
+  },
+  {
+   "nr": "10a",
+   "name": "Plastizität"
+  },
+  {
+   "nr": "10b",
+   "name": "Plastizitätszahl"
+  },
+  {
+   "nr": "11a",
+   "name": "Konsistenz"
+  },
+  {
+   "nr": "11b",
+   "name": "Konsistenzzahl"
+  },
+  {
+   "nr": "12",
+   "name": "Durchlässigkeit"
+  },
+  {
+   "nr": "13",
+   "name": "Lagerungsdichte"
+  },
+  {
+   "nr": "14",
+   "name": "Kalkgehalt"
+  },
+  {
+   "nr": "15",
+   "name": "Sulfatgehalt"
+  },
+  {
+   "nr": "16",
+   "name": "Organischer Anteil"
+  },
+  {
+   "nr": "17",
+   "name": "Benennung und Beschreibung organischer Böden"
+  },
+  {
+   "nr": "18",
+   "name": "Abrasivität"
+  },
+  {
+   "nr": "19",
+   "name": "Bodengruppe"
+  }
+ ],
+ "matrix": {
+  "DIN 18300": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "5": "erforderlich",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "16": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18300 GK 1": {
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "10a": "erforderlich",
+   "11a": "erforderlich",
+   "13": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18301": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "6": "erforderlich",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "18": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18304": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18311": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "11a": "erforderlich",
+   "13": "erforderlich",
+   "14": "erforderlich",
+   "16": "erforderlich",
+   "17": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18312": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "4": "ergänzend (Vortrieb mit Schildmaschinen)",
+   "5": "erforderlich (in der Vorlage heller dargestellt – prüfen)",
+   "6": "ergänzend (Vortrieb mit Schildmaschinen)",
+   "7": "erforderlich",
+   "8": "ergänzend (Vortrieb mit Schildmaschinen)",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "16": "ergänzend (Vortrieb mit Schildmaschinen)",
+   "18": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18313": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "5": "erforderlich (in der Vorlage heller dargestellt – prüfen)",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "14": "erforderlich",
+   "16": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18319": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "4": "erforderlich",
+   "5": "erforderlich",
+   "7": "erforderlich",
+   "8": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "12": "erforderlich",
+   "13": "erforderlich",
+   "16": "erforderlich",
+   "17": "erforderlich",
+   "18": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18320": {
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "19": "erforderlich (Bodengruppe nach DIN 18915)"
+  },
+  "DIN 18321": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "13": "erforderlich",
+   "16": "erforderlich",
+   "19": "erforderlich"
+  },
+  "DIN 18324": {
+   "1": "erforderlich",
+   "2": "erforderlich",
+   "3a": "erforderlich",
+   "3b": "erforderlich",
+   "3c": "erforderlich",
+   "4": "erforderlich",
+   "5": "erforderlich",
+   "7": "erforderlich",
+   "9": "erforderlich",
+   "10b": "erforderlich",
+   "11b": "erforderlich",
+   "12": "erforderlich",
+   "13": "erforderlich",
+   "14": "erforderlich",
+   "15": "erforderlich",
+   "16": "erforderlich",
+   "17": "erforderlich",
+   "18": "erforderlich",
+   "19": "erforderlich"
+  }
+ },
+ "namensvorlage": "B{n}"
+}

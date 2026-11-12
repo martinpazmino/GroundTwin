@@ -53,6 +53,9 @@ def test_codetabelle_deckt_alle_bodenarten_der_app():
     beton, hinweis = bml.bodenart_aus("fa", "y")
     assert beton == "Beton" and "mehrdeutig" in hinweis
     assert bml.bodenart_aus("KMat", None)[0] is None
+    assert bml.bodenart_aus("Kst", None) == ("Fels (Kalkstein)", "")    # nicht Kreidestein (DIN 4023 Tab. 3, docs/28)
+    assert bml.bodenart_aus("Kst", "kt")[0] == "Fels (Kalktuff)" and bml.bodenart_aus("T", "glä")[0] == "Baenderton"
+    assert bml.bodenart_aus("K", "ka")[0] == "Wiesenkalk" and bml.bodenart_aus("l", "hgx")[0] == "Hangschutt"
 
 
 # ---------------------------------------------------------------- Export

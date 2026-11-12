@@ -108,15 +108,19 @@ class IfcAusgabe:
             self._stile[schluessel] = st
         return self._stile[schluessel]
 
-    def _geometrie(self, produkt, knoten, flaechen, rgb, stilname, geschlossen=False):
-        """IfcTriangulatedFaceSet: zwei Entitaeten je Koerper statt einer je Flaeche (Trassen: 80k Flaechen)."""
+    def _faceset(self, knoten, flaechen, geschlossen):
         dreiecke = dreiecke_aus(flaechen) + 1                        # IFC zaehlt ab 1
         punkte = self.f.create_entity("IfcCartesianPointList3D",
                                       CoordList=[tuple(map(float, k)) for k in np.asarray(knoten, dtype=float)])
-        flaeche = self.f.create_entity("IfcTriangulatedFaceSet", Coordinates=punkte, Closed=bool(geschlossen),
-                                       CoordIndex=[tuple(map(int, d)) for d in dreiecke])
+        return self.f.create_entity("IfcTriangulatedFaceSet", Coordinates=punkte, Closed=bool(geschlossen),
+                                    CoordIndex=[tuple(map(int, d)) for d in dreiecke])
+
+    def _geometrie(self, produkt, knoten, flaechen, rgb, stilname, geschlossen=False, teile=None):
+        """IfcTriangulatedFaceSet: zwei Entitaeten je Koerper statt einer je Flaeche (Trassen: 80k Flaechen).
+        teile: mehrere Koerper in einer Darstellung [(knoten, flaechen, geschlossen)] (Homogenbereich aus Einheiten)."""
+        items = [self._faceset(*t) for t in teile] if teile else [self._faceset(knoten, flaechen, geschlossen)]
         rep = self.f.create_entity("IfcShapeRepresentation", ContextOfItems=self.body,
-                                   RepresentationIdentifier="Body", RepresentationType="Tessellation", Items=[flaeche])
+                                   RepresentationIdentifier="Body", RepresentationType="Tessellation", Items=items)
         api.style.assign_representation_styles(self.f, shape_representation=rep,
                                                styles=[self._stil(rgb, stilname)])
         api.geometry.assign_representation(self.f, product=produkt, representation=rep)
@@ -130,6 +134,7 @@ class IfcAusgabe:
             api.pset.edit_pset(self.f, pset=ps, properties=werte)
 
     def bohrung(self, dokument: dict, b: dict, xy: tuple[float, float], lage: str, hoehe: str | None = None,
+                psets_je_schicht: list[dict] | None = None,
                 durchmesser: float = 1.0, durchmesser_quelle: str = "Standard (Darstellung)"):
         """IfcBorehole mit Schichten als Prismen (N1); xy lokal. Durchmesser der Saeule in m (Darstellung)."""
         f = self.f
@@ -155,7 +160,7 @@ class IfcAusgabe:
                                                "Durchmesser_Quelle": durchmesser_quelle})
         z0 = b["gok_nhn"] if b.get("gok_nhn") is not None else 0.0
         strata = []
-        for ly in b["layers"]:
+        for k, ly in enumerate(b["layers"]):
             s = api.root.create_entity(
                 f, ifc_class="IfcGeotechnicalStratum", predefined_type="SOLID",
                 name=f"{b['code']} {ly['top_depth']:.2f}-{ly['bottom_depth']:.2f} {ly['soil_class'] or '?'}")
@@ -178,6 +183,8 @@ class IfcAusgabe:
             ansprache = ifc_eigenschaften(deuten(ly.get("description_raw"), ly.get("soil_class")))
             ansprache.pop("Beschreibung")                 # steht schon im CPset_Schichtenverzeichnis
             self._pset(s, "CPset_Bodenansprache", ansprache)
+            for name, werte in ((psets_je_schicht or [])[k] if k < len(psets_je_schicht or []) else {}).items():
+                self._pset(s, name, werte)               # z. B. Homogenbereiche je Gewerk (docs/28)
             strata.append(s)
         if strata:
             api.aggregate.assign_object(f, products=strata, relating_object=ent)
@@ -186,7 +193,8 @@ class IfcAusgabe:
     def geomodell(self, name: str, einheiten: list[dict], eigenschaften: dict):
         """IfcGeomodel mit einem geschlossenen Koerper je Einheit.
 
-        einheiten: [{"name", "knoten", "flaechen", "rgb", "beschreibung", "eigenschaften"}]
+        einheiten: [{"name", "knoten", "flaechen", "rgb", "beschreibung", "eigenschaften"}]; dazu optional "teile"
+        (mehrere Koerper), "pset" (Name des Haupt-Psets, sonst CPset_Modelleinheit) und "psets" (weitere {Name: Werte}).
         """
         f = self.f
         gm = api.root.create_entity(f, ifc_class="IfcGeomodel", name=name)
@@ -197,9 +205,12 @@ class IfcAusgabe:
         for e in einheiten:
             s = api.root.create_entity(f, ifc_class="IfcGeotechnicalStratum", name=e["name"], predefined_type="SOLID")
             s.Description = e.get("beschreibung") or "Modelleinheit"
-            self._geometrie(s, e["knoten"], e["flaechen"], e["rgb"], e["name"], geschlossen=e.get("geschlossen", True))
+            self._geometrie(s, e.get("knoten"), e.get("flaechen"), e["rgb"], e["name"],
+                            geschlossen=e.get("geschlossen", True), teile=e.get("teile"))
             self._pset(s, "Pset_GeotechnicalStratumCommon", {"Status": "EXISTING"})
-            self._pset(s, "CPset_Modelleinheit", e["eigenschaften"])
+            self._pset(s, e.get("pset", "CPset_Modelleinheit"), e["eigenschaften"])
+            for name, werte in (e.get("psets") or {}).items():
+                self._pset(s, name, werte)
             koerper.append(s)
         if koerper:
             api.aggregate.assign_object(f, products=koerper, relating_object=gm)

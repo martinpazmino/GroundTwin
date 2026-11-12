@@ -85,6 +85,15 @@ class GebaeudeAbruf(BaseModel):
     rand: float | None = None
 
 
+class Analyse(BaseModel):
+    laeufe: int = 100
+
+
+class Punkt2(BaseModel):
+    x: float
+    y: float
+
+
 class SgdAuswahl(BaseModel):
     auswahl: list[dict]
 
@@ -154,9 +163,17 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
         """Lebenszeichen fuer die Plattform (ohne Anmeldung, ohne Daten)."""
         return {"ok": True, "version": VERSION}
 
+    @app.get("/api/homogenbereiche")
+    def homogenbereiche_daten():
+        from baugrundmodell import homogenbereiche as hb      # Kennwerte je ATV der VOB/C (docs/28), mit Quelle
+        d = hb.daten()
+        return {"atv": d["atv"], "kennwerte": d["kennwerte"], "matrix": d["matrix"], "quelle": d["quelle"],
+                "legende": d["legende"]}
+
     @app.get("/api/info")
     def info():
-        return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "lizenz": LIZENZ, "quellcode": quellcode,
+        return {"version": VERSION, "ocr": pl.ocr_verfuegbar(), "implizit": pl.implizit_verfuegbar(),
+                "lizenz": LIZENZ, "quellcode": quellcode,
                 "beispiele": [{"name": k, "titel": t} for k, (t, _) in BEISPIELE.items()]
                 + [{"name": k, "titel": v[0], "standort": True} for k, v in STANDORT_BEISPIELE.items()]}
 
@@ -302,6 +319,30 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def modell(sig: str):
         erg = ap.modell(sig)
         return {**erg, "zustand": ap.zustand(sig)}
+
+    @app.post("/api/projekt/{sig}/analyse")
+    def analyse(sig: str, a: Analyse):
+        return ap.analyse(sig, a.laeufe)                   # Ground Analysis (docs/27 G2): liest das Modell
+
+    @app.get("/api/projekt/{sig}/homogenbereiche/vorschlag")
+    def hb_vorschlag(sig: str, atv: str):
+        return ap.hb_vorschlag(sig, atv)                   # je Anwendungsfall (docs/28 §5), nur ein Vorschlag
+
+    @app.get("/api/projekt/{sig}/homogenbereiche/kennwerte")
+    def hb_kennwerte(sig: str, atv: str):
+        return ap.hb_kennwerte(sig, atv)                   # Ansprache aus den Beschreibungen je Bereich (docs/28 §6)
+
+    @app.get("/api/projekt/{sig}/analyse/grundwasser")
+    def analyse_grundwasser(sig: str):
+        return ap.grundwasser(sig)                         # Grundwasserflaeche (docs/27 G5), nicht im IFC
+
+    @app.get("/api/projekt/{sig}/analyse/flaeche/{j}")
+    def analyse_flaeche(sig: str, j: int):
+        return ap.analyse_flaeche(sig, j)                  # Unterkante mit sigma fuer den Viewer
+
+    @app.post("/api/projekt/{sig}/analyse/punkt")
+    def analyse_punkt(sig: str, p: Punkt2):
+        return ap.virtuelle_bohrung(sig, p.x, p.y)
 
     @app.post("/api/projekt/{sig}/einchecken")
     def einchecken(sig: str, k: Kommentar):

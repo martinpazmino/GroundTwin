@@ -6,6 +6,28 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Homogenbereiche: what the layer descriptions say about the Kennwerte an ATV asks for (Konsistenz, Bodengruppe,
+  Lagerungsdichte …), per Bereich with the share of Schichten, in the app and the IFC; laboratory values stay open
+  (docs/28 §6). Ground Analysis warns when the Lage is only schematic (docs/28 §7).
+- Geological Benennungen of DIN 4023 Tabelle 3 recognised in descriptions: Hangschutt, Wiesenkalk (Seekalk,
+  Seekreide, Kalkmudde), Bänderton, Kreidestein, Kalktuff (docs/28 §8).
+- **Homogenbereiche (VOB/C)** (docs/28): Einheiten per Gewerk (ATV) to Homogenbereiche in the step
+  Einheiten, with the Kennwerte each ATV asks for; IFC Pset `CPset_Homogenbereich_<ATV>` on Einheiten and Bodenschichten,
+  and a model of Homogenbereiche only. A proposal per Anwendungsfall merges Einheiten that behave alike for the
+  chosen ATV (how fine follows from its Kennwerte), with a reason per Bereich, applied on a click.
+- **Grundwasserfläche** (Ground Analysis G5, docs/27 §6.6): a surface through the water levels of the Bohrungen, dry
+  Bohrungen as a check, hints instead of silent assumptions, shown blue in the viewer; not in the IFC and not a design
+  water level.
+- **Orientation entered per Einheit** for the implicit method (docs/27 §6.5): Fallrichtung and Fallwinkel replace the
+  fitted plane; source `Eingabe` in the report and the IFC; the Kreuzprobe uses it too.
+- **Ground Analysis in the viewer** (docs/27 §6.2): the base of an Einheit coloured by σ, and the virtuelle Bohrung by a
+  click in the viewer.
+- **Erkundungsvorschlag** (Ground Analysis G4, docs/27 §6.4): where the next Bohrung improves the model most, from the
+  uncertainty of the bases and of the extent of the Einheiten; validated on a Rinne against random positions.
+- **Implicit interpolation with GemPy** (Ground Analysis G3, docs/27 §6.3), optional (`requirements-analyse.txt`): one
+  scalar field per surface, orientation from the contacts, exact at the Bohrungen, spline for folded surfaces.
+- **Ground Analysis in the app** (phase G2, docs/27 §6.2): step Einheiten → Erweitert, Kreuzprobe, Unsicherheit per Einheit
+  and virtuelle Bohrung on a click.
 - **Ground Analysis, phase G1** (`services/analyse`, docs/27): Kreuzprobe (how well the layer model predicts a Bohrung it
   has not seen; names Bohrungen their neighbours do not let expect), Unsicherheit per Einheit and node, and the virtuelle
   Bohrung at any point, on the command line.
@@ -94,6 +116,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - `.editorconfig`, issue and pull request templates, security policy, this changelog.
 
 ### Changed
+- Colours of Fels and geological Benennungen after DIN 4023 Tabelle 2 and 3 (e.g. Mergelstein and
+  Geschiebemergel violettblau, Löß oliv), replacing display choices (docs/28 §8).
 - **The UI puts the first use case in front** (decision D99): a Gutachten shown interactively and checked for
   plausibility, also against the Bohrungen of the Länder. Nothing was removed.
   - Start page with **two paths of the same weight**: *Gutachten* (drop the PDF) and *Standort* (a point on the map).

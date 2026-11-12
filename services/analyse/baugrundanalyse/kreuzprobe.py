@@ -8,10 +8,15 @@ Unterkante unter der Endteufe bleibt.
 from __future__ import annotations
 
 import numpy as np
-from baugrundmodell.flaechen import schichtmodell
+from baugrundmodell.flaechen import orientierungen_holen, orientierungen_setzen, schichtmodell
 from scipy.spatial import cKDTree
 
 METHODEN = ("idw", "tps")
+NAMEN = {"idw": "IDW", "tps": "Dünnplatten-Spline", "implizit": "implizit (GemPy)"}
+
+
+def _m(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
 MIN_BOHRUNGEN = 3              # mit zwei Bohrungen sagt eine nur sich selbst voraus: keine Kreuzprobe
 PRAESENZ_MIN = 0.05            # m: ab dieser Maechtigkeit gilt eine Einheit an der Stelle als vorhergesagt
 AUFFAELLIG_MIN = 0.5           # m und ...
@@ -40,8 +45,13 @@ def vorhersage(m, ohne: int, methode: str, ausser: frozenset[int] = frozenset())
     xy = m.punkte[:nb]                                      # das Netz fuehrt die Bohrungen zuerst (flaechen.netz)
     punkte = np.vstack([xy[rest], xy[ohne:ohne + 1]])
     oben = np.r_[m.flaechen[0][rest], m.flaechen[0][ohne]] if m.dgm is not None else None   # DGM: Gelaende bekannt
-    sm = schichtmodell([m.bohrungen[i] for i in rest], [m.kontakte[i] for i in rest], punkte, xy[rest], m.basis,
-                       methode, oben=oben)
+    vorher = orientierungen_holen()
+    orientierungen_setzen({int(j): tuple(v) for j, v in (m.parameter.get("orientierung_vorgabe") or {}).items()})
+    try:                                                    # eingegebene Orientierung gilt auch ohne die Bohrung
+        sm = schichtmodell([m.bohrungen[i] for i in rest], [m.kontakte[i] for i in rest], punkte, xy[rest], m.basis,
+                           methode, oben=oben)
+    finally:
+        orientierungen_setzen(vorher)
     return sm["flaechen"][:, -1]
 
 
@@ -76,7 +86,11 @@ def _auffaellige(m, methode: str, groesste: dict[int, float]) -> list[dict]:
     return out
 
 
-def kreuzprobe(m, methoden: tuple[str, ...] = METHODEN) -> dict:
+def kreuzprobe(m, methoden: tuple[str, ...] | None = None) -> dict:
+    """methoden: Vorgabe IDW und Spline, dazu die Methode des Modells (z. B. implizit)."""
+    if methoden is None:
+        eigene = m.parameter.get("methode", "idw")
+        methoden = METHODEN + ((eigene,) if eigene not in METHODEN else ())
     nb, n = len(m.bohrungen), len(m.einheiten)
     if nb < MIN_BOHRUNGEN:
         raise ValueError(f"Kreuzprobe braucht mindestens {MIN_BOHRUNGEN} Bohrungen im Modell (vorhanden: {nb})")
@@ -133,17 +147,23 @@ def kreuzprobe(m, methoden: tuple[str, ...] = METHODEN) -> dict:
 
 def _hinweise(m, k: dict) -> list[str]:
     h = []
+    schema = [b.code for b in m.bohrungen if b.lage == "schematisch"]
+    if schema:                                              # Reihe ohne Lageplan: Abstaende sind gesetzt, nicht gemessen
+        h.append(f"schematische Lage ({len(schema)} von {len(m.bohrungen)} Bohrungen): die Abstände sind nicht vermessen – "
+                 "Kreuzprobe, Unsicherheit und Erkundungsvorschlag gelten nur zur Anschauung")
+    if any(b.hoehe.startswith("relativ") for b in m.bohrungen):
+        h.append("relative Höhen (GOK unbekannt): Fehler in m beziehen sich auf Tiefen unter dem gesetzten Gelände")
     eigene = k["methoden"].get(k["methode_modell"])
     if eigene and not eigene["gesamt"]["n"]:
         h.append("keine exakte Unterkante in den Bohrungen: die Kreuzprobe hat nichts zu vergleichen")
     if k["beste"] and eigene and k["beste"] != k["methode_modell"] and eigene["gesamt"]["n"]:
         b = k["methoden"][k["beste"]]["gesamt"]["mae"]
         if b < 0.8 * eigene["gesamt"]["mae"]:
-            h.append(f"Methode {k['beste']} sagt die Bohrungen besser voraus ({b:.2f} m statt "
-                     f"{eigene['gesamt']['mae']:.2f} m mittlerer Fehler) – in den Modelleinstellungen wählbar")
+            h.append(f"{NAMEN.get(k['beste'], k['beste'])} sagt die Bohrungen besser voraus ({_m(b)} m statt "
+                     f"{_m(eigene['gesamt']['mae'])} m mittlerer Fehler) – unter Erweitert als Interpolation wählbar")
     if eigene:
         if eigene["auffaellig"]:
-            liste = ", ".join(f"{a['bohrung']} ({a['fehler_m']:.2f} m)".replace(".", ",") for a in eigene["auffaellig"])
+            liste = ", ".join(f"{a['bohrung']} ({_m(a['fehler_m'])} m)" for a in eigene["auffaellig"])
             h.append(f"Bohrungen, die ihre Nachbarn nicht erwarten lassen: {liste} neben der Vorhersage – Linse, Rinne "
                      "oder Fehler in Tiefen oder Lage? prüfen")
         fv = sum(e["praesenz"]["falsch_vorhanden"] + e["praesenz"]["falsch_fehlend"] for e in eigene["einheiten"])

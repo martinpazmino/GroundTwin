@@ -258,6 +258,7 @@ Building locally:
 ```bash
 docker build -t groundtwin .                          # with OCR
 docker build -t groundtwin --build-arg OCR=0 .        # without OCR (smaller, no system packages)
+docker build -t groundtwin --build-arg ANALYSE=1 .    # with GemPy for the implicit method (docs/27 G3)
 docker run --rm -p 8500:8500 -e GEO_AGENT_PASSWORT=test -v "$(mktemp -d)":/data groundtwin
 python scripts/testplan.py plans
 GEO_AGENT_PASSWORT=test node scripts/check_app.mjs http://localhost:8500 plans screenshots

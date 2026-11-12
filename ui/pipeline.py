@@ -21,6 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 EXTRAKTOR = REPO / "services" / "extractor" / "prototyp_v4.py"
 BEISPIELE = REPO / "data" / "beispiele"
 sys.path.insert(0, str(REPO / "services" / "modeler"))
+sys.path.insert(0, str(REPO / "services" / "analyse"))
 
 from baugrundmodell.einheiten import einheiten_aus_vorgabe  # noqa: E402
 from baugrundmodell.modell import bauen, bericht, ifc_schreiben  # noqa: E402
@@ -119,23 +120,39 @@ class Ergebnis:
     farben: dict[str, str]
 
 
+def implizit_verfuegbar() -> bool:
+    """GemPy installiert? Dann ist die Methode "implizit" beim Modellierer angemeldet (docs/27 G3)."""
+    try:
+        from baugrundanalyse import implizit
+    except ImportError:
+        return False
+    return implizit.registrieren()
+
+
 def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: str = "idw",
                  puffer: float | None = None, raster: float | None = None, basis: float | None = None,
-                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None):
-    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes. gelaende: DGM-Raster fuer die Oberkante."""
+                 ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None,
+                 orientierung: dict[str, dict] | None = None):
+    """Nur die Geometrie (teuer bei Trassen); das IFC schreibt ifc_bytes. gelaende: DGM-Raster fuer die Oberkante.
+    methode "implizit": GemPy (docs/27 G3), nur wenn installiert."""
+    if methode == "implizit" and not implizit_verfuegbar():
+        raise ValueError("Interpolation implizit braucht GemPy (pip install -r requirements-analyse.txt) – "
+                         "unter Erweitert IDW oder Dünnplatten-Spline wählen")
     return bauen(docs, einheiten_aus_vorgabe(vorgabe) if vorgabe else None, methode, raster, puffer, basis, ursprung,
-                 gelaende=gelaende, gelaende_info=gelaende_info)
+                 gelaende=gelaende, gelaende_info=gelaende_info, orientierung=orientierung)
 
 
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,
               durchmesser_je: dict[str, float] | None = None, gebaeude: list[dict] | None = None,
-              gebaeude_info: dict | None = None) -> bytes:
+              gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
+              nur_homogenbereiche: str | None = None) -> bytes:
     ARBEIT.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".ifc", dir=ARBEIT, delete=False) as fh:
         pfad = Path(fh.name)
     try:
         ifc_schreiben(m, pfad, docs, pruefstand=pruefstand, durchmesser=durchmesser, durchmesser_je=durchmesser_je,
-                      gebaeude=gebaeude, gebaeude_info=gebaeude_info)
+                      gebaeude=gebaeude, gebaeude_info=gebaeude_info, homogenbereiche=homogenbereiche,
+                      nur_homogenbereiche=nur_homogenbereiche)
         return pfad.read_bytes()
     finally:
         pfad.unlink(missing_ok=True)

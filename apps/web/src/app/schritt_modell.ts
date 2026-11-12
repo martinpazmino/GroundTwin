@@ -1,4 +1,5 @@
 // Schritt 5 · Modell: das Baugrundmodell im Viewer (Vollbild), rechts Pruefstand, Einchecken, Export und Hinweise.
+import { analyseViewerTeil } from "./analyse";
 import { html, nothing } from "lit";
 import { api, type GeoldgFrist } from "./api";
 import { hilfe } from "./hilfe";
@@ -194,7 +195,7 @@ export function schrittModell() {
 
       <details class="erweitert" ?open=${erweitert}
         @toggle=${(e: Event) => { erweitertAuf = (e.target as HTMLDetailsElement).open; }}>
-        <summary>Erweitert <span class="leise klein">Exporte · Cesium · BoreholeML · GeolDG · Darstellung</span></summary>
+        <summary>Erweitert <span class="leise klein">Exporte · Cesium · BoreholeML · GeolDG · Ground Analysis · Darstellung</span></summary>
         <section class="abschnitt-flach">
           <h3>Weitere Exporte</h3>
           <div class="export-liste">
@@ -204,6 +205,7 @@ export function schrittModell() {
           </div>
         </section>
         ${geoldgTeil()}
+        ${analyseViewerTeil()}
         <section class="abschnitt-flach">
           <h3>Darstellung</h3>
           <label class="inline">Überhöhung ${hilfe("ueberhoehung")}

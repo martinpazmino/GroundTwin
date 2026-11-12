@@ -44,3 +44,7 @@ uvicorn==0.54.0
 opencv-python==5.0.0.93
 pyclipper==1.4.0
 rapidocr-onnxruntime==1.2.3
+# nur Ground Analysis implizit (requirements-analyse.txt, docs/27 G3)
+gempy==2026.0.3
+gempy_engine==2026.0.3.post1
+python-dotenv==1.2.4

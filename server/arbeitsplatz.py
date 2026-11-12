@@ -27,6 +27,8 @@ from collections import Counter, OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from ui import pipeline as pl
 from ui import plausibilitaet as pb
 from ui import projekt as pj
@@ -36,6 +38,11 @@ if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
 from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
+
+_ANALYSE = str(Path(__file__).resolve().parents[1] / "services" / "analyse")
+if _ANALYSE not in sys.path:
+    sys.path.insert(0, _ANALYSE)
+import baugrundanalyse as ga  # noqa: E402
 
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
@@ -135,6 +142,7 @@ class Arbeitsplatz:
         self._extraktion = threading.Lock()               # der Extraktor ist nicht fuer parallele Laeufe gebaut
         self._auftraege: dict[str, Auftrag] = {}
         self._modelle: OrderedDict[str, tuple[object, dict]] = OrderedDict()
+        self._analysen: OrderedDict[str, dict] = OrderedDict()   # Ground Analysis je Modell (docs/27 G2)
         self._dgm: OrderedDict[tuple, gelaende.Raster] = OrderedDict()
         self._dgm_sperre = threading.Lock()              # Cache wird von mehreren Projekten (Threads) benutzt
 
@@ -394,6 +402,7 @@ class Arbeitsplatz:
         e = pj.einstellungen(p)
         eingabe = {"docs": pl.ohne_pruefvermerke(vorb.docs), "vorgabe": p.vorgabe, "methode": e.methode,
                    "puffer": e.puffer, "raster": e.raster, "basis": e.basis, "ursprung": list(ursprung),
+                   **({"orientierung": e.orientierung} if e.orientierung and e.methode == "implizit" else {}),
                    "dgm": p.dgm.get("stand") if self._mit_dgm(p) else None}
         return hashlib.sha256(json.dumps(eingabe, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -423,6 +432,7 @@ class Arbeitsplatz:
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
                 "vorgabe": p.vorgabe, "eincheckungen": p.eincheckungen,
+                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell,
                 "pruefstand": pj.pruefstand(docs, p),
                 "plausibilitaet": pb.pruefen(docs, p),
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
@@ -455,8 +465,46 @@ class Arbeitsplatz:
     # ------------------------------------------------------------ Modell
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:
         """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser und Gebaeude (gehoeren zum IFC, nicht zur Geometrie)."""
-        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand")], sort_keys=True)
+        dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand"),
+                         self._hb_fuer_ifc(p)], sort_keys=True)
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
+
+    def hb_vorschlag(self, sig: str, atv: str) -> dict:
+        """Vorschlag der Homogenbereiche fuer eine ATV aus den Einheiten des Modells (docs/28 §5); aendert nichts."""
+        from baugrundmodell import homogenbereiche as hb
+        erg = self.modell(sig)
+        if erg["fehler"]:
+            return {"fehler": erg["fehler"]}
+        try:
+            return {"fehler": "", **hb.vorschlag_fuer(atv, erg["bericht"]["einheiten"])}
+        except ValueError as err:
+            return {"fehler": str(err)}
+
+    def hb_kennwerte(self, sig: str, atv: str) -> dict:
+        """Je Homogenbereich der ATV (ohne Zuordnung: je Einheit), was die Beschreibungen zu den verlangten
+        Kennwerten hergeben (docs/28 §6); liest nur."""
+        from baugrundmodell import homogenbereiche as hb
+        with self.sperre(sig):
+            erg = self.modell(sig)
+            if erg["fehler"]:
+                return {"fehler": erg["fehler"]}
+            _, p = self.laden(sig)
+            einheiten = erg["bericht"]["einheiten"]
+            try:
+                je = (p.homogenbereiche or {}).get(atv) or {}
+                gruppen, _ = hb.bereiche(je, [e["name"] for e in einheiten])
+                schichten = {e["name"]: e["schichten"] for e in einheiten}
+                return {"fehler": "", "atv": atv, "zugeordnet": bool(je), "bereiche": [
+                    {"name": g["bereich"] or g["einheiten"][0], "ohne_bereich": g["bereich"] is None,
+                     "einheiten": g["einheiten"],
+                     **hb.kennwerte_bereich(atv, [s for e in g["einheiten"] for s in schichten[e]])} for g in gruppen]}
+            except ValueError as err:
+                return {"fehler": str(err)}
+
+    @staticmethod
+    def _hb_fuer_ifc(p: pj.Projekt) -> dict:
+        """Homogenbereiche fuer ifc_schreiben (docs/28): Psets je ATV und auf Wunsch das Modell nur aus Bereichen."""
+        return {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
 
     def modell(self, sig: str) -> dict:
         """Modell rechnen (oder aus dem Speicher) und das IFC fuer den Viewer ablegen."""
@@ -478,7 +526,8 @@ class Arbeitsplatz:
                     e = pj.einstellungen(p)
                     try:
                         m = pl.modell_bauen(vorb.docs, p.vorgabe, e.methode, e.puffer, e.raster, e.basis, ursprung,
-                                            *self._dgm_fuer_modell(sig, p))
+                                            *self._dgm_fuer_modell(sig, p),
+                                            orientierung=e.orientierung if e.methode == "implizit" else None)
                         self._modelle[schluessel] = (m, pl.bericht(m))
                         while len(self._modelle) > MODELLE_IM_SPEICHER:
                             self._modelle.popitem(last=False)
@@ -494,13 +543,106 @@ class Arbeitsplatz:
             if not ziel.exists():
                 ziel.write_bytes(pl.ifc_bytes(m, vorb.docs, durchmesser=p.durchmesser,
                                               durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                              **self._gebaeude_fuer_ifc(sig, p, m)))
+                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p)))
                 alte = sorted((self.web / "modelle").glob("*.ifc"), key=lambda f: f.stat().st_mtime)[:-20]
                 for f in alte:
                     f.unlink(missing_ok=True)
             return {"schluessel": schluessel, "fehler": "", "bericht": bericht, "ifc": f"/dateien/modelle/{name}",
                     "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"])),
                     "nicht_im_modell": vorb.nicht_im_modell + bericht["ausgeschlossen"]}
+
+    # ------------------------------------------------------------ Ground Analysis (docs/27, G2)
+    def _analyse_rechnen(self, sig: str, laeufe: int | None) -> tuple[object, dict]:
+        """Modell (aus dem Speicher) und seine Analyse; die Analyse liest das Modell und aendert nichts.
+        laeufe None: die vorhandene Analyse des Modells, sonst 50 Laeufe."""
+        erg = self.modell(sig)
+        if erg["fehler"]:
+            raise ValueError(erg["fehler"])
+        schluessel = erg["schluessel"]
+        m = self._modelle[schluessel][0]
+        a = self._analysen.get(schluessel)
+        if laeufe is None:
+            laeufe = a["laeufe"] if a else 50
+        if a is None or a["laeufe"] < laeufe:
+            k = ga.kreuzprobe(m)                           # ValueError unter drei Bohrungen
+            u = ga.unsicherheit(m, k, laeufe=laeufe)
+            a = {"laeufe": laeufe, "schluessel": schluessel, "kreuzprobe": k, "unsicherheit": u}
+            self._analysen[schluessel] = a
+            while len(self._analysen) > MODELLE_IM_SPEICHER:
+                self._analysen.popitem(last=False)
+        self._analysen.move_to_end(schluessel)
+        return m, a
+
+    def analyse(self, sig: str, laeufe: int = 100) -> dict:
+        laeufe = max(10, min(int(laeufe), 500))
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, laeufe)
+            except ValueError as err:
+                return {"fehler": str(err)}
+            k, u = a["kreuzprobe"], a["unsicherheit"]
+            sig_knoten = u["_sigma"]
+            return {"fehler": "", "schluessel": a["schluessel"], "epsg": m.epsg,
+                    "mitte": [round(m.ursprung[0], 2), round(m.ursprung[1], 2)],
+                    "bohrungen": [{"code": b.code, "x": round(b.x, 2), "y": round(b.y, 2)} for b in m.bohrungen],
+                    "kreuzprobe": {x: v for x, v in k.items() if not x.startswith("_")},
+                    "unsicherheit": ga.unsicherheit_zusammenfassung(u),
+                    "vorschlaege": ga.vorschlaege(m, u, anzahl=3),
+                    "sigma_max_m": round(float(np.nanmax(sig_knoten)), 2) if np.isfinite(sig_knoten).any() else None}
+
+    def grundwasser(self, sig: str) -> dict:
+        """Grundwasserflaeche aus den Wasserstaenden (docs/27 G5): Staende, Pruefungen, Flaeche fuer den Viewer."""
+        with self.sperre(sig):
+            erg = self.modell(sig)
+            if erg["fehler"]:
+                return {"fehler": erg["fehler"]}
+            docs, p = self.laden(sig)
+            vorb, _, _ = self.vorbereitung(docs, p)
+            m = self._modelle[erg["schluessel"]][0]
+            g = ga.grundwasser(m, vorb.docs)
+            z = g.pop("z")
+            flaeche = None
+            if z is not None:
+                flaeche = {"name": "Grundwasser",
+                           "punkte": [[round(float(m.punkte[k, 0] + m.ursprung[0]), 2),
+                                       round(float(m.punkte[k, 1] + m.ursprung[1]), 2), round(float(z[k]), 3)]
+                                      for k in range(len(m.punkte))],
+                           "dreiecke": m.dreiecke.tolist(), "z_min": round(float(z.min()), 2), "z_max": round(float(z.max()), 2)}
+            return {"fehler": "", **g, "flaeche": flaeche}
+
+    def analyse_flaeche(self, sig: str, j: int) -> dict:
+        """Unterkante der Einheit j mit sigma je Knoten fuer den Viewer: nur Dreiecke, in denen sie vorkommt."""
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, None)
+            except ValueError as err:
+                return {"fehler": str(err)}
+            if not 0 <= j < len(m.einheiten):
+                return {"fehler": f"keine Einheit {j}"}
+            s = a["unsicherheit"]["_sigma"][j + 1]
+            da = (m.flaechen[j] - m.flaechen[j + 1]) >= 0.005
+            dreiecke = m.dreiecke[da[m.dreiecke].any(axis=1)]
+            if not len(dreiecke):
+                return {"fehler": f"{m.einheiten[j].name} kommt im Modell nicht vor"}
+            knoten = np.unique(dreiecke)
+            neu = np.full(len(m.punkte), -1)
+            neu[knoten] = np.arange(len(knoten))
+            werte = [None if not np.isfinite(v) else round(float(v), 3) for v in s[knoten]]
+            endlich = [v for v in werte if v is not None]
+            return {"fehler": "", "name": m.einheiten[j].name,
+                    "punkte": [[round(float(m.punkte[k, 0] + m.ursprung[0]), 2), round(float(m.punkte[k, 1] + m.ursprung[1]), 2),
+                                round(float(m.flaechen[j + 1][k]), 3)] for k in knoten],
+                    "dreiecke": neu[dreiecke].tolist(), "sigma": werte,
+                    "sigma_max": max(endlich) if endlich else 0.0,
+                    "hinweis": "" if endlich else "Unterkante nicht bezifferbar (keine Bohrung erreicht sie)"}
+
+    def virtuelle_bohrung(self, sig: str, x: float, y: float) -> dict:
+        with self.sperre(sig):
+            try:
+                m, a = self._analyse_rechnen(sig, None)
+                return {"fehler": "", **ga.virtuelle_bohrung(m, x, y, a["unsicherheit"])}
+            except ValueError as err:
+                return {"fehler": str(err)}
 
     def einchecken(self, sig: str, kommentar: str) -> dict:
         with self.sperre(sig):
@@ -544,7 +686,7 @@ class Arbeitsplatz:
                 letzter = p.eincheckungen[-1] if p.eincheckungen else None
                 inhalt = pl.ifc_bytes(m, vorb.docs, pruefstand=pj.stand_text(letzter) if letzter else "nicht eingecheckt",
                                       durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                      **self._gebaeude_fuer_ifc(sig, p, m))
+                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p))
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
 

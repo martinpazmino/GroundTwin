@@ -108,3 +108,27 @@ def test_ifc_eigenschaften():
     assert e["Beschreibung"] == "Ton, schluffig, steif, TM" and e["Kurzzeichen_DIN4023"] == "T, u"
     assert e["Bodengruppe_DIN18196"] == "TM" and e["Konsistenz"] == "steif" and e["Farbname_DIN4023"] == "violett"
     assert "DIN 4023" in e["Normen"]
+
+
+def test_farben_nach_din4023_tabelle_2_und_3():
+    """Farbnamen aus DIN 4023 Tabelle 2 (Fels nach DIN EN ISO 14689) und Tabelle 3 (geologische Benennungen)."""
+    import json
+    from pathlib import Path
+    d = json.loads((Path(__file__).resolve().parents[1] / "baugrundmodell" / "normen.json").read_text(encoding="utf-8"))
+    fels = {k: v["farbname"] for k, v in d["fels"].items()}
+    assert (fels["Sandstein"], fels["Schluffstein"], fels["Tonstein"], fels["Mergelstein"], fels["Kalkstein"],
+            fels["Konglomerat"], fels["Brekzie"]) == ("orange", "oliv", "violett", "violettblau", "dunkelblau", "gelb", "gelb")
+    k = d["klassen"]
+    assert (k["Geschiebemergel"]["farbname"], k["Loess"]["farbname"], k["Klei"]["farbname"]) == ("violettblau", "oliv", "lila")
+    assert all("Tabelle" in d["fels"][n]["beleg"] for n in ("Mergelstein", "Kalkstein"))
+    kurz = {e["kurz"]: e for e in d["geologische_benennungen"]["eintraege"]}
+    assert kurz["Mg"]["klasse"] == "Geschiebemergel" and kurz["Bt"]["farbname"] == "violett" and kurz["A"]["farbname"] is None
+    # jede Benennung der Tabelle 3 hat eine Modellklasse und wird in einer Beschreibung erkannt
+    assert all(e["klasse"] for e in d["geologische_benennungen"]["eintraege"])
+    for text, klasse, name in (("Hangschutt, steinig", "Hangschutt", "Hangschutt"), ("Bänderton, steif", "Baenderton", "Bänderton"),
+                               ("Seekreide, weich", "Wiesenkalk", "Wiesenkalk"), ("Kalkmudde", "Wiesenkalk", "Wiesenkalk"),
+                               ("Kreidestein, verwittert", "Fels (Kreidestein)", "Kreidestein"),
+                               ("Kalktuff", "Fels (Kalktuff)", "Kalktuff"), ("Mudde", "Mudde", "Mudde")):
+        x = deuten(text)
+        assert (x.klasse, x.hauptanteil) == (klasse, name), text
+    assert deuten("Seekreide").farbname == "hellblau" and deuten("Bänderton").farbname == "violett"

@@ -173,7 +173,8 @@ def bekannt(klasse: str | None) -> bool:
     return bool(klasse) and (klasse in KLASSEN or klasse.startswith("Fels")) and klasse != UNKLASSIFIZIERT
 
 
-ANZEIGE = {"Auffuellung": "Auffüllung", "Bloecke": "Blöcke", "Loess": "Löss", "Loesslehm": "Lösslehm"}
+ANZEIGE = {"Auffuellung": "Auffüllung", "Bloecke": "Blöcke", "Loess": "Löss", "Loesslehm": "Lösslehm",
+           "Baenderton": "Bänderton"}
 
 
 def anzeigename(klasse: str | None) -> str:

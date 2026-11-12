@@ -589,6 +589,21 @@ try {
   await warte(() => window.app.modell?.bericht?.einheiten.some((e) => e.name === "Kieslinse") && !window.app.rechnet, null, 180000);
   pruefe("Einheit umbenannt (Vorgabe) und neu gerechnet", (await stand()).modell.einheiten.includes("Kieslinse"));
   await page.screenshot({ path: `${aus}/D2_einheiten.png` });
+  // Ground Analysis (docs/27 G2): unter Erweitert, erst auf Klick; Kreuzprobe, Unsicherheit, virtuelle Bohrung
+  await page.locator("details.analyse > summary").click();
+  await page.getByRole("button", { name: "Analyse rechnen" }).click();
+  await warte(() => document.querySelectorAll("details.analyse table").length >= 2 || document.querySelector("details.analyse p.warn"), null, 120000);
+  await page.getByRole("button", { name: "Bohren", exact: true }).click();
+  await warte(() => document.querySelector("details.analyse table.virtuell") || document.querySelector("details.analyse p.warn"), null, 60000);
+  const ga = await page.evaluate(() => {
+    const d = document.querySelector("details.analyse");
+    return { tabellen: d.querySelectorAll("table").length, warn: d.querySelector("p.warn")?.textContent ?? "",
+             vorschlaege: d.querySelectorAll("table.vorschlag tbody tr").length,
+             sigma: [...d.querySelectorAll("table.virtuell tbody tr td:nth-child(4)")].map((x) => x.textContent) };
+  });
+  pruefe("Ground Analysis: Kreuzprobe, Unsicherheit, Erkundungsvorschlag und virtuelle Bohrung mit ± σ", ga.tabellen >= 3 && !ga.warn && ga.vorschlaege >= 1
+    && ga.sigma.some((s) => /\d/.test(s)), JSON.stringify(ga));
+  await page.locator("details.analyse").screenshot({ path: `${aus}/D3_analyse.png` });
   await page.getByRole("button", { name: /Weiter: Modell/ }).click();
   await warte(() => window.baugrund?.geladen && !window.app.rechnet, null, 240000);
   await ruhe(3000);
@@ -609,6 +624,45 @@ try {
   pruefe("BoreholeML: ohne Koordinaten gesperrt (Knopf aus, Server 400)",
     bml === 400 && (await page.locator(".export-liste .knopf.aus", { hasText: "BoreholeML" }).count()) === 1 &&
     /^0 von \d+ Bohrungen/.test(bmlText), `${bml} · ${bmlText}`);
+  // Ground Analysis im Viewer (docs/27 G2): Unterkante nach sigma gefaerbt, virtuelle Bohrung per Klick
+  await page.getByRole("button", { name: "Unsicherheit zeigen" }).click();
+  await warte(() => window.viewer?.world.scene.three.children.some((o) => o.name === "Unsicherheit"), null, 120000);
+  const legende = await page.locator(".sigma-legende").innerText();
+  await page.getByRole("button", { name: /Punkt im Viewer wählen/ }).click();
+  await ruhe(400);
+  // Ziel: ein Knoten der gezeigten Flaeche nahe ihrer Mitte, auf den Bildschirm projiziert (die Mitte der Leinwand
+  // kann je nach Kamera neben dem Modell liegen)
+  const ziel = await page.evaluate(() => {
+    const w = window.viewer.world;
+    const netz = w.scene.three.children.find((o) => o.name === "Unsicherheit");
+    const pos = netz.geometry.getAttribute("position");
+    netz.geometry.computeBoundingBox();
+    const mitte = netz.geometry.boundingBox.getCenter(netz.position.clone());
+    let best = 0, d = Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const dd = (pos.getX(i) - mitte.x) ** 2 + (pos.getZ(i) - mitte.z) ** 2;
+      if (dd < d) { d = dd; best = i; }
+    }
+    const v = mitte.clone().set(pos.getX(best), pos.getY(best), pos.getZ(best)).project(w.camera.three);
+    const r = w.renderer.three.domElement.getBoundingClientRect();
+    return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height };
+  });
+  await page.mouse.click(ziel.x, ziel.y);
+  await warte(() => document.getElementById("auswahl-name")?.textContent === "Virtuelle Bohrung", null, 60000).catch(() => {});
+  const tafel = await page.locator("#auswahl-inhalt").innerText().catch(() => "");
+  pruefe("Ground Analysis im Viewer: Unterkante nach σ gefärbt, virtuelle Bohrung per Klick",
+    /σ Unterkante/.test(legende) && /Modell \(virtuelle Bohrung/.test(tafel) && /±/.test(tafel), `${legende.split("\n")[0]} · ${tafel.slice(0, 60)} · ${await page.locator("#meldung").innerText().catch(() => "")}`);
+  await page.screenshot({ path: `${aus}/D4_analyse_viewer.png` });
+  await page.getByRole("button", { name: "Unsicherheit ausblenden" }).click();
+  // Grundwasserflaeche (docs/27 G5): mit Staenden blau im Viewer, ohne Staende ehrlich "keine"
+  await page.getByRole("button", { name: "Grundwasserfläche zeigen" }).click();
+  await page.locator(".grundwasser").waitFor({ timeout: 60000 }).catch(() => {});
+  const gw = await page.locator(".grundwasser").innerText().catch(() => "");
+  const gwNetz = await page.evaluate(() => window.viewer?.world.scene.three.children.some((o) => o.name === "Grundwasser"));
+  const gemessen = Number((gw.match(/(\d+) gemessene/) ?? [])[1] ?? -1);
+  pruefe("Grundwasserfläche: Stände gezählt, Fläche nur mit Ständen, Hinweis Bohrzeit",
+    gemessen >= 0 && gwNetz === gemessen > 0 && /Bemessungswasserstand|keine Bohrung/.test(gw), gw.slice(0, 120));
+  if (gwNetz) await page.getByRole("button", { name: "Grundwasser ausblenden" }).click();
   // GeolDG (P6, D96): Abschluss der Untersuchung -> Frist der Fachdaten; Paket mit Pruefliste und Modell (ohne
   // Koordinaten kein BoreholeML: das steht im LIESMICH)
   const abschluss = page.getByLabel("Abschluss der Untersuchung", { exact: true });     // nicht der Knopf "Hilfe: …"
@@ -725,6 +779,46 @@ try {
     const bm = await page.evaluate(huelleImBild, ["modell", false]);
     pruefe("Standort: Modell ganz im Bild, Kamera außerhalb", bm.ok, JSON.stringify(bm));
     await page.screenshot({ path: `${aus}/F_standort.png` });
+  }
+
+  // ---------------------------------------------------------------- H: Homogenbereiche (VOB/C, docs/28)
+  {
+    const post = (pfad, daten) => page.request.post(url + pfad, { data: daten }).then((r) => r.json());   // mit Anmeldung
+    const hsig = (await post("/api/beispiel", { name: "demo" })).projekt;
+    await post(`/api/projekt/${hsig}/aendern`, { ops: [{ op: "homogenbereiche", atv: "DIN 18300", zuordnung: null }] });
+    await page.goto(`${url}/#/${hsig}/einheiten`);
+    await page.reload();
+    await page.waitForSelector("table.einheiten", { timeout: 240000 });
+    await ruhe(800);
+    const hb = page.locator("details.homogenbereiche");
+    if (!(await hb.evaluate((d) => d.open))) await hb.locator("summary").click();
+    await page.waitForSelector(".hb-vorschlag", { timeout: 30000 });
+    const vorschlagBereiche = await page.locator(".hb-vorschlag tbody tr").count();
+    await page.getByRole("button", { name: /Vorschlag: je Einheit/ }).click();
+    await page.waitForFunction(() => Object.keys(window.app?.z?.homogenbereiche?.["DIN 18300"] ?? {}).length > 0, null, { timeout: 30000 });
+    const felder = page.locator("table.hb-zuordnung input");
+    const zweiter = await felder.nth(1).inputValue();
+    await felder.nth(2).fill(zweiter);
+    await felder.nth(2).press("Tab");
+    await page.waitForFunction((b) => Object.values(window.app?.z?.homogenbereiche?.["DIN 18300"] ?? {}).filter((x) => x === b).length === 2,
+      zweiter, { timeout: 30000 });
+    const kennwerte = await page.locator("ul.hb-kennwerte li").count();
+    await page.waitForSelector("details.hb-werte", { timeout: 30000 }).catch(() => {});
+    const ausBeschreibung = await page.locator("details.hb-werte").count();          // Kennwerte aus den Beschreibungen
+    const nEinheiten = await felder.count();
+    await page.getByLabel(/Homogenbereiche DIN 18300/).check();
+    await page.waitForFunction(() => window.app?.z?.hb_modell === "DIN 18300", null, { timeout: 30000 });
+    await page.screenshot({ path: `${aus}/H_homogenbereiche.png` });
+    await page.goto(`${url}/#/${hsig}/modell`);
+    await page.reload();
+    await warte(() => window.baugrund?.geladen && !window.app?.rechnet && window.baugrund.einheiten.length > 0, null, 240000);
+    const v = await page.evaluate(() => ({ einheiten: window.baugrund.einheiten,
+      liste: window.baugrund.modellname.startsWith("Homogenbereiche DIN 18300") }));
+    pruefe("Homogenbereiche DIN 18300: Vorschlag fasst zusammen, Zuordnung, 13 Kennwerte, IFC aus Bereichen im Viewer",
+      kennwerte === 13 && ausBeschreibung > 0 && vorschlagBereiche > 0 && vorschlagBereiche < nEinheiten && v.einheiten.includes(zweiter) && v.einheiten.length === nEinheiten - 1 && v.liste,
+      JSON.stringify({ kennwerte, ausBeschreibung, vorschlagBereiche, ...v }));
+    await page.screenshot({ path: `${aus}/H_modell.png` });
+    await post(`/api/projekt/${hsig}/aendern`, { ops: [{ op: "homogenbereiche", atv: "DIN 18300", zuordnung: null }] });
   }
 
   // ---------------------------------------------------------------- G: Werkzeug „Dienste der Länder“ (ohne Speichern)

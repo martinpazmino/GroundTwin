@@ -121,6 +121,7 @@ export interface Geoldg {
 export interface Einstellungen {
   methode: string; puffer: number | null; raster: number | null; basis: number | null; gok_relativ: boolean;
   gelaende_dgm: boolean;                            // Oberkante des Modells aus dem DGM (an den Bohrungen auf die GOK)
+  orientierung?: Record<string, { fallrichtung: number; fallwinkel: number }> | null;   // implizit, je Einheit (docs/27 G4)
 }
 
 export interface Zustand {
@@ -132,6 +133,8 @@ export interface Zustand {
   unterlage: (Unterlage & { seite: number; seiten: number; sha: string }) | null;
   reihe: ReiheZeile[]; reihe_standard: number;
   vorgabe: { name: string; bodenarten: string[] }[] | null;
+  homogenbereiche?: Record<string, Record<string, string>> | null;   // je ATV {Einheit: Bereich} (docs/28)
+  hb_modell?: string | null;
   eincheckungen: Eincheckung[]; pruefstand: Pruefstand; eingecheckt: string | null; seit_einchecken_geaendert: boolean;
   bohrungen: Bohrung[]; klassen: Klasse[];
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
@@ -184,6 +187,41 @@ export interface ProjektKurz {
 /** Reife des Projekts (docs/23 §2.3): Gutachten, Vorerkundung (nur Daten der Länder) oder gemischt. */
 export interface Reifegrad { stufe: "Gutachten" | "Vorerkundung" | "gemischt"; anzahl: Record<string, number> }
 
+/** Ground Analysis (docs/27 G2): Kreuzprobe und Unsicherheit zum gerechneten Modell. */
+export interface Fehlermass { n: number; mae: number | null; rmse: number | null; max: number | null; bias: number | null }
+export interface KreuzMethode {
+  gesamt: Fehlermass;
+  einheiten: (Fehlermass & { name: string; praesenz: { richtig: number; falsch_vorhanden: number; falsch_fehlend: number };
+              endteufe_verletzt: { bohrung: string; um_m: number }[] })[];
+  bohrungen: { code: string; abstand_naechste_m: number; n: number; mae: number | null; max: number | null; auffaellig: boolean }[];
+  gelaende: Fehlermass | null;
+  auffaellig: { bohrung: string; fehler_m: number; median_der_anderen_ohne_sie_m: number }[];
+}
+export interface UnsicherheitEinheit {
+  name: string; unterkante_bezifferbar: boolean; c_m2_je_m: number | null; kreuz_fehler: number; c_aus: string | null;
+  sigma_mittel_m: number | null; sigma_p95_m: number | null; sigma_max_m: number | null; sigma_messung_mittel_m: number | null;
+  volumen_m3: { modell: number; p5: number | null; p95: number | null };
+  methoden_differenz_m: { gegen: string; median: number | null; p95: number | null; max: number | null };
+}
+export interface AnalyseErgebnis {
+  fehler: string; schluessel?: string; epsg?: number | null; mitte?: [number, number];
+  bohrungen?: { code: string; x: number; y: number }[];
+  kreuzprobe?: { methode_modell: string; bohrungen: number; beste: string | null; hinweise: string[];
+                 methoden: Record<string, KreuzMethode> };
+  unsicherheit?: { laeufe: number; methode: string; sigma_exakt_m: number; einheiten: UnsicherheitEinheit[];
+                   hinweise: string[]; annahmen: string[] };
+  sigma_max_m?: number | null;
+  vorschlaege?: { x: number; y: number; wert_m: number; lage_m: number; ausdehnung_m: number;
+                  abstand_naechste_bohrung_m: number; grund: string }[];
+}
+export interface VirtuelleBohrung {
+  fehler: string; x?: number; y?: number; gok_nhn?: number; endteufe_m?: number; naechste_bohrung?: string; abstand_m?: number;
+  schichten?: { einheit: string; bodenarten: string[]; oben_nhn: number; unten_nhn: number; tiefe_oben_m: number;
+                tiefe_unten_m: number; maechtigkeit_m: number; sigma_unten_m: number | null; unten_95_nhn: [number, number] | null;
+                unterkante_offen: boolean }[];
+  hinweise?: string[]; herkunft?: string;
+}
+
 export type Op = Record<string, unknown> & { op: string };
 export type { Kalibrierung };
 
@@ -203,9 +241,14 @@ async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
 const json = (daten: unknown): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(daten) });
 
 export const api = {
-  info: () => anfrage<{ version: string; ocr: boolean; lizenz: string; quellcode: string;
+  info: () => anfrage<{ version: string; ocr: boolean; implizit?: boolean; lizenz: string; quellcode: string;
                         beispiele: { name: string; titel: string; standort?: boolean }[] }>("/api/info"),
   projekte: () => anfrage<ProjektKurz[]>("/api/projekte"),
+  homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
+  hbKennwerte: (sig: string, atv: string) =>
+    anfrage<HbKennwerte>(`/api/projekt/${sig}/homogenbereiche/kennwerte?atv=${encodeURIComponent(atv)}`),
+  hbVorschlag: (sig: string, atv: string) =>
+    anfrage<HbVorschlag>(`/api/projekt/${sig}/homogenbereiche/vorschlag?atv=${encodeURIComponent(atv)}`),
   beispiel: (name: string) =>
     anfrage<{ projekt?: string; auftrag?: string; schritt?: "gutachten" | "bohrungen" | "lage" | "einheiten" | "modell" }>(
       "/api/beispiel", json({ name })),
@@ -253,6 +296,46 @@ export const api = {
     anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/sgd/uebernehmen`, json({ auswahl })),
   sgdVerwerfen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/sgd`, { method: "DELETE" }),
   modell: (sig: string) => anfrage<ModellErgebnis>(`/api/projekt/${sig}/modell`, { method: "POST" }),
+  analyse: (sig: string, laeufe = 100) => anfrage<AnalyseErgebnis>(`/api/projekt/${sig}/analyse`, json({ laeufe })),
+  analyseFlaeche: (sig: string, j: number) => anfrage<{ fehler: string; name?: string; punkte?: [number, number, number][];
+    dreiecke?: [number, number, number][]; sigma?: (number | null)[]; sigma_max?: number; hinweis?: string }>(
+    `/api/projekt/${sig}/analyse/flaeche/${j}`),
+  analyseGrundwasser: (sig: string) => anfrage<Grundwasser>(`/api/projekt/${sig}/analyse/grundwasser`),
+  analysePunkt: (sig: string, x: number, y: number) => anfrage<VirtuelleBohrung>(`/api/projekt/${sig}/analyse/punkt`, json({ x, y })),
   einchecken: (sig: string, kommentar: string) => anfrage<{ eintrag: Eincheckung; zustand: Zustand }>(`/api/projekt/${sig}/einchecken`, json({ kommentar })),
   exportUrl: (sig: string, art: string) => `/api/projekt/${sig}/export/${art}`,
+};
+
+/** Grundwasserfläche aus den Wasserständen der Bohrungen (docs/27 G5); nicht im IFC. */
+export type Grundwasser = {
+  fehler: string; gemessen?: number; trocken?: number; methode?: string; hinweise?: string[];
+  staende?: { code: string; art: "gemessen" | "trocken" | "ohne Angabe"; z?: number; tiefe_m?: number; spanne_m?: number;
+    bis_z?: number }[];
+  widersprueche?: { code: string; trocken_bis_z: number; flaeche_z: number; differenz_m: number }[];
+  kreuzprobe?: { mae_m: number; max_m: number; je_bohrung: { code: string; fehler_m: number }[] } | null;
+  ueber_gelaende_knoten?: number;
+  flaeche?: { name: string; punkte: [number, number, number][]; dreiecke: [number, number, number][]; z_min: number;
+    z_max: number } | null;
+};
+
+/** Kennwerte je ATV der VOB/C für Homogenbereiche (docs/28). */
+export type HbDaten = {
+  atv: { code: string; gewerk: string }[];
+  kennwerte: { nr: string; name: string }[];
+  matrix: Record<string, Record<string, string>>;
+  quelle: string;
+  legende: Record<string, string>;
+};
+
+/** Vorschlag der Homogenbereiche für eine ATV, mit Begründung je Bereich (docs/28 §5). */
+export type HbVorschlag = {
+  fehler: string; atv?: string; stufe?: string; regel?: string; zuordnung?: Record<string, string>;
+  bereiche?: { name: string; einheiten: string[]; grund: string }[];
+};
+
+/** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */
+export type HbKennwerte = {
+  fehler: string; atv?: string; zugeordnet?: boolean;
+  bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
+    kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
 };

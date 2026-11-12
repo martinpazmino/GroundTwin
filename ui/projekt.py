@@ -23,6 +23,7 @@ if _MODELLIERER not in sys.path:
     sys.path.insert(0, _MODELLIERER)
 
 from baugrundmodell.ifc4x3 import FARBEN  # noqa: E402,F401  (Farben nach DIN 4023, fuer aeltere Aufrufer)
+from baugrundmodell import homogenbereiche as hb  # noqa: E402
 from baugrundmodell.modell import standard_durchmesser  # noqa: E402
 from baugrundmodell.normen import (UNKLASSIFIZIERT, bekannt, deuten, farbinfo, klassen_liste,  # noqa: E402
                                    vorschlag)
@@ -40,6 +41,7 @@ class Einstellungen:
     basis: float | None = None
     gok_relativ: bool = True                # fehlt die GOK bei allen: 0 m (relativ, markiert)
     gelaende_dgm: bool = True               # mit DGM: Oberkante aus dem DGM, an den Bohrungen auf die GOK (docs/21 §4.4)
+    orientierung: dict | None = None        # implizit: je Einheit {"fallrichtung", "fallwinkel"} in Grad (docs/27 G4)
 
 
 @dataclass
@@ -76,6 +78,8 @@ class Projekt:
     ueberhoehung: int = 5
     schritt: str = "bohrungen"              # zuletzt offener Schritt der App
     geoldg: dict = field(default_factory=dict)  # Untersuchung fuer die Fristen nach GeolDG: {beginn, abschluss, behoerde}
+    homogenbereiche: dict | None = None     # je ATV {Einheit: Homogenbereich} (VOB/C, docs/28)
+    hb_modell: str | None = None            # ATV, nach der das IFC nur aus Homogenbereichen besteht (None = Einheiten)
     angelegt: str = ""
     geaendert: str = ""
 
@@ -676,8 +680,10 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
     elif art == "einstellungen":
         felder = Einstellungen.__dataclass_fields__
         neu = {k: v for k, v in op.items() if k in felder}
-        if neu.get("methode", "idw") not in ("idw", "tps"):
-            raise ValueError("Interpolation: idw oder tps")
+        if neu.get("methode", "idw") not in ("idw", "tps", "implizit"):
+            raise ValueError("Interpolation: idw, tps oder implizit")
+        if "orientierung" in neu:
+            neu["orientierung"] = orientierung_pruefen(neu["orientierung"])
         p.einstellungen = {**p.einstellungen, **neu}
     elif art == "durchmesser":
         d = zahl(op.get("wert"))
@@ -693,6 +699,21 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         p.erzeugt = True
     elif art == "auto":
         p.auto = bool(op["wert"])
+    elif art == "homogenbereiche":                       # Zuordnung Einheit -> Bereich fuer eine ATV (docs/28)
+        code = str(op.get("atv") or "")
+        hb.gewerk(code)
+        alle = {**(p.homogenbereiche or {}), code: op.get("zuordnung") or {}}
+        p.homogenbereiche = hb.pruefen(alle)
+        if p.hb_modell and p.hb_modell not in (p.homogenbereiche or {}):
+            p.hb_modell = None
+        n = len((p.homogenbereiche or {}).get(code, {}))
+        meldung = f"Homogenbereiche {code}: {n} Einheiten zugeordnet" if n else f"Homogenbereiche {code} entfernt"
+    elif art == "hb_modell":                             # IFC aus Homogenbereichen (ATV) oder aus Einheiten (None)
+        w = op.get("wert") or None
+        if w is not None and w not in (p.homogenbereiche or {}):
+            raise ValueError(f"für {w} sind keine Homogenbereiche zugeordnet")
+        p.hb_modell = w
+        meldung = f"IFC-Modell aus Homogenbereichen {w}" if w else "IFC-Modell aus Einheiten"
     elif art == "geoldg":                                # Beginn/Abschluss der Untersuchung (Fristen §§ 8-10 GeolDG)
         p.geoldg = geoldg_angaben({**p.geoldg, **{k: op[k] for k in ("beginn", "abschluss", "behoerde") if k in op}})
         meldung = "Angaben zur Untersuchung übernommen"
@@ -793,6 +814,31 @@ def reihe_aendern(docs: list[dict], p: Projekt, op: dict) -> None:
 # ---------------------------------------------------------------- Kalibrierung der Unterlage
 def _strecke_px(s: dict) -> float:
     return math.hypot(float(s["u2"]) - float(s["u1"]), float(s["v2"]) - float(s["v1"]))
+
+
+MAX_FALLWINKEL = 80.0                     # wie implizit.MAX_EINGABE_GRAD: steiler bildet die Saeulenabtastung nicht ab
+
+
+def orientierung_pruefen(o: dict | None) -> dict | None:
+    """{Einheit: {"fallrichtung": 0..360, "fallwinkel": 0..80}} in Grad; ein Eintrag ohne Werte faellt weg."""
+    if not o:
+        return None
+    if not isinstance(o, dict):
+        raise ValueError("Orientierung: je Einheit Fallrichtung und Fallwinkel")
+    out = {}
+    for name, v in o.items():
+        v = v or {}
+        r, w = zahl(v.get("fallrichtung")), zahl(v.get("fallwinkel"))
+        if r is None and w is None:
+            continue
+        if r is None or w is None:
+            raise ValueError(f"Orientierung {name}: Fallrichtung und Fallwinkel angeben")
+        if not 0 <= r <= 360:
+            raise ValueError(f"Orientierung {name}: Fallrichtung 0–360°")
+        if not 0 <= w <= MAX_FALLWINKEL:
+            raise ValueError(f"Orientierung {name}: Fallwinkel 0–{MAX_FALLWINKEL:.0f}°")
+        out[str(name)] = {"fallrichtung": round(r % 360.0, 1), "fallwinkel": round(w, 1)}
+    return out or None
 
 
 def kalibrierung_pruefen(k: dict | None, art: str) -> dict | None:

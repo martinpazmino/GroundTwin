@@ -10,6 +10,7 @@ export interface Einheit {
   name: string;
   reihenfolge: number;
   farbe: string;
+  volumen: number;
   psets: Psets;
 }
 
@@ -52,18 +53,23 @@ export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
   const bohrsaeulen: number[] = [];
   for (const d of kurz as Datensatz[]) {
     const id = Number(wert(d, "_localId"));
-    (String(wert(d, "Description") ?? "").startsWith("Modelleinheit") ? einheitIds : bohrsaeulen).push(id);
+    // Koerper des Modells: Einheiten, oder Homogenbereiche (docs/28) samt Einheiten ohne Bereich
+    (/^(Modelleinheit|Homogenbereich|Einheit ohne Homogenbereich)/.test(String(wert(d, "Description") ?? ""))
+      ? einheitIds : bohrsaeulen).push(id);
   }
   const mitPsets = { attributesDefault: true, relations: { IsDefinedBy: { attributes: true, relations: true } } };
   const daten = einheitIds.length ? await model.getItemsData(einheitIds, mitPsets) : [];
   const einheiten = daten.map((d, i): Einheit => {
     const ps = psets(d as Datensatz);
-    const me = ps.CPset_Modelleinheit ?? {};
+    // Haupt-Pset: Modelleinheit, sonst der Homogenbereich der ATV, nach der das Modell gebaut ist (mit Volumen)
+    const me = ps.CPset_Modelleinheit
+      ?? Object.entries(ps).find(([n, w]) => n.startsWith("CPset_Homogenbereich_") && w.Volumen_m3 !== undefined)?.[1] ?? {};
     return {
       localId: Number(wert(d as Datensatz, "_localId")),
       name: String(wert(d as Datensatz, "Name") ?? `Einheit ${i + 1}`),
       reihenfolge: Number(me.Reihenfolge ?? i + 1),
       farbe: String(me.Farbe ?? "#cccccc"),
+      volumen: Number(me.Volumen_m3 ?? 0),
       psets: ps,
     };
   });

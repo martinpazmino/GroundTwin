@@ -1,12 +1,16 @@
-"""Ground Analysis (docs/27): Kreuzprobe, Unsicherheit und virtuelle Bohrung zum Schichtmodell (baugrundmodell).
+"""Ground Analysis (docs/27): Kreuzprobe, Unsicherheit, virtuelle Bohrung, Erkundungsvorschlag und Grundwasserflaeche
+zum Schichtmodell (baugrundmodell).
 
 Liest das Modell, aendert nie die Bohrungen. Der Modellierer liegt in services/modeler.
 """
+from .grundwasser import grundwasser
 from .kreuzprobe import kreuzprobe
 from .unsicherheit import unsicherheit
+from .unsicherheit import zusammenfassung as unsicherheit_zusammenfassung
 from .virtuell import virtuelle_bohrung
+from .vorschlag import vorschlaege
 
-__all__ = ["kreuzprobe", "unsicherheit", "virtuelle_bohrung", "analyse"]
+__all__ = ["grundwasser", "kreuzprobe", "unsicherheit", "unsicherheit_zusammenfassung", "virtuelle_bohrung", "vorschlaege", "analyse"]
 
 
 def analyse(m, laeufe: int = 100, sigma_exakt: float | None = None, seed: int = 1) -> dict:
