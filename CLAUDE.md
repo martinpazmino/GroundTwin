@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D107 (D100–D103, D105–D107 proposed).
+- `docs/11_decisions.md`: decisions D1–D108 (D100–D103, D105–D108 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -51,6 +51,12 @@ license **AGPL-3.0-or-later** (D79).
   Ansprache only, laboratory values stay open). DIN 4023 Tab. 2/3
   colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
   `tests/test_homogenbereiche_app.py`.
+- `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
+  GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
+  IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge
+  catalogue with computed dependencies, readiness planner. GroundTwin derives, the engineer sets characteristic
+  values; correlations are conditional (store validity and uncertainty); LLMs only via deterministic tools.
+  Roadmap A0–A7 + data workstream B (#18, #26, #27) as critical path.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
 
