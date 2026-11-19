@@ -80,13 +80,60 @@ def hauptgruppe_trifft(einheit: dict, gruppen: list[str]) -> str | None:
     return None
 
 
-def vorschlag(einheiten: list[dict], zeilen: list[dict]) -> dict:
-    """Je Einheit (Bericht: name, bodenarten, schichten) die passende Zeile oder ein Hinweis, warum keine."""
+MIN_ANTEIL_HOEHE = 0.5          # so viel der Maechtigkeit einer Einheit muss im Hoehenbereich einer Zeile liegen
+KNAPP_HOEHE = 0.2               # liegen zwei Bereiche naeher beieinander, gibt es keinen Vorschlag (markiert)
+
+
+def einheit_hoehen(bohrungen: list[dict]) -> dict[str, list[tuple[float, float]]]:
+    """Je Einheit die Abschnitte (oben, unten) in m NHN an den Bohrungen (Bericht 'bohrungen'), bis zur Endteufe;
+    Bohrungen mit relativer Hoehe zaehlen nicht."""
+    out: dict[str, list[tuple[float, float]]] = {}
+    for b in bohrungen or []:
+        if b.get("hoehe") == "relativ":
+            continue
+        ende = b.get("endteufe_nhn")
+        for z in b.get("einheiten") or []:
+            ok, uk = z["ok_modell"], max(z["uk_modell"], ende) if ende is not None else z["uk_modell"]
+            if ok - uk > 0.01:
+                out.setdefault(z["einheit"], []).append((ok, uk))
+    return out
+
+
+def _hoehen_treffer(abschnitte: list[tuple[float, float]], e: dict) -> tuple[float, str]:
+    """Anteil der Maechtigkeit der Einheit im Hoehenbereich der Zeile (oben None = GOK)."""
+    if "hoehe_unten" not in e or not abschnitte:
+        return 0.0, ""
+    oben = e.get("hoehe_oben")
+    oben = float("inf") if oben is None else oben
+    gesamt = sum(ok - uk for ok, uk in abschnitte)
+    drin = sum(max(0.0, min(ok, oben) - max(uk, e["hoehe_unten"])) for ok, uk in abschnitte)
+    anteil = drin / gesamt if gesamt > 0 else 0.0
+    oben_t = "GOK" if e.get("hoehe_oben") is None else f"{e['hoehe_oben']:+.1f}"
+    return anteil, f"{anteil:.0%} der Mächtigkeit in {oben_t} bis {e['hoehe_unten']:+.1f} m NHN".replace(".", ",")
+
+
+def vorschlag(einheiten: list[dict], zeilen: list[dict], bohrungen: list[dict] | None = None) -> dict:
+    """Je Einheit (Bericht: name, bodenarten, schichten) die passende Zeile oder ein Hinweis, warum keine.
+    bohrungen (Bericht): fuer Zeilen mit Hoehenbereich zaehlt, wie viel der Einheit darin liegt (2 Punkte ab der
+    Haelfte, wie ein Name)."""
     from .homogenbereiche import merkmale
+    hoehen = einheit_hoehen(bohrungen or [])
     out = {}
     for e in einheiten:
         e2 = {**e, "bodengruppe": merkmale(e).get("bodengruppe")}
-        bewertet = [(p, g, z) for z in zeilen for p, g in [_treffer(e2, z)] if p > 0]
+        bewertet = []
+        anteile = sorted((_hoehen_treffer(hoehen.get(e["name"], []), z)[0] for z in zeilen), reverse=True)
+        if len(anteile) > 1 and anteile[0] >= MIN_ANTEIL_HOEHE and anteile[0] - anteile[1] < KNAPP_HOEHE:
+            out[e["name"]] = {"ref": None, "grund": f"liegt in zwei Höhenbereichen ({anteile[0]:.0%} / {anteile[1]:.0%}): "
+                                                    "von Hand wählen"}
+            continue
+        for z in zeilen:
+            p, g = _treffer(e2, z)
+            anteil, warum = _hoehen_treffer(hoehen.get(e["name"], []), z)
+            if anteil >= MIN_ANTEIL_HOEHE and 2 + anteil > p:
+                p, g = 2 + anteil, warum           # der groesste Anteil gewinnt, ein voller Name (3) bleibt vorn
+            if p > 0:
+                bewertet.append((p, g, z))
         if not bewertet:
             out[e["name"]] = {"ref": None, "grund": "keine Zeile nennt die Einheit"}
             continue

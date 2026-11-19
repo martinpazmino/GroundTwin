@@ -50,3 +50,15 @@ def test_ohne_kennwerte_leer(client):
     sig = c.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
     k = c.get(f"/api/projekt/{sig}/bodenkennwerte").json()
     assert k["fehler"] == "" and k["zeilen"] == [] and k["vorschlag"] == {}
+
+
+def test_kennwerte_berlin_nach_hoehenbereich(client):
+    """Berlin: die Zeilen sind Hoehenbereiche (m NHN); der Vorschlag ordnet nach der Lage der Einheiten zu."""
+    c, _ = client
+    sig = c.post("/api/beispiel", json={"name": "berlin"}).json()["projekt"]
+    k = c.get(f"/api/projekt/{sig}/bodenkennwerte").json()
+    bez = {r["ref"]: r["bezeichnung"] for r in k["zeilen"]}
+    v = {e: bez.get(x["ref"]) for e, x in k["vorschlag"].items()}
+    assert v["Auffuellung"] == "1 GOK bis +32,0" and v["Kies 1"] == "2 +32,0 bis +30,0"
+    assert v["Kies 2"] == "3 +30,0 bis +21,0"
+    assert all("m NHN" in x["grund"] or x["ref"] is None for x in k["vorschlag"].values())

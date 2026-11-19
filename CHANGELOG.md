@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Bodenkennwerte rows given as height ranges (`GOK bis +32,0` m NHN) are proposed for the Einheit whose thickness
+  lies mostly in that range; close splits are left for the user (Issue #18, docs/28 §9).
 - Homogenbereiche the Gutachter defines (table, section or sentence) read from the report; the proposal per ATV starts
   from them, assigns the Einheiten by name, Bodenart and Bodengruppe, and lists the differences (Einheiten without a
   Bereich, Bereiche without an Einheit); a click takes it over (Issue #21, docs/28 §10).

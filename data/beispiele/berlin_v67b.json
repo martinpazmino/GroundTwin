@@ -1837,7 +1837,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": null,
+   "hoehe_unten": 32.0,
+   "hoehe_bezug": "m NHN"
   },
   {
    "bezeichnung": "2 +32,0 bis +30,0",
@@ -1874,7 +1877,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": 32.0,
+   "hoehe_unten": 30.0,
+   "hoehe_bezug": "m NHN"
   },
   {
    "bezeichnung": "3 +30,0 bis +21,0",
@@ -1911,7 +1917,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": 30.0,
+   "hoehe_unten": 21.0,
+   "hoehe_bezug": "m NHN"
   },
   {
    "bezeichnung": "41) +21,0 bis -13,0",
@@ -1948,7 +1957,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": 21.0,
+   "hoehe_unten": -13.0,
+   "hoehe_bezug": "m NHN"
   },
   {
    "bezeichnung": "51) -13,0 bis -24,0",
@@ -1988,7 +2000,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": -13.0,
+   "hoehe_unten": -24.0,
+   "hoehe_bezug": "m NHN"
   },
   {
    "bezeichnung": "61) -24,0 bis -50,0",
@@ -2025,7 +2040,10 @@
    },
    "seite": 14,
    "form": "Tabelle",
-   "hinweise": []
+   "hinweise": [],
+   "hoehe_oben": -24.0,
+   "hoehe_unten": -50.0,
+   "hoehe_bezug": "m NHN"
   }
  ]
 }

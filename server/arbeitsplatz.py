@@ -515,7 +515,8 @@ class Arbeitsplatz:
             erg = self.modell(sig) if zeilen else {"fehler": ""}
             einheiten = (erg.get("bericht") or {}).get("einheiten") or [] if not erg["fehler"] else []
             return {"fehler": "", "zeilen": zeilen, "einheiten": [e["name"] for e in einheiten],
-                    "vorschlag": bk.vorschlag(einheiten, zeilen) if zeilen and einheiten else {},
+                    "vorschlag": bk.vorschlag(einheiten, zeilen, (erg.get("bericht") or {}).get("bohrungen"))
+                    if zeilen and einheiten else {},
                     "zuordnung": p.bodenkennwerte or {}, "modell_fehler": erg.get("fehler") or ""}
 
     @staticmethod

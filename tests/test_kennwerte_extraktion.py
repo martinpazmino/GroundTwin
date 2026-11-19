@@ -101,3 +101,10 @@ def test_fliesstext_ohne_tabelle(tmp_path):
     s.insert_text((70, 100), "Die Wichte und der Reibungswinkel folgen aus der Tabelle; die Kohäsion ist null.", fontsize=9)
     doc.save(tmp_path / "f.pdf")
     assert K.lesen(tmp_path / "f.pdf") == []
+
+
+def test_hoehenbereich():
+    assert K.hoehenbereich("1 GOK bis +32,0") == {"hoehe_oben": None, "hoehe_unten": 32.0, "hoehe_bezug": "m NHN"}
+    assert K.hoehenbereich("41) +21,0 bis -13,0") == {"hoehe_oben": 21.0, "hoehe_unten": -13.0, "hoehe_bezug": "m NHN"}
+    assert K.hoehenbereich("Auffüllung 0,2-1,8") == {}                       # Tiefen ohne Vorzeichen: keine Hoehe
+    assert K.hoehenbereich("+30,0 bis +32,0") == {}                          # oben unter unten: nicht lesbar

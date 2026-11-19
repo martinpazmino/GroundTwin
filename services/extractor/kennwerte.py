@@ -298,6 +298,23 @@ def _eintrag(bez: str, werte: dict, seite_nr: int, form: str) -> dict:
             "seite": seite_nr, "form": form, "hinweise": hinweise}
 
 
+HOEHE_RE = re.compile(r"(GOK|[+\-−]\s?\d{1,4}(?:,\d+)?)\s*bis\s*([+\-−]\s?\d{1,4}(?:,\d+)?)")
+
+
+def hoehenbereich(bez: str) -> dict:
+    """'GOK bis +32,0' / '+32,0 bis +30,0' -> hoehe_oben (None = GOK), hoehe_unten in m NHN; nur mit Vorzeichen
+    (Ordinaten), damit Tiefen '0,2-1,8' nicht als Hoehen gelten. Sonst leer."""
+    m = HOEHE_RE.search(bez or "")
+    if not m:
+        return {}
+    z = lambda s: float(s.replace("−", "-").replace(" ", "").replace(",", "."))   # noqa: E731
+    oben = None if m.group(1) == "GOK" else z(m.group(1))
+    unten = z(m.group(2))
+    if oben is not None and oben <= unten:
+        return {}
+    return {"hoehe_oben": oben, "hoehe_unten": unten, "hoehe_bezug": "m NHN"}
+
+
 def lesen(pdf, doc=None) -> list[dict]:
     """Alle Kennwert-Eintraege des Dokuments (Seite 0-basiert). Nur die Textebene: gescannte Seiten tragen nichts bei."""
     doc = doc or pymupdf.open(pdf)
@@ -311,6 +328,10 @@ def lesen(pdf, doc=None) -> list[dict]:
         eintraege = _form_a(seite, _woerter(seite), bloecke, sp, nr) if sp else []
         if not eintraege:
             eintraege = _form_b(zeilen, nr)
+        nhn = bool(re.search(r"NHN|\bm\s*(?:ü\.?\s*)?NN\b", seite.get_text()))
+        for e in eintraege:
+            if nhn:                                  # Bezeichnung als Hoehenbereich ('+32,0 bis +30,0' m NHN)
+                e.update(hoehenbereich(e["bezeichnung"]))
         out += [e for e in eintraege if len(e["werte"]) >= 2]
     return out
 

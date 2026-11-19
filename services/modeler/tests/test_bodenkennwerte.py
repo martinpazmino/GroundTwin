@@ -69,3 +69,27 @@ def test_ifc_traegt_kennwerte_an_der_einheit(tmp_path):
     ps = strata[namen[0]][bk.PSET]
     assert (ps["Wichte_min"], ps["Wichte_max"], ps["Reibungswinkel_max"]) == (18.0, 19.0, pytest.approx(32.5))
     assert bk.PSET not in strata[namen[1]]
+
+
+def _bohrung(code, gok, ende, abschnitte, hoehe="m NHN"):
+    return {"code": code, "gok": gok, "hoehe": hoehe, "endteufe_nhn": ende,
+            "einheiten": [{"einheit": e, "ok_modell": ok, "uk_modell": uk} for e, ok, uk in abschnitte]}
+
+
+def test_vorschlag_nach_hoehenbereich():
+    """Zeilen mit Hoehenbereich (Berlin: 'GOK bis +32,0'): die Einheit geht zur Zeile, in der ihre Maechtigkeit
+    ueberwiegend liegt; knapp zwischen zwei Zeilen = kein Vorschlag; relative Hoehen zaehlen nicht."""
+    zeilen = [{**_zeile("1 GOK bis +32,0"), "hoehe_oben": None, "hoehe_unten": 32.0, "ref": "b#0"},
+              {**_zeile("2 +32,0 bis +30,0"), "hoehe_oben": 32.0, "hoehe_unten": 30.0, "ref": "b#1"},
+              {**_zeile("3 +30,0 bis +21,0"), "hoehe_oben": 30.0, "hoehe_unten": 21.0, "ref": "b#2"}]
+    bohr = [_bohrung("B1", 36.0, 20.0, [("Oben", 36.0, 32.2), ("Mitte", 32.2, 30.1), ("Unten", 30.1, 25.0),
+                                        ("Knapp", 25.0, 23.0), ("Tief", 23.0, 10.0)]),
+            _bohrung("B2", 36.0, 20.0, [("Knapp", 32.0, 30.0)]),
+            _bohrung("B3", 0.0, -9.0, [("Rel", 0.0, -9.0)], hoehe="relativ")]
+    e = [{"name": n, "bodenarten": [], "schichten": []} for n in ("Oben", "Mitte", "Unten", "Knapp", "Tief", "Rel")]
+    v = bk.vorschlag(e, zeilen, bohr)
+    assert (v["Oben"]["ref"], v["Mitte"]["ref"], v["Unten"]["ref"]) == ("b#0", "b#1", "b#2")
+    assert "m NHN" in v["Mitte"]["grund"]
+    assert v["Knapp"]["ref"] is None and "zwei Höhenbereichen" in v["Knapp"]["grund"]   # 2 m in Zeile 3, 2 m in Zeile 2
+    assert v["Tief"]["ref"] == "b#2"                                     # bis zur Endteufe (20): 3 m in Zeile 3
+    assert v["Rel"]["ref"] is None                                       # relative Hoehe: kein Hoehenvergleich

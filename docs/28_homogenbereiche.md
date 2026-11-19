@@ -267,15 +267,33 @@ GroundTwin never writes `_char`: the characteristic value is the Gutachter's ([2
 | Triefenstein | 1/1 Homogenbereich list (B3) with cu. |
 | Marl, Wachenroth, Wesel, A7367 | no Kennwert table in the text layer; nothing read, nothing invented. |
 
+**Height ranges** (2026-11-19).
+
+- A label like `GOK bis +32,0` or `+32,0 bis +30,0` (numbers with a sign, on a page that speaks of m NHN) gives
+  `hoehe_oben` / `hoehe_unten`. Depths without a sign (`0,2-1,8`) are not read as heights.
+- The proposal then compares the Einheiten by position: per Einheit, the share of its thickness at the Bohrungen
+  (model top/base from the report, clipped at the Endteufe; relative heights do not count) that lies in the row's
+  range.
+- From half on, this counts like a name (2 + share; a full name stays ahead). When the two largest shares are
+  within 20 points, there is no proposal: the Einheit is marked "liegt in zwei Höhenbereichen".
+
 Proposal on the examples:
 
 - Talheim: Schluff → *Fließerden: Schluff, tonig …*. Fels (Tonstein) has two equal rows, so it is chosen by hand.
-- Berlin: no proposal, because the labels are heights.
+- Berlin, by height:
+
+  | Einheit | Row | Share |
+  |---|---|---|
+  | Auffuellung | `GOK bis +32,0` | 100 % |
+  | Sand 1 | `GOK bis +32,0` | 94 % |
+  | Kies 1 | `+32,0 bis +30,0` | 97 % |
+  | Sand 2 | `+30,0 bis +21,0` | 61 % |
+  | Kies 2 | `+30,0 bis +21,0` | 100 % |
+  | Sand 3 | none: 51 % / 49 % between two rows, chosen by hand | |
 
 **Open:**
 
-- match by the height range of a row (Berlin: `+32,0 bis +30,0` m NHN against the Einheiten);
-- read the Homogenbereich tables (Bereich ↔ Bodengruppen) for #21;
+- read the Homogenbereich tables (Bereich ↔ Bodengruppen) for #21 — done, §10;
 - laboratory tables;
 - a blind test before any figure is quoted.
 
