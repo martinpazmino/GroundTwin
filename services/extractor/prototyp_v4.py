@@ -72,6 +72,7 @@ RULES = {
     "gw_text": True,             # L10b 'GW 2.53m'
     "gw_description": True,      # L10b 'Wasseranschnitt 3.8' in der Schichtbeschreibung
     "gw_art": True,              # #26  Art und Datum je Stand aus dem Text am Symbol / im SV; Staende im Berichtstext
+    "gw_legende": True,          # W3   Symbole der Legende: V (zwei Striche) als Stand, Art je Form (voll / V)
     "dup_preference": True,      # L12  Einzelblatt/Titel vor Schnitt
     "sv_source": True,           # S1   Schichtenverzeichnis als Zweitquelle
     "ocr": True,                 # L17/L18 OCR fuer Seiten ohne Textlage
@@ -673,12 +674,68 @@ def wasserstaende_text(doc, prims: dict | None = None) -> list[dict]:
     return out
 
 
+def _gw_v(d) -> pymupdf.Point | None:
+    """Dach aus zwei Strichen (Λ, ohne Querstrich), das auf der Wasserlinie steht: Mitte der Grundlinie, sonst None.
+    Die Form heisst hier 'v' (Legende: z. B. 'angebohrt'); W3."""
+    it, r = d["items"], d["rect"]
+    if not (len(it) == 2 and all(x[0] == "l" for x in it) and 2 < r.width < 16 and 2 < r.height < 16):
+        return None
+    (p1, p2), (q1, q2) = (it[0][1], it[0][2]), (it[1][1], it[1][2])
+    for a_, b_ in ((p1, p2), (p2, p1)):                      # gemeinsamer Punkt = Spitze oben
+        for c_, e_ in ((q1, q2), (q2, q1)):
+            if abs(a_.x - c_.x) < 0.6 and abs(a_.y - c_.y) < 0.6:
+                if a_.y < b_.y - 1 and a_.y < e_.y - 1 and abs(b_.y - e_.y) < 0.6 and abs(b_.x - e_.x) > 2:
+                    return pymupdf.Point((b_.x + e_.x) / 2, (b_.y + e_.y) / 2)
+    return None
+
+
+def _gw_voll(d, drawings) -> bool:
+    """Dreieck mit Fuellung (eigene Flaeche im Rahmen des Dreiecks)."""
+    r = d["rect"]
+    return d.get("fill") is not None or any(e.get("fill") is not None and e["rect"].width < 12 and e["rect"].height < 12
+                                            and (e["rect"] & r).get_area() > 0.4 * e["rect"].get_area()
+                                            for e in drawings if e is not d)
+
+
+def gw_legende(drawings, lines) -> dict:
+    """W3: Wassersymbole der Legende je Form ('voll', 'offen', 'v') -> Art aus dem Text daneben (gw_info).
+    Zusammengesetztes Symbol 'angestiegen' (V unten, volles Dreieck oben): V = Stand beim Anbohren (angetroffen),
+    voll = angestiegener Stand. Zwei Eintraege mit verschiedener Art fuer dieselbe Form: unbrauchbar (None)."""
+    out: dict[str, str | None] = {}
+    tris = [d for d in drawings if len(d["items"]) == 3 and all(x[0] == "l" for x in d["items"])
+            and 2 < d["rect"].width < 16 and 2 < d["rect"].height < 16]      # Legende: kleine Symbole
+    for r, t in lines:
+        if len(t) > 60 or not re.search(r"wasser|angebohrt|angestiegen", t, re.I):
+            continue
+        k = gw_info(t)["kind"]
+        if k == "unbestimmt":
+            continue
+        band = lambda q: (r.y0 - 14 <= (q.y0 + q.y1) / 2 <= r.y1 + 14 and q.x1 <= r.x0 + 2 and r.x0 - q.x0 < 90)  # noqa: E731
+        has_v = any(_gw_v(d) for d in drawings if band(d["rect"]))
+        vt = [d for d in tris if band(d["rect"])]
+        has_voll = any(_gw_voll(d, drawings) for d in vt)
+        has_offen = any(not _gw_voll(d, drawings) for d in vt)
+        neu = {}
+        if has_v and has_voll:
+            neu = {"v": "angetroffen" if "angestieg" in t.lower() else k, "voll": k}
+        elif has_v:
+            neu = {"v": k}
+        elif has_voll:
+            neu = {"voll": k}
+        elif has_offen:
+            neu = {"offen": k}
+        for form, art in neu.items():
+            out[form] = art if out.get(form, art) == art else None
+    return out
+
+
 def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(), lines=(), info=None):
     """Dreieck mit Spitze nach unten; Zuordnung ueber die waagrechte Wasserlinie. info: Tiefe -> Art/Datum aus dem
-    Text am Symbol (Issue #26)."""
+    Text am Symbol (Issue #26), sonst aus der Legende je Form (W3)."""
     a, b = fit
     H = [s for s in segs if s.horizontal]
     out = []
+    legende = gw_legende(drawings, lines) if RULES["gw_legende"] else {}
     # Hoehenleisten tragen ein Dreieck je Meter: >= 3 gleich ausgerichtete Dreiecke in einer Spalte = Leiste
     tri_x = defaultdict(int)
     for d in drawings:
@@ -689,7 +746,9 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
     for d in drawings:
         it = d["items"]
         r = d["rect"]
-        if not (len(it) == 3 and all(x[0] == "l" for x in it) and 3 < r.width < 16 and 3 < r.height < 16):
+        v_spitze = _gw_v(d) if "v" in legende else None    # V nur, wenn die Legende sie als Wasser kennt (W3)
+        if not (len(it) == 3 and all(x[0] == "l" for x in it) and 3 < r.width < 16 and 3 < r.height < 16) \
+                and v_spitze is None:
             continue
         if RULES["gw_symbol_filter"] and any(abs(round(r.x0) - x) <= 1 for x in ruler_x):
             continue
@@ -698,8 +757,9 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
                                             and re.fullmatch(r"~?\d{3,4}[.,]\d{2}\s?m?", t) for wr, t, *_ in words):
             continue
         pts = [x[1] for x in it]
-        apex = max(pts, key=lambda p: p.y)
-        if sum(abs(p.y - apex.y) < 0.5 for p in pts) != 1 or not (col.rect.y0 <= apex.y <= col.rect.y1 + 2):
+        apex = v_spitze or max(pts, key=lambda p: p.y)
+        if (v_spitze is None and sum(abs(p.y - apex.y) < 0.5 for p in pts) != 1) or \
+                not (col.rect.y0 <= apex.y <= col.rect.y1 + 2):
             continue
         if d.get("raster") and any(c.rect.contains((r.tl + r.br) / 2) for c in cols):
             continue                                        # Bild-Dreieck in einer Saeule = Schraffur
@@ -709,7 +769,7 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
                 end = s.x1 if abs(s.x1 - apex.x) > abs(s.x0 - apex.x) else s.x0
                 target = min(cols, key=lambda c: min(abs(c.rect.x0 - end), abs(c.rect.x1 - end)))
         if target is None:
-            if d.get("raster"):                             # im Bild nur mit Wasserlinie (sonst Schraffur, Text, Rauschen)
+            if d.get("raster") or v_spitze is not None:      # Bild und V nur mit Wasserlinie (sonst Schraffur, Haken)
                 continue
             target = min(cols, key=lambda c: max(c.rect.x0 - r.x1, r.x0 - c.rect.x1, 0))
         if target is col:
@@ -717,7 +777,13 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
             if depth > 0.05 or not RULES["gw_symbol_filter"]:   # Dreieck an der GOK = Ansatzpunkt, kein Wasser
                 out.append(depth)
                 if info is not None and RULES["gw_art"]:
-                    info[depth] = gw_info(_gw_text_am(lines, apex.x, apex.y))
+                    gi = gw_info(_gw_text_am(lines, apex.x, apex.y))
+                    form = "v" if v_spitze is not None else ("voll" if _gw_voll(d, drawings) else "offen")
+                    if gi["kind"] == "unbestimmt" and legende.get(form):
+                        gi = {**gi, "kind": legende[form],
+                              "evidence": (gi.get("evidence", "") + f" Legende: Symbol {form}").strip()}
+                    if depth not in info or info[depth].get("kind") == "unbestimmt":
+                        info[depth] = gi
     return sorted(set(out))
 
 

@@ -167,6 +167,10 @@ label, L3):
    Schichtenverzeichnis fills a missing kind or date at the same depth (± 3 cm). The text read stays as `evidence`.
    The Schichtenverzeichnis also reads `Ruhewasser 3.62m` (before: only `Wasserstand`, `Wasserspiegel`,
    `Grundwasser…`, `GW`).
+4b. **Legend symbols** (rule `gw_legende`, W3, Issue #20): the legend of the page maps shapes to kinds (filled
+   triangle, open triangle, roof Λ of two strokes) by the water text next to them. A roof standing on a water line
+   counts as a level only when the legend knows it; its depth is the base. The kind from the legend applies only where
+   the text at the symbol gave none, with evidence "Legende: Symbol …".
 5. **Levels of the report text** (not of a Bohrung): `Bemessungswasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
    `MNGW` followed within 60 characters by a number with `m NHN` → `wasserstaende` of the document (kind, m NHN,
    page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.

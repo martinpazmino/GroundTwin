@@ -204,6 +204,22 @@ def draw_profile(page, s: Spec) -> None:
             page.insert_text((gx + 9, y - 2), f"{_fmt(d, s.decimal)}", fontsize=6)
         elif kind == "text":
             page.insert_text((col.x0 - 70, y), f"GW {_fmt(d, '.')}m", fontsize=6.5)
+    if "dach" in s.extra:                          # W3: Dach (zwei Striche) auf der Wasserlinie, Bedeutung in der Legende
+        y = top + s.extra["dach"] * ppm
+        gx = col.x0 - 60
+        page.draw_polyline([(gx, y), (gx + 3.5, y - 6), (gx + 7, y)], color=(0, 0, 1), width=0.4)
+        _line(page, (gx - 3, y), (col.x0, y), 0.4)
+        page.insert_text((gx + 9, y - 2), f"{_fmt(s.extra['dach'], s.decimal)}", fontsize=6)
+    if s.extra.get("legende"):                     # Legende unten: volles Dreieck = Ruhewasser, Dach = angebohrt
+        ly = 780
+        page.draw_polyline([(60, ly - 6), (67, ly - 6), (63.5, ly), (60, ly - 6)], color=(0, 0, 1), fill=(0, 0, 1),
+                           closePath=True, width=0.4)
+        _line(page, (57, ly), (80, ly), 0.4)
+        page.insert_text((90, ly - 1), "Ruhewasserstand", fontsize=7)
+        ly = 800
+        page.draw_polyline([(60, ly), (63.5, ly - 6), (67, ly)], color=(0, 0, 1), width=0.4)
+        _line(page, (57, ly), (80, ly), 0.4)
+        page.insert_text((90, ly - 1), "Grundwasser angebohrt", fontsize=7)
     if s.no_gw:
         page.insert_text((x0 - 20, col.y1 + 18), s.no_gw, fontsize=7)
     if s.gwm:                                      # Ausbauplan einer GWM rechts (L15b)
@@ -432,6 +448,16 @@ def build(out: Path) -> list[str]:
     doc = pymupdf.open(); p = doc.new_page(width=595, height=842)
     draw_profile(p, Spec("B 17", lay, gok=45.0, extra={"hatch": {"Ton": "hdash_wide"}}))
     save("s17_schraffur_gestrichelt", doc, [_truth("B 17", lay, 45.0)], "G2: gestrichelte Waagrechte sind Schraffur")
+
+    # s18 Legende mit zwei Wassersymbolen: volles Dreieck (Ruhewasser) und Dach aus zwei Strichen (angebohrt), W3
+    doc = pymupdf.open(); p = doc.new_page(width=595, height=842)
+    draw_profile(p, Spec("BK 18", L_STD, gok=45.0, gw=("symbol", 1.8), extra={"dach": 3.6, "legende": True}))
+    save("s18_legende_dach", doc, [_truth("BK 18", L_STD, 45.0, [1.8, 3.6])], "W3: Dach-Symbol aus der Legende")
+
+    # s19 dasselbe Dach ohne Legende: kein Wasserstand (eine Form zaehlt nur, wenn die Legende sie als Wasser kennt)
+    doc = pymupdf.open(); p = doc.new_page(width=595, height=842)
+    draw_profile(p, Spec("BK 19", L_STD, gok=45.0, extra={"dach": 3.6}))
+    save("s19_dach_ohne_legende", doc, [_truth("BK 19", L_STD, 45.0, [])], "W3: ohne Legende kein Dach-Stand")
     return made
 
 
