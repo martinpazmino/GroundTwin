@@ -310,7 +310,9 @@ export const api = {
 export type Grundwasser = {
   fehler: string; gemessen?: number; trocken?: number; methode?: string; hinweise?: string[];
   staende?: { code: string; art: "gemessen" | "trocken" | "ohne Angabe"; z?: number; tiefe_m?: number; spanne_m?: number;
-    bis_z?: number }[];
+    bis_z?: number; wasserart?: string; datum?: string | null; schichtenwasser?: number[] }[];
+  /** Bemessungswasserstand, HGW, MHGW aus dem Text des Gutachtens (Issue #26): nie in der Fläche. */
+  aus_dem_text?: { kind: string; nhn: number; page: number; dokument: string; evidence: string }[];
   widersprueche?: { code: string; trocken_bis_z: number; flaeche_z: number; differenz_m: number }[];
   kreuzprobe?: { mae_m: number; max_m: number; je_bohrung: { code: string; fehler_m: number }[] } | null;
   ueber_gelaende_knoten?: number;

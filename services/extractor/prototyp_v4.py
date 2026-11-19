@@ -71,6 +71,7 @@ RULES = {
     "gw_symbol_filter": True,    # L10  Leisten-, Koten- und GOK-Dreiecke sind kein Wasser
     "gw_text": True,             # L10b 'GW 2.53m'
     "gw_description": True,      # L10b 'Wasseranschnitt 3.8' in der Schichtbeschreibung
+    "gw_art": True,              # #26  Art und Datum je Stand aus dem Text am Symbol / im SV; Staende im Berichtstext
     "dup_preference": True,      # L12  Einzelblatt/Titel vor Schnitt
     "sv_source": True,           # S1   Schichtenverzeichnis als Zweitquelle
     "ocr": True,                 # L17/L18 OCR fuer Seiten ohne Textlage
@@ -96,6 +97,17 @@ GOK_EXTRA_RE = re.compile(r"(?:H(?:ö|oe)he|Kote|Ansatzh(?:ö|oe)he|Gel(?:ä|ae)
 LV_COORD_RE = re.compile(r"Koordinaten\D{0,5}?(\d['’ ]?\d{3}\s?\d{3}(?:[.,]\d+)?|\d{3}\s?\d{3}(?:[.,]\d+)?)\s*/\s*"
                          r"(\d['’ ]?\d{3}\s?\d{3}(?:[.,]\d+)?|\d{3}\s?\d{3}(?:[.,]\d+)?)")
 ARCHIVE_HEAD_RE = re.compile(r"^(S\s*\d+[a-z]?)$")            # Archivbohrungen 'S 1', 'S2a'
+# Art und Datum eines Wasserstands (Issue #26) aus dem Text daneben; ohne Stichwort bleibt die Art "unbestimmt"
+# (nie geraten). Reihenfolge zaehlt: "Grundwasser angestiegen" ist Ruhewasser, "Schichtenwasser angetroffen" ist
+# Schichtenwasser. Gleiche Regeln wie baugrundmodell.wasser.
+GW_ART = (("Schichtenwasser", re.compile(r"schichtenwasser|stauwasser|sickerwasser", re.I)),
+          ("Bohrende", re.compile(r"bohrende", re.I)),
+          ("Ruhewasser", re.compile(r"ruhe\s*wasser|angestiegen", re.I)),
+          ("angetroffen", re.compile(r"angetroffen|angebohrt|anschnitt|wasserzutritt", re.I)))
+GW_DATUM_RE = re.compile(r"(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?![\d.])")
+# Staende im Text des Gutachtens, keine Staende einer Bohrung: Bemessungswasserstand, (ze)HGW, MHGW, MGW
+WSP_TEXT_RE = re.compile(r"(Bemessungs(?:grund)?wasserstand|zeHGW|HHGW|MHGW|HGW|MGW|MNGW)\b([^0-9]{0,60}?)"
+                         r"\+?\s?(\d{1,4}[.,]\d{1,2})\s*m\s*(?:ü\.?\s*)?NHN", re.I)
 WATER_DESC_RE = re.compile(r"Wasser(?:anschnitt|stand|spiegel|zutritt)\s*(?:bei|in|:)?\s*(\d{1,2}[.,]\d{1,2})", re.I)
 COORD_E_RE = re.compile(r"(?:Rechtswert|Ostwert|Easting|\bRW\b)(?:\D|UTM\d{2}N?){0,30}?(\d{6,8}(?:[.,]\d+)?)", re.I)
 COORD_N_RE = re.compile(r"(?:Hochwert|Nordwert|Northing|\bHW\b)(?:\D|UTM\d{2}N?){0,30}?(\d{7}(?:[.,]\d+)?)", re.I)
@@ -601,6 +613,7 @@ class Borehole:
     layers: list[Layer] = field(default_factory=list)
     gw_depths: list[float] = field(default_factory=list)
     gw_status: str | None = None
+    gw_info: dict = field(default_factory=dict)  # Tiefe -> {"kind", "observed_on", "evidence"} (Issue #26)
     east: float | None = None
     north: float | None = None
     duplicates: list[str] = field(default_factory=list)
@@ -616,8 +629,53 @@ class Borehole:
     titled: bool = False
 
 
-def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=()):
-    """Dreieck mit Spitze nach unten; Zuordnung ueber die waagrechte Wasserlinie."""
+def gw_info(text: str) -> dict:
+    """Art und Datum aus dem Text bei einem Wasserstand; der Text bleibt als Beleg."""
+    kind = next((a for a, rx in GW_ART if rx.search(text or "")), "unbestimmt")
+    datum = None
+    for m in GW_DATUM_RE.finditer(text or ""):
+        t_, mo, j = int(m.group(1)), int(m.group(2)), m.group(3)
+        jahr = int(j) if len(j) == 4 else (2000 + int(j) if int(j) < 70 else 1900 + int(j))
+        if 1 <= t_ <= 31 and 1 <= mo <= 12 and 1950 <= jahr <= 2100:
+            datum = f"{jahr:04d}-{mo:02d}-{t_:02d}"
+            break
+    out = {"kind": kind}
+    if datum:
+        out["observed_on"] = datum
+    if kind != "unbestimmt" or datum:
+        out["evidence"] = " ".join((text or "").split())[:120]
+    return out
+
+
+def _gw_text_am(lines, x: float, y: float) -> str:
+    """Text rechts oder links neben einem Wassersymbol: Zeilen, deren Mitte hoechstens 9 pt ueber/unter der
+    Spitze liegt und die nicht weiter als 90 pt vom Symbol beginnen (Datum und Art stehen am Symbol, DIN 4023)."""
+    near = [(r, t) for r, t in lines if abs((r.y0 + r.y1) / 2 - y) <= 9 and min(abs(r.x0 - x), abs(r.x1 - x)) <= 90]
+    return " ".join(t for r, t in sorted(near, key=lambda e: (round(e[0].y0), e[0].x0)))
+
+
+def wasserstaende_text(doc, prims: dict | None = None) -> list[dict]:
+    """Bemessungswasserstand, HGW, MHGW, MGW aus dem Text des Gutachtens (m NHN, Seite, Beleg); je Art und Hoehe
+    einmal. Nur Zahlen mit 'm NHN' - ein Stand 'auf Gelaendeoberkante' ohne Zahl bleibt im Text.
+    Ohne prims nur die Textebene (Fliesstext, keine Lage noetig): gescannte Seiten tragen dann nichts bei."""
+    out, seen = [], set()
+    for pno, page in enumerate(doc):
+        plines = prims[pno][1] if prims and pno in prims else [(None, page.get_text())]
+        flat = " ".join(" ".join(t for _, t in plines).split())
+        for m in WSP_TEXT_RE.finditer(flat):
+            art = m.group(1)
+            art = "Bemessungswasserstand" if art.lower().startswith("bemessung") else art
+            nhn = float(m.group(3).replace(",", "."))
+            if (art, nhn) in seen:
+                continue
+            seen.add((art, nhn))
+            out.append({"kind": art, "nhn": nhn, "page": pno, "evidence": flat[max(0, m.start() - 40):m.end() + 20]})
+    return out
+
+
+def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(), lines=(), info=None):
+    """Dreieck mit Spitze nach unten; Zuordnung ueber die waagrechte Wasserlinie. info: Tiefe -> Art/Datum aus dem
+    Text am Symbol (Issue #26)."""
     a, b = fit
     H = [s for s in segs if s.horizontal]
     out = []
@@ -658,12 +716,14 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=())
             depth = round(float(a * apex.y + b), 2)
             if depth > 0.05 or not RULES["gw_symbol_filter"]:   # Dreieck an der GOK = Ansatzpunkt, kein Wasser
                 out.append(depth)
+                if info is not None and RULES["gw_art"]:
+                    info[depth] = gw_info(_gw_text_am(lines, apex.x, apex.y))
     return sorted(set(out))
 
 
 SV_CODE_RE = re.compile(r"(?<![A-Za-z0-9])((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d+[a-z]?(?:/\d{2})?)(?![\d.,])")
 SV_NO_GW_RE = re.compile(r"kein(?:e[nr]?)?\s*(?:Grund)?wasser|Wasser\s*nicht\s*angetroffen", re.I)
-SV_GW_RE = re.compile(r"(?:Wasserstand|Wasserspiegel|Grundwasser\w*|\bGW)\D{0,40}?(\d{1,2}[.,]\d{1,2})\s*m\b", re.I)
+SV_GW_RE = re.compile(r"(?:Wasserstand|Wasserspiegel|Grundwasser\w*|Ruhewasser\w*|\bGW)\D{0,40}?(\d{1,2}[.,]\d{1,2})\s*m\b", re.I)
 
 
 def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
@@ -697,7 +757,7 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
         if code is None or not blocks:
             continue
         rec = out.setdefault(ckey(code), {"code": code, "bottoms": [], "names": [], "gw": [], "gw_status": None,
-                                          "pages": []})
+                                          "pages": [], "gw_info": {}})
         rec["pages"].append(pno + 1)
         depths = sorted((w for w in ws if w[2] <= x_a + 1 and w[1] > y_hdr and DEPTH_RE.match(w[4])), key=lambda w: w[1])
         for d in depths:
@@ -713,7 +773,11 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
             rec["bottoms"].append(float(d[4].rstrip("m ").replace(",", ".")))
             rec["names"].append(name)
         flat = " ".join(txt.split())
-        rec["gw"] += [float(m.group(1).replace(",", ".")) for m in SV_GW_RE.finditer(flat)]
+        for m in SV_GW_RE.finditer(flat):
+            d = float(m.group(1).replace(",", "."))
+            rec["gw"].append(d)
+            if RULES["gw_art"]:                             # Stichwort davor, Datum dahinter ('Ruhewasser 3.62m u. AP 14.04.2020')
+                rec["gw_info"].setdefault(d, gw_info(flat[max(0, m.start() - 25):m.end() + 30]))
         if SV_NO_GW_RE.search(flat):
             rec["gw_status"] = "kein Grundwasser"
     return {k: v for k, v in out.items() if v["bottoms"]}
@@ -993,18 +1057,28 @@ def extract(pdf: Path):
                 bh.issues.append(f"Linien ohne Label mit gleicher Schraffur ober-/unterhalb entfernt: {dropped}")
             right_limit = min([c.rect.x0 for c in acols if c.rect.x0 > col.rect.x1 + 5] + [page.rect.x1])
             _assign_text(bh, col, lines, words, fit, mode, pairs, right_limit)
-            bh.gw_depths = _groundwater(drawings, segs, col, acols, fit, words)
+            bh.gw_depths = _groundwater(drawings, segs, col, acols, fit, words, lines, bh.gw_info)
             near = [(r, t) for r, t in lines if hr.y0 - 2 <= r.y0 <= col.rect.y1 + 60
                     and abs((r.x0 + r.x1) / 2 - (col.rect.x0 + col.rect.x1) / 2) < 170]
             near = rows(near)                                # 'GW' und '2.53m' als getrennte Bloecke (S7)
             if not bh.gw_depths and RULES["gw_text"]:       # Symbol als Schriftzeichen: 'GW 2.53m' im Text
-                bh.gw_depths = sorted({float((m.group(1) or m.group(2)).replace(",", "."))
-                                       for _, t in near if (m := GW_TEXT_RE.search(t))})
+                for _, t in near:
+                    if m := GW_TEXT_RE.search(t):
+                        d = float((m.group(1) or m.group(2)).replace(",", "."))
+                        if RULES["gw_art"]:
+                            bh.gw_info.setdefault(d, gw_info(t))
+                        bh.gw_depths.append(d)
+                bh.gw_depths = sorted(set(bh.gw_depths))
             if not bh.gw_depths and RULES["gw_description"]:  # 'Wasseranschnitt 3.8' in der Beschreibung
                 desc = [(r, t) for r, t in lines if col.rect.y0 - 4 <= r.y0 <= col.rect.y1 + 4
                         and col.rect.x1 < r.x0 < right_limit]
-                bh.gw_depths = sorted({float(m.group(1).replace(",", ".")) for _, t in desc
-                                       if (m := WATER_DESC_RE.search(t.replace(" ", "")))})
+                for _, t in desc:
+                    if m := WATER_DESC_RE.search(t.replace(" ", "")):
+                        d = float(m.group(1).replace(",", "."))
+                        if RULES["gw_art"]:
+                            bh.gw_info.setdefault(d, gw_info(t))
+                        bh.gw_depths.append(d)
+                bh.gw_depths = sorted(set(bh.gw_depths))
             if not bh.gw_depths and any(NO_GW_RE.search(t) for _, t in near):
                 bh.gw_status = "kein Grundwasser"
             found[ckey(code)].append(bh)
@@ -1048,7 +1122,7 @@ def extract(pdf: Path):
         if code in found:
             continue
         bh = Borehole(rec["code"], rec["pages"][0], None, "schichtenverzeichnis", gw_depths=sorted(set(rec["gw"])),
-                      gw_status=None if rec["gw"] else rec["gw_status"])
+                      gw_status=None if rec["gw"] else rec["gw_status"], gw_info=dict(rec.get("gw_info") or {}))
         prev = 0.0
         for d, name in zip(rec["bottoms"], rec["names"]):
             bh.layers.append(Layer(prev, d, classify_v3(name.split(",")[0]) or classify_v3(name),
@@ -1089,6 +1163,18 @@ def _cross_check(bh: Borehole, rec: dict) -> None:
                 ly.text = name
     if not bh.gw_depths and rec["gw"]:
         bh.gw_depths = sorted(set(rec["gw"]))
+    for d in bh.gw_depths:                              # Art/Datum aus dem SV, wo das Profil keine nennt (Issue #26)
+        sv_i = next((i for t_, i in (rec.get("gw_info") or {}).items() if abs(t_ - d) <= 0.03), None)
+        mine = bh.gw_info.get(d) or {"kind": "unbestimmt"}
+        if sv_i and (mine["kind"] == "unbestimmt" or (not mine.get("observed_on") and sv_i.get("observed_on"))):
+            neu = {"kind": mine["kind"] if mine["kind"] != "unbestimmt" else sv_i["kind"]}
+            if datum := mine.get("observed_on") or sv_i.get("observed_on"):
+                neu["observed_on"] = datum
+            belege = [f"Profil: {mine['evidence']}" if mine.get("evidence") else "",
+                      f"SV: {sv_i['evidence']}" if sv_i.get("evidence") else ""]
+            if any(belege):
+                neu["evidence"] = "; ".join(x for x in belege if x)
+            bh.gw_info[d] = neu
     if not bh.gw_depths and not bh.gw_status and rec["gw_status"]:
         bh.gw_status = rec["gw_status"]
 
@@ -1151,6 +1237,8 @@ def to_canonical(pdf: Path, boreholes: list, dph: dict | None = None, version: s
     out = {"document": {"file": Path(pdf).name, "sha256": hashlib.sha256(data).hexdigest(),
                         "parser_version": f"prototyp_{version}", "pages": pymupdf.open(pdf).page_count},
            "boreholes": [], "soundings": {k: [list(map(float, st)) for st in v] for k, v in (dph or {}).items()}}
+    if RULES["gw_art"]:                                   # Bemessungswasserstand, HGW... (Issue #26)
+        out["wasserstaende"] = wasserstaende_text(pymupdf.open(pdf))
     for bh in boreholes:
         method = "schichtenverzeichnis" if bh.mode == "schichtenverzeichnis" else METHOD.get(bh.page_class, "vector")
         layers = []
@@ -1163,8 +1251,8 @@ def to_canonical(pdf: Path, boreholes: list, dph: dict | None = None, version: s
                            "soil_class": ly.soil or None, "hatch_class": ly.soil_hatch or None,
                            "confidence": ly.confidence, "label_confirmed": ly.label_confirmed,
                            "issues": ly.issues, "provenance": [prov]})
-        gw = [{"depth": d, "nhn": round(bh.gok - d, 2) if bh.gok is not None else None, "kind": "gemessen"}
-              for d in bh.gw_depths]
+        gw = [{"depth": d, "nhn": round(bh.gok - d, 2) if bh.gok is not None else None,
+               **(bh.gw_info.get(d) or {"kind": "unbestimmt"})} for d in bh.gw_depths]
         out["boreholes"].append({
             "code": bh.code, "kind": _kind(bh.code), "gok_nhn": bh.gok,
             "end_depth": bh.layers[-1].bottom if bh.layers else None,

@@ -351,7 +351,8 @@
     {
      "depth": 3.8,
      "nhn": 32.45,
-     "kind": "gemessen"
+     "kind": "angetroffen",
+     "evidence": "Feinsand/hellgrau/Wasseranschnitt3.8"
     }
    ],
    "groundwater_status": null,
@@ -703,7 +704,8 @@
     {
      "depth": 3.6,
      "nhn": 32.65,
-     "kind": "gemessen"
+     "kind": "angetroffen",
+     "evidence": "Sand/Auffullung/grau/Wasseranschnitt3.6"
     }
    ],
    "groundwater_status": null,
@@ -1784,5 +1786,19 @@
    ]
   }
  ],
- "soundings": {}
+ "soundings": {},
+ "wasserstaende": [
+  {
+   "kind": "Bemessungswasserstand",
+   "nhn": 32.8,
+   "page": 3,
+   "evidence": "rundwasserstände wird ein bauzeitlicher Bemessungswasserstand in Höhe von +32,80 m NHN empfohlen. Es werde"
+  },
+  {
+   "kind": "zeHGW",
+   "nhn": 33.5,
+   "page": 15,
+   "evidence": "rsuchungsbereich etwa auf der Ordinate: zeHGW = +33,50 m NHN Dieser Grundwassers"
+  }
+ ]
 }

@@ -208,6 +208,9 @@ function wasserTeil() {
       <p>${g.gemessen} gemessene${g.trocken ? `, ${g.trocken} trockene` : ""} von ${g.staende?.length ?? 0} Bohrungen
         ${g.flaeche ? html` · ${z(g.flaeche.z_min)} bis ${z(g.flaeche.z_max)} m NHN` : nothing}
         ${g.kreuzprobe ? html` · Kreuzprobe ⌀ ${z(g.kreuzprobe.mae_m)} m, max. ${z(g.kreuzprobe.max_m)} m` : nothing}</p>
+      ${(g.aus_dem_text ?? []).length ? html`<p>Im Text des Gutachtens (nicht in der Fläche):
+        ${g.aus_dem_text!.map((w, i) => html`${i ? " · " : ""}<span title=${w.evidence}>${w.kind} ${z(w.nhn)} m NHN
+          (S. ${w.page + 1})</span>`)}</p>` : nothing}
       ${(g.hinweise ?? []).length ? html`<ul class="hinweise">${g.hinweise!.map((h) => html`<li>${h}</li>`)}</ul>` : nothing}
     </div>` : nothing}`;
 }

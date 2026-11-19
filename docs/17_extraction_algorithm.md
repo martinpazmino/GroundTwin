@@ -158,6 +158,19 @@ label, L3):
 2. **Text:** `GW 2.53m`, `… m u. GOK` near the Bohrung; `Wasseranschnitt 3.8`, `Wasserstand`,
    `Wasserspiegel` in the description of the Schicht (L10b).
 3. **No water:** `kein (Grund)wasser`, `GW nicht angetroffen`, `trocken` → `gw_status` (W2).
+4. **Kind and date** (rule `gw_art`, Issue #26, 2026-11-19): per level from the text that names it — the row at the
+   symbol (centre within 9 pt of the vertex, starting within 90 pt of it), the `GW …` text, the description of the
+   Schicht, or the Schichtenverzeichnis (25 characters before the match, 30 after). Keywords, in this order:
+   `Schichten-/Stau-/Sickerwasser` → Schichtenwasser; `Bohrende` → Bohrende; `Ruhewasser`, `angestiegen` →
+   Ruhewasser; `angetroffen`, `angebohrt`, `Anschnitt`, `Wasserzutritt` → angetroffen. No keyword → `unbestimmt`
+   (never guessed). Date `dd.mm.yy(yy)` with a valid day and month (`02.99` is not a date). The profile wins; the
+   Schichtenverzeichnis fills a missing kind or date at the same depth (± 3 cm). The text read stays as `evidence`.
+   The Schichtenverzeichnis also reads `Ruhewasser 3.62m` (before: only `Wasserstand`, `Wasserspiegel`,
+   `Grundwasser…`, `GW`).
+5. **Levels of the report text** (not of a Bohrung): `Bemessungswasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
+   `MNGW` followed within 60 characters by a number with `m NHN` → `wasserstaende` of the document (kind, m NHN,
+   page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.
+   Only the text layer (no OCR for this).
 
 ## E8. Second sources
 

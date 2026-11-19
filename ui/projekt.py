@@ -24,6 +24,7 @@ if _MODELLIERER not in sys.path:
 
 from baugrundmodell.ifc4x3 import FARBEN  # noqa: E402,F401  (Farben nach DIN 4023, fuer aeltere Aufrufer)
 from baugrundmodell import homogenbereiche as hb  # noqa: E402
+from baugrundmodell import wasser  # noqa: E402
 from baugrundmodell.modell import standard_durchmesser  # noqa: E402
 from baugrundmodell.normen import (UNKLASSIFIZIERT, bekannt, deuten, farbinfo, klassen_liste,  # noqa: E402
                                    vorschlag)
@@ -267,6 +268,13 @@ def wirksame_docs(docs: list[dict], p: Projekt) -> list[dict]:
 
 
 # ---------------------------------------------------------------- Listen fuer die Oberflaeche
+def _wasserstand_text(g: dict) -> str:
+    """'3.62 m (Ruhewasser, 2020-04-14)'; ohne Art im Gutachten 'Art?' (Issue #26, nie geraten)."""
+    a = wasser.art(g.get("kind"))
+    zusatz = ", ".join(x for x in ("Art?" if a == "unbestimmt" else wasser.TEXT[a], g.get("observed_on") or "") if x)
+    return f"{float(g['depth']):.2f} m ({zusatz})"
+
+
 def bohrungen_liste(docs: list[dict], p: Projekt) -> list[dict]:
     """Eine Zeile je Bohrung (wirksame Werte, Pruef- und Warnzaehler)."""
     doppelt = doppelte(docs)
@@ -296,7 +304,7 @@ def bohrungen_liste(docs: list[dict], p: Projekt) -> list[dict]:
             "korrigiert": sum(any(s in p.schicht.get(f"{bid}/{k}", {}) for s in ("oben", "unten", "bodenart"))
                               for k, _ in enumerate(schichten)),
             "konfidenz_min": round(min(konf), 2) if konf else None,
-            "grundwasser": ", ".join(f"{g['depth']:.2f} m" for g in b.get("groundwater") or []) or
+            "grundwasser": ", ".join(_wasserstand_text(g) for g in b.get("groundwater") or []) or
                            (b.get("groundwater_status") or ""),
             "durchmesser": zahl(wert(p, bid, b, "durchmesser")),
             "doppelt_in": doppelt.get(bid),

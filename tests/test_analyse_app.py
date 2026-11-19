@@ -112,6 +112,9 @@ def test_grundwasserflaeche_ueber_die_app(client):
     assert 32.4 <= g["flaeche"]["z_min"] <= g["flaeche"]["z_max"] <= 32.7       # zwischen den Ständen, kein Überschwingen
     assert len(g["flaeche"]["punkte"]) > 3 and g["kreuzprobe"] is None              # unter vier Ständen keine Kreuzprobe
     assert any("kein Bemessungswasserstand" in h for h in g["hinweise"])
+    # Issue #26: Art aus dem Text ('Wasseranschnitt'), Staende des Berichtstexts daneben, nie in der Flaeche
+    assert {s["wasserart"] for s in g["staende"] if s["art"] == "gemessen"} == {"angetroffen"}
+    assert [(w["kind"], w["nhn"]) for w in g["aus_dem_text"]] == [("Bemessungswasserstand", 32.8), ("zeHGW", 33.5)]
     sig = client.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
     g = client.get(f"/api/projekt/{sig}/analyse/grundwasser").json()
     assert g["fehler"] == "" and g["flaeche"] is None and "keine Bohrung" in g["hinweise"][0]

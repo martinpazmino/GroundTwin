@@ -3,7 +3,8 @@
 Export: gepruefte Bohrungen (wirksame Werte der App) als OGC-API-FeatureCollection mit bml:Borehole, so wie die
 amtlichen Beispiele. Nur was belegt ist, wird kodiert: Petrographie/Genese, Konsistenz, Lagerung, Kalk und Feuchte
 ueber boreholeml_codes.json (amtliche Namen als Beleg); die Beschreibung aus dem Gutachten steht immer im Klartext
-(descriptiveText). Grundwasserstaende stehen nur als Text, weil das PDF Anschnitt und Ruhewasser nicht unterscheidet.
+(descriptiveText). Grundwasserstaende bekannter Art gehen nach bml:groundwater (angetroffen, Ruhewasser, nach Bohrende,
+mit Datum); alle Staende stehen zudem als Text, auch die ohne Art und das Schichtenwasser (Issue #26).
 
 Import: bml:Borehole (3.0.1 bis 3.2) in das kanonische JSON der Extraktion, mit Herkunft; SEP3-Codes werden ueber
 die Hierarchie der Codelisten einer Bodenart der App zugeordnet, sonst bleibt die Schicht unklassifiziert (markiert).
@@ -69,6 +70,34 @@ def _ncname(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]", "_", text)
 
 
+# Art des Wasserstands (Issue #26, baugrundmodell.wasser) → Feld von bml:Groundwater; unbestimmt und Schichtenwasser
+# haben kein Feld und stehen nur im Text
+WASSERFELD = {"angetroffen": ("entryDepth", "entryDateTime"), "Ruhewasser": ("balancedLevel", "balancedDateTime"),
+              "Bohrende": ("endLevel", "endDateTime")}
+WASSERART = {"angetroffen": "angetroffen", "Ruhewasser": "Ruhewasser", "Bohrende": "nach Bohrende",
+             "Schichtenwasser": "Schichtenwasser"}
+
+
+def _wasserart(g: dict) -> str:
+    k = (g.get("kind") or "").strip()
+    return {"ruhe": "Ruhewasser", "nach_bohrende": "Bohrende"}.get(k.lower(), k)
+
+
+def _grundwasser(bh: ET.Element, gw: list[dict]) -> None:
+    """bml:groundwater nur mit Staenden bekannter Art: je Feld der hoechste Stand mit seinem Datum."""
+    je = {}
+    for g in sorted(gw, key=lambda g: float(g["depth"])):
+        je.setdefault(_wasserart(g), g)
+    if not any(a in je for a in WASSERFELD):
+        return
+    w = _e(_e(bh, BML, "groundwater"), BML, "Groundwater")
+    for a, (tiefe, zeit) in WASSERFELD.items():       # Reihenfolge des XSD: entry, balanced, end
+        if a in je:
+            _laenge(w, tiefe, je[a]["depth"])
+            if je[a].get("observed_on"):
+                _e(w, BML, zeit, je[a]["observed_on"])
+
+
 def _m(v: float) -> str:
     return f"{float(v):.2f}".replace(".", ",")
 
@@ -122,7 +151,7 @@ def exportieren(dokumente: list[dict], *, projekt: str, organisation: str = "", 
     bericht["hinweise"] = [
         "Höhen als DHHN92 gekennzeichnet (EPSG 5554/5555/5556 wie die amtlichen Beispiele; „m NHN“ im Gutachten, "
         "Unterschied zu DHHN2016 wenige cm).",
-        "Grundwasserstände nur als Text im Schichtenverzeichnis: das PDF unterscheidet Anschnitt und Ruhewasser nicht.",
+        "Grundwasserstände ohne Art im Gutachten (und Schichtenwasser) nur als Text im Schichtenverzeichnis.",
         "Kodierung der Schichten: Kurzzeichen nach DIN 4022/4023 (codingStandard DIN4022), Beschreibung aus dem "
         "Gutachten im Klartext; Petrographie und Genese über die amtlichen Codelisten.",
     ] + [f"nicht kodiert (steht in der Beschreibung): {k} – {n} Schichten" for k, n in sorted(nicht_kodiert.items())]
@@ -186,6 +215,7 @@ def _bohrung(mitglied: ET.Element, b: dict, d: dict, fid: str, projekt: str, org
         _nil(bh, "groundwaterEncountered")
     _nil(bh, "lastHorizon")
     _nil(bh, "drillingProcess")
+    _grundwasser(bh, gw)
     reihe = _e(_e(bh, BML, "intervalSeries"), BML, "IntervalSeries")
     _e(reihe, BML, "version", "1")
     _text(reihe, "description", "Schichtenverzeichnis aus dem Gutachten")
@@ -193,8 +223,9 @@ def _bohrung(mitglied: ET.Element, b: dict, d: dict, fid: str, projekt: str, org
     notiz = (f"Aus dem Gutachten {datei} mit GroundTwin gelesen und vom Bearbeiter geprüft; Beschreibung nach "
              "DIN 4022 / DIN EN ISO 14688-1, Kurzzeichen nach DIN 4023.")
     if gw:
-        notiz += (" Grundwasser im Bohrprofil: " + ", ".join(f"{_m(g['depth'])} m u. GOK" for g in gw)
-                  + " (Anschnitt oder Ruhewasser im PDF nicht unterschieden).")
+        notiz += (" Grundwasser im Bohrprofil: " + ", ".join(
+            f"{_m(g['depth'])} m u. GOK ({WASSERART.get(_wasserart(g), 'Art im Gutachten nicht angegeben')}"
+            + (f", {g['observed_on']}" if g.get("observed_on") else "") + ")" for g in gw) + ".")
     _text(reihe, "stratlogDescription", notiz)
     for ly in b["layers"]:
         _schicht(_e(_e(reihe, BML, "layer"), BML, "Interval"), ly, deuten, unklassifiziert, nicht_kodiert)
@@ -371,10 +402,13 @@ def _bohrung_lesen(bh: ET.Element, rahmen_srs: str | None = None) -> dict:
         hinweise.append("Schichten ohne Petrographie (nur Tiefen bzw. Stratigraphie freigegeben)")
     gw = []
     for g in (el for el in bh.iter() if _lokal(el) == "Groundwater"):
-        for feld, art in (("entryDepth", "angetroffen"), ("balancedLevel", "Ruhewasser"), ("endLevel", "Bohrende")):
+        for art, (feld, zeit) in WASSERFELD.items():
             t = _zahl(_kind(g, feld))
             if t is not None:
-                gw.append({"depth": t, "nhn": None if gok is None else round(gok - t, 2), "kind": art})
+                e = {"depth": t, "nhn": None if gok is None else round(gok - t, 2), "kind": art}
+                if re.match(r"\d{4}-\d{2}-\d{2}", d := (_textwert(_kind(g, zeit)) or "")):
+                    e["observed_on"] = d[:10]
+                gw.append(e)
     ende = _zahl(_kind(bh, "totalLength"))
     fremd_id = _textwert(_kind(bh, "id"))
     hinweise.insert(0, f"aus BoreholeML ({quelle}{', ID ' + fremd_id if fremd_id else ''}) – nicht aus dem Gutachten")

@@ -6,6 +6,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Grundwasser: kind (angetroffen, Ruhewasser, nach Bohrende, Schichtenwasser, or not stated) and date of each level
+  from the text at the symbol and the Schichtenverzeichnis; Bemessungswasserstand, HGW, MHGW from the report text.
+  The Grundwasserfläche prefers Ruhewasser, keeps Schichtenwasser out and names mixed kinds and days; kind and date
+  go to the IFC (`CPset_Grundwasser`) and to BoreholeML (`bml:Groundwater`). A kind the Gutachten does not state stays
+  open (Issue #26, docs/06 §4).
 - Homogenbereiche: what the layer descriptions say about the Kennwerte an ATV asks for (Konsistenz, Bodengruppe,
   Lagerungsdichte …), per Bereich with the share of Schichten, in the app and the IFC; laboratory values stay open
   (docs/28 §6). Ground Analysis warns when the Lage is only schematic (docs/28 §7).

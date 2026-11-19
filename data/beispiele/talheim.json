@@ -197,7 +197,7 @@
     {
      "depth": 3.0,
      "nhn": 767.17,
-     "kind": "gemessen"
+     "kind": "unbestimmt"
     }
    ],
    "groundwater_status": null,
@@ -581,7 +581,7 @@
     {
      "depth": 3.8,
      "nhn": 766.82,
-     "kind": "gemessen"
+     "kind": "unbestimmt"
     }
    ],
    "groundwater_status": null,
@@ -797,7 +797,7 @@
     {
      "depth": 7.3,
      "nhn": 764.35,
-     "kind": "gemessen"
+     "kind": "unbestimmt"
     }
    ],
    "groundwater_status": null,
@@ -1801,5 +1801,6 @@
    ]
   }
  ],
- "soundings": {}
+ "soundings": {},
+ "wasserstaende": []
 }

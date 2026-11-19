@@ -8,7 +8,10 @@ Was markiert wird, nie verborgen:
 - trockene Bohrungen ("kein Grundwasser", W2) sind Daten: liegt die Flaeche dort ueber der Endteufe, widersprechen
   sie ihr (Widerspruch je Bohrung);
 - die Flaeche ueber dem Gelaende (gespanntes Wasser, Staende verschiedener Tage);
-- mehrere Staende in einer Bohrung (Anschnitt und Ruhewasser): der hoechste gilt, die Spanne steht dabei;
+- mehrere Staende in einer Bohrung: die Art mit Vorrang gilt (Ruhewasser vor nach Bohrende vor unbestimmt vor
+  Anschnitt, ``baugrundmodell.wasser``), darin der hoechste; die Spanne steht dabei. Schichtenwasser geht nie in die
+  Flaeche und wird je Bohrung genannt (Issue #26);
+- verschiedene Arten oder Tage zwischen den Bohrungen: der Hinweis nennt, was gemischt ist;
 - relative GOK: die Wasserstaende sind dann auch relativ.
 
 Bohrzeit-Wasserstaende sind Momentaufnahmen verschiedener Tage und Jahreszeiten: kein Bemessungswasserstand.
@@ -16,6 +19,7 @@ Bohrzeit-Wasserstaende sind Momentaufnahmen verschiedener Tage und Jahreszeiten:
 from __future__ import annotations
 
 import numpy as np
+from baugrundmodell import wasser
 from baugrundmodell.flaechen import interpolieren
 
 UEBER_GELAENDE = 0.05          # m: so weit darf die Flaeche ueber dem Gelaende liegen, ehe es gemeldet wird
@@ -36,11 +40,17 @@ def staende(m, docs: list[dict]) -> list[dict]:
     out = []
     for bi, b in enumerate(m.bohrungen):
         q = je.get((b.dokument, b.code)) or {}
-        tiefen = sorted(float(g["depth"]) for g in q.get("groundwater") or [] if g.get("depth") is not None)
-        e = {"bohrung": bi, "code": b.code, "relativ": b.hoehe == "relativ"}
+        alle = [g for g in q.get("groundwater") or [] if g.get("depth") is not None]
+        wart, gew = wasser.wahl(alle)
+        tiefen = sorted(float(g["depth"]) for g in gew)
+        e = {"bohrung": bi, "code": b.code, "relativ": b.hoehe == "relativ",
+             "schichtenwasser": sorted(round(float(g["depth"]), 2) for g in alle
+                                       if wasser.art(g.get("kind")) == "Schichtenwasser")}
         if tiefen:
-            e.update(art="gemessen", tiefe_m=round(tiefen[0], 2), z=round(b.gok - tiefen[0], 2),
-                     spanne_m=round(tiefen[-1] - tiefen[0], 2), staende=len(tiefen))
+            oben = min(gew, key=lambda g: float(g["depth"]))
+            e.update(art="gemessen", wasserart=wart, datum=oben.get("observed_on"), tiefe_m=round(tiefen[0], 2),
+                     z=round(b.gok - tiefen[0], 2), spanne_m=round(tiefen[-1] - tiefen[0], 2), staende=len(tiefen),
+                     andere_arten=sorted({wasser.art(g.get("kind")) for g in alle} - {wart, "Schichtenwasser"}))
         elif _trocken(q.get("groundwater_status")):
             e.update(art="trocken", bis_z=round(b.ende, 2))
         else:
@@ -60,7 +70,9 @@ def grundwasser(m, docs: list[dict]) -> dict:
     gem = [s for s in st if s["art"] == "gemessen"]
     hinweise: list[str] = []
     out = {"staende": st, "gemessen": len(gem), "trocken": sum(s["art"] == "trocken" for s in st),
-           "methode": _methode(m), "hinweise": hinweise, "z": None, "widersprueche": [], "kreuzprobe": None}
+           "methode": _methode(m), "hinweise": hinweise, "z": None, "widersprueche": [], "kreuzprobe": None,
+           # Bemessungswasserstand, HGW, MHGW aus dem Text des Gutachtens: zur Anschauung daneben, nie in der Flaeche
+           "aus_dem_text": [{**w, "dokument": d["document"]["file"]} for d in docs for w in d.get("wasserstaende") or []]}
     if not gem:
         hinweise.append("keine Bohrung mit gemessenem Wasserstand – keine Grundwasserfläche")
         return out
@@ -90,7 +102,20 @@ def grundwasser(m, docs: list[dict]) -> dict:
     breit = [s for s in gem if s["spanne_m"] > SPANNE]
     if breit:
         hinweise.append("mehrere Stände in " + ", ".join(f"{s['code']} (Spanne {s['spanne_m']:.2f} m)".replace(".", ",")
-                                                         for s in breit) + ": der höchste gilt")
+                                                         for s in breit) + ": der höchste der Art mit Vorrang gilt")
+    sw = [s for s in st if s["schichtenwasser"]]
+    if sw:
+        hinweise.append("Schichtenwasser nicht in der Fläche: " + ", ".join(
+            f"{s['code']} ({', '.join(f'{d:.2f}' for d in s['schichtenwasser'])} m)".replace(".", ",") for s in sw))
+    arten = sorted({s["wasserart"] for s in gem})
+    if len(arten) > 1:
+        hinweise.append("Arten gemischt: " + "; ".join(
+            f"{wasser.TEXT[a]}: " + ", ".join(s["code"] for s in gem if s["wasserart"] == a) for a in arten))
+    elif arten == ["unbestimmt"]:
+        hinweise.append("Art der Wasserstände im Gutachten nicht angegeben (Anschnitt oder Ruhewasser offen)")
+    tage = sorted({s["datum"] for s in gem if s.get("datum")})
+    if len(tage) > 1:
+        hinweise.append(f"Stände von {len(tage)} Tagen ({tage[0]} bis {tage[-1]})")
     if any(s["relativ"] for s in gem):
         hinweise.append("relative GOK: Wasserstände dort ebenso relativ")
     if len(gem) >= MIN_KREUZPROBE:

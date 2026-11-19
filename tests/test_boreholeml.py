@@ -228,3 +228,37 @@ def test_amtliches_beispiel_importieren():
     b = doc["boreholes"][0]
     assert (b["crs_epsg"], b["gok_nhn"], len(b["layers"])) == (25832, pytest.approx(1.49), 10)
     assert {ly["soil_class"] for ly in b["layers"]} == {"Schluff", "Ton"}
+
+
+# ---------------------------------------------------------------- Issue #26: Art und Datum der Wasserstaende
+def _mit_arten() -> dict:
+    d = geprueft(BERLIN)
+    b = d["boreholes"][0]
+    b["groundwater"] = [{"depth": 3.8, "kind": "angetroffen", "observed_on": "2020-04-14"},
+                        {"depth": 3.1, "kind": "Ruhewasser", "observed_on": "2020-04-15"},
+                        {"depth": 0.9, "kind": "Schichtenwasser"}]
+    d["boreholes"][1]["groundwater"] = [{"depth": 3.6, "kind": "gemessen"}]     # Art offen: nur Text
+    return d
+
+
+def test_export_wasserstaende_mit_art_und_datum_rundreise():
+    d = _mit_arten()
+    xml, _ = bml.exportieren([d], projekt="Berlin", sig="abc", heute=date(2026, 11, 19))
+    bh = bohrungen(xml)
+    gw = bh[d["boreholes"][0]["code"]].find("bml:groundwater/bml:Groundwater", NS)
+    assert gw.findtext("bml:entryDepth", namespaces=NS) == "3.80"
+    assert gw.findtext("bml:entryDateTime", namespaces=NS) == "2020-04-14"
+    assert gw.findtext("bml:balancedLevel", namespaces=NS) == "3.10"
+    assert gw.find("bml:endLevel", NS) is None
+    assert bh[d["boreholes"][1]["code"]].find("bml:groundwater", NS) is None   # Art offen: kein Feld
+    text = ET.tostring(bh[d["boreholes"][0]["code"]], encoding="unicode")
+    assert "0,90 m u. GOK (Schichtenwasser)" in text
+    zurueck = {b["code"]: b for b in bml.importieren(xml, "x.xml")["boreholes"]}
+    assert sorted((g["kind"], g["depth"], g.get("observed_on")) for g in zurueck[d["boreholes"][0]["code"]]["groundwater"]) \
+        == [("Ruhewasser", 3.1, "2020-04-15"), ("angetroffen", 3.8, "2020-04-14")]
+
+
+def test_export_mit_wasserarten_ist_gueltig_nach_amtlichem_xsd(schema):
+    xml, _ = bml.exportieren([_mit_arten()], projekt="Berlin", sig="abc", heute=date(2026, 11, 19))
+    fehler = [str(f)[:200] for f in schema.iter_errors(xml.decode("utf-8"))]
+    assert not fehler, fehler
