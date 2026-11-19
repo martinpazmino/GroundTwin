@@ -297,6 +297,61 @@ Proposal on the examples:
 - laboratory tables;
 - a blind test before any figure is quoted.
 
+## 9b. Laboratory sheets of the annexes (Issue #18, 2026-11-19, training PDFs, not blind)
+
+The annexes of many Gutachten carry the laboratory sheets: Wassergehalt, Zustandsgrenzen, Korngrößenverteilung,
+Glühverlust, CBR, Proctor and so on. A separate stage reads them; `prototyp_v4.py` is untouched.
+
+**Extraction** (`services/extractor/labor.py`, `labor` of the document). The rules are general rules of the forms:
+
+- **Sample.** A Bohrung code with a depth range (`Entnahmestelle: BS 5` / `Tiefe: 2,5 - 3,5`, `BK2 (5,0-6,0m)`).
+  `BS 1 + 2` is a Mischprobe and is marked.
+- **Test.** Recognised from the norm or the title: 17892-1, -4, -11, -12, 18127, 18128, 18129, CBR.
+- **Value.**
+  - An explicit result `Name = Zahl` comes before `Name | Einheit | Zahl`.
+  - A chart axis (`Wassergehalt w [%] | 24.0`) is not a result.
+  - On a table with several samples, or a sheet without `=` (Glühverlust), the result is the last number of the
+    sample's row (forms put the result in the last column).
+  - `T/U/S/G [%]: 13.1/16.9/69.8/0.3`; a `-` means the fraction is not given.
+  - A kf from the grain size curve (Beyer) is read but marked "aus der Kornverteilung, nicht gemessen".
+- **Merging.** The same sample on several sheets is merged.
+- **Checks.** Values outside the possible range and IP ≠ wL − wP are marked.
+- **Not read.** Chemical analyses (Prüfbericht, Eluat, PAK …) are not soil mechanics and stay out.
+
+**Model** (`baugrundmodell/labor.py`):
+
+- Each sample hangs on the Schicht of its Bohrung with the largest overlap of its depth range. A sample across a
+  boundary is marked; a Mischprobe hangs at each of its Bohrungen.
+- Per Einheit or Bereich: n, min, max and mean per value. These are measured values, never characteristic ones.
+- They fill the Kennwerte of the ATV before the Ansprache, marked `Labor:`:
+
+  | Kennwert | From |
+  |---|---|
+  | 2 | T/U/S/G |
+  | 5 | Trockendichte |
+  | 9 | Wassergehalt |
+  | 10b | Plastizitätszahl |
+  | 11b | Konsistenzzahl |
+  | 12 | kf |
+  | 14 | Kalkgehalt |
+  | 16 | Glühverlust |
+
+- IFC: `CPset_Laborwerte` on the Einheit with `<Wert>_min/_max/_mean/_n` (DAUB naming).
+- App: in the section *Bodenkennwerte aus dem Gutachten*, the values per Einheit; samples on no Schicht of the model
+  are listed.
+
+**Measured on the training PDFs:**
+
+| PDF | Sheets → samples | What was read |
+|---|---|---|
+| Marl | 14 → 11 | Wassergehalt table 5, Zustandsgrenzen 3, Korngröße 5 (two Mischproben, one with kf after Beyer), Glühverlust 1; every value checked against the sheet |
+| Talheim | 5 CBR | Trockendichte, Wassergehalt, CBR |
+| Wachenroth, Triefenstein | — | chemical analyses only, rightly not read |
+| other PDFs | — | no laboratory sheets |
+
+Talheim end to end: four samples in Fels (Tonstein), one in Schluff. Kennwert 9 of DIN 18300 for the Tonstein
+becomes "Labor: 11,1–16,9 % (n = 4, Mittel 14,4)".
+
 ## 10. The Gutachter's own Homogenbereiche (Issue #21, 2026-11-19, training PDFs, not blind)
 
 Many Gutachten already define Homogenbereiche. The proposal now starts from them and shows where the model and the

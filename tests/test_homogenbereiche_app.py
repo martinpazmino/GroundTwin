@@ -67,12 +67,15 @@ def test_vorschlag_je_anwendungsfall_ueber_die_app(client):
 
 
 def test_kennwerte_aus_den_beschreibungen_ueber_die_app(client):
-    """Talheim (echte Daten): Konsistenz und Bodengruppe stehen in den Beschreibungen, Laborwerte bleiben offen."""
+    """Talheim (echte Daten): Konsistenz und Bodengruppe aus den Beschreibungen, Wassergehalt aus den Laborblaettern."""
     sig = client.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
     k = client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 18300 GK 1"}).json()
     assert k["fehler"] == "" and not k["zugeordnet"] and k["bereiche"]
     werte = [z["wert"] for b in k["bereiche"] for z in b["kennwerte"] if z["nr"] == "11a" and z["wert"]]
     assert werte and any("steif" in w or "weich" in w for w in werte)
     k2 = client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 18300"}).json()
-    assert all(z["wert"] is None for b in k2["bereiche"] for z in b["kennwerte"] if z["nr"] in ("2", "5", "7", "9"))
+    assert all(z["wert"] is None for b in k2["bereiche"] for z in b["kennwerte"] if z["nr"] in ("2", "7"))
+    # Laborblaetter (CBR, Issue #18): Trockendichte und Wassergehalt gemessen, vor der Ansprache
+    lab = [z["wert"] for b in k2["bereiche"] for z in b["kennwerte"] if z["nr"] in ("5", "9") and z["wert"]]
+    assert lab and all(w.startswith("Labor:") for w in lab)
     assert client.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte", params={"atv": "DIN 1"}).json()["fehler"]

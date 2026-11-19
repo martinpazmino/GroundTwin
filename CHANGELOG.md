@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Laboratory sheets of the annexes (Wassergehalt, Zustandsgrenzen, Korngröße, Glühverlust, CBR, Proctor …) read per
+  sample, attached to the Schicht of their Bohrung, summarised per Einheit (n, min, max, mean), filling the Kennwerte
+  of the ATV as "Labor:" and written to the IFC as `CPset_Laborwerte` (Issue #18, docs/28 §9b).
 - Bodenkennwerte rows given as height ranges (`GOK bis +32,0` m NHN) are proposed for the Einheit whose thickness
   lies mostly in that range; close splits are left for the user (Issue #18, docs/28 §9).
 - Homogenbereiche the Gutachter defines (table, section or sentence) read from the report; the proposal per ATV starts

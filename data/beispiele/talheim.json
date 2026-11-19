@@ -1998,5 +1998,102 @@
    "form": "Tabelle",
    "hinweise": []
   }
+ ],
+ "labor": [
+  {
+   "bohrungen": [
+    "BK 2"
+   ],
+   "von": 5.0,
+   "bis": 6.0,
+   "werte": {
+    "trockendichte": 1.775,
+    "wassergehalt": 13.1,
+    "cbr": 23.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    17
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 3"
+   ],
+   "von": 4.2,
+   "bis": 4.8,
+   "werte": {
+    "trockendichte": 1.6,
+    "wassergehalt": 16.5,
+    "cbr": 18.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    18
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 3"
+   ],
+   "von": 7.0,
+   "bis": 8.0,
+   "werte": {
+    "trockendichte": 1.799,
+    "wassergehalt": 11.1,
+    "cbr": 20.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    19
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 4"
+   ],
+   "von": 5.5,
+   "bis": 6.0,
+   "werte": {
+    "trockendichte": 1.642,
+    "wassergehalt": 19.7,
+    "cbr": 17.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    20
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 4"
+   ],
+   "von": 7.0,
+   "bis": 8.0,
+   "werte": {
+    "trockendichte": 1.652,
+    "wassergehalt": 16.9,
+    "cbr": 17.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    21
+   ],
+   "hinweise": []
+  }
  ]
 }

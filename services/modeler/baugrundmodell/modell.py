@@ -16,6 +16,7 @@ from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebie
                        orientierungen_setzen,
                        schichtmodell)
 from . import bodenkennwerte as bk
+from . import labor
 from . import homogenbereiche as hb
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe, rgb_aus
 from .koerper import koerper, pruefen, volumen_prismen
@@ -295,7 +296,7 @@ def _hb_pset(code: str, je: dict[str, str], einheit: str, schichten_je: dict[str
                 out[f"Kennwert_{z['nr']}_{_ifc_name(z['name'])}"] = z["wert"]
         out["Kennwerte_offen"] = "; ".join(f"{z['nr']} {z['name']}" for z in kb["kennwerte"] if z["wert"] is None) or None
         out["Kennwerte_Herkunft"] = (f"aus {kb['schichten']} Schichtbeschreibungen des Bereichs (Ansprache, Anteil der "
-                                     "Schichten in Klammern); keine Laborwerte")
+                                     "Schichten in Klammern); 'Labor:' = gemessen auf den Laborblättern des Gutachtens")
     return out
 
 
@@ -414,7 +415,8 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                                              for s in schichten),
                 "Benennungen": _benennungen(schichten),
                 "Hinweise": "; ".join(k["hinweise"])},
-            "psets": hb_psets.get(k["name"], {}), "_j": j})
+            "psets": {**hb_psets.get(k["name"], {}),
+                      **({labor.PSET: ps} if (ps := labor.pset(labor.statistik(schichten))) else {})}, "_j": j})
     p = m.parameter
     titel = f"Baugrundmodell (Layer-Cake, {p['methode'].upper()})"
     hb_hinweise: list[str] = []

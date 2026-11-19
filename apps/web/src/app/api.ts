@@ -357,4 +357,7 @@ export type Bodenkennwerte = {
     form: string; hinweise: string[];
     werte: Record<string, { text: string; min?: number; max?: number; einheit?: string; hinweis?: string }> }[];
   vorschlag: Record<string, { ref: string | null; grund: string; kandidaten?: string[] }>;
+  /** Laborblätter der Anlagen je Einheit (n, min, max, Mittel), Proben ohne Schicht im Modell. */
+  labor?: { proben: number; je_einheit: Record<string, Record<string, { n: number; text: string }>>;
+    ohne_schicht: { bohrungen: string[]; von: number; bis: number }[] };
 };

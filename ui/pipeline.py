@@ -51,6 +51,7 @@ def _extraktor_stand() -> str:
     h = hashlib.sha256()
     for f in sorted(EXTRAKTOR.parent.glob("prototyp_v*.py")) + [EXTRAKTOR.parent / "kennwerte.py",
                                                                  EXTRAKTOR.parent / "homogenbereiche_text.py",
+                                                                 EXTRAKTOR.parent / "labor.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
@@ -65,6 +66,17 @@ def kennwerte_lesen(pdf: Path) -> list[dict]:
         return kennwerte.lesen(pdf)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Kennwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
+        return []
+
+
+def labor_lesen(pdf: Path) -> list[dict]:
+    """Laborversuche aus den Anlagen (services/extractor/labor.py); ein Fehler dort haelt die Extraktion nicht auf."""
+    extraktor()
+    try:
+        import labor
+        return labor.lesen(pdf)
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        print(f"Laborwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
@@ -117,6 +129,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
         doc = mod.to_canonical(ziel, bohrungen, dph)
         doc["kennwerte"] = kennwerte_lesen(ziel)        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
         doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel)   # Bereiche des Gutachters (Issue #21)
+        doc["labor"] = labor_lesen(ziel)                # Laborblaetter der Anlagen (Issue #18)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr

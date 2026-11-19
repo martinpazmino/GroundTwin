@@ -512,12 +512,25 @@ class Arbeitsplatz:
         with self.sperre(sig):
             docs, p = self.laden(sig)
             zeilen = bk.eintraege(docs)
-            erg = self.modell(sig) if zeilen else {"fehler": ""}
+            from baugrundmodell import labor
+            proben = labor.proben(docs)
+            erg = self.modell(sig) if zeilen or proben else {"fehler": ""}
             einheiten = (erg.get("bericht") or {}).get("einheiten") or [] if not erg["fehler"] else []
             return {"fehler": "", "zeilen": zeilen, "einheiten": [e["name"] for e in einheiten],
                     "vorschlag": bk.vorschlag(einheiten, zeilen, (erg.get("bericht") or {}).get("bohrungen"))
                     if zeilen and einheiten else {},
-                    "zuordnung": p.bodenkennwerte or {}, "modell_fehler": erg.get("fehler") or ""}
+                    "zuordnung": p.bodenkennwerte or {}, "modell_fehler": erg.get("fehler") or "",
+                    "labor": self._labor_je_einheit(einheiten, proben)}
+
+    @staticmethod
+    def _labor_je_einheit(einheiten: list[dict], proben: list[dict]) -> dict:
+        """Laborwerte (Issue #18): je Einheit die Statistik, dazu die Proben, die an keiner Schicht des Modells haengen."""
+        from baugrundmodell import labor
+        je = {e["name"]: {k: {**s, "text": labor.text({k: s}, k)} for k, s in labor.statistik(e["schichten"]).items()}
+              for e in einheiten}
+        an = {x["ref"] for e in einheiten for s in e["schichten"] for x in s.get("labor") or []}
+        ohne = [p for p in proben if p["ref"] not in an]
+        return {"proben": len(proben), "je_einheit": {k: v for k, v in je.items() if v}, "ohne_schicht": ohne}
 
     @staticmethod
     def _hb_fuer_ifc(p: pj.Projekt) -> dict:

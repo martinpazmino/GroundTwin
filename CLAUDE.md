@@ -53,6 +53,8 @@ license **AGPL-3.0-or-later** (D79).
   `tests/test_homogenbereiche_app.py`. §9 Bodenkennwerte from the report tables (#18): extraction stage
   `services/extractor/kennwerte.py` (table or list, not prototyp_v4), `baugrundmodell/bodenkennwerte.py` (proposal per
   Einheit, a click; op `bodenkennwerte`; IFC `CPset_Bodenkennwerte_Gutachten` with `_min/_max`, never `_char`).
+  §9b laboratory sheets (#18): `services/extractor/labor.py` (per sample, Bohrung + depth), `baugrundmodell/labor.py`
+  (sample → Schicht, stats per Einheit, ATV Kennwerte "Labor:", IFC `CPset_Laborwerte` `_min/_max/_mean/_n`).
   §10 the Gutachter's Homogenbereiche (#21): `services/extractor/homogenbereiche_text.py` (table/section/sentence),
   `hb.vorschlag_aus_gutachten` (field `gutachten` of `/homogenbereiche/vorschlag`, differences listed, a click).
 - Grundwasser (#26, docs/06 §4): kind (angetroffen/Ruhewasser/Bohrende/Schichtenwasser/unbestimmt, never guessed) and

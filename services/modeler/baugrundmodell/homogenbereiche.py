@@ -246,6 +246,28 @@ def _haeufig(werte: list[str], n: int) -> str:
     return ", ".join(f"{w} ({k}/{n})" for w, k in Counter(werte).most_common(4))
 
 
+# Kennwert der ATV-Matrix -> Laborwerte (services/extractor/labor.py, an den Schichten)
+_LABOR = {"9": ("wassergehalt",), "10b": ("plastizitaetszahl",), "11b": ("konsistenzzahl",), "12": ("kf",),
+          "14": ("kalkgehalt",), "16": ("gluehverlust",), "5": ("trockendichte",)}
+
+
+def _labor_kennwerte(out: dict[str, str], schichten: list[dict]) -> None:
+    """Gemessene Werte vor der Ansprache: Spanne, n und Mittel aus den Laborblaettern."""
+    from . import labor
+    st = labor.statistik(schichten)
+    if not st:
+        return
+    for nr, keys in _LABOR.items():
+        t = [labor.text(st, k) for k in keys if k in st]
+        if t:
+            zusatz = {"5": "Trockendichte, ", "16": "Glühverlust, "}.get(nr, "")
+            out[nr] = f"Labor: {zusatz}{'; '.join(t)}"
+    if all(k in st for k in ("ton", "schluff", "sand")):
+        f = lambda k: f"{st[k]['mittel']:.0f}" if k in st else "–"                      # noqa: E731
+        out["2"] = (f"Labor: T/U/S/G im Mittel {f('ton')}/{f('schluff')}/{f('sand')}/{f('kies')} % "
+                    f"(n = {st['sand']['n']})")
+
+
 def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
     """Kennwert-Nr -> Angabe aus den Beschreibungen ("steif (5/8), weich (1/8)"); nur was genannt ist."""
     from .normen import deuten
@@ -254,9 +276,10 @@ def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
     out: dict[str, str] = {}
 
     def setze(nr: str, werte: list[str], zusatz: str = "") -> None:
-        if werte:
+        if werte and nr not in out:                    # Laborwerte gehen der Ansprache vor
             out[nr] = _haeufig(werte, n) + zusatz
 
+    _labor_kennwerte(out, schichten)
     setze("1", [d.benennung for d in ds if d.benennung])
     setze("3a", ["Steine genannt" for d in ds if any(a.klasse == "Steine" for a in d.nebenanteile) or d.klasse == "Steine"],
           " – nur Ansprache, kein Massenanteil")

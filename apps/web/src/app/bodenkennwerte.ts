@@ -11,6 +11,11 @@ const NAMEN: Record<string, string> = {
   wichte: "γ [kN/m³]", wichte_auftrieb: "γ′ [kN/m³]", reibungswinkel: "φ′ [°]", kohaesion: "c′ [kN/m²]",
   kohaesion_undrainiert: "cu [kN/m²]", steifemodul: "Es [MN/m²]",
 };
+const LABOR: Record<string, string> = {
+  wassergehalt: "w", wassergehalt_korrigiert: "w (korr.)", fliessgrenze: "wL", ausrollgrenze: "wP", plastizitaetszahl: "IP",
+  konsistenzzahl: "IC", gluehverlust: "Vgl", kalkgehalt: "VCa", trockendichte: "ρd", proctordichte: "ρPr",
+  optimaler_wassergehalt: "wPr", cbr: "CBR", kf: "kf", ton: "T", schluff: "U", sand: "S", kies: "G",
+};
 let daten: Bodenkennwerte | null = null;
 let fuer = "";
 let auf: boolean | null = null;
@@ -41,7 +46,7 @@ export function bodenkennwerteTeil() {
   if (!S.modell?.bericht) return nothing;
   void holen();
   const d = daten && !daten.fehler ? daten : null;
-  if (!d || !d.zeilen.length) return nothing;
+  if (!d || (!d.zeilen.length && !d.labor?.proben)) return nothing;
   const z = S.z?.bodenkennwerte ?? {};
   const offen = auf ?? Object.keys(z).length > 0;
   const vorschlag = Object.fromEntries(Object.entries(d.vorschlag).filter(([, v]) => v.ref).map(([e, v]) => [e, v.ref!]));
@@ -50,6 +55,7 @@ export function bodenkennwerteTeil() {
     <details class="erweitert karte bodenkennwerte" .open=${live(offen)}
       @toggle=${(ev: Event) => { auf = (ev.target as HTMLDetailsElement).open; neu(); }}>
       <summary>Bodenkennwerte aus dem Gutachten <span class="leise klein">${d.zeilen.length} Zeilen${
+        d.labor?.proben ? `, ${d.labor.proben} Laborproben` : ""}${
         Object.keys(z).length ? `, ${Object.keys(z).length} zugeordnet` : ""}</span></summary>
       <p class="klein leise">Werte des Gutachters (Tabelle im Bericht), nicht von GroundTwin festgelegt.
         ${hilfe("bodenkennwerte")}</p>
@@ -60,7 +66,7 @@ export function bodenkennwerteTeil() {
             <td class="leise klein">${d.vorschlag[e]?.grund ?? ""}</td></tr>`)}</tbody></table>
           <button @click=${() => setzen(vorschlag)}>Vorschlag übernehmen</button>
         </div>` : nothing}
-      <table class="tabelle kompakt">
+      ${d.zeilen.length ? html`<table class="tabelle kompakt">
         <thead><tr><th>Einheit</th><th>Zeile im Gutachten</th></tr></thead>
         <tbody>${d.einheiten.map((e) => html`<tr><td>${e}</td><td>
           <select @change=${(ev: Event) => {
@@ -75,12 +81,18 @@ export function bodenkennwerteTeil() {
           </select>
           ${z[e] && zeile(z[e]) ? html`<div class="klein">${werteText(zeile(z[e])!.werte)}</div>` : nothing}
         </td></tr>`)}</tbody>
-      </table>
-      <details class="klein"><summary>Alle Zeilen aus dem Gutachten</summary>
+      </table>` : nothing}
+      ${d.labor?.proben ? html`<h4 class="klein">Laborwerte (${d.labor.proben} Proben aus den Anlagen, gemessen)</h4>
+        <table class="tabelle kompakt"><tbody>${Object.entries(d.labor.je_einheit).map(([e, st]) => html`<tr>
+          <td>${e}</td><td>${Object.entries(st).map(([k, v]) => html`<span class="kw">${LABOR[k] ?? k} ${v.text}</span>`)}</td>
+        </tr>`)}</tbody></table>
+        ${d.labor.ohne_schicht.length ? html`<p class="klein warn">An keiner Schicht des Modells:
+          ${d.labor.ohne_schicht.map((p) => `${p.bohrungen.join("+")} ${zahl(p.von)}–${zahl(p.bis)} m`).join("; ")}</p>` : nothing}` : nothing}
+      ${d.zeilen.length ? html`<details class="klein"><summary>Alle Zeilen aus dem Gutachten</summary>
         <table class="tabelle kompakt"><tbody>${d.zeilen.map((r) => html`<tr>
           <td class="leise">S. ${r.seite + 1}</td><td>${r.bezeichnung || "(ohne Bezeichnung)"}</td>
           <td>${werteText(r.werte)}${r.hinweise.length ? html`<div class="leise">⚑ ${r.hinweise.join("; ")}</div>` : nothing}</td>
         </tr>`)}</tbody></table>
-      </details>
+      </details>` : nothing}
     </details>`;
 }

@@ -156,7 +156,7 @@ def test_kennwerte_aus_den_beschreibungen(tmp_path):
     _gueltig(f)
     ps = ue.get_psets({x.Name: x for x in _strata(f)}["B2"])["CPset_Homogenbereich_DIN18300"]
     assert "Kennwert_1_ortsübliche_Bezeichnung" in ps and "19 Bodengruppe" in ps["Kennwerte_offen"]
-    assert "keine Laborwerte" in ps["Kennwerte_Herkunft"]
+    assert "Laborblättern" in ps["Kennwerte_Herkunft"] and not any(str(v).startswith("Labor:") for v in ps.values())
 
 
 def test_vorschlag_fels_befestigt_und_einzelne_bodengruppe():

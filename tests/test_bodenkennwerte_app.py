@@ -62,3 +62,17 @@ def test_kennwerte_berlin_nach_hoehenbereich(client):
     assert v["Auffuellung"] == "1 GOK bis +32,0" and v["Kies 1"] == "2 +32,0 bis +30,0"
     assert v["Kies 2"] == "3 +30,0 bis +21,0"
     assert all("m NHN" in x["grund"] or x["ref"] is None for x in k["vorschlag"].values())
+
+
+def test_laborwerte_talheim_je_einheit_und_atv(client):
+    """Talheim: 5 CBR-Blaetter; 4 Proben im Tonstein, 1 im Schluff; die ATV-Kennwerte zeigen 'Labor:' vor der Ansprache."""
+    c, _ = client
+    sig = c.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
+    lab = c.get(f"/api/projekt/{sig}/bodenkennwerte").json()["labor"]
+    assert lab["proben"] == 5 and lab["ohne_schicht"] == []
+    t = lab["je_einheit"]["Fels (Tonstein)"]
+    assert t["wassergehalt"]["n"] == 4 and t["wassergehalt"]["text"] == "11,1–16,9 % (n = 4, Mittel 14,4)"
+    hk = c.get(f"/api/projekt/{sig}/homogenbereiche/kennwerte?atv=DIN%2018300").json()
+    fels = next(b for b in hk["bereiche"] if b["name"] == "Fels (Tonstein)")
+    w = next(z for z in fels["kennwerte"] if z["nr"] == "9")
+    assert w["wert"].startswith("Labor: 11,1–16,9 %")
