@@ -111,7 +111,7 @@
   "Grenzen exakt": "65/65",
   "Bodenart": "8/8",
   "GOK": "8/8",
-  "GW": "3/4",
+  "GW": "4/4",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,
   "falsches GW": 0
@@ -336,6 +336,28 @@
   "Grenzen": "3/3",
   "Grenzen exakt": "3/3",
   "Bodenart": "3/3",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s18_legende_dach": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "2/2",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s19_dach_ohne_legende": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
   "GOK": "1/1",
   "GW": "0/0",
   "falsche Bohrungen": 0,
