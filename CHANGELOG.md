@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Homogenbereiche the Gutachter defines (table, section or sentence) read from the report; the proposal per ATV starts
+  from them, assigns the Einheiten by name, Bodenart and Bodengruppe, and lists the differences (Einheiten without a
+  Bereich, Bereiche without an Einheit); a click takes it over (Issue #21, docs/28 §10).
 - Bodenkennwerte from the report tables (Wichte, Reibungswinkel, Kohäsion, Steifemodul …; table or list per Schicht)
   read by a separate extraction stage, assigned to the Einheiten by a proposal and a click (step Einheiten), written
   to the IFC as `CPset_Bodenkennwerte_Gutachten` with `<Kennwert>_min/_max`; never a characteristic value of our own

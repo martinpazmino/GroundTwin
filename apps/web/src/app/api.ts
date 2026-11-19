@@ -335,6 +335,12 @@ export type HbDaten = {
 export type HbVorschlag = {
   fehler: string; atv?: string; stufe?: string; regel?: string; zuordnung?: Record<string, string>;
   bereiche?: { name: string; einheiten: string[]; grund: string }[];
+  /** Bereiche, die der Gutachter festlegt (Issue #21): Vorschlag von ihnen aus, Abweichungen genannt. */
+  gutachten?: {
+    zuordnung: Record<string, string>; einheiten_ohne_bereich: { einheit: string; grund: string }[];
+    bereiche_ohne_einheit: string[];
+    bereiche: { name: string; titel: string; einheiten: string[]; grund: string; bodengruppen: string[]; seite: number }[];
+  } | null;
 };
 
 /** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */

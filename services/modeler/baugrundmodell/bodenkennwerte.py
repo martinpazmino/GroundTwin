@@ -21,9 +21,11 @@ IFC_NAME = {"wichte": "Wichte", "wichte_auftrieb": "Wichte_Auftrieb", "reibungsw
 EINHEIT = {"wichte": "kN/m3", "wichte_auftrieb": "kN/m3", "reibungswinkel": "Grad", "kohaesion": "kN/m2",
            "kohaesion_undrainiert": "kN/m2", "steifemodul": "MN/m2"}
 # Wortstaemme der Bodenarten, wie sie in Tabellen stehen ('Kiese', 'Sande', 'Auffuellungen')
-_STAMM = {"Auffuellung": "auffull", "Kies": "kies", "Sand": "sand", "Schluff": "schluff", "Ton": "ton",
-          "Torf": "torf", "Mudde": "mudde", "Mutterboden": "mutterbod", "Oberboden": "oberbod", "Lehm": "lehm",
-          "Geschiebemergel": "geschiebemerg", "Mergel": "mergel", "Steine": "stein", "Bloecke": "block"}
+_STAMM = {"Auffuellung": ("auffull",), "Kies": ("kies",), "Sand": ("sand",), "Schluff": ("schluff",), "Ton": ("ton",),
+          "Torf": ("torf",), "Mudde": ("mudde",), "Mutterboden": ("mutterbod", "oberbod", "humus"),
+          "Oberboden": ("oberbod", "mutterbod", "humus"), "Lehm": ("lehm",), "Geschiebemergel": ("geschiebemerg",),
+          "Mergel": ("mergel",), "Steine": ("stein",), "Bloecke": ("block",), "Schwarzdecke": ("asphalt", "schwarzdeck"),
+          "Beton": ("beton",)}
 
 
 def _klein(t: str) -> str:
@@ -53,15 +55,29 @@ def _treffer(einheit: dict, e: dict) -> tuple[int, str]:
     namen = [einheit["name"]] + list(einheit.get("bodenarten") or [])
     for n in namen:
         n = re.sub(r"^.*\((.+)\).*$", r"\1", n)       # 'Fels (Tonstein)' -> 'Tonstein'
-        stamm = _STAMM.get(n) or _klein(n)[:max(4, len(_klein(n)) - 1)]
-        # das Hauptwort zaehlt, nicht das Beiwort: 'Sand, kiesig' nennt Sand, nicht Kies
-        woerter = re.findall(rf"\b{re.escape(_klein(stamm))}\w*", bez)
-        if len(stamm) >= 3 and any(not re.search(r"(?:ig|ige|igen|iger|haltig)$", w) for w in woerter):
-            return 2, f"„{n}“ in der Bezeichnung"
+        for stamm in _STAMM.get(n) or (_klein(n)[:max(4, len(_klein(n)) - 1)],):
+            # das Hauptwort zaehlt, nicht das Beiwort: 'Sand, kiesig' nennt Sand, nicht Kies
+            woerter = re.findall(rf"\b{re.escape(_klein(stamm))}\w*", bez)
+            if len(stamm) >= 3 and any(not re.search(r"(?:ig|ige|igen|iger|haltig)$", w) for w in woerter):
+                return 2, f"„{n}“ in der Bezeichnung"
     g = einheit.get("bodengruppe")
     if g and g in (e.get("bodengruppen") or []):
         return 1, f"Bodengruppe {g} in der Zeile"
     return 0, ""
+
+
+# Hauptgruppe der Bodengruppen nach DIN 18196 (erster Buchstabe) je Bodenart der App
+HAUPTGRUPPE = {"Sand": "S", "Kies": "G", "Schluff": "U", "Ton": "T", "Torf": "H", "Mudde": "O", "Mutterboden": "O",
+               "Auffuellung": "A"}
+
+
+def hauptgruppe_trifft(einheit: dict, gruppen: list[str]) -> str | None:
+    """Schwaechster Hinweis: eine Bodengruppe der Zeile hat die Hauptgruppe der Bodenart ('Sand' -> S*)."""
+    for n in [einheit["name"]] + list(einheit.get("bodenarten") or []):
+        h = HAUPTGRUPPE.get(re.sub(r"\s*\d+$", "", n))
+        if h and any(g.startswith(h) for g in gruppen):
+            return f"Bodengruppe {h}… zur Bodenart {n}"
+    return None
 
 
 def vorschlag(einheiten: list[dict], zeilen: list[dict]) -> dict:

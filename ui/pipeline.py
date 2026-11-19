@@ -50,6 +50,7 @@ def _extraktor_stand() -> str:
     """Fingerabdruck des Extraktors: aendert er sich, wird neu extrahiert."""
     h = hashlib.sha256()
     for f in sorted(EXTRAKTOR.parent.glob("prototyp_v*.py")) + [EXTRAKTOR.parent / "kennwerte.py",
+                                                                 EXTRAKTOR.parent / "homogenbereiche_text.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
@@ -64,6 +65,18 @@ def kennwerte_lesen(pdf: Path) -> list[dict]:
         return kennwerte.lesen(pdf)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Kennwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
+        return []
+
+
+def homogenbereiche_lesen(pdf: Path) -> list[dict]:
+    """Homogenbereiche, die der Gutachter festlegt (services/extractor/homogenbereiche_text.py); ein Fehler dort haelt
+    die Extraktion nicht auf."""
+    extraktor()
+    try:
+        import homogenbereiche_text
+        return homogenbereiche_text.lesen(pdf)
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        print(f"Homogenbereiche nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
@@ -103,6 +116,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
         bohrungen, dph = mod.extract(ziel)
         doc = mod.to_canonical(ziel, bohrungen, dph)
         doc["kennwerte"] = kennwerte_lesen(ziel)        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
+        doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel)   # Bereiche des Gutachters (Issue #21)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr

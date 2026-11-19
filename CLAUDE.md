@@ -53,6 +53,8 @@ license **AGPL-3.0-or-later** (D79).
   `tests/test_homogenbereiche_app.py`. §9 Bodenkennwerte from the report tables (#18): extraction stage
   `services/extractor/kennwerte.py` (table or list, not prototyp_v4), `baugrundmodell/bodenkennwerte.py` (proposal per
   Einheit, a click; op `bodenkennwerte`; IFC `CPset_Bodenkennwerte_Gutachten` with `_min/_max`, never `_char`).
+  §10 the Gutachter's Homogenbereiche (#21): `services/extractor/homogenbereiche_text.py` (table/section/sentence),
+  `hb.vorschlag_aus_gutachten` (field `gutachten` of `/homogenbereiche/vorschlag`, differences listed, a click).
 - Grundwasser (#26, docs/06 §4): kind (angetroffen/Ruhewasser/Bohrende/Schichtenwasser/unbestimmt, never guessed) and
   date per level, `wasserstaende` (Bemessungswasserstand, HGW …) from the report text; `baugrundmodell/wasser.py`.
 - `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:

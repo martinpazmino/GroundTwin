@@ -88,9 +88,23 @@ export function homogenbereicheTeil() {
             <option value=${a.code} .selected=${a.code === atv}>${a.code} ${a.gewerk}${alle[a.code] ? " ✓" : ""}</option>`)}
         </select>
       </div>
+      ${vs?.gutachten && !Object.keys(je).length ? html`
+        <div class="hb-vorschlag">
+          <p class="klein"><b>Bereiche des Gutachtens für ${atv}</b></p>
+          <table class="tabelle kompakt">
+            <tbody>${vs.gutachten.bereiche.map((g) => html`<tr><td><b>${g.name}</b> ${g.titel}
+              <div class="leise klein">${g.bodengruppen.join(", ")}${g.seite !== undefined ? ` · S. ${g.seite + 1}` : ""}</div></td>
+              <td>${g.einheiten.length ? g.einheiten.join(", ") : html`<span class="warn">keine Einheit des Modells</span>`}</td>
+              <td class="leise klein">${g.einheiten.length ? g.grund : ""}</td></tr>`)}</tbody>
+          </table>
+          ${vs.gutachten.einheiten_ohne_bereich.length ? html`<p class="klein warn">Ohne Bereich des Gutachtens:
+            ${vs.gutachten.einheiten_ohne_bereich.map((x) => `${x.einheit} (${x.grund})`).join("; ")}</p>` : nothing}
+          <button @click=${() => setzen(vs.gutachten!.zuordnung)}>Bereiche des Gutachtens übernehmen</button>
+          <span class="leise klein">danach je Einheit änderbar</span>
+        </div>` : nothing}
       ${vs && !Object.keys(je).length ? html`
         <div class="hb-vorschlag">
-          <p class="klein"><b>Vorschlag für ${atv}</b> <span class="leise">(${vs.stufe}: ${vs.regel})</span></p>
+          <p class="klein"><b>${vs.gutachten ? "Eigener Vorschlag" : "Vorschlag"} für ${atv}</b> <span class="leise">(${vs.stufe}: ${vs.regel})</span></p>
           <table class="tabelle kompakt">
             <tbody>${vs.bereiche!.map((g) => html`<tr><td><b>${g.name}</b></td><td>${g.einheiten.join(", ")}</td>
               <td class="leise klein">${g.grund}</td></tr>`)}</tbody>

@@ -279,6 +279,60 @@ Proposal on the examples:
 - laboratory tables;
 - a blind test before any figure is quoted.
 
+## 10. The Gutachter's own Homogenbereiche (Issue #21, 2026-11-19, training PDFs, not blind)
+
+Many Gutachten already define Homogenbereiche. The proposal now starts from them and shows where the model and the
+Gutachten differ.
+
+**Extraction** (`services/extractor/homogenbereiche_text.py`, separate stage, `homogenbereiche_gutachten` of the
+document). Three general forms:
+
+- **Table:** a cell `Homogenbereich X` with the Bodengruppen and a name in brackets to its left, read word by word.
+  The row band runs to the middle of the neighbouring headers.
+- **Section:** a heading `Homogenbereich X – Name`, then `Bodengruppen nach DIN 18196: …` and
+  `Ortsübliche Bezeichnung: …`, also across a page break, until the next numbered section of the report.
+- **Sentence:** "Der Oberboden bildet den Homogenbereich O1", "In den Homogenbereich B3 werden die … klassifiziert",
+  "Sandbett und Auffüllungen werden den Homogenbereichen B1 und B2 zugeteilt". A plural heading
+  `Homogenbereiche B1/B2` gives both codes.
+
+Further rules:
+
+- Bodengruppen in square brackets are Auffüllungen of that kind (DIN 18196) and are kept apart.
+- The ATV are the DIN 183xx named on the pages of the section; none named → empty, with a hint.
+
+**Proposal** (`hb.gutachten_bereiche`, `hb.vorschlag_aus_gutachten`). Each Einheit goes to the Bereich that names it.
+The checks run in this order:
+
+1. full name;
+2. name or Bodenart as a noun, with synonyms such as Mutterboden / Oberboden / Humus;
+3. its Bodengruppe;
+4. the main group of its Bodenart (Sand → S…), the weakest hint.
+
+When Bereiche score the same, nothing is assigned and the Einheit is listed. The result names the Einheiten without a
+Bereich and the Bereiche without an Einheit: these are the differences between model and Gutachten. Bracketed
+Bodengruppen count only for an anthropogenic Einheit. In the app (Homogenbereiche, no assignment yet), *Bereiche des
+Gutachtens* comes first; a click takes it over, and our own proposal stays below it. The API is
+`/homogenbereiche/vorschlag` → field `gutachten`.
+
+**Measured on the training PDFs:**
+
+| PDF | Bereiche read | Notes |
+|---|---|---|
+| Halle | 4/4 (A–D) | Names and Bodengruppen; the brackets of A as Auffüllung. |
+| Hausham | 3/3 | Section form across pages. |
+| Triefenstein | 5/5 (A1, O1, B1, B2, B3) | Sentences and a plural heading. |
+| Rednitzhembach, Talheim, Berlin, Marl, Wachenroth, Wesel | none | They define no Bereiche in the text; nothing invented. |
+
+End to end, with the Bohrungen in a schematic row:
+
+- **Hausham:** Auffuellung → 2, Kies → 3. Bereich 1 (aufgefüllter Oberboden, 0.1–0.3 m) has no Einheit in the model and
+  is shown as a difference.
+- **Triefenstein:** Beton → A1, Sand → B1 (Sandbett). Schluff and Kies stay without a Bereich, because the Gutachter
+  calls B3 "Lößlehme" with TL/TM; the difference is shown, not hidden.
+
+**Open (needs the user):** whether Hangschutt and Wiesenkalk should stay a Bereich of their own in our proposal
+(today they count as *bindig*).
+
 Up: [Index](README.md)
 
 Related: [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) ·

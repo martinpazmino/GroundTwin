@@ -476,7 +476,12 @@ class Arbeitsplatz:
         if erg["fehler"]:
             return {"fehler": erg["fehler"]}
         try:
-            return {"fehler": "", **hb.vorschlag_fuer(atv, erg["bericht"]["einheiten"])}
+            einheiten = erg["bericht"]["einheiten"]
+            out = {"fehler": "", **hb.vorschlag_fuer(atv, einheiten), "gutachten": None}
+            docs, _ = self.laden(sig)
+            if gb := hb.gutachten_bereiche(docs, atv):     # Bereiche des Gutachters zuerst (Issue #21)
+                out["gutachten"] = hb.vorschlag_aus_gutachten(atv, einheiten, gb)
+            return out
         except ValueError as err:
             return {"fehler": str(err)}
 
