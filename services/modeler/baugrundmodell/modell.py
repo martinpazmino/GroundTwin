@@ -15,6 +15,7 @@ from .einheiten import (Bohrung, Einheit, Kontakt, bohrungen_aus_extraktion, kon
 from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, hinweise_holen, hinweise_starten, netz,
                        orientierungen_setzen,
                        schichtmodell)
+from . import bodenkennwerte as bk
 from . import homogenbereiche as hb
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe, rgb_aus
 from .koerper import koerper, pruefen, volumen_prismen
@@ -363,7 +364,7 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
                   umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
                   gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
-                  nur_homogenbereiche: str | None = None) -> dict:
+                  nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
@@ -381,6 +382,11 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
     schichten_je = {e.name: einheit_schichten(m, j) for j, e in enumerate(m.einheiten)} if homogenbereiche else {}
     hb_psets = {e: {hb.pset_name(code): _hb_pset(code, je, e, schichten_je) for code, je in homogenbereiche.items()}
                 for e in namen}
+    # Bodenkennwerte aus dem Gutachten (Issue #18): {Einheit: 'Datei#Index'} -> CPset an der Einheit
+    zeilen = {e["ref"]: e for e in bk.eintraege(docs)}
+    for e, ref in (bodenkennwerte or {}).items():
+        if ref in zeilen and e in hb_psets:
+            hb_psets[e] = {**hb_psets[e], bk.PSET: bk.pset(zeilen[ref])}
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
     n = len(m.einheiten)

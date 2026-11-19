@@ -216,6 +216,69 @@ grey (display).
 
 ---
 
+## 9. Kennwerte from the report tables (Issue #18, 2026-11-19, training PDFs, not blind)
+
+§6 reads only what the layer descriptions say. Many Gutachten also give a table of soil parameters (Bodenkennwerte):
+Wichte, Wichte unter Auftrieb, Reibungswinkel, Kohäsion, undränierte Kohäsion, Steifemodul. A separate extraction
+stage reads them; `prototyp_v4.py` is untouched.
+
+**Extraction** (`services/extractor/kennwerte.py`, called by `ui/pipeline.py`, result in `kennwerte` of the document).
+Two general forms, recognised by where the words are on the page:
+
+- **Table with columns.** Header cells name a parameter (by word or symbol: γ, γ′, φ′, c′, cu, Es). They may be split
+  over two lines ("Reibungs-" / "winkel") or turned upright. Three or more of them must stand side by side.
+- **Value rows.** Numbers in the columns at about the same height form a row; a big jump ends the table.
+- **Row label.** The text left of the first parameter column, assigned to the nearest value row. A label spanning two
+  rows (steif / halbfest) goes to both; one spanning three or more is a note and is left out. Words inside the value
+  columns ("Material") count as label, not as value.
+- **Unit.** The unit word in the header nearest to the centre of the column.
+- **List per Schicht.** One parameter per row with its value to the right, grouped under the nearest heading above
+  ("Schicht 2 – Auffüllung", "Homogenbereich B3").
+- **Values.** Ranges `11 - 20`, a thousands point `10.000`, a decimal comma. The Steifemodul is kept in MN/m²
+  (kN/m² ÷ 1000). A value outside the usual range gets a hint (⚑, marked, kept). What is not a number (`18√t`) stays
+  text. Bodengruppen (DIN 18196) and a name in brackets are taken from the label.
+- **Limits.** Only the text layer is read, so scanned report pages give nothing. Laboratory tables (grain size,
+  water content, Atterberg limits) are not read yet.
+
+**Assignment to the Einheiten** (`services/modeler/baugrundmodell/bodenkennwerte.py`). The proposal gives each Einheit
+the row whose label holds its full name (3), its name or Bodenart as a noun (2: "Sand, kiesig" names Sand, not Kies),
+or its most frequent Bodengruppe (1). When rows score the same, there is no proposal: the Einheit is marked and chosen
+by hand. Nothing is taken over without a click. Project op `bodenkennwerte` ({Einheit: `Datei#Index`}); unknown
+references are dropped. App: step Einheiten, folded section *Bodenkennwerte aus dem Gutachten*; API
+`GET /api/projekt/{sig}/bodenkennwerte`.
+
+**IFC.** `CPset_Bodenkennwerte_Gutachten` on the Einheit, with:
+
+- `<Kennwert>_min` / `_max` (the DAUB Teil 3 naming of [30 §6.1](30_groundtwin_analysis_research.md));
+- `<Kennwert>_Text` where no number was readable;
+- `Quelle` (file, page), `Bezeichnung_im_Gutachten`, `Zuordnung` and `Art`.
+
+GroundTwin never writes `_char`: the characteristic value is the Gutachter's ([29](29_groundtwin_analysis.md)).
+
+**Measured on the training PDFs (rows read / rows in the report):**
+
+| PDF | Result |
+|---|---|
+| Halle | 4/4 table, labels with Bodengruppen and name (Auffüllung, Auelehm, Niederterrasse, Felszersatz). Wichte unter Auftrieb 1–12 kN/m³ is marked as outside the usual range; this is what the report says. |
+| Berlin | 6/6 table; the labels are depth ranges (m NHN); Es = 18√t stays text. |
+| Talheim | 5/5 table. Verwitterungslehm steif / halbfest are two rows with one label. |
+| Rednitzhembach | 4/4 table with the Material column as label. |
+| Hausham | 2/2 lists (Schicht 2, Schicht 3). |
+| Triefenstein | 1/1 Homogenbereich list (B3) with cu. |
+| Marl, Wachenroth, Wesel, A7367 | no Kennwert table in the text layer; nothing read, nothing invented. |
+
+Proposal on the examples:
+
+- Talheim: Schluff → *Fließerden: Schluff, tonig …*. Fels (Tonstein) has two equal rows, so it is chosen by hand.
+- Berlin: no proposal, because the labels are heights.
+
+**Open:**
+
+- match by the height range of a row (Berlin: `+32,0 bis +30,0` m NHN against the Einheiten);
+- read the Homogenbereich tables (Bereich ↔ Bodengruppen) for #21;
+- laboratory tables;
+- a blind test before any figure is quoted.
+
 Up: [Index](README.md)
 
 Related: [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) ·

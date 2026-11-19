@@ -332,6 +332,10 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def hb_kennwerte(sig: str, atv: str):
         return ap.hb_kennwerte(sig, atv)                   # Ansprache aus den Beschreibungen je Bereich (docs/28 §6)
 
+    @app.get("/api/projekt/{sig}/bodenkennwerte")
+    def bodenkennwerte(sig: str):
+        return ap.bodenkennwerte(sig)                      # Kennwert-Tabellen des Gutachtens je Einheit (Issue #18)
+
     @app.get("/api/projekt/{sig}/analyse/grundwasser")
     def analyse_grundwasser(sig: str):
         return ap.grundwasser(sig)                         # Grundwasserflaeche (docs/27 G5), nicht im IFC

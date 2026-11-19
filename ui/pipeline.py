@@ -49,9 +49,22 @@ def ocr_verfuegbar() -> bool:
 def _extraktor_stand() -> str:
     """Fingerabdruck des Extraktors: aendert er sich, wird neu extrahiert."""
     h = hashlib.sha256()
-    for f in sorted(EXTRAKTOR.parent.glob("prototyp_v*.py")) + [REPO / "geo_agent" / "soil.py"]:
+    for f in sorted(EXTRAKTOR.parent.glob("prototyp_v*.py")) + [EXTRAKTOR.parent / "kennwerte.py",
+                                                                 REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
+
+
+def kennwerte_lesen(pdf: Path) -> list[dict]:
+    """Bodenkennwerte aus dem Text des Gutachtens (services/extractor/kennwerte.py); ein Fehler dort haelt die
+    Extraktion der Bohrungen nicht auf (leere Liste, im Protokoll)."""
+    extraktor()                                       # legt den Ordner des Extraktors auf sys.path
+    try:
+        import kennwerte
+        return kennwerte.lesen(pdf)
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        print(f"Kennwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
+        return []
 
 
 def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
@@ -89,6 +102,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
     try:
         bohrungen, dph = mod.extract(ziel)
         doc = mod.to_canonical(ziel, bohrungen, dph)
+        doc["kennwerte"] = kennwerte_lesen(ziel)        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr
@@ -145,14 +159,14 @@ def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: s
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,
               durchmesser_je: dict[str, float] | None = None, gebaeude: list[dict] | None = None,
               gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
-              nur_homogenbereiche: str | None = None) -> bytes:
+              nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None) -> bytes:
     ARBEIT.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".ifc", dir=ARBEIT, delete=False) as fh:
         pfad = Path(fh.name)
     try:
         ifc_schreiben(m, pfad, docs, pruefstand=pruefstand, durchmesser=durchmesser, durchmesser_je=durchmesser_je,
                       gebaeude=gebaeude, gebaeude_info=gebaeude_info, homogenbereiche=homogenbereiche,
-                      nur_homogenbereiche=nur_homogenbereiche)
+                      nur_homogenbereiche=nur_homogenbereiche, bodenkennwerte=bodenkennwerte)
         return pfad.read_bytes()
     finally:
         pfad.unlink(missing_ok=True)

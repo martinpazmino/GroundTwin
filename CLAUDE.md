@@ -50,7 +50,11 @@ license **AGPL-3.0-or-later** (D79).
   descriptions per Bereich (`hb.kennwerte_bereich`, `/homogenbereiche/kennwerte`, IFC `Kennwert_…`, `Kennwerte_offen`;
   Ansprache only, laboratory values stay open). DIN 4023 Tab. 2/3
   colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
-  `tests/test_homogenbereiche_app.py`.
+  `tests/test_homogenbereiche_app.py`. §9 Bodenkennwerte from the report tables (#18): extraction stage
+  `services/extractor/kennwerte.py` (table or list, not prototyp_v4), `baugrundmodell/bodenkennwerte.py` (proposal per
+  Einheit, a click; op `bodenkennwerte`; IFC `CPset_Bodenkennwerte_Gutachten` with `_min/_max`, never `_char`).
+- Grundwasser (#26, docs/06 §4): kind (angetroffen/Ruhewasser/Bohrende/Schichtenwasser/unbestimmt, never guessed) and
+  date per level, `wasserstaende` (Bemessungswasserstand, HGW …) from the report text; `baugrundmodell/wasser.py`.
 - `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge

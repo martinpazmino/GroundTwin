@@ -432,7 +432,7 @@ class Arbeitsplatz:
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
                 "vorgabe": p.vorgabe, "eincheckungen": p.eincheckungen,
-                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell,
+                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell, "bodenkennwerte": p.bodenkennwerte,
                 "pruefstand": pj.pruefstand(docs, p),
                 "plausibilitaet": pb.pruefen(docs, p),
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
@@ -501,10 +501,25 @@ class Arbeitsplatz:
             except ValueError as err:
                 return {"fehler": str(err)}
 
+    def bodenkennwerte(self, sig: str) -> dict:
+        """Kennwert-Zeilen aus dem Gutachten (Issue #18), Vorschlag je Einheit und die gesetzte Zuordnung; liest nur."""
+        from baugrundmodell import bodenkennwerte as bk
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            zeilen = bk.eintraege(docs)
+            erg = self.modell(sig) if zeilen else {"fehler": ""}
+            einheiten = (erg.get("bericht") or {}).get("einheiten") or [] if not erg["fehler"] else []
+            return {"fehler": "", "zeilen": zeilen, "einheiten": [e["name"] for e in einheiten],
+                    "vorschlag": bk.vorschlag(einheiten, zeilen) if zeilen and einheiten else {},
+                    "zuordnung": p.bodenkennwerte or {}, "modell_fehler": erg.get("fehler") or ""}
+
     @staticmethod
     def _hb_fuer_ifc(p: pj.Projekt) -> dict:
         """Homogenbereiche fuer ifc_schreiben (docs/28): Psets je ATV und auf Wunsch das Modell nur aus Bereichen."""
-        return {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
+        out = {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
+        if p.bodenkennwerte:                          # Kennwert-Zeilen des Gutachtens je Einheit (Issue #18)
+            out["bodenkennwerte"] = p.bodenkennwerte
+        return out
 
     def modell(self, sig: str) -> dict:
         """Modell rechnen (oder aus dem Speicher) und das IFC fuer den Viewer ablegen."""

@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Bodenkennwerte from the report tables (Wichte, Reibungswinkel, Kohäsion, Steifemodul …; table or list per Schicht)
+  read by a separate extraction stage, assigned to the Einheiten by a proposal and a click (step Einheiten), written
+  to the IFC as `CPset_Bodenkennwerte_Gutachten` with `<Kennwert>_min/_max`; never a characteristic value of our own
+  (Issue #18, docs/28 §9).
 - Grundwasser: kind (angetroffen, Ruhewasser, nach Bohrende, Schichtenwasser, or not stated) and date of each level
   from the text at the symbol and the Schichtenverzeichnis; Bemessungswasserstand, HGW, MHGW from the report text.
   The Grundwasserfläche prefers Ruhewasser, keeps Schichtenwasser out and names mixed kinds and days; kind and date

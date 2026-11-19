@@ -1800,5 +1800,232 @@
    "page": 15,
    "evidence": "rsuchungsbereich etwa auf der Ordinate: zeHGW = +33,50 m NHN Dieser Grundwassers"
   }
+ ],
+ "kennwerte": [
+  {
+   "bezeichnung": "1 GOK bis +32,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "17,0",
+     "min": 17.0,
+     "max": 17.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,0",
+     "min": 10.0,
+     "max": 10.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "30,0",
+     "min": 30.0,
+     "max": 30.0,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "-"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "-"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "2 +32,0 bis +30,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "17,5",
+     "min": 17.5,
+     "max": 17.5,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,0",
+     "min": 10.0,
+     "max": 10.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "32,5",
+     "min": 32.5,
+     "max": 32.5,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "-"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "18√𝑡 / 72√𝑡"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "3 +30,0 bis +21,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "18,0",
+     "min": 18.0,
+     "max": 18.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,5",
+     "min": 10.5,
+     "max": 10.5,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "35,0",
+     "min": 35.0,
+     "max": 35.0,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "-"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "30√𝑡 / 90√𝑡"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "41) +21,0 bis -13,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "18,5",
+     "min": 18.5,
+     "max": 18.5,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,5",
+     "min": 10.5,
+     "max": 10.5,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "37,5",
+     "min": 37.5,
+     "max": 37.5,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "-"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "45√𝑡 / 112,5√𝑡"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "51) -13,0 bis -24,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "19,0",
+     "min": 19.0,
+     "max": 19.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,5",
+     "min": 10.5,
+     "max": 10.5,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "27,5",
+     "min": 27.5,
+     "max": 27.5,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "30,0",
+     "min": 30.0,
+     "max": 30.0,
+     "einheit": "kN/m²"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "50 / 150"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "61) -24,0 bis -50,0",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "19,0",
+     "min": 19.0,
+     "max": 19.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10,5",
+     "min": 10.5,
+     "max": 10.5,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "37,5",
+     "min": 37.5,
+     "max": 37.5,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "-"
+    },
+    "kohaesion_undrainiert": {
+     "text": "-"
+    },
+    "steifemodul": {
+     "text": "/ 120√𝑡 60√𝑡"
+    }
+   },
+   "seite": 14,
+   "form": "Tabelle",
+   "hinweise": []
+  }
  ]
 }

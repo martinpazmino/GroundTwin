@@ -172,6 +172,12 @@ label, L3):
    page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.
    Only the text layer (no OCR for this).
 
+## E7b. Bodenkennwerte (separate stage, Issue #18)
+
+`services/extractor/kennwerte.py` reads the parameter tables of the report text (table with columns or list per
+Schicht) into `kennwerte` of the document; rules and figures in [28 §9](28_homogenbereiche.md). It does not touch
+`prototyp_v4.py` and is part of the extractor fingerprint in `ui/pipeline.py` (a change re-extracts).
+
 ## E8. Second sources
 
 - **Schichtenverzeichnis** (DIN 4022 form): page with the title (also spaced out) and `Ansatz`; code

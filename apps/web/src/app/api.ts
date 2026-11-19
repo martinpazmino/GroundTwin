@@ -135,6 +135,7 @@ export interface Zustand {
   vorgabe: { name: string; bodenarten: string[] }[] | null;
   homogenbereiche?: Record<string, Record<string, string>> | null;   // je ATV {Einheit: Bereich} (docs/28)
   hb_modell?: string | null;
+  bodenkennwerte?: Record<string, string> | null;   // {Einheit: 'Datei#Index'} Kennwert-Zeile des Gutachtens (Issue #18)
   eincheckungen: Eincheckung[]; pruefstand: Pruefstand; eingecheckt: string | null; seit_einchecken_geaendert: boolean;
   bohrungen: Bohrung[]; klassen: Klasse[];
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
@@ -247,6 +248,7 @@ export const api = {
   homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
   hbKennwerte: (sig: string, atv: string) =>
     anfrage<HbKennwerte>(`/api/projekt/${sig}/homogenbereiche/kennwerte?atv=${encodeURIComponent(atv)}`),
+  bodenkennwerte: (sig: string) => anfrage<Bodenkennwerte>(`/api/projekt/${sig}/bodenkennwerte`),
   hbVorschlag: (sig: string, atv: string) =>
     anfrage<HbVorschlag>(`/api/projekt/${sig}/homogenbereiche/vorschlag?atv=${encodeURIComponent(atv)}`),
   beispiel: (name: string) =>
@@ -340,4 +342,13 @@ export type HbKennwerte = {
   fehler: string; atv?: string; zugeordnet?: boolean;
   bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
     kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
+};
+
+/** Kennwert-Tabellen des Gutachtens (Issue #18), Vorschlag und Zuordnung je Einheit. */
+export type Bodenkennwerte = {
+  fehler: string; modell_fehler?: string; einheiten: string[]; zuordnung: Record<string, string>;
+  zeilen: { ref: string; dokument: string; seite: number; bezeichnung: string; name: string; bodengruppen: string[];
+    form: string; hinweise: string[];
+    werte: Record<string, { text: string; min?: number; max?: number; einheit?: string; hinweis?: string }> }[];
+  vorschlag: Record<string, { ref: string | null; grund: string; kandidaten?: string[] }>;
 };
