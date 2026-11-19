@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water level tables in the report (Aufschluss | Wasserstand m u. GOK | Wasserart): kind from footnote, column or the
+  sentence on the table, merged into the levels of the Bohrungen with evidence (Issue #26, docs/06 §4).
 - Scanned report pages are read by OCR in the Kennwerte, laboratory and Homogenbereich stages; results carry
   `quelle: OCR` and a hint (Issue #18, docs/28 §10b).
 - Laboratory sheets of the annexes (Wassergehalt, Zustandsgrenzen, Korngröße, Glühverlust, CBR, Proctor …) read per

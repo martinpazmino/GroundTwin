@@ -58,7 +58,8 @@ license **AGPL-3.0-or-later** (D79).
   §10 the Gutachter's Homogenbereiche (#21): `services/extractor/homogenbereiche_text.py` (table/section/sentence),
   `hb.vorschlag_aus_gutachten` (field `gutachten` of `/homogenbereiche/vorschlag`, differences listed, a click).
 - Grundwasser (#26, docs/06 §4): kind (angetroffen/Ruhewasser/Bohrende/Schichtenwasser/unbestimmt, never guessed) and
-  date per level, `wasserstaende` (Bemessungswasserstand, HGW …) from the report text; `baugrundmodell/wasser.py`.
+  date per level, `wasserstaende` (Bemessungswasserstand, HGW …) from the report text; `baugrundmodell/wasser.py`;
+  water level tables of the report `services/extractor/wassertabelle.py` (footnote/column/sentence, `einarbeiten`).
 - `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge

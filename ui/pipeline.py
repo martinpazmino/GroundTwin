@@ -53,6 +53,7 @@ def _extraktor_stand() -> str:
                                                                  EXTRAKTOR.parent / "homogenbereiche_text.py",
                                                                  EXTRAKTOR.parent / "labor.py",
                                                                  EXTRAKTOR.parent / "textebene.py",
+                                                                 EXTRAKTOR.parent / "wassertabelle.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
@@ -68,6 +69,19 @@ def kennwerte_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Kennwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
+
+
+def wassertabelle_einarbeiten(doc: dict, pdf: Path, ocr: bool = True) -> None:
+    """Wasserstands-Tabellen (services/extractor/wassertabelle.py) lesen und in die Staende der Bohrungen fuehren;
+    die Zeilen stehen auch im Dokument ('wassertabelle'). Ein Fehler dort haelt die Extraktion nicht auf."""
+    extraktor()
+    try:
+        import wassertabelle
+        doc["wassertabelle"] = wassertabelle.lesen(pdf, ocr=ocr)
+        wassertabelle.einarbeiten(doc, doc["wassertabelle"])
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        doc.setdefault("wassertabelle", [])
+        print(f"Wasserstands-Tabelle nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
 
 
 def labor_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
@@ -131,6 +145,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
         doc["kennwerte"] = kennwerte_lesen(ziel, bool(ocr))        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
         doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel, bool(ocr))   # Bereiche des Gutachters (Issue #21)
         doc["labor"] = labor_lesen(ziel, bool(ocr))                # Laborblaetter der Anlagen (Issue #18)
+        wassertabelle_einarbeiten(doc, ziel, bool(ocr))           # Wasserstands-Tabellen des Berichts (Issue #26)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr

@@ -84,6 +84,23 @@ Längsschnitt as a `WATER` stratum or a surface in the model.
   +32.80 and zeHGW +33.50 m NHN; Halle MHGW 75.0 m NHN; Talheim kind open (it is only in the legend, by the
   symbol: W3, #20). Not built: the HGW/MGW lines of the Längsschnitt and the kind from the legend symbol (#20).
 
+**Water level tables in the report** (2026-11-19, `services/extractor/wassertabelle.py`, separate stage).
+
+- **Table:** a page with `Wasserst…` and `m u. GOK`. A row is a Bohrung code followed by a depth, optionally with a
+  footnote sign (`3,00*`) and a Wasserart column.
+- **Kind**, never guessed, with the same keywords as the profile:
+  1. the value's footnote (`*) Grundwasseranschnitt`);
+  2. the Wasserart column (`Schichtenwasser`);
+  3. the sentence on the table ("… wie folgt nach Bohrende eingemessen").
+- **Date:** a period ("vom 01.07. bis 15.10.2020") is no measuring day and stays in the evidence only.
+- **Merging** (`einarbeiten`, in `ui/pipeline.py`):
+  - same depth ± 3 cm → kind and date are filled where missing;
+  - a level the profile lacks is added with evidence "Tabelle S. …" and an issue on the Bohrung;
+  - against "kein Grundwasser" in the profile, a second issue.
+- **Measured:** Halle gives 26/26 rows, 22 nach Bohrende and 4 Anschnitt (KRB 2, 7, 23, 30, the starred values).
+  The other PDFs give no rows (no false ones). Halle's Bohrprofile are not extracted yet, so the rows stay in
+  `wassertabelle` of the document until they are.
+
 Up: [Index](README.md)
 
 Related: [02 Bohrprofil](02_bohrprofil_generalization.md) · [03 Längsschnitt](03_laengsschnitt_generalization.md) · [08 swissgeol](08_swissgeol_reuse.md)
