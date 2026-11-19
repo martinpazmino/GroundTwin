@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pymupdf
 
+import textebene
+
 CODE = r"(?:[A-Z]{1,3}\s?\d{1,2}[a-z]?|[A-Z]{1,2}|\d{1,2})"
 KOPF_RE = re.compile(rf"^\s*(?:\d+(?:\.\d+)*\.?\s+)?Homogenbereich\s+({CODE})(?![\w/])\s*(?:[–\-:]\s*(.+))?$")
 SATZ_RE = re.compile(rf"\b(?:Der|Die|Das)\s+([A-ZÄÖÜ][\wäöüß\-]+)\s+(?:wird\s+als|bildet\s+den|bilden\s+den|gehört\s+zum)\s+"
@@ -28,7 +30,7 @@ SATZ_IN_RE = re.compile(rf"\bIn\s+den\s+Homogenbereich\s+({CODE})\s+(?:werden|wi
                         rf"([\wäöüß\- ]{{3,60}}?)\s+(?:klassifiziert|eingestuft|zugeordnet|gestellt)")
 SATZ_PAAR_RE = re.compile(rf"\b([A-ZÄÖÜ][\wäöüß\-]+)\s+und\s+([A-ZÄÖÜ][\wäöüß\-]+)\s+werden\s+den\s+Homogenbereichen\s+"
                           rf"({CODE})\s+und\s+({CODE})\s+(?:zugeteilt|zugeordnet)")
-GRUPPEN_RE = re.compile(r"Bodengruppe\w*\s*(?:\(?\s*(?:nach|gem\.?|gemäß)\s*)?DIN\s*18\s?196\)?\s*:?\s*(.*)", re.I)
+GRUPPEN_RE = re.compile(r"^Bodengruppe\w*\s*(?:\(?\s*(?:nach|gem\.?|gem[äa](?:ß|ss|B)?)\s*)?(?:DIN\s*18\s?196\)?)?\s*:?\s*(.*)$", re.I)
 ORTSUEBLICH_RE = re.compile(r"Orts[üu]bliche\s+Bezeichnung\s*:?\s*(.*)", re.I)
 TIEFE_RE = re.compile(r"Tiefe\s+(?:oberer|unterer)\s+Horizont", re.I)
 ABSCHNITT_RE = re.compile(r"^\s*\d+(?:\.\d+)+\.?\s+[A-ZÄÖÜ][a-zäöüß]")          # '4.6 Bodenkennwerte'
@@ -83,19 +85,25 @@ def _neu(code: str, name: str, seite: int, form: str, beleg: str) -> dict:
             "seite": seite, "form": form, "beleg": beleg[:160], "atv": [], "hinweise": []}
 
 
-def lesen(pdf, doc=None) -> list[dict]:
-    """Alle Homogenbereiche des Berichts (Seite 0-basiert), je Bereich einmal (spaetere Angaben ergaenzen)."""
+def lesen(pdf, doc=None, ocr: bool = True) -> list[dict]:
+    """Alle Homogenbereiche des Berichts (Seite 0-basiert), je Bereich einmal (spaetere Angaben ergaenzen).
+    Gescannte Seiten ueber die OCR (textebene); dann quelle 'OCR' und ein Hinweis."""
     doc = doc or pymupdf.open(pdf)
+    quelle = ["Text"]
     je: dict[str, dict] = {}
     offen: dict | None = None                       # Abschnitt (Form L), der ueber Zeilen und Seiten weiterlaeuft
     atv_text = ""
     for nr, seite in enumerate(doc):
-        text = seite.get_text()
+        if "Homogenbereich" not in seite.get_text() and offen is None and not textebene.ist_scan(seite):
+            continue
+        s = textebene.lesen(seite, ocr)
+        text = s.text
         if "Homogenbereich" not in text and offen is None:
             continue
-        zeilen = _zeilen(seite)
+        zeilen = sorted(s.zeilen, key=lambda e: (round(e[0].y0 / 3), e[0].x0))
         # Woerter, nicht Bloecke: ein Block fasst oft Name und Kopf zusammen ('(Auelehm) Homogenbereich B')
-        bloecke = [(pymupdf.Rect(w[:4]), w[4]) for w in sorted(seite.get_text("words"), key=lambda w: (round(w[1] / 3), w[0]))]
+        bloecke = sorted(s.woerter, key=lambda w: (round(w[0].y0 / 3), w[0].x0))
+        quelle[0] = s.quelle if quelle[0] != "OCR" else "OCR"
         if "Homogenbereich" in text:
             atv_text += " " + text
         flach = _norm(text)                          # Form S: Saetze ueber Zeilenumbrueche hinweg
@@ -148,6 +156,9 @@ def lesen(pdf, doc=None) -> list[dict]:
     out = []
     for e in je.values():
         e["atv"] = atv
+        e["quelle"] = quelle[0]
+        if quelle[0] == "OCR":
+            e["hinweise"].append("aus der OCR gescannter Seiten: am PDF prüfen")
         if not atv:
             e["hinweise"].append("ATV im Bericht nicht genannt")
         if not e["bodengruppen"] and not e["bodengruppen_auffuellung"]:

@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Scanned report pages are read by OCR in the Kennwerte, laboratory and Homogenbereich stages; results carry
+  `quelle: OCR` and a hint (Issue #18, docs/28 §10b).
 - Laboratory sheets of the annexes (Wassergehalt, Zustandsgrenzen, Korngröße, Glühverlust, CBR, Proctor …) read per
   sample, attached to the Schicht of their Bohrung, summarised per Einheit (n, min, max, mean), filling the Kennwerte
   of the ATV as "Labor:" and written to the IFC as `CPset_Laborwerte` (Issue #18, docs/28 §9b).

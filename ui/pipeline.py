@@ -52,41 +52,42 @@ def _extraktor_stand() -> str:
     for f in sorted(EXTRAKTOR.parent.glob("prototyp_v*.py")) + [EXTRAKTOR.parent / "kennwerte.py",
                                                                  EXTRAKTOR.parent / "homogenbereiche_text.py",
                                                                  EXTRAKTOR.parent / "labor.py",
+                                                                 EXTRAKTOR.parent / "textebene.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
 
 
-def kennwerte_lesen(pdf: Path) -> list[dict]:
+def kennwerte_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
     """Bodenkennwerte aus dem Text des Gutachtens (services/extractor/kennwerte.py); ein Fehler dort haelt die
     Extraktion der Bohrungen nicht auf (leere Liste, im Protokoll)."""
     extraktor()                                       # legt den Ordner des Extraktors auf sys.path
     try:
         import kennwerte
-        return kennwerte.lesen(pdf)
+        return kennwerte.lesen(pdf, ocr=ocr)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Kennwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
-def labor_lesen(pdf: Path) -> list[dict]:
+def labor_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
     """Laborversuche aus den Anlagen (services/extractor/labor.py); ein Fehler dort haelt die Extraktion nicht auf."""
     extraktor()
     try:
         import labor
-        return labor.lesen(pdf)
+        return labor.lesen(pdf, ocr=ocr)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Laborwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
-def homogenbereiche_lesen(pdf: Path) -> list[dict]:
+def homogenbereiche_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
     """Homogenbereiche, die der Gutachter festlegt (services/extractor/homogenbereiche_text.py); ein Fehler dort haelt
     die Extraktion nicht auf."""
     extraktor()
     try:
         import homogenbereiche_text
-        return homogenbereiche_text.lesen(pdf)
+        return homogenbereiche_text.lesen(pdf, ocr=ocr)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Homogenbereiche nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
@@ -127,9 +128,9 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
     try:
         bohrungen, dph = mod.extract(ziel)
         doc = mod.to_canonical(ziel, bohrungen, dph)
-        doc["kennwerte"] = kennwerte_lesen(ziel)        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
-        doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel)   # Bereiche des Gutachters (Issue #21)
-        doc["labor"] = labor_lesen(ziel)                # Laborblaetter der Anlagen (Issue #18)
+        doc["kennwerte"] = kennwerte_lesen(ziel, bool(ocr))        # eigene Stufe (Issue #18), prototyp_v4 unberuehrt
+        doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel, bool(ocr))   # Bereiche des Gutachters (Issue #21)
+        doc["labor"] = labor_lesen(ziel, bool(ocr))                # Laborblaetter der Anlagen (Issue #18)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr

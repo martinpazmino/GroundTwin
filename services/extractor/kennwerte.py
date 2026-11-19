@@ -22,11 +22,13 @@ from pathlib import Path
 
 import pymupdf
 
+import textebene
+
 # Reihenfolge zaehlt: Auftrieb vor Wichte, undrainiert vor Kohaesion
 PARAMETER = (
     ("wichte_auftrieb", re.compile(r"auftrieb|[γ𝛾y]\s*[’′´'`]", re.I)),
     ("wichte", re.compile(r"wichte|[γ𝛾]", re.I)),
-    ("reibungswinkel", re.compile(r"(?<!wand)reibungs\s*-?\s*winkel|winkel\s+der\s+inneren\s+reibung|[φϕ𝜑]", re.I)),
+    ("reibungswinkel", re.compile(r"(?<!wand)reibungs\s*-?\s*winkel|inneren\s+reibung|[φϕ𝜑]", re.I)),
     ("kohaesion_undrainiert", re.compile(r"undr[äa]n|scherfestigkeit|\bc\s*u\b|𝑐\s*u", re.I)),
     ("kohaesion", re.compile(r"koh[äa]\s*-?\s*sion|\bc\s*[’′´'`]|𝑐\s*′", re.I)),
     ("steifemodul", re.compile(r"steife\s*-?\s*(?:modul|ziffer)|\bE\s*[sS]\b|𝐸\s*s|\bEsk?\b", re.I)),
@@ -156,7 +158,7 @@ def _spalten(kandidaten) -> list[dict] | None:
 
 
 WORT_RE = re.compile(r"[A-Za-zÄÖÜäöüß]{2,}")      # ein Wort, keine Zahl ('ca.' und Einheiten ausgenommen)
-LEER_RE = re.compile(r"(?:ca\.?|m|-|–|\[?(?:k?N|MN)/m[²³23]\]?|kN/m[²³23]\s*MN/m[²³23])")
+LEER_RE = re.compile(r"(?:ca\.?|m|-|–|\[?(?:k?N|MN)/m[²³23?]\]?|kN/m[²³23?]\s*MN/m[²³23?])")
 def _ist_wort(t: str) -> bool:
     return bool(WORT_RE.search(t)) and not re.fullmatch(r"\[?(?:in\s+)?(?:k?N|MN)/m[²³23]?\]?|ca\.?|deg", t)
 
@@ -199,7 +201,8 @@ def _form_a(seite, woerter, bloecke, sp, seite_nr) -> list[dict]:
     for g in gruppen:
         y = statistics.median(g)
         gefuellt = {p for yy, p, _, t in zellen if abs(yy - y) <= 4 and re.match(r"^[-+–]?\d|^[-–]$", t)}
-        if len(gefuellt) >= max(2, (len(sp) + 1) // 2):
+        # Zeile: die Haelfte der Spalten, oder zwei mit der ersten (OCR verliert '-' in leeren Zellen)
+        if len(gefuellt) >= max(2, (len(sp) + 1) // 2) or (len(gefuellt) >= 2 and sp[0]["param"] in gefuellt):
             reihen.append(y)
         elif reihen and y - reihen[-1] > 40:
             break                                      # Ende der Tabelle
@@ -213,7 +216,7 @@ def _form_a(seite, woerter, bloecke, sp, seite_nr) -> list[dict]:
                 reihen = reihen[:i + 1]
                 break
     typ = statistics.median([b - a for a, b in zip(reihen, reihen[1:])]) if len(reihen) > 1 else 24.0
-    weit = max(8.0, 0.6 * typ)                         # Zelle gehoert zur naechsten Wertzeile, wenn nah genug
+    weit = max(8.0, min(0.6 * typ, 14.0))              # Zelle gehoert zur naechsten Wertzeile, wenn auf ihrer Hoehe
     werte_je: list[dict[str, list]] = [dict() for _ in reihen]
     for y, p, r, t in zellen:
         if (i := _naechste(y, reihen, weit)) is not None:
@@ -315,21 +318,26 @@ def hoehenbereich(bez: str) -> dict:
     return {"hoehe_oben": oben, "hoehe_unten": unten, "hoehe_bezug": "m NHN"}
 
 
-def lesen(pdf, doc=None) -> list[dict]:
-    """Alle Kennwert-Eintraege des Dokuments (Seite 0-basiert). Nur die Textebene: gescannte Seiten tragen nichts bei."""
+def lesen(pdf, doc=None, ocr: bool = True) -> list[dict]:
+    """Alle Kennwert-Eintraege des Dokuments (Seite 0-basiert). Gescannte Seiten ueber die OCR (textebene), die
+    Eintraege tragen dann quelle 'OCR' und einen Hinweis."""
     doc = doc or pymupdf.open(pdf)
     out = []
     for nr, seite in enumerate(doc):
-        if len(re.findall(r"Wichte|Reibung|Kohä|Steifemodul|Steifeziffer|[γφϕ𝛾𝜑]", seite.get_text())) < 3:
+        s = textebene.lesen(seite, ocr)
+        if len(re.findall(r"Wichte|Reibung|Koh[äa]|Steifemodul|Steifeziffer|[γφϕ𝛾𝜑]", s.text)) < 3:
             continue
-        zeilen, bloecke = _zeilen(seite), _bloecke(seite)
+        zeilen, bloecke = s.zeilen, s.bloecke
         # Bloecke als Kopfzelle nur, wenn schmal: ein breiter Block fasst Zeilen verschiedener Spalten zusammen
         sp = _spalten(zeilen + [(r, t) for r, t in bloecke if r.width <= 110] + _stapel(zeilen))
-        eintraege = _form_a(seite, _woerter(seite), bloecke, sp, nr) if sp else []
+        eintraege = _form_a(seite, s.woerter, bloecke, sp, nr) if sp else []
         if not eintraege:
             eintraege = _form_b(zeilen, nr)
-        nhn = bool(re.search(r"NHN|\bm\s*(?:ü\.?\s*)?NN\b", seite.get_text()))
+        nhn = bool(re.search(r"NHN|\bm\s*(?:[üu]\.?\s*)?NN\b", s.text))
         for e in eintraege:
+            e["quelle"] = s.quelle
+            if s.quelle == "OCR":
+                e["hinweise"].append("aus der OCR einer gescannten Seite: Werte am PDF prüfen")
             if nhn:                                  # Bezeichnung als Hoehenbereich ('+32,0 bis +30,0' m NHN)
                 e.update(hoehenbereich(e["bezeichnung"]))
         out += [e for e in eintraege if len(e["werte"]) >= 2]

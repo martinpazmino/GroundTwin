@@ -237,7 +237,7 @@ Two general forms, recognised by where the words are on the page:
 - **Values.** Ranges `11 - 20`, a thousands point `10.000`, a decimal comma. The Steifemodul is kept in MN/m²
   (kN/m² ÷ 1000). A value outside the usual range gets a hint (⚑, marked, kept). What is not a number (`18√t`) stays
   text. Bodengruppen (DIN 18196) and a name in brackets are taken from the label.
-- **Limits.** Only the text layer is read, so scanned report pages give nothing. Laboratory tables (grain size,
+- **Limits.** Scanned report pages are read by OCR since 2026-11-19 (§10b). Laboratory tables (grain size,
   water content, Atterberg limits) are not read yet.
 
 **Assignment to the Einheiten** (`services/modeler/baugrundmodell/bodenkennwerte.py`). The proposal gives each Einheit
@@ -265,7 +265,8 @@ GroundTwin never writes `_char`: the characteristic value is the Gutachter's ([2
 | Rednitzhembach | 4/4 table with the Material column as label. |
 | Hausham | 2/2 lists (Schicht 2, Schicht 3). |
 | Triefenstein | 1/1 Homogenbereich list (B3) with cu. |
-| Marl, Wachenroth, Wesel, A7367 | no Kennwert table in the text layer; nothing read, nothing invented. |
+| Wachenroth (scanned, OCR, §10b) | 3/3 rows of Tabelle 9 (Oberboden, Sand schluffig, Sandstein), marked as OCR. |
+| Marl, Wesel, A7367 | no Kennwert table; nothing read, nothing invented. |
 
 **Height ranges** (2026-11-19).
 
@@ -405,6 +406,44 @@ End to end, with the Bohrungen in a schematic row:
 
 **Open (needs the user):** whether Hangschutt and Wiesenkalk should stay a Bereich of their own in our proposal
 (today they count as *bindig*).
+
+## 10b. Scanned report pages: OCR (Issue #18, 2026-11-19, training PDFs, not blind)
+
+The three extra stages (Kennwerte §9, laboratory sheets §9b, the Gutachter's Homogenbereiche §10) read every page
+through `services/extractor/textebene.py`:
+
+- A page with an image and almost no text (< 30 characters) is read with the same OCR as the Bohrprofile
+  (`prototyp_v4.ocr_words`: RapidOCR, cache `GEO_OCR_CACHE`). One OCR box is one line.
+- Lines and words keep page coordinates, so the rules of the stages apply unchanged.
+- The app's OCR setting applies. Without the OCR package, the page stays silent; nothing is invented.
+
+Every result from OCR carries `quelle: "OCR"` and a hint ("aus der OCR …: am PDF prüfen"). OCR values are less
+certain and are never silently treated like text-layer values.
+
+The OCR loses umlauts and ß ("gema DIN 18196", "Kohasion", "kN/m?"), so the rules accept both spellings: the
+laboratory rules compare folded text, and the units also accept `?`.
+
+Two general rules came out of the OCR case and also hold for the text layer:
+
+- A table row may have only two values when one of them is in the first parameter column. The OCR drops the `-` of
+  empty cells.
+- A value joins a row only within about one line height (≤ 14 pt), not across a missing row.
+
+**Measured (training PDFs):**
+
+- Wachenroth: pages 1–34 are scanned.
+  - Homogenbereiche O (Oberboden), B (gewachsener Baugrund, SU*) and X (Felshorizont, Sandstein), ATV DIN 18300.
+  - Kennwerte Tabelle 9: 3/3 rows, all values plausible:
+
+    | Row | γ | γ′ | φ′ | c′ | Es |
+    |---|---|---|---|---|---|
+    | Oberboden | 16–18 | 6–8 | – | – | – |
+    | Sand, schluffig | 18 | 10 | 32.5 | not read | 35 |
+    | Sandstein | 22 | 12 | 40 | 50 | 100 |
+
+    The Kohäsion 0 of the sand is lost in the OCR.
+- The text-layer PDFs give exactly the same results as before.
+- Tests: `tests/test_textebene_ocr.py`, with a fixed stand-in for the OCR, so no OCR package is needed.
 
 Up: [Index](README.md)
 

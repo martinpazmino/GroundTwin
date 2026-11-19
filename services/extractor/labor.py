@@ -22,6 +22,8 @@ from pathlib import Path
 
 import pymupdf
 
+import textebene
+
 CODE_RE = re.compile(r"(?<![A-Za-z0-9])((?:B|BK|KB|KRB|RKS|BS|GWM|SCH|DPH|RB|S)\s?\d{1,3}[a-z]?(?:/\d{2})?)"
                      r"((?:\s*(?:\+|,|und)\s*\d{1,3}[a-z]?)*)(?![\d.,])")
 TIEFE_RE = re.compile(r"(\d{1,2}[.,]\d{1,2})\s*[-–]\s*(\d{1,2}[.,]\d{1,2})\s*m?\b")
@@ -31,11 +33,11 @@ KF_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*[·x*]?\s*10\s*(?:\^|E)?\s*([-−–]\s
 
 # Versuch (aus Norm oder Titel des Blatts) und das Ergebnis, das die letzte Zahl einer Probe ist
 VERSUCHE = (
-    ("zustandsgrenzen", re.compile(r"17892-12|Zustandsgrenzen|Fließ-\s*und\s*Ausrollgrenze", re.I), None),
-    ("korngroesse", re.compile(r"17892-4|Körnungslinie|Korngrößenverteilung", re.I), None),
-    ("gluehverlust", re.compile(r"18\s?128|Glühverlust", re.I), "gluehverlust"),
+    ("zustandsgrenzen", re.compile(r"17892-12|Zustandsgrenzen|Fliess-\s*und\s*Ausrollgrenze", re.I), None),
+    ("korngroesse", re.compile(r"17892-4|Kornungslinie|Korngrossenverteilung", re.I), None),
+    ("gluehverlust", re.compile(r"18\s?128|Gluhverlust", re.I), "gluehverlust"),
     ("kalkgehalt", re.compile(r"18\s?129|Kalkgehalt", re.I), "kalkgehalt"),
-    ("durchlaessigkeit", re.compile(r"17892-11|18\s?130|Durchlässigkeit", re.I), None),
+    ("durchlaessigkeit", re.compile(r"17892-11|18\s?130|Durchlassigkeit", re.I), None),
     ("proctor", re.compile(r"18\s?127|Proctor", re.I), None),
     ("cbr", re.compile(r"CBR", re.I), None),
     ("wassergehalt", re.compile(r"17892-1(?!\d)|Wassergehalt\s+nach", re.I), "wassergehalt"),
@@ -43,12 +45,12 @@ VERSUCHE = (
 # Kennwert -> Namen im Blatt (ohne Einheit); Reihenfolge zaehlt (korrigierter vor einfachem Wassergehalt)
 NAMEN = (
     ("wassergehalt_korrigiert", re.compile(r"^Korr\.?\s*Wassergehalt", re.I)),
-    ("wassergehalt", re.compile(r"^(?:nat(?:ürlicher|\.)\s*)?Wassergehalt(?:\s*w)?(?:\s*vor\s*dem\s*Versuch)?\s*(?:=|\[%\]|$)", re.I)),
-    ("fliessgrenze", re.compile(r"^Fließgrenze(?:\s*wL)?\s*(?:=|$)", re.I)),
+    ("wassergehalt", re.compile(r"^(?:nat(?:urlicher|\.)\s*)?Wassergehalt(?:\s*w)?(?:\s*vor\s*dem\s*Versuch)?\s*(?:=|\[%\]|$)", re.I)),
+    ("fliessgrenze", re.compile(r"^Fliessgrenze(?:\s*wL)?\s*(?:=|$)", re.I)),
     ("ausrollgrenze", re.compile(r"^Ausrollgrenze(?:\s*wP)?\s*(?:=|$)", re.I)),
-    ("plastizitaetszahl", re.compile(r"^Plastizitätszahl(?:\s*I\s*P)?\s*(?:=|$)", re.I)),
+    ("plastizitaetszahl", re.compile(r"^Plastizitatszahl(?:\s*I\s*P)?\s*(?:=|$)", re.I)),
     ("konsistenzzahl", re.compile(r"^Konsistenzzahl(?:\s*I\s*C)?\s*(?:=|$)", re.I)),
-    ("gluehverlust", re.compile(r"^Glühverlust(?:\s*V\s*gl)?\s*(?:=|\[%\]|$)", re.I)),
+    ("gluehverlust", re.compile(r"^Gluhverlust(?:\s*V\s*gl)?\s*(?:=|\[%\]|$)", re.I)),
     ("kalkgehalt", re.compile(r"^Kalkgehalt(?:\s*V\s*Ca)?\s*(?:=|\[%\]|$)", re.I)),
     ("trockendichte", re.compile(r"^(?:Proctor-?)?Trockendichte(?:\s*ρ\s*d)?\s*(?:=|$)", re.I)),
     ("proctordichte", re.compile(r"^Proctordichte(?:\s*ρ\s*Pr)?\s*(?:=|$)", re.I)),
@@ -64,15 +66,16 @@ MOEGLICH = {"wassergehalt": (0, 400), "wassergehalt_korrigiert": (0, 400), "flie
             "gluehverlust": (0, 100), "kalkgehalt": (0, 100), "trockendichte": (0.2, 2.8), "proctordichte": (0.5, 2.6),
             "optimaler_wassergehalt": (0, 100), "cbr": (0, 300), "kf": (1e-13, 1.0),
             "ton": (0, 100), "schluff": (0, 100), "sand": (0, 100), "kies": (0, 100)}
-CHEMIE_RE = re.compile(r"Prüfbericht|Analysennummer|Ersatzbaustoff|LAGA|Feststoff|Eluat|PAK|Schwermetall", re.I)
+CHEMIE_RE = re.compile(r"Prufbericht|Analysennummer|Ersatzbaustoff|LAGA|Feststoff|Eluat|PAK|Schwermetall", re.I)
 
 
 def _f(s: str) -> float:
     return float(s.replace(",", "."))
 
 
-def _tokens(seite) -> list[str]:
-    return [t.strip() for t in seite.get_text().splitlines() if t.strip()]
+def _tokens(s) -> list[str]:
+    """Zeilen in Lesereihenfolge; Umlaute gefaltet nur fuer OCR-Text (die Regeln kennen beide Schreibweisen)."""
+    return [textebene.falten(t.strip()) for t in s.text.splitlines() if t.strip()]
 
 
 def proben_auf(tokens: list[str]) -> list[tuple[int, list[str], float, float]]:
@@ -126,12 +129,13 @@ def _pruefen(werte: dict) -> list[str]:
     return out
 
 
-def lesen(pdf, doc=None) -> list[dict]:
+def lesen(pdf, doc=None, ocr: bool = True) -> list[dict]:
     """Alle Proben mit Werten (Seite 0-basiert); dieselbe Probe auf mehreren Blaettern wird zusammengefuehrt."""
     doc = doc or pymupdf.open(pdf)
     je: dict[tuple, dict] = {}
     for nr, seite in enumerate(doc):
-        tokens = _tokens(seite)
+        s = textebene.lesen(seite, ocr)
+        tokens = _tokens(s)
         text = " ".join(tokens)
         if CHEMIE_RE.search(text) or "Entnahme" not in text and "Probe" not in text:
             continue
@@ -185,6 +189,9 @@ def lesen(pdf, doc=None) -> list[dict]:
             p["versuche"] = sorted(set(p["versuche"]) | {versuch})
             p["seiten"] = sorted(set(p["seiten"]) | {nr})
             p["hinweise"] += [h for h in werte_hinweis if h not in p["hinweise"]]
+            p["quelle"] = "OCR" if s.quelle == "OCR" or p.get("quelle") == "OCR" else "Text"
+            if s.quelle == "OCR" and not any("OCR" in h for h in p["hinweise"]):
+                p["hinweise"].append("aus der OCR eines gescannten Blatts: Werte am PDF prüfen")
             if len(schluessel[0]) > 1 and "Mischprobe" not in " ".join(p["hinweise"]):
                 p["hinweise"].append(f"Mischprobe aus {', '.join(schluessel[0])}")
             if bodenart and "bodenart" not in p:
