@@ -2,7 +2,7 @@
  "file": "geotechnischer_bericht_b_plan_v67bve.pdf",
  "sha256": "659713acda108330cc99b7c60146b017f78908fce376ab277d2ce126790027c4",
  "source": "https://www.berlin.de/sen/stadtentwicklung/_assets/planung/bebauungsplanverfahren/bebauungsplanverfahren-der-senatsverwaltung-fuer-stadtentwicklung-bauen-und-wohnen/v-67b-ve/geotechnischer_bericht_b_plan_v67bve.pdf",
- "notes": "Blindtest Runde 3 (v3 Stand 36e3554). GuD Consult, Voruntersuchung ohne eigene Bohrungen: Anlage 3 (S.28-33) zeigt Fremdaufschluesse als RASTERBILDER ohne Textlayer (kein OCR). S.28-29 Geoportal Berlin (sauberes Rendering, mit UTM 33N Rechts-/Hochwert im Bild), S.30-33 Archiv-Scans mit S 1/S 2/S 2a + DPH R1/R2, B 7/16, B 1/17, B 4/17 + CPT (Drucksondierungen D/DS, Spitzenwiderstand/Mantelreibung) und Pegelausbau. Schichten nur fuer die 5 Geoportal-Bohrungen transkribiert; Archiv-Bohrungen nur Code/Seite/GOK (S 1-S 2a in 'm NN'). Geoportal-GW = 'Wasseranschnitt' in der Schichtbeschreibung. Koordinaten (EPSG:25833) im Feld 'xy'. Lageplan S.26 (vektoriell, Codes als Text).",
+ "notes": "Blindtest Runde 3 (v3 Stand 36e3554). GuD Consult, Voruntersuchung ohne eigene Bohrungen: Anlage 3 (S.28-33) zeigt Fremdaufschluesse als RASTERBILDER ohne Textlayer (kein OCR). S.28-29 Geoportal Berlin (sauberes Rendering, mit UTM 33N Rechts-/Hochwert im Bild), S.30-33 Archiv-Scans mit S 1/S 2/S 2a + DPH R1/R2, B 7/16, B 1/17, B 4/17 + CPT (Drucksondierungen D/DS, Spitzenwiderstand/Mantelreibung) und Pegelausbau. Schichten nur fuer die 5 Geoportal-Bohrungen transkribiert; Archiv-Bohrungen nur Code/Seite/GOK (S 1-S 2a in 'm NN'). Geoportal-GW = 'Wasseranschnitt' in der Schichtbeschreibung. Koordinaten (EPSG:25833) im Feld 'xy'. Lageplan S.26 (vektoriell, Codes als Text). GW der Archiv-Bohrungen am 2026-11-20 aus dem Bild nachgetragen (Issue #20, Pruefung der W4-Regel): S 1 8,87; S 2 keiner; S 2a 3,86; B 7/16 2,80 (24.10.16); B 1/17 2,40 und 3,40 (06.09.2017); B 4/17 2,60 (21.02.2017). Schichten weiterhin nicht transkribiert.",
  "boreholes": [
   {
    "code": "422C-460",
@@ -299,8 +299,11 @@
    "page": 30,
    "gok": 41.38,
    "layers": [],
-   "gw_depths": [],
-   "layers_transcribed": false
+   "gw_depths": [
+    8.87
+   ],
+   "layers_transcribed": false,
+   "gw_transcribed": true
   },
   {
    "code": "S 2",
@@ -309,7 +312,8 @@
    "gok": 36.52,
    "layers": [],
    "gw_depths": [],
-   "layers_transcribed": false
+   "layers_transcribed": false,
+   "gw_transcribed": true
   },
   {
    "code": "S 2a",
@@ -317,8 +321,11 @@
    "page": 30,
    "gok": 36.52,
    "layers": [],
-   "gw_depths": [],
-   "layers_transcribed": false
+   "gw_depths": [
+    3.86
+   ],
+   "layers_transcribed": false,
+   "gw_transcribed": true
   },
   {
    "code": "B 7/16",
@@ -326,8 +333,11 @@
    "page": 31,
    "gok": 35.0,
    "layers": [],
-   "gw_depths": [],
-   "layers_transcribed": false
+   "gw_depths": [
+    2.8
+   ],
+   "layers_transcribed": false,
+   "gw_transcribed": true
   },
   {
    "code": "B 1/17",
@@ -335,8 +345,12 @@
    "page": 32,
    "gok": 35.05,
    "layers": [],
-   "gw_depths": [],
-   "layers_transcribed": false
+   "gw_depths": [
+    2.4,
+    3.4
+   ],
+   "layers_transcribed": false,
+   "gw_transcribed": true
   },
   {
    "code": "B 4/17",
@@ -344,8 +358,11 @@
    "page": 33,
    "gok": 34.86,
    "layers": [],
-   "gw_depths": [],
-   "layers_transcribed": false
+   "gw_depths": [
+    2.6
+   ],
+   "layers_transcribed": false,
+   "gw_transcribed": true
   }
  ]
 }

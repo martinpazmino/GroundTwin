@@ -209,6 +209,9 @@ label, L3):
    | `synth` (6) | 17/17 → 17/17 | 0 → 0 | — | — | — |
 
    *Notes:*
+   - Review by Claude (2026-11-20): the Berlin archive levels below were checked on the page images and added to
+     `benchmark/groundtruth/berlin_v67b.json`. With that ground truth, every column marked `*` reads 0 false GW
+     (`real` Berlin GW 3/8; `raster150` on the five PDFs with water 1/18 → 6/18).
    - `*` `berlin_v67b`: all flagged `falsches GW` are genuine printed DIN 4023 water symbols on untranscribed archive
      scans (`layers_transcribed: false`, `gw_depths: []` in `benchmark/groundtruth/berlin_v67b.json`;
      `benchmark/eval_real.py:71` still scores `gw_false`): `S 2a` p. 30 (`▽ 3,86 m`, `32,82 m NN`, extracted `3.86 m` in
