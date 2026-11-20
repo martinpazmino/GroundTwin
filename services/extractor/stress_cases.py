@@ -458,6 +458,57 @@ def build(out: Path) -> list[str]:
     doc = pymupdf.open(); p = doc.new_page(width=595, height=842)
     draw_profile(p, Spec("BK 19", L_STD, gok=45.0, extra={"dach": 3.6}))
     save("s19_dach_ohne_legende", doc, [_truth("BK 19", L_STD, 45.0, [])], "W3: ohne Legende kein Dach-Stand")
+
+    def _als_scan(src_doc: pymupdf.Document, dpi: int = 150) -> pymupdf.Document:
+        scan = pymupdf.open()
+        for seite in src_doc:
+            q = scan.new_page(width=seite.rect.width, height=seite.rect.height)
+            q.insert_image(q.rect, pixmap=seite.get_pixmap(dpi=dpi))
+        return scan
+
+    # s20 Scan (150 dpi) mit vollem GW-Dreieck und Wasserlinie: genau 1 Stand (W4)
+    src = pymupdf.open(); sp = Spec("B 20", L_STD, gok=45.20, gw=("symbol", 2.8))
+    draw_profile(src.new_page(width=595, height=842), sp)
+    save("s20_raster_gw_symbol", _als_scan(src), [_truth("B 20", L_STD, 45.20, [2.8])],
+         "W4: Scan (150 dpi) mit vollem GW-Dreieck und Wasserlinie")
+
+    # s21 Scan mit Schraffur aus Dreiecken/Winkeln in der Saeule ohne Wasser: 0 Staende (W4)
+    src = pymupdf.open(); p = src.new_page(width=595, height=842)
+    sp = Spec("B 21", L_STD, gok=45.20)
+    draw_profile(p, sp)
+    ppm = PT_PER_M_1_1 / sp.scale
+    for d_m in (0.8, 1.3, 2.2, 2.8, 4.0, 4.6, 5.6):
+        yy = sp.top_y + d_m * ppm
+        p.draw_polyline([(sp.x0 + 3, yy - 6), (sp.x0 + 10, yy - 6), (sp.x0 + 6.5, yy), (sp.x0 + 3, yy - 6)],
+                        color=(0, 0, 0), fill=(0, 0, 0), closePath=True, width=0.4)
+        p.draw_polyline([(sp.x0 + 12, yy), (sp.x0 + 15.5, yy - 6), (sp.x0 + 19, yy)], color=(0, 0, 0), width=0.4)
+        _line(p, (sp.x0 + 2.5, yy), (sp.x0 + sp.col_w - 2.5, yy), 0.4)
+    save("s21_raster_schraffur_dreiecke", _als_scan(src), [_truth("B 21", L_STD, 45.20, [])],
+         "W4: Scan mit Dreiecks-/Winkel-Schraffur in der Saeule ohne Wasser")
+
+    # s22 Scan mit offenem Dreieck ohne Wasserlinie, Hoehenmarke mit Kote, Leiste und GOK-Dreieck: 0 Staende (W4, L10)
+    src = pymupdf.open(); p = src.new_page(width=595, height=842)
+    sp = Spec("B 22", L_STD, gok=742.50, elev_triangles=True)
+    draw_profile(p, sp)
+    y1 = sp.top_y + 2.5 * ppm
+    p.draw_polyline([(sp.x0 - 55, y1 - 7), (sp.x0 - 48, y1 - 7), (sp.x0 - 51.5, y1), (sp.x0 - 55, y1 - 7)],
+                    color=(0, 0, 0), closePath=True, width=0.5)
+    y2 = sp.top_y + 3.8 * ppm
+    p.draw_polyline([(sp.x0 - 80, y2 - 7), (sp.x0 - 73, y2 - 7), (sp.x0 - 76.5, y2), (sp.x0 - 80, y2 - 7)],
+                    color=(0, 0, 0), closePath=True, width=0.5)
+    _line(p, (sp.x0 - 80, y2), (sp.x0 - 30, y2), 0.4)
+    p.insert_text((sp.x0 - 68, y2 - 1), "738,70m", fontsize=6.5)
+    p.draw_polyline([(sp.x0 + 8, sp.top_y - 6), (sp.x0 + 14, sp.top_y - 6), (sp.x0 + 11, sp.top_y),
+                     (sp.x0 + 8, sp.top_y - 6)], color=(0, 0, 0), fill=(0, 0, 0), closePath=True, width=0.4)
+    save("s22_raster_dreieck_ohne_linie", _als_scan(src), [_truth("B 22", L_STD, 742.50, [])],
+         "W4: Scan mit offenem Dreieck ohne Wasserlinie und Hoehenmarke mit Kote")
+
+    # s23 Scan mit Legende: volles Dreieck (Ruhewasser) + Dach (angebohrt) -> 2 Staende (W3 + W4)
+    src = pymupdf.open()
+    draw_profile(src.new_page(width=595, height=842),
+                 Spec("BK 23", L_STD, gok=45.0, gw=("symbol", 1.8), extra={"dach": 3.6, "legende": True}))
+    save("s23_raster_legende_dach", _als_scan(src), [_truth("BK 23", L_STD, 45.0, [1.8, 3.6])],
+         "W3+W4: Scan mit Legende fuer volles Dreieck und Dach-Symbol")
     return made
 
 

@@ -86,7 +86,8 @@ RULES = {
     "label_first": True,         # T4   Labels bilden eine saubere Gerade, Linien nicht: Labels sind die Daten
     "ocr_decimal_fix": True,     # R1   '0950' -> 9,50 (OCR ohne Komma)
     "scale_contradiction": True, # E5   Massstabstext ohne Bestaetigung durch vorhandene Labels: keine Grenzen
-    "raster_gw_symbol": False,   # W4   GW-Dreieck im Scan: AUS (Konturen finden Schraffur, nicht das Symbol)
+    "raster_gw_symbol": True,    # W4   GW-Symbol im Scan: Vorlagenabgleich an waagrechten Linien + Formpruefung
+    "raster_gw_legende": True,   # W4   Legende im Scan lesen (kleine Symbole links vom Wassertext, fuer Dach + Art)
 }
 
 CODE_TOKEN = r"[A-Z0-9][A-Za-z0-9]*(?:[-/.][A-Za-z0-9]+)*"
@@ -257,29 +258,296 @@ def page_class(page: pymupdf.Page, words, drawings) -> str:
     return "vektor"
 
 
-def raster_triangles(page: pymupdf.Page, dpi: int = 200) -> list[dict]:
-    """W4: Dreiecke (GW-Symbol) aus dem Seitenbild, als Pseudo-Zeichnungen fuer _groundwater()."""
+_RASTER_GW_TEMPLATES: dict[tuple, list] = {}
+
+
+def _raster_gw_templates(dpi: int, heights: tuple[float, ...] = (4.2, 5.4, 6.8, 8.6),
+                         aspects: tuple[float, ...] = (1.05, 1.45, 2.0)) -> list:
+    """Synthetische Grauwert-Vorlagen (0=Strich, 255=Papier) fuer GW-Symbole auf einer waagrechten Linie:
+    volles, offenes und halb gefuelltes Dreieck (DIN 4023) sowie Dach (V, nur mit Legende, W3)."""
+    key = (dpi, heights, aspects)
+    if key in _RASTER_GW_TEMPLATES:
+        return _RASTER_GW_TEMPLATES[key]
+    import cv2
+    f = 72.0 / dpi
+    tmpls = []
+    for h_pt in heights:
+        for aspect in aspects:
+            h = max(6, int(round(h_pt / f)))
+            w = max(7, int(round(h_pt * aspect / f)))
+            w += (w + 1) % 2                                 # ungerade Breite fuer exakte Spitze in der Mitte
+            pad_x, pad_top, pad_bot = max(2, int(round(1.6 / f))), max(2, int(round(1.6 / f))), max(2, int(round(1.0 / f)))
+            H_img, W_img = pad_top + h + pad_bot, w + 2 * pad_x
+            cx, y_top, y_bot, x_l, x_r = pad_x + w // 2, pad_top, pad_top + h, pad_x, pad_x + w - 1
+            lw = max(1, int(round(0.65 / f)))
+
+            def _canvas():
+                c = np.full((H_img, W_img), 255, dtype=np.uint8)
+                cv2.line(c, (0, y_bot), (W_img - 1, y_bot), 0, lw)
+                return c
+
+            tri = np.array([[x_l, y_top], [x_r, y_top], [cx, y_bot]], dtype=np.int32)
+            # voll, offen, rechts halb gefuellt, links halb gefuellt (DIN 4023)
+            c = _canvas(); cv2.fillPoly(c, [tri], 0)
+            tmpls.append(("voll", w, h, pad_x, pad_top, c))
+            c = _canvas(); cv2.polylines(c, [tri], True, 0, lw, cv2.LINE_AA)
+            tmpls.append(("offen", w, h, pad_x, pad_top, c))
+            c = _canvas(); cv2.polylines(c, [tri], True, 0, lw, cv2.LINE_AA)
+            cv2.fillPoly(c, [np.array([[cx, y_top], [x_r, y_top], [cx, y_bot]], dtype=np.int32)], 0)
+            tmpls.append(("voll", w, h, pad_x, pad_top, c))
+            c = _canvas(); cv2.polylines(c, [tri], True, 0, lw, cv2.LINE_AA)
+            cv2.fillPoly(c, [np.array([[x_l, y_top], [cx, y_top], [cx, y_bot]], dtype=np.int32)], 0)
+            tmpls.append(("voll", w, h, pad_x, pad_top, c))
+            # Dach (zwei Schraege ohne Querstrich, Spitze oben)
+            c = _canvas()
+            cv2.line(c, (x_l, y_bot), (cx, y_top), 0, lw, cv2.LINE_AA)
+            cv2.line(c, (x_r, y_bot), (cx, y_top), 0, lw, cv2.LINE_AA)
+            tmpls.append(("v", w, h, pad_x, pad_top, c))
+    _RASTER_GW_TEMPLATES[key] = tmpls
+    return tmpls
+
+
+def _raster_hlines(img: np.ndarray, dpi: int, min_len_pt: float = 15.0) -> list[Seg]:
+    """Waagrechte Linien fuer W4: dunkle Linien (<155, immun gegen farbige Saeulenfuellungen) plus
+    duenne geglaettete Linien (<215 nach Abzug dicker Flaechen), kollinear zusammengefuegt."""
+    import cv2
+    f = 72.0 / dpi
+    max_h = max(3, int(round(3.5 / f)))
+    k_dark = max(8, int(round(min_len_pt / f)))
+    k_thin = max(7, int(round(min(10.0, min_len_pt) / f)))
+    segs = []
+    for mask, k, mlen in (((img < 155).astype(np.uint8), k_dark, min_len_pt),
+                          (None, k_thin, min(10.0, min_len_pt))):
+        if mask is None:
+            b2 = (img < 215).astype(np.uint8)
+            thick = cv2.morphologyEx(b2, cv2.MORPH_OPEN, np.ones((max_h + 2, 1), np.uint8))
+            mask = np.where(thick == 0, b2, 0).astype(np.uint8)
+        lines = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((1, k), np.uint8))
+        n, _, stats, _ = cv2.connectedComponentsWithStats(lines)
+        for x, y, w, h, _ in stats[1:n]:
+            if h <= max_h and w * f >= mlen:
+                yc = (y + h / 2.0) * f
+                segs.append(Seg(x * f, yc, (x + w) * f, yc, h * f, True))
+    if not segs:
+        return []
+    return [s for s in _merge(segs, "h", gap=8.0) if s.x1 - s.x0 >= min_len_pt]
+
+
+def _verify_raster_gw(img: np.ndarray, x_l: int, y_top: int, x_r: int, y_bot: int, form: str, dpi: int,
+                      is_legend: bool = False) -> bool:
+    """Strenge Formpruefung auf dem Graubild: schliesst Buchstaben (V, W, 7, T, M), Kreise und Kaesten aus."""
+    import cv2
+    H_img, W_img = img.shape
+    f = 72.0 / dpi
+    w, h = x_r - x_l, y_bot - y_top
+    cx = (x_l + x_r) / 2.0
+    if x_l < 2 or y_top < 3 or x_r >= W_img - 2 or y_bot >= H_img - 2 or w < 5 or h < 5:
+        return False
+    patch = img[max(0, y_top - 2):min(H_img, y_bot + 3), max(0, x_l - 2):min(W_img, x_r + 3)]
+    bg, fg = float(np.percentile(patch, 92)), float(np.percentile(patch, 5))
+    if bg - fg < 60:
+        return False
+    thr = bg - 0.35 * (bg - fg)
+    rad = max(1, int(round(0.65 / f)))
+    y0_b, y1_b = max(0, y_top - rad - 1), min(H_img, y_bot + rad + 2)
+    x0_b, x1_b = max(0, x_l - rad - 1), min(W_img, x_r + rad + 2)
+    sub_min = cv2.erode(img[y0_b:y1_b, x0_b:x1_b], np.ones((2 * rad + 1, 2 * rad + 1), np.uint8))
+
+    def line_cov(ax: float, ay: float, bx: float, by: float) -> float:
+        steps = max(7, int(round(max(abs(bx - ax), abs(by - ay)))))
+        xs = np.round(np.linspace(ax, bx, steps)).astype(int) - x0_b
+        ys = np.round(np.linspace(ay, by, steps)).astype(int) - y0_b
+        return float((sub_min[ys, xs] < thr).mean())
+
+    def corner_dark(px: int, py: int, cr: int) -> bool:
+        csub = img[max(0, py - cr):min(H_img, py + cr + 1), max(0, px - cr):min(W_img, px + cr + 1)]
+        return bool(csub.size and float(csub.min()) < thr)
+
+    box = img[y_top:y_bot + 1, x_l:x_r + 1]
+    yy, xx = np.mgrid[0:box.shape[0], 0:box.shape[1]]
+    dx, t = np.abs(xx - (w / 2.0)), yy / max(h, 1.0)
+    pad_edge = max(2, rad + 1)
+
+    if form == "v":
+        if not corner_dark(int(round(cx)), y_top, max(1, rad)):
+            return False
+        if line_cov(x_l, y_bot - 1, cx, y_top) < 0.72 or line_cov(x_r, y_bot - 1, cx, y_top) < 0.72:
+            return False
+        half_span = t * (w / 2.0)
+        mask_out = (yy >= 1) & (yy < h - 1) & (dx > half_span + pad_edge)
+        mask_in = (yy >= 2) & (yy < h - max(1, rad)) & (dx < half_span - pad_edge)
+        out_f = float((box[mask_out] < thr).mean()) if mask_out.any() else 0.0
+        in_f = float((box[mask_in] < thr).mean()) if mask_in.any() else 0.0
+        return out_f <= 0.16 and in_f <= 0.25
+
+    cr = max(1, int(round(0.65 / f)))
+    if not (corner_dark(x_l, y_top, cr) and corner_dark(x_r, y_top, cr)):   # schliesst Kreise aus
+        return False
+    if line_cov(x_l, y_top, x_r, y_top) < 0.75 or line_cov(x_l, y_top, cx, y_bot) < 0.75 \
+            or line_cov(x_r, y_top, cx, y_bot) < 0.75:
+        return False
+    margin_bot = max(1, int(round(1.1 / f)))
+    half_span = (1.0 - t) * (w / 2.0)
+    mask_out = (yy >= 1) & (yy < h - margin_bot) & (dx > half_span + pad_edge)
+    if mask_out.any() and float((box[mask_out] < thr).mean()) > 0.15:       # weisser Aussenraum neben den Schenkeln
+        return False
+    if not is_legend:
+        ya0, ya1 = max(0, y_top - max(2, int(round(2.5 / f)))), max(0, y_top - max(1, int(round(1.0 / f))))
+        above = img[ya0:ya1, x_l:x_r + 1]
+        if above.size and float((above < thr).mean()) > 0.18:               # frei ueber der Oberkante
+            return False
+    # Verjuengung nach unten: oben breit, bei 65 % Hoehe deutlich schmaler (schliesst Kreise/Kaesten aus)
+    row_top = box[0:min(box.shape[0], max(2, rad + 1)), :] < thr
+    y_lo_row = int(round(h * 0.65))
+    row_low = box[max(0, y_lo_row - 1):min(box.shape[0], y_lo_row + 2), :] < thr
+    top_cols, low_cols = np.where(row_top.any(axis=0))[0], np.where(row_low.any(axis=0))[0]
+    w_top = int(top_cols[-1] - top_cols[0]) if len(top_cols) >= 2 else 0
+    w_low = int(low_cols[-1] - low_cols[0]) if len(low_cols) >= 2 else w
+    return w_top >= 0.72 * w and w_low <= 0.68 * w_top
+
+
+def _match_raster_gw_on_hlines(img: np.ndarray, hlines: list[Seg], dpi: int, allow_v: bool = False,
+                               heights: tuple[float, ...] = (4.2, 5.4, 6.8, 8.6),
+                               aspects: tuple[float, ...] = (1.05, 1.45, 2.0),
+                               thresh: float = 0.62, is_legend: bool = False) -> list[tuple]:
+    """Vorlagenabgleich ausschliesslich in schmalen Streifen ueber waagrechten Linien."""
+    import cv2
+    f = 72.0 / dpi
+    H_img, W_img = img.shape
+    tmpls = _raster_gw_templates(dpi, heights=heights, aspects=aspects)
+    max_h_px = int(round((max(heights) + 3.0) / f)) + 4
+    pad_end = max(8, int(round(10.0 / f)))
+    cands = []
+    for s in hlines:
+        lx0, lx1, y_bot_target = int(round(s.x0 / f)), int(round(s.x1 / f)), int(round(s.y0 / f))
+        sy0, sy1 = max(0, y_bot_target - max_h_px), min(H_img, y_bot_target + max(4, int(round(2.5 / f))))
+        sx0, sx1 = max(0, lx0 - pad_end), min(W_img, lx1 + pad_end)
+        strip = img[sy0:sy1, sx0:sx1]
+        if strip.shape[0] < 10 or strip.shape[1] < 10:
+            continue
+        hits = []
+        for form, tw, th, pad_x, pad_top, tmpl in tmpls:
+            if form == "v" and not allow_v:
+                continue
+            th_img, tw_img = tmpl.shape
+            if strip.shape[0] < th_img or strip.shape[1] < tw_img:
+                continue
+            ty_exp = (y_bot_target - sy0) - (pad_top + th)
+            y_lo, y_hi = max(0, ty_exp - 2), min(strip.shape[0] - th_img, ty_exp + 2)
+            if y_lo > y_hi:
+                continue
+            res = cv2.matchTemplate(strip[y_lo:y_hi + th_img, :], tmpl, cv2.TM_CCOEFF_NORMED)
+            ys_m, xs_m = np.where(res >= thresh)
+            if not len(xs_m):
+                continue
+            used_x: list[int] = []
+            for idx in np.argsort(res[ys_m, xs_m])[::-1]:
+                my, mx = int(ys_m[idx]), int(xs_m[idx])
+                if any(abs(mx - ux) < tw * 0.6 for ux in used_x):
+                    continue
+                used_x.append(mx)
+                gx_l, gy_top = sx0 + mx + pad_x, sy0 + y_lo + my + pad_top
+                gx_r, gy_bot = gx_l + tw - 1, gy_top + th
+                if _verify_raster_gw(img, gx_l, gy_top, gx_r, gy_bot, form, dpi, is_legend=is_legend):
+                    hits.append((float(res[my, mx]), form, gx_l * f, gy_top * f, gx_r * f, gy_bot * f, s))
+        hits.sort(key=lambda e: -e[0])
+        kept = []
+        for h_ in hits:
+            cx = (h_[2] + h_[4]) / 2
+            if not any(abs((k[2] + k[4]) / 2 - cx) < 5.0 for k in kept):
+                kept.append(h_)
+        # Periodisches Muster (Zier-/Schraffurreihe auf einer Linie): >= 3 Treffer in festem Abstand verwerfen
+        if not is_legend and len(kept) >= 3:
+            xs_k = sorted((h_[2] + h_[4]) / 2 for h_ in kept)
+            diffs = np.diff(xs_k)
+            if diffs.min() > 0 and (diffs.max() - diffs.min()) <= 0.25 * float(np.median(diffs)):
+                continue
+        cands.extend(kept)
+    return cands
+
+
+def _as_raster_drawing(form: str, x0: float, y0: float, x1: float, y1: float,
+                       wline: Seg | None = None, is_legend: bool = False) -> dict:
+    """Formtreffer als Pseudo-Zeichnung im gleichen Format wie Vektorpfade fuer _groundwater/gw_legende."""
+    cx = (x0 + x1) / 2
+    if form == "v":
+        pts = [pymupdf.Point(x0, y1), pymupdf.Point(cx, y0), pymupdf.Point(x1, y1)]
+        items = [("l", pts[0], pts[1]), ("l", pts[1], pts[2])]
+        fill, typ = None, "s"
+    else:
+        pts = [pymupdf.Point(x0, y0), pymupdf.Point(x1, y0), pymupdf.Point(cx, y1)]
+        items = [("l", pts[0], pts[1]), ("l", pts[1], pts[2]), ("l", pts[2], pts[0])]
+        fill, typ = ((0, 0, 0), "fs") if form == "voll" else (None, "s")
+    out = {"items": items, "rect": pymupdf.Rect(x0, y0, x1, y1), "type": typ, "color": (0, 0, 0),
+           "fill": fill, "raster": True}
+    if is_legend:
+        out["raster_legend"] = True
+    if wline is not None:
+        out["wline"] = Seg(min(wline.x0, x0), wline.y0, max(wline.x1, x1), wline.y0, wline.width, True)
+    return out
+
+
+def raster_gw_symbols(page: pymupdf.Page, cols: list["Column"], acols: list["Column"],
+                      lines: list, dpi: int = 200) -> list[dict]:
+    """W4: GW-Symbole (Dreieck voll/offen/halb, Dach mit Legende) im Scan an waagrechten Wasserlinien.
+
+    Laeuft nur auf gescannten Seiten mit verankerten Bohrungen, prueft nur den Hoehenbereich der Saeulen
+    sowie die kleinen Legendenfelder links von Wassertexten und schliesst alle Saeuleninnenflaechen aus.
+    """
+    if not acols:
+        return []
     try:
-        import cv2
+        import cv2  # noqa: F401
     except ImportError:
         return []
     pix = page.get_pixmap(dpi=dpi, colorspace=pymupdf.csGRAY)
     img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w)
-    binary = (img < 150).astype(np.uint8) * 255
-    contours, _ = cv2.findContours(binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     f = 72.0 / dpi
-    out = []
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        if not (3 / f <= w <= 16 / f and 3 / f <= h <= 16 / f):
-            continue
-        approx = cv2.approxPolyDP(c, 0.12 * cv2.arcLength(c, True), True)
-        if len(approx) != 3:
-            continue
-        pts = [pymupdf.Point(float(q[0][0]) * f, float(q[0][1]) * f) for q in approx]
-        out.append({"items": [("l", pts[0], pts[1]), ("l", pts[1], pts[2]), ("l", pts[2], pts[0])],
-                    "rect": pymupdf.Rect(x * f, y * f, (x + w) * f, (y + h) * f), "type": "s", "color": (0, 0, 0),
-                    "raster": True})
+    H_img, W_img = img.shape
+    out: list[dict] = []
+    # 1. Legende im Scan (W3 + W4): nur die kleinen Felder links von Zeilen mit Wassertext
+    allow_v = False
+    if RULES["raster_gw_legende"] and RULES["gw_legende"]:
+        leg_drawings: list[dict] = []
+        for r, t in lines:
+            if len(t) > 60 or not re.search(r"wasser|angebohrt|angestiegen", t, re.I):
+                continue
+            if gw_info(t)["kind"] == "unbestimmt":
+                continue
+            x0, x1 = max(0, int(round((r.x0 - 92) / f))), min(W_img, int(round((r.x0 + 4) / f)))
+            y0, y1 = max(0, int(round((r.y0 - 16) / f))), min(H_img, int(round((r.y1 + 16) / f)))
+            if x1 - x0 < 15 or y1 - y0 < 10:
+                continue
+            crop = img[y0:y1, x0:x1]
+            hl = _raster_hlines(crop, dpi, min_len_pt=8.0)
+            for _sc, form, gx0, gy0, gx1, gy1, _s in _match_raster_gw_on_hlines(
+                    crop, hl, dpi, allow_v=True, heights=(2.8, 3.6, 4.8, 6.2),
+                    aspects=(1.05, 1.5, 2.0), thresh=0.58, is_legend=True):
+                leg_drawings.append(_as_raster_drawing(form, gx0 + x0 * f, gy0 + y0 * f,
+                                                       gx1 + x0 * f, gy1 + y0 * f, is_legend=True))
+        out.extend(leg_drawings)
+        allow_v = "v" in gw_legende(leg_drawings, lines)
+    # 2. Profilbereich: waagrechte Linien >= 15 pt im Hoehenband der verankerten Saeulen (ohne Innen-/Durchgangslinien)
+    y_lo = min(c.rect.y0 for c in acols) - 6
+    y_hi = max(c.rect.y1 for c in acols) + 6
+    max_w = 0.75 * page.rect.width
+
+    def _passende_linie(s: Seg) -> bool:
+        if not (y_lo <= s.y0 <= y_hi and s.x1 - s.x0 < max_w):
+            return False
+        if any(c.rect.x0 - 2 <= s.x0 and s.x1 <= c.rect.x1 + 2 and c.rect.y0 - 2 <= s.y0 <= c.rect.y1 + 2 for c in cols):
+            return False                                    # Schichtgrenze in einer Saeule
+        if any(s.x0 < c.rect.x0 - 5 and s.x1 > c.rect.x1 + 5 and c.rect.y0 - 2 <= s.y0 <= c.rect.y1 + 2 for c in acols):
+            return False                                    # Trenn-/GOK-Linie quer durch eine Saeule
+        return any(min(abs(c.rect.x0 - s.x0), abs(c.rect.x1 - s.x0),
+                       abs(c.rect.x0 - s.x1), abs(c.rect.x1 - s.x1)) <= 105 for c in acols)
+
+    hlines = [s for s in _raster_hlines(img, dpi, min_len_pt=15.0) if _passende_linie(s)]
+    for _sc, form, x0, y0, x1, y1, s in _match_raster_gw_on_hlines(img, hlines, dpi, allow_v=allow_v):
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        if any(c.rect.x0 - 2 <= cx <= c.rect.x1 + 2 and c.rect.y0 - 2 <= cy <= c.rect.y1 + 2 for c in cols):
+            continue                                        # Symbol in einer Saeule = Schraffur
+        out.append(_as_raster_drawing(form, x0, y0, x1, y1, wline=s))
     return out
 
 
@@ -326,8 +594,6 @@ def primitives(page: pymupdf.Page):
         for q, _ in ws[1:]:
             r |= q
         text_lines.append((r, " ".join(t for _, t in ws)))
-    if scanned and RULES["raster_gw_symbol"]:            # GW-Dreiecke aus dem Bild (nur fuer _groundwater)
-        drawings = drawings + raster_triangles(page)
     return words, text_lines, drawings, segs, scanned, pclass
 
 
@@ -739,22 +1005,31 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
     # Hoehenleisten tragen ein Dreieck je Meter: >= 3 gleich ausgerichtete Dreiecke in einer Spalte = Leiste
     tri_x = defaultdict(int)
     for d in drawings:
+        if d.get("raster_legend"):
+            continue
         it, r = d["items"], d["rect"]
         if len(it) == 3 and all(x[0] == "l" for x in it) and 3 < r.width < 16 and 3 < r.height < 16:
             tri_x[round(r.x0)] += 1
     ruler_x = {x for x, n in tri_x.items() if n >= 3}
+    ruler_x_raster = {x for x in list(tri_x) if sum(tri_x.get(k, 0) for k in range(x - 2, x + 3)) >= 3}
     for d in drawings:
+        if d.get("raster_legend"):
+            continue
         it = d["items"]
         r = d["rect"]
         v_spitze = _gw_v(d) if "v" in legende else None    # V nur, wenn die Legende sie als Wasser kennt (W3)
         if not (len(it) == 3 and all(x[0] == "l" for x in it) and 3 < r.width < 16 and 3 < r.height < 16) \
                 and v_spitze is None:
             continue
-        if RULES["gw_symbol_filter"] and any(abs(round(r.x0) - x) <= 1 for x in ruler_x):
+        rx_set = ruler_x_raster if d.get("raster") else ruler_x
+        if RULES["gw_symbol_filter"] and any(abs(round(r.x0) - x) <= (2 if d.get("raster") else 1) for x in rx_set):
             continue
-        # Hoehenmarke: Dreieck mit Kote daneben ('741.00m', '~770,17')
-        if RULES["gw_symbol_filter"] and any(abs((wr.y0 + wr.y1) / 2 - (r.y0 + r.y1) / 2) < 5 and 0 < wr.x0 - r.x1 < 70
-                                            and re.fullmatch(r"~?\d{3,4}[.,]\d{2}\s?m?", t) for wr, t, *_ in words):
+        # Hoehenmarke: Dreieck mit Kote daneben ('741.00m', '~770,17', im Scan auch '741.00mNHN')
+        dy_kote = 8 if d.get("raster") else 5
+        rx_kote = r"~?[+-]?\d{3,4}[.,]\d{2}\s?(?:m(?:NHN|NN)?)?" if d.get("raster") else r"~?\d{3,4}[.,]\d{2}\s?m?"
+        if RULES["gw_symbol_filter"] and any(abs((wr.y0 + wr.y1) / 2 - (r.y0 + r.y1) / 2) < dy_kote
+                                             and 0 < wr.x0 - r.x1 < 70 and re.fullmatch(rx_kote, t)
+                                             for wr, t, *_ in words):
             continue
         pts = [x[1] for x in it]
         apex = v_spitze or max(pts, key=lambda p: p.y)
@@ -764,10 +1039,19 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
         if d.get("raster") and any(c.rect.contains((r.tl + r.br) / 2) for c in cols):
             continue                                        # Bild-Dreieck in einer Saeule = Schraffur
         target = None
-        for s in H:                                         # Wasserlinie an der Spitze
-            if abs(s.y0 - apex.y) < 1.5 and s.x0 - 2 <= apex.x <= s.x1 + 2 and s.x1 - s.x0 > 15:
+        h_cands = [d["wline"]] if d.get("raster") and d.get("wline") else H
+        for s in h_cands:                                   # Wasserlinie an der Spitze
+            tol_y = 1.8 if d.get("raster") else 1.5
+            tol_x = 2.5 if d.get("raster") else 2.0
+            if abs(s.y0 - apex.y) < tol_y and s.x0 - tol_x <= apex.x <= s.x1 + tol_x and s.x1 - s.x0 > 15:
                 end = s.x1 if abs(s.x1 - apex.x) > abs(s.x0 - apex.x) else s.x0
-                target = min(cols, key=lambda c: min(abs(c.rect.x0 - end), abs(c.rect.x1 - end)))
+                cand = min(cols, key=lambda c: min(abs(c.rect.x0 - end), abs(c.rect.x1 - end)))
+                if d.get("raster"):
+                    # Wasserlinie fuehrt zur Saeule (<= 100 pt) und laeuft nicht quer durch sie hindurch
+                    if min(abs(cand.rect.x0 - end), abs(cand.rect.x1 - end)) > 100 \
+                            or (s.x0 < cand.rect.x0 - 5 and s.x1 > cand.rect.x1 + 5):
+                        continue
+                target = cand
         if target is None:
             if d.get("raster") or v_spitze is not None:      # Bild und V nur mit Wasserlinie (sonst Schraffur, Haken)
                 continue
@@ -1020,6 +1304,8 @@ def extract(pdf: Path):
                         if sum(1 for r, t, *_ in words if c.rect.contains(r) and re.search(r"\d", t)
                                and not re.fullmatch(r"[0Oo]+", t)) <= 2]     # OCR liest Kies-Kreise als '000'
         acols = [c for _, _, c in anchored]
+        if scanned and acols and RULES["raster_gw_symbol"]:
+            drawings = drawings + raster_gw_symbols(page, cols, acols, lines)
         chosen_all = [choose_scale(c, label_groups(words, c, acols), scale_txt) for _, _, c in anchored]
         page_has_labels = any(ch and ch[4] > 0 for ch in chosen_all)
         if RULES["coords_text"]:
@@ -1156,7 +1442,19 @@ def extract(pdf: Path):
             bh.support = 1.0
             for (ra, va), (rb, vb), d in zip(g, g[1:], descs):
                 bh.layers.append(Layer(va, vb, classify_v3(d.split(",")[0]) or classify_v3(d), label_confirmed=True, text=d))
-            if any(NO_GW_RE.search(t) for _, t in lines):
+            if scanned and RULES["raster_gw_symbol"] and len(g) >= 3:
+                # Gescanntes massstaebliches Profil ohne dunklen Saeulenrand (E7): Gerade durch die Label-Grundlinien
+                ys = np.array([r.y1 for r, _ in g])
+                vs = np.array([v for _, v in g])
+                a_, b_ = np.polyfit(ys, vs, 1)
+                if a_ > 0 and float(np.max(np.abs(np.polyval([a_, b_], ys) - vs))) <= 0.15:
+                    y0_c, y1_c = float((0 - b_) / a_), float((vs[-1] - b_) / a_)
+                    x_g = float(np.median([r.x0 for r, _ in g]))
+                    vcol = Column(pymupdf.Rect(x_g - 25, y0_c, x_g, y1_c), [], 0.0)
+                    r_draw = drawings + raster_gw_symbols(page, cols + [vcol], [vcol], lines)
+                    bh.gw_depths = _groundwater(r_draw, segs, vcol, [vcol], (float(a_), float(b_)),
+                                                words, lines, bh.gw_info)
+            if not bh.gw_depths and any(NO_GW_RE.search(t) for _, t in lines):
                 bh.gw_status = "kein Grundwasser"
             if RULES["coords_text"]:
                 xy_text.update(coords_from_text(lines, [(heads[0][0], code, None)]))
