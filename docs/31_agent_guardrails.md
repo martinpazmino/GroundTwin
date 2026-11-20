@@ -109,6 +109,32 @@ Building the map found three operations without any test (`erzeugen`, `auto`, `u
 5. **Outer loop** (later): a scheduled run of the regression and of `check_app.mjs` that opens an issue on a
    regression. Only after 1–4.
 
+## 6. Scheduled routines for Antigravity
+
+The user schedules them in Antigravity on their own machine (it has the real PDFs and the network to the Länder).
+The instruction there is one line, *read `agenten/routinen/README.md` and run `agenten/routinen/<name>.md`*; the task
+itself is versioned in the repository. Each routine works in its own worktree from `origin/main`, may touch only its
+listed files, must pass the house rules and the feature map before a push, and pushes only to its own branch
+`agy/routine-<name>` (never `main`, never `--force`); Claude reviews and squash-merges. Routines with *report only*
+never change data (`dienste.json`, baselines, constraints).
+
+| Routine | Rhythm | Push |
+|---|---|---|
+| README and doc index | weekly | docs |
+| Doc upkeep (CHANGELOG, links, doc ↔ code) | weekly | docs |
+| Dienste der Länder from the user's machine | weekly | report |
+| Regression on the real PDFs (+ raster150) | weekly | report |
+| Rule audit (prose → check), table below | every two weeks | docs |
+| Dependencies (outdated, audit, licences) | monthly | report |
+| One test gap of the feature map closed | weekly | tests |
+
+## 7. Rule audit
+
+Filled by the routine `regeln_audit` (rule, source, check or proposal).
+
+| Rule | Source | Status | Check or proposal |
+|---|---|---|---|
+
 ---
 
 Up: [Index](README.md)

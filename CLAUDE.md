@@ -68,6 +68,7 @@ license **AGPL-3.0-or-later** (D79).
   Roadmap A0–A7 + data workstream B (#18, #26, #27) as critical path.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
+  Scheduled routines the user runs in Antigravity: `agenten/routinen/` (push only to `agy/routine-<name>`, docs/31 §6).
 
 ## Working rules
 - **Rules are checks** (docs/31, D109): `tests/test_hausregeln.py` enforces the layers of the code, network only
