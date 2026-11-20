@@ -15,6 +15,8 @@ from .einheiten import (Bohrung, Einheit, Kontakt, bohrungen_aus_extraktion, kon
 from .flaechen import (ERWEITERUNGEN, MIN_MAECHTIGKEIT, PRAESENZ_SCHWELLE, gebiet, hinweise_holen, hinweise_starten, netz,
                        orientierungen_setzen,
                        schichtmodell)
+from . import bodenkennwerte as bk
+from . import labor
 from . import homogenbereiche as hb
 from .ifc4x3 import IfcAusgabe, farbe, hexfarbe, rgb_aus
 from .koerper import koerper, pruefen, volumen_prismen
@@ -294,7 +296,7 @@ def _hb_pset(code: str, je: dict[str, str], einheit: str, schichten_je: dict[str
                 out[f"Kennwert_{z['nr']}_{_ifc_name(z['name'])}"] = z["wert"]
         out["Kennwerte_offen"] = "; ".join(f"{z['nr']} {z['name']}" for z in kb["kennwerte"] if z["wert"] is None) or None
         out["Kennwerte_Herkunft"] = (f"aus {kb['schichten']} Schichtbeschreibungen des Bereichs (Ansprache, Anteil der "
-                                     "Schichten in Klammern); keine Laborwerte")
+                                     "Schichten in Klammern); 'Labor:' = gemessen auf den Laborblättern des Gutachtens")
     return out
 
 
@@ -363,7 +365,7 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
                   umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
                   gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
-                  nur_homogenbereiche: str | None = None) -> dict:
+                  nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
@@ -381,6 +383,11 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
     schichten_je = {e.name: einheit_schichten(m, j) for j, e in enumerate(m.einheiten)} if homogenbereiche else {}
     hb_psets = {e: {hb.pset_name(code): _hb_pset(code, je, e, schichten_je) for code, je in homogenbereiche.items()}
                 for e in namen}
+    # Bodenkennwerte aus dem Gutachten (Issue #18): {Einheit: 'Datei#Index'} -> CPset an der Einheit
+    zeilen = {e["ref"]: e for e in bk.eintraege(docs)}
+    for e, ref in (bodenkennwerte or {}).items():
+        if ref in zeilen and e in hb_psets:
+            hb_psets[e] = {**hb_psets[e], bk.PSET: bk.pset(zeilen[ref])}
     aus = IfcAusgabe(projekt, m.epsg, m.ursprung)
     quellen = sorted({d["document"]["file"] for d in docs})
     n = len(m.einheiten)
@@ -408,7 +415,8 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                                              for s in schichten),
                 "Benennungen": _benennungen(schichten),
                 "Hinweise": "; ".join(k["hinweise"])},
-            "psets": hb_psets.get(k["name"], {}), "_j": j})
+            "psets": {**hb_psets.get(k["name"], {}),
+                      **({labor.PSET: ps} if (ps := labor.pset(labor.statistik(schichten))) else {})}, "_j": j})
     p = m.parameter
     titel = f"Baugrundmodell (Layer-Cake, {p['methode'].upper()})"
     hb_hinweise: list[str] = []

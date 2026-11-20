@@ -6,6 +6,27 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water level tables in the report (Aufschluss | Wasserstand m u. GOK | Wasserart): kind from footnote, column or the
+  sentence on the table, merged into the levels of the Bohrungen with evidence (Issue #26, docs/06 §4).
+- Scanned report pages are read by OCR in the Kennwerte, laboratory and Homogenbereich stages; results carry
+  `quelle: OCR` and a hint (Issue #18, docs/28 §10b).
+- Laboratory sheets of the annexes (Wassergehalt, Zustandsgrenzen, Korngröße, Glühverlust, CBR, Proctor …) read per
+  sample, attached to the Schicht of their Bohrung, summarised per Einheit (n, min, max, mean), filling the Kennwerte
+  of the ATV as "Labor:" and written to the IFC as `CPset_Laborwerte` (Issue #18, docs/28 §9b).
+- Bodenkennwerte rows given as height ranges (`GOK bis +32,0` m NHN) are proposed for the Einheit whose thickness
+  lies mostly in that range; close splits are left for the user (Issue #18, docs/28 §9).
+- Homogenbereiche the Gutachter defines (table, section or sentence) read from the report; the proposal per ATV starts
+  from them, assigns the Einheiten by name, Bodenart and Bodengruppe, and lists the differences (Einheiten without a
+  Bereich, Bereiche without an Einheit); a click takes it over (Issue #21, docs/28 §10).
+- Bodenkennwerte from the report tables (Wichte, Reibungswinkel, Kohäsion, Steifemodul …; table or list per Schicht)
+  read by a separate extraction stage, assigned to the Einheiten by a proposal and a click (step Einheiten), written
+  to the IFC as `CPset_Bodenkennwerte_Gutachten` with `<Kennwert>_min/_max`; never a characteristic value of our own
+  (Issue #18, docs/28 §9).
+- Grundwasser: kind (angetroffen, Ruhewasser, nach Bohrende, Schichtenwasser, or not stated) and date of each level
+  from the text at the symbol and the Schichtenverzeichnis; Bemessungswasserstand, HGW, MHGW from the report text.
+  The Grundwasserfläche prefers Ruhewasser, keeps Schichtenwasser out and names mixed kinds and days; kind and date
+  go to the IFC (`CPset_Grundwasser`) and to BoreholeML (`bml:Groundwater`). A kind the Gutachten does not state stays
+  open (Issue #26, docs/06 §4).
 - Homogenbereiche: what the layer descriptions say about the Kennwerte an ATV asks for (Konsistenz, Bodengruppe,
   Lagerungsdichte …), per Bereich with the share of Schichten, in the app and the IFC; laboratory values stay open
   (docs/28 §6). Ground Analysis warns when the Lage is only schematic (docs/28 §7).

@@ -216,6 +216,235 @@ grey (display).
 
 ---
 
+## 9. Kennwerte from the report tables (Issue #18, 2026-11-19, training PDFs, not blind)
+
+§6 reads only what the layer descriptions say. Many Gutachten also give a table of soil parameters (Bodenkennwerte):
+Wichte, Wichte unter Auftrieb, Reibungswinkel, Kohäsion, undränierte Kohäsion, Steifemodul. A separate extraction
+stage reads them; `prototyp_v4.py` is untouched.
+
+**Extraction** (`services/extractor/kennwerte.py`, called by `ui/pipeline.py`, result in `kennwerte` of the document).
+Two general forms, recognised by where the words are on the page:
+
+- **Table with columns.** Header cells name a parameter (by word or symbol: γ, γ′, φ′, c′, cu, Es). They may be split
+  over two lines ("Reibungs-" / "winkel") or turned upright. Three or more of them must stand side by side.
+- **Value rows.** Numbers in the columns at about the same height form a row; a big jump ends the table.
+- **Row label.** The text left of the first parameter column, assigned to the nearest value row. A label spanning two
+  rows (steif / halbfest) goes to both; one spanning three or more is a note and is left out. Words inside the value
+  columns ("Material") count as label, not as value.
+- **Unit.** The unit word in the header nearest to the centre of the column.
+- **List per Schicht.** One parameter per row with its value to the right, grouped under the nearest heading above
+  ("Schicht 2 – Auffüllung", "Homogenbereich B3").
+- **Values.** Ranges `11 - 20`, a thousands point `10.000`, a decimal comma. The Steifemodul is kept in MN/m²
+  (kN/m² ÷ 1000). A value outside the usual range gets a hint (⚑, marked, kept). What is not a number (`18√t`) stays
+  text. Bodengruppen (DIN 18196) and a name in brackets are taken from the label.
+- **Limits.** Scanned report pages are read by OCR since 2026-11-19 (§10b). Laboratory tables (grain size,
+  water content, Atterberg limits) are not read yet.
+
+**Assignment to the Einheiten** (`services/modeler/baugrundmodell/bodenkennwerte.py`). The proposal gives each Einheit
+the row whose label holds its full name (3), its name or Bodenart as a noun (2: "Sand, kiesig" names Sand, not Kies),
+or its most frequent Bodengruppe (1). When rows score the same, there is no proposal: the Einheit is marked and chosen
+by hand. Nothing is taken over without a click. Project op `bodenkennwerte` ({Einheit: `Datei#Index`}); unknown
+references are dropped. App: step Einheiten, folded section *Bodenkennwerte aus dem Gutachten*; API
+`GET /api/projekt/{sig}/bodenkennwerte`.
+
+**IFC.** `CPset_Bodenkennwerte_Gutachten` on the Einheit, with:
+
+- `<Kennwert>_min` / `_max` (the DAUB Teil 3 naming of [30 §6.1](30_groundtwin_analysis_research.md));
+- `<Kennwert>_Text` where no number was readable;
+- `Quelle` (file, page), `Bezeichnung_im_Gutachten`, `Zuordnung` and `Art`.
+
+GroundTwin never writes `_char`: the characteristic value is the Gutachter's ([29](29_groundtwin_analysis.md)).
+
+**Measured on the training PDFs (rows read / rows in the report):**
+
+| PDF | Result |
+|---|---|
+| Halle | 4/4 table, labels with Bodengruppen and name (Auffüllung, Auelehm, Niederterrasse, Felszersatz). Wichte unter Auftrieb 1–12 kN/m³ is marked as outside the usual range; this is what the report says. |
+| Berlin | 6/6 table; the labels are depth ranges (m NHN); Es = 18√t stays text. |
+| Talheim | 5/5 table. Verwitterungslehm steif / halbfest are two rows with one label. |
+| Rednitzhembach | 4/4 table with the Material column as label. |
+| Hausham | 2/2 lists (Schicht 2, Schicht 3). |
+| Triefenstein | 1/1 Homogenbereich list (B3) with cu. |
+| Wachenroth (scanned, OCR, §10b) | 3/3 rows of Tabelle 9 (Oberboden, Sand schluffig, Sandstein), marked as OCR. |
+| Marl, Wesel, A7367 | no Kennwert table; nothing read, nothing invented. |
+
+**Height ranges** (2026-11-19).
+
+- A label like `GOK bis +32,0` or `+32,0 bis +30,0` (numbers with a sign, on a page that speaks of m NHN) gives
+  `hoehe_oben` / `hoehe_unten`. Depths without a sign (`0,2-1,8`) are not read as heights.
+- The proposal then compares the Einheiten by position: per Einheit, the share of its thickness at the Bohrungen
+  (model top/base from the report, clipped at the Endteufe; relative heights do not count) that lies in the row's
+  range.
+- From half on, this counts like a name (2 + share; a full name stays ahead). When the two largest shares are
+  within 20 points, there is no proposal: the Einheit is marked "liegt in zwei Höhenbereichen".
+
+Proposal on the examples:
+
+- Talheim: Schluff → *Fließerden: Schluff, tonig …*. Fels (Tonstein) has two equal rows, so it is chosen by hand.
+- Berlin, by height:
+
+  | Einheit | Row | Share |
+  |---|---|---|
+  | Auffuellung | `GOK bis +32,0` | 100 % |
+  | Sand 1 | `GOK bis +32,0` | 94 % |
+  | Kies 1 | `+32,0 bis +30,0` | 97 % |
+  | Sand 2 | `+30,0 bis +21,0` | 61 % |
+  | Kies 2 | `+30,0 bis +21,0` | 100 % |
+  | Sand 3 | none: 51 % / 49 % between two rows, chosen by hand | |
+
+**Open:**
+
+- read the Homogenbereich tables (Bereich ↔ Bodengruppen) for #21 — done, §10;
+- laboratory tables;
+- a blind test before any figure is quoted.
+
+## 9b. Laboratory sheets of the annexes (Issue #18, 2026-11-19, training PDFs, not blind)
+
+The annexes of many Gutachten carry the laboratory sheets: Wassergehalt, Zustandsgrenzen, Korngrößenverteilung,
+Glühverlust, CBR, Proctor and so on. A separate stage reads them; `prototyp_v4.py` is untouched.
+
+**Extraction** (`services/extractor/labor.py`, `labor` of the document). The rules are general rules of the forms:
+
+- **Sample.** A Bohrung code with a depth range (`Entnahmestelle: BS 5` / `Tiefe: 2,5 - 3,5`, `BK2 (5,0-6,0m)`).
+  `BS 1 + 2` is a Mischprobe and is marked.
+- **Test.** Recognised from the norm or the title: 17892-1, -4, -11, -12, 18127, 18128, 18129, CBR.
+- **Value.**
+  - An explicit result `Name = Zahl` comes before `Name | Einheit | Zahl`.
+  - A chart axis (`Wassergehalt w [%] | 24.0`) is not a result.
+  - On a table with several samples, or a sheet without `=` (Glühverlust), the result is the last number of the
+    sample's row (forms put the result in the last column).
+  - `T/U/S/G [%]: 13.1/16.9/69.8/0.3`; a `-` means the fraction is not given.
+  - A kf from the grain size curve (Beyer) is read but marked "aus der Kornverteilung, nicht gemessen".
+- **Merging.** The same sample on several sheets is merged.
+- **Checks.** Values outside the possible range and IP ≠ wL − wP are marked.
+- **Not read.** Chemical analyses (Prüfbericht, Eluat, PAK …) are not soil mechanics and stay out.
+
+**Model** (`baugrundmodell/labor.py`):
+
+- Each sample hangs on the Schicht of its Bohrung with the largest overlap of its depth range. A sample across a
+  boundary is marked; a Mischprobe hangs at each of its Bohrungen.
+- Per Einheit or Bereich: n, min, max and mean per value. These are measured values, never characteristic ones.
+- They fill the Kennwerte of the ATV before the Ansprache, marked `Labor:`:
+
+  | Kennwert | From |
+  |---|---|
+  | 2 | T/U/S/G |
+  | 5 | Trockendichte |
+  | 9 | Wassergehalt |
+  | 10b | Plastizitätszahl |
+  | 11b | Konsistenzzahl |
+  | 12 | kf |
+  | 14 | Kalkgehalt |
+  | 16 | Glühverlust |
+
+- IFC: `CPset_Laborwerte` on the Einheit with `<Wert>_min/_max/_mean/_n` (DAUB naming).
+- App: in the section *Bodenkennwerte aus dem Gutachten*, the values per Einheit; samples on no Schicht of the model
+  are listed.
+
+**Measured on the training PDFs:**
+
+| PDF | Sheets → samples | What was read |
+|---|---|---|
+| Marl | 14 → 11 | Wassergehalt table 5, Zustandsgrenzen 3, Korngröße 5 (two Mischproben, one with kf after Beyer), Glühverlust 1; every value checked against the sheet |
+| Talheim | 5 CBR | Trockendichte, Wassergehalt, CBR |
+| Wachenroth, Triefenstein | — | chemical analyses only, rightly not read |
+| other PDFs | — | no laboratory sheets |
+
+Talheim end to end: four samples in Fels (Tonstein), one in Schluff. Kennwert 9 of DIN 18300 for the Tonstein
+becomes "Labor: 11,1–16,9 % (n = 4, Mittel 14,4)".
+
+## 10. The Gutachter's own Homogenbereiche (Issue #21, 2026-11-19, training PDFs, not blind)
+
+Many Gutachten already define Homogenbereiche. The proposal now starts from them and shows where the model and the
+Gutachten differ.
+
+**Extraction** (`services/extractor/homogenbereiche_text.py`, separate stage, `homogenbereiche_gutachten` of the
+document). Three general forms:
+
+- **Table:** a cell `Homogenbereich X` with the Bodengruppen and a name in brackets to its left, read word by word.
+  The row band runs to the middle of the neighbouring headers.
+- **Section:** a heading `Homogenbereich X – Name`, then `Bodengruppen nach DIN 18196: …` and
+  `Ortsübliche Bezeichnung: …`, also across a page break, until the next numbered section of the report.
+- **Sentence:** "Der Oberboden bildet den Homogenbereich O1", "In den Homogenbereich B3 werden die … klassifiziert",
+  "Sandbett und Auffüllungen werden den Homogenbereichen B1 und B2 zugeteilt". A plural heading
+  `Homogenbereiche B1/B2` gives both codes.
+
+Further rules:
+
+- Bodengruppen in square brackets are Auffüllungen of that kind (DIN 18196) and are kept apart.
+- The ATV are the DIN 183xx named on the pages of the section; none named → empty, with a hint.
+
+**Proposal** (`hb.gutachten_bereiche`, `hb.vorschlag_aus_gutachten`). Each Einheit goes to the Bereich that names it.
+The checks run in this order:
+
+1. full name;
+2. name or Bodenart as a noun, with synonyms such as Mutterboden / Oberboden / Humus;
+3. its Bodengruppe;
+4. the main group of its Bodenart (Sand → S…), the weakest hint.
+
+When Bereiche score the same, nothing is assigned and the Einheit is listed. The result names the Einheiten without a
+Bereich and the Bereiche without an Einheit: these are the differences between model and Gutachten. Bracketed
+Bodengruppen count only for an anthropogenic Einheit. In the app (Homogenbereiche, no assignment yet), *Bereiche des
+Gutachtens* comes first; a click takes it over, and our own proposal stays below it. The API is
+`/homogenbereiche/vorschlag` → field `gutachten`.
+
+**Measured on the training PDFs:**
+
+| PDF | Bereiche read | Notes |
+|---|---|---|
+| Halle | 4/4 (A–D) | Names and Bodengruppen; the brackets of A as Auffüllung. |
+| Hausham | 3/3 | Section form across pages. |
+| Triefenstein | 5/5 (A1, O1, B1, B2, B3) | Sentences and a plural heading. |
+| Rednitzhembach, Talheim, Berlin, Marl, Wachenroth, Wesel | none | They define no Bereiche in the text; nothing invented. |
+
+End to end, with the Bohrungen in a schematic row:
+
+- **Hausham:** Auffuellung → 2, Kies → 3. Bereich 1 (aufgefüllter Oberboden, 0.1–0.3 m) has no Einheit in the model and
+  is shown as a difference.
+- **Triefenstein:** Beton → A1, Sand → B1 (Sandbett). Schluff and Kies stay without a Bereich, because the Gutachter
+  calls B3 "Lößlehme" with TL/TM; the difference is shown, not hidden.
+
+**Open (needs the user):** whether Hangschutt and Wiesenkalk should stay a Bereich of their own in our proposal
+(today they count as *bindig*).
+
+## 10b. Scanned report pages: OCR (Issue #18, 2026-11-19, training PDFs, not blind)
+
+The three extra stages (Kennwerte §9, laboratory sheets §9b, the Gutachter's Homogenbereiche §10) read every page
+through `services/extractor/textebene.py`:
+
+- A page with an image and almost no text (< 30 characters) is read with the same OCR as the Bohrprofile
+  (`prototyp_v4.ocr_words`: RapidOCR, cache `GEO_OCR_CACHE`). One OCR box is one line.
+- Lines and words keep page coordinates, so the rules of the stages apply unchanged.
+- The app's OCR setting applies. Without the OCR package, the page stays silent; nothing is invented.
+
+Every result from OCR carries `quelle: "OCR"` and a hint ("aus der OCR …: am PDF prüfen"). OCR values are less
+certain and are never silently treated like text-layer values.
+
+The OCR loses umlauts and ß ("gema DIN 18196", "Kohasion", "kN/m?"), so the rules accept both spellings: the
+laboratory rules compare folded text, and the units also accept `?`.
+
+Two general rules came out of the OCR case and also hold for the text layer:
+
+- A table row may have only two values when one of them is in the first parameter column. The OCR drops the `-` of
+  empty cells.
+- A value joins a row only within about one line height (≤ 14 pt), not across a missing row.
+
+**Measured (training PDFs):**
+
+- Wachenroth: pages 1–34 are scanned.
+  - Homogenbereiche O (Oberboden), B (gewachsener Baugrund, SU*) and X (Felshorizont, Sandstein), ATV DIN 18300.
+  - Kennwerte Tabelle 9: 3/3 rows, all values plausible:
+
+    | Row | γ | γ′ | φ′ | c′ | Es |
+    |---|---|---|---|---|---|
+    | Oberboden | 16–18 | 6–8 | – | – | – |
+    | Sand, schluffig | 18 | 10 | 32.5 | not read | 35 |
+    | Sandstein | 22 | 12 | 40 | 50 | 100 |
+
+    The Kohäsion 0 of the sand is lost in the OCR.
+- The text-layer PDFs give exactly the same results as before.
+- Tests: `tests/test_textebene_ocr.py`, with a fixed stand-in for the OCR, so no OCR package is needed.
+
 Up: [Index](README.md)
 
 Related: [18 Layer modeler](18_layer_modeler.md) · [21 Step app and norms](21_app_schritte_normen.md) ·

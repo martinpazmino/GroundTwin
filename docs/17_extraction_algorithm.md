@@ -158,6 +158,83 @@ label, L3):
 2. **Text:** `GW 2.53m`, `… m u. GOK` near the Bohrung; `Wasseranschnitt 3.8`, `Wasserstand`,
    `Wasserspiegel` in the description of the Schicht (L10b).
 3. **No water:** `kein (Grund)wasser`, `GW nicht angetroffen`, `trocken` → `gw_status` (W2).
+4. **Kind and date** (rule `gw_art`, Issue #26, 2026-11-19): per level from the text that names it — the row at the
+   symbol (centre within 9 pt of the vertex, starting within 90 pt of it), the `GW …` text, the description of the
+   Schicht, or the Schichtenverzeichnis (25 characters before the match, 30 after). Keywords, in this order:
+   `Schichten-/Stau-/Sickerwasser` → Schichtenwasser; `Bohrende` → Bohrende; `Ruhewasser`, `angestiegen` →
+   Ruhewasser; `angetroffen`, `angebohrt`, `Anschnitt`, `Wasserzutritt` → angetroffen. No keyword → `unbestimmt`
+   (never guessed). Date `dd.mm.yy(yy)` with a valid day and month (`02.99` is not a date). The profile wins; the
+   Schichtenverzeichnis fills a missing kind or date at the same depth (± 3 cm). The text read stays as `evidence`.
+   The Schichtenverzeichnis also reads `Ruhewasser 3.62m` (before: only `Wasserstand`, `Wasserspiegel`,
+   `Grundwasser…`, `GW`).
+4b. **Legend symbols** (rule `gw_legende`, W3, Issue #20): the legend of the page maps shapes to kinds (filled
+   triangle, open triangle, roof Λ of two strokes) by the water text next to them. A roof standing on a water line
+   counts as a level only when the legend knows it; its depth is the base. The kind from the legend applies only where
+   the text at the symbol gave none, with evidence "Legende: Symbol …".
+4c. **Water symbols in scans** (rules `raster_gw_symbol`, `raster_gw_legende`, W4, Issue #20, 2026-11-19): runs only on
+   scanned pages with anchored columns (or a linear `depth_table` Bohrprofil whose label baselines `r.y1` fit a straight
+   line within ≤ 0.15 m, separating scaled profiles without dark column outlines as in E7 from non-scaled text tables
+   like A7367 at 1.13 m residual). At 200 dpi it extracts horizontal lines ≥ 15 pt (union of dark `< 155` and thin
+   anti-aliased `< 215` lines after vertical-opening fill removal), skips lines inside or crossing a column or > 105 pt
+   away, and runs multi-scale `cv2.matchTemplate` (`TM_CCOEFF_NORMED` ≥ 0.62) for filled, open and half-filled
+   triangles plus roofs Λ (only when `raster_gw_legende` finds Λ in the 92 × 32 pt band left of water legend text and
+   `gw_legende` confirms it). Every candidate passes geometric verification (contrast ≥ 60, dark upper corners and
+   downward taper to reject circles/boxes, three edges ≥ 75 %, white exterior ≤ 15 %, clean space above ≤ 18 %, outside
+   all columns, no periodic horizontal pattern ≥ 3, water line ending ≤ 100 pt from the target column without crossing
+   it) and enters `_groundwater` with ±2 pt vertical ruler clustering and OCR elevation filtering. Runtime overhead on
+   scanned PDFs: 55–202 ms/page overall (0 ms/page on vector PDFs).
+
+   Measured before / after (`prototyp_v4.py`, `constraints.txt` PyMuPDF 2.0, `GEO_OCR_CACHE`):
+
+   | PDF / Set | `real` GW (before → after) | `real` false GW | `raster150` GW (before → after) | `raster150` false GW | `raster150` runtime (ms/p total · W4) |
+   |---|---:|---:|---:|---:|---:|
+   | `16132` (2 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1400 · 0 |
+   | `A7367` (1 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1600 · 0 |
+   | `berlin_v67b` (33 p.) | 2/2 → 2/2 | 0 → 1* | 1/2 → 1/2 | 0 → 1* | 2102 · 202 |
+   | `clipping_test` (1 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 2400 · 0 |
+   | `example_borehole_profile` (1 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 3300 · 0 |
+   | `halle` (17 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1006 · 0 |
+   | `hausham` (61 p.) | 4/4 → 4/4 | 0 → 0 | **0/4 → 4/4** | 0 → 0 | 1860 · 140 |
+   | `marl_251` (62 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1150 · 0 |
+   | `rednitzhembach` (36 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1883 · 55 |
+   | `talheim` (22 p.) | 4/4 → 4/4 | 0 → 0 | 0/4 → 0/4† | 0 → 0 | 1934 · 122 |
+   | `triefenstein_bp41` (51 p.) | 2/2 → 2/2 | 0 → 0 | 0/2 → 0/2‡ | 0 → 0 | 992 · 0 |
+   | `wachenroth` (59 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 959 · 0 |
+   | `wesel_anlage12` (17 p.) | 0/0 → 0/0 | 0 → 0 | 0/0 → 0/0 | 0 → 0 | 1006 · 0 |
+   | **Sum `real` / `raster150` (13)** | **12/12 → 12/12** | **0 → 1*** | **1/12 → 5/12** | **0 → 1*** | **~1130 · 55–202** |
+   | `rot90` (13) | 12/12 → 12/12 | 0 → 1* | — | — | — |
+   | `scale70` (13) | 8/12 → 8/12 | 0 → 3* | — | — | — |
+   | `stress` s01–s19 | **7/8 → 8/8** | 0 → 0 | — | — | — |
+   | `stress` s20–s23 (new) | — → **3/3** | — → 0 | — | — | — |
+   | `synth` (6) | 17/17 → 17/17 | 0 → 0 | — | — | — |
+
+   *Notes:*
+   - Review by Claude (2026-11-20): the Berlin archive levels below were checked on the page images and added to
+     `benchmark/groundtruth/berlin_v67b.json`. With that ground truth, every column marked `*` reads 0 false GW
+     (`real` Berlin GW 3/8; `raster150` on the five PDFs with water 1/18 → 6/18).
+   - `*` `berlin_v67b`: all flagged `falsches GW` are genuine printed DIN 4023 water symbols on untranscribed archive
+     scans (`layers_transcribed: false`, `gw_depths: []` in `benchmark/groundtruth/berlin_v67b.json`;
+     `benchmark/eval_real.py:71` still scores `gw_false`): `S 2a` p. 30 (`▽ 3,86 m`, `32,82 m NN`, extracted `3.86 m` in
+     `real`/`raster150`/`rot90`), `S 1` p. 30 (`▽ 8,87 m`, extracted `8.87 m` in `scale70`), and `B 1/17` p. 32
+     (`▼ 2,40 m` and `▽ 3,40 m` `06.09.2017`, extracted `2.41 m` and `3.40 m` in `scale70`). Genuine false GW = **0**.
+   - `†` `talheim` (`raster150`): `raster_gw_symbols` + `raster_gw_legende` detect all 4/4 symbols (incl. roof Λ via
+     the scanned legend), but E5 (`scale_contradiction`) leaves BK1–BK3 without a scale at 150 dpi.
+   - `‡` `triefenstein_bp41` (`raster150`): `raster_gw_symbols` detects both half-filled triangles (p. 20, p. 23), but
+     all 5 Bohrungen are extracted from the scanned Schichtenverzeichnis (`mode = schichtenverzeichnis`).
+   - Ablation (`ablation.py` on `stress` s01–s23 + `synth`): `raster_gw_symbol` protects `s12_raster` (1/1→0/1),
+     `s20_raster_gw_symbol` (1/1→0/1), `s23_raster_legende_dach` (2/2→0/2) (plus `raster150/hausham` 4/4→0/4);
+     `raster_gw_legende` protects `s23_raster_legende_dach` (2/2→1/2); `gw_symbol_filter` additionally protects
+     `s22_raster_dreieck_ohne_linie` (0→1 false GW).
+5. **Levels of the report text** (not of a Bohrung): `Bemessungswasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
+   `MNGW` followed within 60 characters by a number with `m NHN` → `wasserstaende` of the document (kind, m NHN,
+   page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.
+   Only the text layer (no OCR for this).
+
+## E7b. Bodenkennwerte (separate stage, Issue #18)
+
+`services/extractor/kennwerte.py` reads the parameter tables of the report text (table with columns or list per
+Schicht) into `kennwerte` of the document; rules and figures in [28 §9](28_homogenbereiche.md). It does not touch
+`prototyp_v4.py` and is part of the extractor fingerprint in `ui/pipeline.py` (a change re-extracts).
 
 ## E8. Second sources
 

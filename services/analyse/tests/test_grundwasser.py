@@ -69,3 +69,30 @@ def test_ueber_gelaende_wird_gemeldet_und_aendert_nichts():
     g = grundwasser(m, docs)
     assert g["ueber_gelaende_knoten"] > 0 and any("über dem Gelände" in h for h in g["hinweise"])
     assert np.array_equal(vorher, m.flaechen)                      # liest das Modell, aendert nichts
+
+
+def test_art_mit_vorrang_schichtenwasser_getrennt_und_hinweise():
+    """Issue #26: Ruhewasser vor Anschnitt, Schichtenwasser nie in der Flaeche, gemischte Arten und Tage gemeldet."""
+    docs = _docs(lambda code, gok: [round(gok - 40.0, 2)])
+    bs = docs[0]["boreholes"]
+    g0 = bs[0]["gok_nhn"]
+    bs[0]["groundwater"] = [{"depth": round(g0 - 39.0, 2), "kind": "angetroffen", "observed_on": "2020-04-14"},
+                            {"depth": round(g0 - 40.0, 2), "kind": "Ruhewasser", "observed_on": "2020-04-15"},
+                            {"depth": 0.5, "kind": "Schichtenwasser"}]
+    bs[1]["groundwater"] = [{"depth": round(bs[1]["gok_nhn"] - 40.0, 2), "kind": "angetroffen",
+                             "observed_on": "2020-04-14"}]
+    m = bauen(docs)
+    g = grundwasser(m, docs)
+    s0 = g["staende"][0]
+    assert s0["wasserart"] == "Ruhewasser" and abs(s0["z"] - 40.0) < 0.01 and s0["datum"] == "2020-04-15"
+    assert s0["schichtenwasser"] == [0.5] and s0["andere_arten"] == ["angetroffen"]
+    h = " | ".join(g["hinweise"])
+    assert "Schichtenwasser nicht in der Fläche" in h and "Arten gemischt" in h and "Stände von 2 Tagen" in h
+    assert abs(float(g["z"][0]) - 40.0) < 0.01                  # die Flaeche geht durch das Ruhewasser
+
+
+def test_nur_schichtenwasser_gibt_keine_flaeche():
+    docs = _docs(lambda code, gok: None)
+    docs[0]["boreholes"][0]["groundwater"] = [{"depth": 0.8, "kind": "Schichtenwasser"}]
+    g = grundwasser(bauen(docs), docs)
+    assert g["z"] is None and g["gemessen"] == 0 and g["staende"][0]["schichtenwasser"] == [0.8]

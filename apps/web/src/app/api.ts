@@ -135,6 +135,7 @@ export interface Zustand {
   vorgabe: { name: string; bodenarten: string[] }[] | null;
   homogenbereiche?: Record<string, Record<string, string>> | null;   // je ATV {Einheit: Bereich} (docs/28)
   hb_modell?: string | null;
+  bodenkennwerte?: Record<string, string> | null;   // {Einheit: 'Datei#Index'} Kennwert-Zeile des Gutachtens (Issue #18)
   eincheckungen: Eincheckung[]; pruefstand: Pruefstand; eingecheckt: string | null; seit_einchecken_geaendert: boolean;
   bohrungen: Bohrung[]; klassen: Klasse[];
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
@@ -247,6 +248,7 @@ export const api = {
   homogenbereicheDaten: () => anfrage<HbDaten>("/api/homogenbereiche"),
   hbKennwerte: (sig: string, atv: string) =>
     anfrage<HbKennwerte>(`/api/projekt/${sig}/homogenbereiche/kennwerte?atv=${encodeURIComponent(atv)}`),
+  bodenkennwerte: (sig: string) => anfrage<Bodenkennwerte>(`/api/projekt/${sig}/bodenkennwerte`),
   hbVorschlag: (sig: string, atv: string) =>
     anfrage<HbVorschlag>(`/api/projekt/${sig}/homogenbereiche/vorschlag?atv=${encodeURIComponent(atv)}`),
   beispiel: (name: string) =>
@@ -310,7 +312,9 @@ export const api = {
 export type Grundwasser = {
   fehler: string; gemessen?: number; trocken?: number; methode?: string; hinweise?: string[];
   staende?: { code: string; art: "gemessen" | "trocken" | "ohne Angabe"; z?: number; tiefe_m?: number; spanne_m?: number;
-    bis_z?: number }[];
+    bis_z?: number; wasserart?: string; datum?: string | null; schichtenwasser?: number[] }[];
+  /** Bemessungswasserstand, HGW, MHGW aus dem Text des Gutachtens (Issue #26): nie in der Fläche. */
+  aus_dem_text?: { kind: string; nhn: number; page: number; dokument: string; evidence: string }[];
   widersprueche?: { code: string; trocken_bis_z: number; flaeche_z: number; differenz_m: number }[];
   kreuzprobe?: { mae_m: number; max_m: number; je_bohrung: { code: string; fehler_m: number }[] } | null;
   ueber_gelaende_knoten?: number;
@@ -331,6 +335,12 @@ export type HbDaten = {
 export type HbVorschlag = {
   fehler: string; atv?: string; stufe?: string; regel?: string; zuordnung?: Record<string, string>;
   bereiche?: { name: string; einheiten: string[]; grund: string }[];
+  /** Bereiche, die der Gutachter festlegt (Issue #21): Vorschlag von ihnen aus, Abweichungen genannt. */
+  gutachten?: {
+    zuordnung: Record<string, string>; einheiten_ohne_bereich: { einheit: string; grund: string }[];
+    bereiche_ohne_einheit: string[];
+    bereiche: { name: string; titel: string; einheiten: string[]; grund: string; bodengruppen: string[]; seite: number }[];
+  } | null;
 };
 
 /** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */
@@ -338,4 +348,16 @@ export type HbKennwerte = {
   fehler: string; atv?: string; zugeordnet?: boolean;
   bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
     kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
+};
+
+/** Kennwert-Tabellen des Gutachtens (Issue #18), Vorschlag und Zuordnung je Einheit. */
+export type Bodenkennwerte = {
+  fehler: string; modell_fehler?: string; einheiten: string[]; zuordnung: Record<string, string>;
+  zeilen: { ref: string; dokument: string; seite: number; bezeichnung: string; name: string; bodengruppen: string[];
+    form: string; hinweise: string[];
+    werte: Record<string, { text: string; min?: number; max?: number; einheit?: string; hinweis?: string }> }[];
+  vorschlag: Record<string, { ref: string | null; grund: string; kandidaten?: string[] }>;
+  /** Laborblätter der Anlagen je Einheit (n, min, max, Mittel), Proben ohne Schicht im Modell. */
+  labor?: { proben: number; je_einheit: Record<string, Record<string, { n: number; text: string }>>;
+    ohne_schicht: { bohrungen: string[]; von: number; bis: number }[] };
 };

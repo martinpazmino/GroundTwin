@@ -20,6 +20,7 @@ import ifcopenshell.api.spatial  # noqa: F401
 import ifcopenshell.api.style  # noqa: F401
 import ifcopenshell.api.unit  # noqa: F401
 
+from . import wasser
 from .koerper import dreiecke_aus
 from .normen import KLASSEN, UNKLASSIFIZIERT, bekannt, deuten, farbinfo, ifc_eigenschaften
 
@@ -141,8 +142,20 @@ class IfcAusgabe:
         ent = api.root.create_entity(f, ifc_class="IfcBorehole", name=b["code"])
         api.spatial.assign_container(f, products=[ent], relating_structure=self.site)
         api.geometry.edit_object_placement(f, product=ent)
-        if b.get("groundwater"):
-            self._pset(ent, "Pset_BoreholeCommon", {"GroundwaterDepth": float(b["groundwater"][0]["depth"])})
+        gw = [g for g in b.get("groundwater") or [] if g.get("depth") is not None]
+        if gw:                                              # Issue #26: Art und Datum je Stand
+            wart, gew = wasser.wahl(gw)
+            if gew:
+                self._pset(ent, "Pset_BoreholeCommon",
+                           {"GroundwaterDepth": min(float(g["depth"]) for g in gew)})
+            self._pset(ent, "CPset_Grundwasser", {
+                "Staende": "; ".join(f"{float(g['depth']):.2f} m ({wasser.TEXT[wasser.art(g.get('kind'))]}"
+                                     + (f", {g['observed_on']}" if g.get("observed_on") else "") + ")"
+                                     for g in sorted(gw, key=lambda g: float(g["depth"]))),
+                "Art_Modell": wasser.TEXT[wart] if wart else "nur Schichtenwasser",
+                "Datum": next((g["observed_on"] for g in sorted(gew, key=lambda g: float(g["depth"]))
+                               if g.get("observed_on")), None),
+                "Art_offen": any(wasser.art(g.get("kind")) == "unbestimmt" for g in gw)})
         prov = (b.get("provenance") or [{}])[0]
         self._pset(ent, "CPset_Herkunft", {
             "Dokument": dokument["file"], "SHA256": dokument.get("sha256"), "Parser": dokument.get("parser_version"),

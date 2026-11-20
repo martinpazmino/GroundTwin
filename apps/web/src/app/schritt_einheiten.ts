@@ -5,6 +5,7 @@ import { html, nothing } from "lit";
 import { live } from "lit/directives/live.js";
 import { hilfe } from "./hilfe";
 import { analyseTeil } from "./analyse";
+import { bodenkennwerteTeil } from "./bodenkennwerte";
 import { homogenbereicheTeil } from "./homogenbereiche";
 import { einheitenProfil } from "./profil";
 import { S, aendern, gehe, neu } from "./store";
@@ -155,6 +156,7 @@ export function schrittEinheiten() {
       <div class="spalte">
         ${vorgabeTeil()}
         ${homogenbereicheTeil()}
+        ${bodenkennwerteTeil()}
         ${einstellungen()}
       </div>
       <div class="spalte breit">

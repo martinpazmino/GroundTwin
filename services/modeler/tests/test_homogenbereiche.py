@@ -156,7 +156,7 @@ def test_kennwerte_aus_den_beschreibungen(tmp_path):
     _gueltig(f)
     ps = ue.get_psets({x.Name: x for x in _strata(f)}["B2"])["CPset_Homogenbereich_DIN18300"]
     assert "Kennwert_1_ortsübliche_Bezeichnung" in ps and "19 Bodengruppe" in ps["Kennwerte_offen"]
-    assert "keine Laborwerte" in ps["Kennwerte_Herkunft"]
+    assert "Laborblättern" in ps["Kennwerte_Herkunft"] and not any(str(v).startswith("Labor:") for v in ps.values())
 
 
 def test_vorschlag_fels_befestigt_und_einzelne_bodengruppe():
@@ -174,3 +174,25 @@ def test_vorschlag_fels_befestigt_und_einzelne_bodengruppe():
     assert z["Schluff 1"] == z["Schluff 2"]                         # TA nur in 1 von 9: Hauptbodenart gilt
     grund = {g["name"]: g["grund"] for g in v["bereiche"]}
     assert grund[z["Fels (Tonstein)"]] == "Fels" and grund[z["Schwarzdecke"]].startswith("befestigt")
+
+
+def test_vorschlag_aus_den_bereichen_des_gutachtens():
+    """Issue #21: der Vorschlag geht von den Bereichen des Gutachters aus und nennt die Abweichungen."""
+    from baugrundmodell.modell import einheit_schichten
+    docs, m, n, _ = _modell()
+    einheiten = [{"name": e.name, "bodenarten": sorted(e.klassen), "schichten": einheit_schichten(m, j)}
+                 for j, e in enumerate(m.einheiten)]
+    gb = [{"bereich": "A", "name": "Auffüllung", "bodengruppen": ["A"], "bodengruppen_auffuellung": ["SU", "UL"]},
+          {"bereich": "B", "name": "Pleistozäne Kiese", "bodengruppen": ["GE", "GW"]},
+          {"bereich": "C", "name": "Niederterrasse", "bodengruppen": ["SE", "SU"]},
+          {"bereich": "D", "name": "Felszersatz", "bodengruppen": ["UM"]}]
+    docs[0]["homogenbereiche_gutachten"] = [{**g, "atv": ["DIN 18300"]} for g in gb]
+    assert hb.gutachten_bereiche(docs, "DIN 18300") and not hb.gutachten_bereiche(docs, "DIN 18301")
+    v = hb.vorschlag_aus_gutachten("DIN 18300", einheiten, hb.gutachten_bereiche(docs, "DIN 18300"))
+    z = v["zuordnung"]
+    assert z["Auffuellung"] == "A" and z["Kies"] == "B"
+    assert z["Sand 1"] == "C" and z["Sand 2"] == "C"                       # nur die Hauptgruppe S: schwacher Hinweis
+    ohne = {x["einheit"] for x in v["einheiten_ohne_bereich"]}
+    assert {"Torf", "Ton"} <= ohne                                          # Modell hat Einheiten, die das Gutachten nicht nennt
+    assert "D" in v["bereiche_ohne_einheit"]                                # und umgekehrt
+    assert hb.pruefen({"DIN 18300": z})                                     # uebernehmbar wie der eigene Vorschlag

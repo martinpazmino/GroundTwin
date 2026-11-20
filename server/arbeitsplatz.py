@@ -432,7 +432,7 @@ class Arbeitsplatz:
                 "ueberhoehung": p.ueberhoehung, "einstellungen": p.einstellungen,
                 "unterlage": u, "reihe": pj.reihe_liste(docs, p), "reihe_standard": p.reihe["standard"],
                 "vorgabe": p.vorgabe, "eincheckungen": p.eincheckungen,
-                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell,
+                "homogenbereiche": p.homogenbereiche, "hb_modell": p.hb_modell, "bodenkennwerte": p.bodenkennwerte,
                 "pruefstand": pj.pruefstand(docs, p),
                 "plausibilitaet": pb.pruefen(docs, p),
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
@@ -476,7 +476,12 @@ class Arbeitsplatz:
         if erg["fehler"]:
             return {"fehler": erg["fehler"]}
         try:
-            return {"fehler": "", **hb.vorschlag_fuer(atv, erg["bericht"]["einheiten"])}
+            einheiten = erg["bericht"]["einheiten"]
+            out = {"fehler": "", **hb.vorschlag_fuer(atv, einheiten), "gutachten": None}
+            docs, _ = self.laden(sig)
+            if gb := hb.gutachten_bereiche(docs, atv):     # Bereiche des Gutachters zuerst (Issue #21)
+                out["gutachten"] = hb.vorschlag_aus_gutachten(atv, einheiten, gb)
+            return out
         except ValueError as err:
             return {"fehler": str(err)}
 
@@ -501,10 +506,39 @@ class Arbeitsplatz:
             except ValueError as err:
                 return {"fehler": str(err)}
 
+    def bodenkennwerte(self, sig: str) -> dict:
+        """Kennwert-Zeilen aus dem Gutachten (Issue #18), Vorschlag je Einheit und die gesetzte Zuordnung; liest nur."""
+        from baugrundmodell import bodenkennwerte as bk
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            zeilen = bk.eintraege(docs)
+            from baugrundmodell import labor
+            proben = labor.proben(docs)
+            erg = self.modell(sig) if zeilen or proben else {"fehler": ""}
+            einheiten = (erg.get("bericht") or {}).get("einheiten") or [] if not erg["fehler"] else []
+            return {"fehler": "", "zeilen": zeilen, "einheiten": [e["name"] for e in einheiten],
+                    "vorschlag": bk.vorschlag(einheiten, zeilen, (erg.get("bericht") or {}).get("bohrungen"))
+                    if zeilen and einheiten else {},
+                    "zuordnung": p.bodenkennwerte or {}, "modell_fehler": erg.get("fehler") or "",
+                    "labor": self._labor_je_einheit(einheiten, proben)}
+
+    @staticmethod
+    def _labor_je_einheit(einheiten: list[dict], proben: list[dict]) -> dict:
+        """Laborwerte (Issue #18): je Einheit die Statistik, dazu die Proben, die an keiner Schicht des Modells haengen."""
+        from baugrundmodell import labor
+        je = {e["name"]: {k: {**s, "text": labor.text({k: s}, k)} for k, s in labor.statistik(e["schichten"]).items()}
+              for e in einheiten}
+        an = {x["ref"] for e in einheiten for s in e["schichten"] for x in s.get("labor") or []}
+        ohne = [p for p in proben if p["ref"] not in an]
+        return {"proben": len(proben), "je_einheit": {k: v for k, v in je.items() if v}, "ohne_schicht": ohne}
+
     @staticmethod
     def _hb_fuer_ifc(p: pj.Projekt) -> dict:
         """Homogenbereiche fuer ifc_schreiben (docs/28): Psets je ATV und auf Wunsch das Modell nur aus Bereichen."""
-        return {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
+        out = {"homogenbereiche": p.homogenbereiche, "nur_homogenbereiche": p.hb_modell} if p.homogenbereiche else {}
+        if p.bodenkennwerte:                          # Kennwert-Zeilen des Gutachtens je Einheit (Issue #18)
+            out["bodenkennwerte"] = p.bodenkennwerte
+        return out
 
     def modell(self, sig: str) -> dict:
         """Modell rechnen (oder aus dem Speicher) und das IFC fuer den Viewer ablegen."""

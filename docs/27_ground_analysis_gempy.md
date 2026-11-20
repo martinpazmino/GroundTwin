@@ -464,19 +464,25 @@ them. It needs no GemPy.
 
 - **Surface**: through the measured levels (m NHN = GOK − depth), with the method of the model (implicit: the spline;
   water has no orientation from layer contacts). One level: a horizontal plane, with a hint. Several levels in one
-  Bohrung (Anschnitt and Ruhewasser): the highest counts, the range is reported above 10 cm.
+  Bohrung: the kind with precedence counts (Ruhewasser, then nach Bohrende, then kind not stated, then Anschnitt;
+  `baugrundmodell/wasser.py`), within it the highest; the range is reported above 10 cm. **Schichtenwasser never goes
+  into the surface** and is named per Bohrung (Issue #26, 2026-11-19).
 - **Checks, marked and never hidden**:
   - a dry Bohrung whose Endteufe lies below the surface contradicts it (listed per Bohrung);
   - the surface above the terrain (more than 5 cm): confined water or levels of different days;
   - relative GOK: the levels are relative as well;
+  - kinds mixed between the Bohrungen (which Bohrung has which kind), kind not stated at all, levels of several days
+    (first and last date);
   - from four levels on, a leave-one-out shows how well the level is predicted between the Bohrungen.
 - **Always said**: levels at drilling time are snapshots of different days and seasons; this is not a design water
   level (Bemessungswasserstand).
 - **Where**: `GET /api/projekt/{sig}/analyse/grundwasser`; step *Modell → Erweitert*, *Grundwasserfläche zeigen*
   draws it blue and translucent in the viewer, with the counts, the range in m NHN and the hints. It does not go into
-  the IFC and does not change the model.
-- **Measured**: Berlin V-67b (real data) has two levels (32.45 and 32.65 m NHN); the surface lies between them over the
-  whole model. The demo has none, and the app says so instead of drawing a surface.
+  the IFC and does not change the model. The Bemessungswasserstand, HGW and MHGW read from the report text
+  (`aus_dem_text`) are listed next to it with page and evidence, never mixed into the surface.
+- **Measured**: Berlin V-67b (real data) has two levels (32.45 and 32.65 m NHN, both *Wasseranschnitt*, so kind
+  angetroffen); the surface lies between them over the whole model; the report text gives a Bemessungswasserstand of
+  +32.80 and a zeHGW of +33.50 m NHN. The demo has none, and the app says so instead of drawing a surface.
 - Tests: `services/analyse/tests/test_grundwasser.py` (flat water exact, dry Bohrung contradicts, one level, range,
   above terrain, model unchanged), `tests/test_analyse_app.py` (Berlin, demo), one end-to-end check.
 

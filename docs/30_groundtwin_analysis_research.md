@@ -164,10 +164,58 @@ abrasivity tests).
 **Consequence:** the open route to PLAXIS is AGS4 (→ OpenGround/Leapfrog → PLAXIS). A direct PLAXIS Designer CSV needs
 a sample file exported from PLAXIS by someone with a licence.
 
-## 6. Next research items
+## 6. Second round (2026-11-17): DAUB properties and AGSi cases
 
-1. AGSi guidance pages (data cases, model types, example files); decide the use of `caseID`.
-2. DAUB Teil 3 chapter 4.5 (properties catalogue) and appendices: which properties it expects per sub-model.
+### 6.1 DAUB Teil 3, chapter 4.5: properties catalogue
+
+- About **250 ground properties** were identified; a sample with the assignment to objects is Appendix 1, published
+  as a separate Excel file (not part of the PDF; not read). The full catalogue is meant to be served from a
+  **property server**, structured after **DIN EN ISO 23386**, so far in German only.
+- Each property has a name, data type, definition and default unit, and belongs to one or more **property groups**
+  that map to model objects (borehole, trial pit, sample, geological/geotechnical unit, …).
+- Three categories:
+  1. **independent properties** (flat, e.g. *Boring Company* on a borehole);
+  2. **geotechnical parameters with their spread**, as separate properties with suffixes **`_min`, `_max`, `_mean`,
+     `_char`** (example: `Friction_Angle_min` 27.5, `_max` 30.0, `_mean` 28.75, `_char` 28.0);
+  3. **project- or standard-specific classifications**, e.g. the property *Geotechnical Unit* with values such as
+     *Homogenbereich B1, B2, X1* (DIN 18300 ff.) or rock mass types (ÖGG); defined per project in the EIR/BEP.
+- Appendix 2 shows visualisations per object, including granularity levels GL1–GL5 for the synthesis model.
+
+**Consequences:**
+- The IFC Psets of GroundTwin should follow the suffix convention: the Kennwerte of [28](28_homogenbereiche.md) as
+  `<Name>_min/_max/_mean` (plus count), and `_char` only when the engineer enters it. Today the Pset carries text
+  such as `steif (5/8)`; numeric values from #18 would use the suffixes.
+- Homogenbereiche are DAUB's example of a project-specific classification; `CPset_Homogenbereich_<ATV>` matches that
+  pattern. A property named *Geotechnical Unit* could be added for DAUB-conformant projects.
+- The DAUB catalogue (Appendix 1 Excel, property server) is the reference vocabulary for property names in A1/A2;
+  it was not read yet (next item).
+
+### 6.2 AGSi guidance: `caseID` and model types
+
+Read from the AGSi documentation mirror <https://open-geotechnical.gitlab.io/AGSi_Documentation> (the guidance on the
+official site returned 403). The mirror refers to an `agsiDataCase` object that the 1.0.1 schema no longer has
+(codes are defined with `agsProjectCode` there), so it may describe an earlier version; the meaning of case is the same.
+
+- `caseID` identifies the **use case** of a value: different values of one parameter for different design or
+  analysis methods, parameter sets for sensitivity analyses, or **for properties, an alternative statistical summary
+  (e.g. excluding outliers)**. The pair `codeID` + `caseID` must be unique per object.
+- Software that reads AGSi must be told how to interpret `caseID`; the protocol is set when the data are created.
+- Model types: a geological model is **observational** (interpreted best guess); a geotechnical design model is
+  **analytical** (for a use case, taking account of uncertainty). The *Types of model* page is still a placeholder.
+
+**Consequences for A1:**
+- `caseID` is **not** the place for the value kind (observed/derived/assumed): that stays in the manifest.
+- Use `caseID` for what it is meant for: e.g. *Ansprache* (from descriptions) vs *Labor* (from tests) as two
+  statistical summaries of the same property, or *ohne Ausreißer*. The codes are defined in the project code set and
+  documented in the manifest.
+- GroundTwin's layer model and Homogenbereich models are **observational** models; analytical models are the
+  engineer's (A6 outputs are screening, not design models).
+
+## 7. Next research items
+
+1. ~~AGSi guidance on `caseID` and model types~~ (done, §6.2); still open: AGSi example files.
+2. ~~DAUB Teil 3 chapter 4.5~~ (done, §6.1); still open: the Appendix 1 Excel (property names per object) and whether
+   the DAUB property server is public.
 3. Remaining DAUB TBM tables (OPS, VDS, HYS) with the same visual check.
 4. Correlation sources for phase A4 (CPT SBT, DPH density): read the source texts and collect reference cases.
 5. A PLAXIS Designer CSV sample (needs a licence holder).

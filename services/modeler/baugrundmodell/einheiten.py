@@ -21,6 +21,8 @@ import math
 from collections import Counter
 from dataclasses import dataclass, field
 
+from . import labor
+
 UNKLASSIFIZIERT = "unklassifiziert"
 
 # Kosten der Ausrichtung (Hoehen in m)
@@ -125,6 +127,7 @@ def bohrungen_aus_extraktion(docs: list[dict]) -> tuple[list[Bohrung], list[dict
                 ausgeschlossen.append({"code": b["code"], "dokument": datei, "grund": grund})
                 continue
             vb = _vorbereiten(b, datei)
+            labor.an_schichten(b["code"], vb.schichten, labor.proben([d]))   # Laborproben je Schicht (#18)
             if vb.abschnitte:
                 bohrungen.append(vb)
             else:

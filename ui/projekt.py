@@ -24,6 +24,8 @@ if _MODELLIERER not in sys.path:
 
 from baugrundmodell.ifc4x3 import FARBEN  # noqa: E402,F401  (Farben nach DIN 4023, fuer aeltere Aufrufer)
 from baugrundmodell import homogenbereiche as hb  # noqa: E402
+from baugrundmodell import bodenkennwerte as bk  # noqa: E402
+from baugrundmodell import wasser  # noqa: E402
 from baugrundmodell.modell import standard_durchmesser  # noqa: E402
 from baugrundmodell.normen import (UNKLASSIFIZIERT, bekannt, deuten, farbinfo, klassen_liste,  # noqa: E402
                                    vorschlag)
@@ -80,6 +82,7 @@ class Projekt:
     geoldg: dict = field(default_factory=dict)  # Untersuchung fuer die Fristen nach GeolDG: {beginn, abschluss, behoerde}
     homogenbereiche: dict | None = None     # je ATV {Einheit: Homogenbereich} (VOB/C, docs/28)
     hb_modell: str | None = None            # ATV, nach der das IFC nur aus Homogenbereichen besteht (None = Einheiten)
+    bodenkennwerte: dict | None = None      # {Einheit: 'Datei#Index'} Kennwert-Zeile des Gutachtens (Issue #18)
     angelegt: str = ""
     geaendert: str = ""
 
@@ -267,6 +270,13 @@ def wirksame_docs(docs: list[dict], p: Projekt) -> list[dict]:
 
 
 # ---------------------------------------------------------------- Listen fuer die Oberflaeche
+def _wasserstand_text(g: dict) -> str:
+    """'3.62 m (Ruhewasser, 2020-04-14)'; ohne Art im Gutachten 'Art?' (Issue #26, nie geraten)."""
+    a = wasser.art(g.get("kind"))
+    zusatz = ", ".join(x for x in ("Art?" if a == "unbestimmt" else wasser.TEXT[a], g.get("observed_on") or "") if x)
+    return f"{float(g['depth']):.2f} m ({zusatz})"
+
+
 def bohrungen_liste(docs: list[dict], p: Projekt) -> list[dict]:
     """Eine Zeile je Bohrung (wirksame Werte, Pruef- und Warnzaehler)."""
     doppelt = doppelte(docs)
@@ -296,7 +306,7 @@ def bohrungen_liste(docs: list[dict], p: Projekt) -> list[dict]:
             "korrigiert": sum(any(s in p.schicht.get(f"{bid}/{k}", {}) for s in ("oben", "unten", "bodenart"))
                               for k, _ in enumerate(schichten)),
             "konfidenz_min": round(min(konf), 2) if konf else None,
-            "grundwasser": ", ".join(f"{g['depth']:.2f} m" for g in b.get("groundwater") or []) or
+            "grundwasser": ", ".join(_wasserstand_text(g) for g in b.get("groundwater") or []) or
                            (b.get("groundwater_status") or ""),
             "durchmesser": zahl(wert(p, bid, b, "durchmesser")),
             "doppelt_in": doppelt.get(bid),
@@ -714,6 +724,11 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
             raise ValueError(f"für {w} sind keine Homogenbereiche zugeordnet")
         p.hb_modell = w
         meldung = f"IFC-Modell aus Homogenbereichen {w}" if w else "IFC-Modell aus Einheiten"
+    elif art == "bodenkennwerte":                        # Einheit -> Kennwert-Zeile des Gutachtens (Issue #18)
+        refs = {e["ref"] for e in bk.eintraege(docs)}
+        p.bodenkennwerte = bk.pruefen(op.get("zuordnung"), refs)
+        n = len(p.bodenkennwerte or {})
+        meldung = f"Bodenkennwerte aus dem Gutachten: {n} Einheiten zugeordnet" if n else "Bodenkennwerte entfernt"
     elif art == "geoldg":                                # Beginn/Abschluss der Untersuchung (Fristen §§ 8-10 GeolDG)
         p.geoldg = geoldg_angaben({**p.geoldg, **{k: op[k] for k in ("beginn", "abschluss", "behoerde") if k in op}})
         meldung = "Angaben zur Untersuchung übernommen"

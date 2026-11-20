@@ -181,6 +181,59 @@ def vorschlag_fuer(code: str, einheiten: list[dict]) -> dict:
     return {"atv": code, "stufe": st, "regel": regel, "zuordnung": zuordnung, "bereiche": bereiche_}
 
 
+# ---------------------------------------------------------------- Bereiche des Gutachters (Issue #21)
+def gutachten_bereiche(docs: list[dict], code: str) -> list[dict]:
+    """Homogenbereiche, die der Gutachter im Bericht festlegt (Extraktion homogenbereiche_text), fuer eine ATV;
+    Bereiche ohne genannte ATV gelten fuer jede (mit Hinweis)."""
+    out = []
+    for d in docs:
+        for e in d.get("homogenbereiche_gutachten") or []:
+            if not e.get("atv") or code in e["atv"]:
+                out.append({**e, "dokument": d["document"]["file"]})
+    return out
+
+
+def vorschlag_aus_gutachten(code: str, einheiten: list[dict], bereiche_gutachten: list[dict]) -> dict:
+    """Vorschlag, der von den Bereichen des Gutachters ausgeht: je Einheit der Bereich, dessen Name sie nennt
+    (Name vor Bodenart vor Bodengruppe vor Hauptgruppe); gleich gute Bereiche = keine Zuordnung. Ergebnis wie
+    vorschlag_fuer, dazu die Einheiten ohne Bereich (mit Grund) und die Bereiche ohne Einheit: dort weichen Modell
+    und Gutachten voneinander ab."""
+    from . import bodenkennwerte as bk
+    zuordnung, grund, ohne = {}, {}, []
+    for e in einheiten:
+        m = merkmale(e)
+        e2 = {**e, "bodengruppe": m["bodengruppe"]}
+        bewertet = []
+        for g in bereiche_gutachten:
+            zeile = {"bezeichnung": f"{g.get('name', '')} {g.get('ortsueblich', '')}",
+                     "bodengruppen": g.get("bodengruppen", []) + (g.get("bodengruppen_auffuellung", [])
+                                                                   if m["verhalten"] == "anthropogen" else [])}
+            p, warum = bk._treffer(e2, zeile)
+            if not p and (w := bk.hauptgruppe_trifft(e2, g.get("bodengruppen", []))):
+                p, warum = 0.5, w
+            if p:
+                bewertet.append((p, warum, g))
+        if not bewertet:
+            ohne.append({"einheit": e["name"], "grund": "kein Bereich des Gutachtens nennt sie"})
+            continue
+        best = max(p for p, _, _ in bewertet)
+        oben = [(w, g) for p, w, g in bewertet if p == best]
+        if len(oben) > 1:
+            ohne.append({"einheit": e["name"], "grund": "passt gleich gut zu " + ", ".join(g["bereich"] for _, g in oben)})
+            continue
+        zuordnung[e["name"]] = oben[0][1]["bereich"]
+        grund[e["name"]] = oben[0][0]
+    bereiche_ = []
+    for g in bereiche_gutachten:
+        drin = [e["name"] for e in einheiten if zuordnung.get(e["name"]) == g["bereich"]]
+        bereiche_.append({"name": g["bereich"], "titel": g.get("name") or "", "einheiten": drin,
+                          "grund": "; ".join(f"{x}: {grund[x]}" for x in drin) or "keine Einheit des Modells",
+                          "bodengruppen": g.get("bodengruppen", []), "seite": g.get("seite"),
+                          "dokument": g.get("dokument")})
+    return {"atv": code, "quelle": "Gutachten", "zuordnung": zuordnung, "bereiche": bereiche_,
+            "einheiten_ohne_bereich": ohne, "bereiche_ohne_einheit": [b["name"] for b in bereiche_ if not b["einheiten"]]}
+
+
 # ---------------------------------------------------------------- Kennwerte aus den Beschreibungen (docs/28 §6)
 # Was die Schichtbeschreibungen des Extrakts hergeben: nur Ansprache (Worte), keine Laborwerte. Je Kennwert die
 # Angaben mit ihrer Haeufigkeit; alles andere bleibt offen und wird so genannt.
@@ -193,6 +246,28 @@ def _haeufig(werte: list[str], n: int) -> str:
     return ", ".join(f"{w} ({k}/{n})" for w, k in Counter(werte).most_common(4))
 
 
+# Kennwert der ATV-Matrix -> Laborwerte (services/extractor/labor.py, an den Schichten)
+_LABOR = {"9": ("wassergehalt",), "10b": ("plastizitaetszahl",), "11b": ("konsistenzzahl",), "12": ("kf",),
+          "14": ("kalkgehalt",), "16": ("gluehverlust",), "5": ("trockendichte",)}
+
+
+def _labor_kennwerte(out: dict[str, str], schichten: list[dict]) -> None:
+    """Gemessene Werte vor der Ansprache: Spanne, n und Mittel aus den Laborblaettern."""
+    from . import labor
+    st = labor.statistik(schichten)
+    if not st:
+        return
+    for nr, keys in _LABOR.items():
+        t = [labor.text(st, k) for k in keys if k in st]
+        if t:
+            zusatz = {"5": "Trockendichte, ", "16": "Glühverlust, "}.get(nr, "")
+            out[nr] = f"Labor: {zusatz}{'; '.join(t)}"
+    if all(k in st for k in ("ton", "schluff", "sand")):
+        f = lambda k: f"{st[k]['mittel']:.0f}" if k in st else "–"                      # noqa: E731
+        out["2"] = (f"Labor: T/U/S/G im Mittel {f('ton')}/{f('schluff')}/{f('sand')}/{f('kies')} % "
+                    f"(n = {st['sand']['n']})")
+
+
 def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
     """Kennwert-Nr -> Angabe aus den Beschreibungen ("steif (5/8), weich (1/8)"); nur was genannt ist."""
     from .normen import deuten
@@ -201,9 +276,10 @@ def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
     out: dict[str, str] = {}
 
     def setze(nr: str, werte: list[str], zusatz: str = "") -> None:
-        if werte:
+        if werte and nr not in out:                    # Laborwerte gehen der Ansprache vor
             out[nr] = _haeufig(werte, n) + zusatz
 
+    _labor_kennwerte(out, schichten)
     setze("1", [d.benennung for d in ds if d.benennung])
     setze("3a", ["Steine genannt" for d in ds if any(a.klasse == "Steine" for a in d.nebenanteile) or d.klasse == "Steine"],
           " – nur Ansprache, kein Massenanteil")

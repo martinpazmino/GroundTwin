@@ -197,7 +197,8 @@
     {
      "depth": 3.0,
      "nhn": 767.17,
-     "kind": "gemessen"
+     "kind": "Ruhewasser",
+     "evidence": "Legende: Symbol voll"
     }
    ],
    "groundwater_status": null,
@@ -581,7 +582,14 @@
     {
      "depth": 3.8,
      "nhn": 766.82,
-     "kind": "gemessen"
+     "kind": "Ruhewasser",
+     "evidence": "Legende: Symbol voll"
+    },
+    {
+     "depth": 6.7,
+     "nhn": 763.92,
+     "kind": "angetroffen",
+     "evidence": "Legende: Symbol v"
     }
    ],
    "groundwater_status": null,
@@ -797,7 +805,8 @@
     {
      "depth": 7.3,
      "nhn": 764.35,
-     "kind": "gemessen"
+     "kind": "Ruhewasser",
+     "evidence": "Legende: Symbol voll"
     }
    ],
    "groundwater_status": null,
@@ -1801,5 +1810,299 @@
    ]
   }
  ],
- "soundings": {}
+ "soundings": {},
+ "wasserstaende": [],
+ "kennwerte": [
+  {
+   "bezeichnung": "Fließerden: Schluff, tonig Ton, schluffig TM, steif",
+   "name": "",
+   "bodengruppen": [
+    "TM"
+   ],
+   "werte": {
+    "wichte": {
+     "text": "18 - 19",
+     "min": 18.0,
+     "max": 19.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "8 - 9",
+     "min": 8.0,
+     "max": 9.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "25",
+     "min": 25.0,
+     "max": 25.0,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "5 - 10",
+     "min": 5.0,
+     "max": 10.0,
+     "einheit": "kN/m²"
+    },
+    "steifemodul": {
+     "text": "4 - 6",
+     "min": 4.0,
+     "max": 6.0,
+     "einheit": "MN/m²"
+    }
+   },
+   "seite": 5,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "Verwitterungslehm TA steif halbfest",
+   "name": "",
+   "bodengruppen": [
+    "TA"
+   ],
+   "werte": {
+    "wichte": {
+     "text": "19",
+     "min": 19.0,
+     "max": 19.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "9",
+     "min": 9.0,
+     "max": 9.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "20",
+     "min": 20.0,
+     "max": 20.0,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "10",
+     "min": 10.0,
+     "max": 10.0,
+     "einheit": "kN/m²"
+    },
+    "steifemodul": {
+     "text": "4 - 6",
+     "min": 4.0,
+     "max": 6.0,
+     "einheit": "MN/m²"
+    }
+   },
+   "seite": 5,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "Verwitterungslehm TA steif halbfest",
+   "name": "",
+   "bodengruppen": [
+    "TA"
+   ],
+   "werte": {
+    "wichte": {
+     "text": "20 - 21",
+     "min": 20.0,
+     "max": 21.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10 - 11",
+     "min": 10.0,
+     "max": 11.0,
+     "einheit": "kN/m³"
+    },
+    "steifemodul": {
+     "text": "8 - 14",
+     "min": 8.0,
+     "max": 14.0,
+     "einheit": "MN/m²"
+    }
+   },
+   "seite": 5,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "Tonstein, stark schluffig verwittert, halbfest",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "20 - 21",
+     "min": 20.0,
+     "max": 21.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "10 - 11",
+     "min": 10.0,
+     "max": 11.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "27,5",
+     "min": 27.5,
+     "max": 27.5,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "5 - 10",
+     "min": 5.0,
+     "max": 10.0,
+     "einheit": "kN/m²"
+    },
+    "steifemodul": {
+     "text": "15 - 25",
+     "min": 15.0,
+     "max": 25.0,
+     "einheit": "MN/m²"
+    }
+   },
+   "seite": 5,
+   "form": "Tabelle",
+   "hinweise": []
+  },
+  {
+   "bezeichnung": "Tonstein, schluffig, sehr mürbe",
+   "name": "",
+   "bodengruppen": [],
+   "werte": {
+    "wichte": {
+     "text": "21 - 23",
+     "min": 21.0,
+     "max": 23.0,
+     "einheit": "kN/m³"
+    },
+    "wichte_auftrieb": {
+     "text": "11 - 13",
+     "min": 11.0,
+     "max": 13.0,
+     "einheit": "kN/m³"
+    },
+    "reibungswinkel": {
+     "text": "30 - 35",
+     "min": 30.0,
+     "max": 35.0,
+     "einheit": "°"
+    },
+    "kohaesion": {
+     "text": "10",
+     "min": 10.0,
+     "max": 10.0,
+     "einheit": "kN/m²"
+    },
+    "steifemodul": {
+     "text": "30 - 50",
+     "min": 30.0,
+     "max": 50.0,
+     "einheit": "MN/m²"
+    }
+   },
+   "seite": 5,
+   "form": "Tabelle",
+   "hinweise": []
+  }
+ ],
+ "labor": [
+  {
+   "bohrungen": [
+    "BK 2"
+   ],
+   "von": 5.0,
+   "bis": 6.0,
+   "werte": {
+    "trockendichte": 1.775,
+    "wassergehalt": 13.1,
+    "cbr": 23.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    17
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 3"
+   ],
+   "von": 4.2,
+   "bis": 4.8,
+   "werte": {
+    "trockendichte": 1.6,
+    "wassergehalt": 16.5,
+    "cbr": 18.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    18
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 3"
+   ],
+   "von": 7.0,
+   "bis": 8.0,
+   "werte": {
+    "trockendichte": 1.799,
+    "wassergehalt": 11.1,
+    "cbr": 20.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    19
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 4"
+   ],
+   "von": 5.5,
+   "bis": 6.0,
+   "werte": {
+    "trockendichte": 1.642,
+    "wassergehalt": 19.7,
+    "cbr": 17.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    20
+   ],
+   "hinweise": []
+  },
+  {
+   "bohrungen": [
+    "BK 4"
+   ],
+   "von": 7.0,
+   "bis": 8.0,
+   "werte": {
+    "trockendichte": 1.652,
+    "wassergehalt": 16.9,
+    "cbr": 17.0
+   },
+   "versuche": [
+    "cbr"
+   ],
+   "seiten": [
+    21
+   ],
+   "hinweise": []
+  }
+ ]
 }
