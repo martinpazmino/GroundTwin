@@ -29,7 +29,7 @@
   "Grenzen exakt": "55/55",
   "Bodenart": "-",
   "GOK": "6/11",
-  "GW": "2/2",
+  "GW": "3/8",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,
   "falsches GW": 0,
@@ -281,7 +281,7 @@
   "Grenzen exakt": "5/5",
   "Bodenart": "5/5",
   "GOK": "1/1",
-  "GW": "0/1",
+  "GW": "1/1",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,
   "falsches GW": 0
@@ -360,6 +360,50 @@
   "Bodenart": "5/5",
   "GOK": "1/1",
   "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s20_raster_gw_symbol": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s21_raster_schraffur_dreiecke": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s22_raster_dreieck_ohne_linie": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s23_raster_legende_dach": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "2/2",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,
   "falsches GW": 0
