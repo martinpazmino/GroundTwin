@@ -698,8 +698,11 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
     elif art == "durchmesser":
         d = zahl(op.get("wert"))
         p.durchmesser = None if d is None or d <= 0 else round(d, 3)
-    elif art == "ueberhoehung":
-        p.ueberhoehung = int(op["wert"])
+    elif art == "ueberhoehung":                          # Viewer: Hoehen mal Faktor (Auswahl 1x bis 20x)
+        f = zahl(op.get("wert"))
+        if f is None or f != int(f) or not 1 <= f <= 50:
+            raise ValueError("Überhöhung: ganze Zahl von 1 bis 50")
+        p.ueberhoehung = int(f)
     elif art == "vorgabe":
         w = op.get("wert")
         p.vorgabe = None if not w else [{"name": str(v["name"]).strip(),

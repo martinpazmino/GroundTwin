@@ -423,3 +423,24 @@ def test_pdf_extraktion_mit_fortschritt_und_ablage(tmp_path, monkeypatch):
     v, e = rechnen([doc], p)
     assert e.bericht["pruefungen"]["alle_koerper_geschlossen"]
     assert not math.isnan(e.bericht["parameter"]["durchmesser_auto_m"])
+
+
+def test_modell_erzeugen_automatik_ueberhoehung_und_vorgabe():
+    docs = lade("demo_synthetisch.json")
+    p = projekt(docs)
+    assert (p.erzeugt, p.auto, p.ueberhoehung, p.vorgabe) == (False, True, 5, None)
+    pj.aendern(docs, p, {"op": "erzeugen"})
+    pj.aendern(docs, p, {"op": "auto", "wert": False})
+    pj.aendern(docs, p, {"op": "ueberhoehung", "wert": 10})
+    pj.aendern(docs, p, {"op": "vorgabe", "wert": [{"name": " Kieslinse ", "bodenarten": ["Kies", " ", "Sand"]},
+                                                   {"name": "  ", "bodenarten": ["Ton"]}]})
+    assert (p.erzeugt, p.auto, p.ueberhoehung) == (True, False, 10)
+    assert p.vorgabe == [{"name": "Kieslinse", "bodenarten": ["Kies", "Sand"]}]   # leere Namen und Felder fallen weg
+    q = pj.laden(pj.speichern(p))
+    assert (q.erzeugt, q.auto, q.ueberhoehung, q.vorgabe) == (True, False, 10, p.vorgabe)
+    pj.aendern(docs, p, {"op": "vorgabe", "wert": []})
+    assert p.vorgabe is None                                                     # leer = automatisch
+    for falsch in (0, -5, 2.5, "x", None, 500):
+        with pytest.raises(ValueError):
+            pj.aendern(docs, p, {"op": "ueberhoehung", "wert": falsch})
+    assert p.ueberhoehung == 10

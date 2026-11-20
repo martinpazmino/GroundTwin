@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import hashlib
 import json
 import sys
 import time
@@ -117,7 +118,10 @@ def main() -> int:
         print("OK: keine Regression" if status == 0 else "FEHLGESCHLAGEN")
     if args.write and args.baseline:
         Path(args.baseline).write_text(json.dumps(results, indent=1, ensure_ascii=False))
-        print("Baseline geschrieben:", args.baseline)
+        huelle = hashlib.sha256(Path(args.module).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        seite = Path(args.baseline).with_suffix(".modul.json")        # tests/test_hausregeln.py prueft sie
+        seite.write_text(json.dumps({"modul": Path(args.module).name, "sha256": huelle}, indent=1) + "\n")
+        print("Baseline geschrieben:", args.baseline, "+", seite.name)
     return status
 
 

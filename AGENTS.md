@@ -16,7 +16,10 @@ jeder Auftrag einhalten muss.
 6. IFC 4.3 gültig, Einheit METRE, exakte Kontakte, geschlossene Körper.
 7. Grundlegende Architektur nur mit technischer Begründung ändern.
 8. Geschützt (nur mit ausdrücklicher Freigabe): `services/extractor/prototyp_v4.py`, `benchmark/`,
-   `constraints.txt`, `.github/workflows/`, `CLAUDE.md`, `LICENSE`, `agenten/`.
+   `constraints.txt`, `.github/workflows/`, `CLAUDE.md`, `LICENSE`, `agenten/`, `tests/test_hausregeln.py`.
+9. Hausregeln und Funktionskarte (docs/31): `tests/test_hausregeln.py` und `tests/test_funktionskarte.py` müssen grün
+   bleiben; die Meldung sagt, wie es richtig geht. Eine neue Route oder Operation bekommt einen Eintrag in
+   `docs/feature_map.json` mit Schritt und Beweis (Test oder Prüfung in `scripts/check_app.mjs`).
 
 **Sprache:** Code, Kommentare und Oberfläche auf Deutsch; Dokumentation auf Englisch mit den deutschen Fachbegriffen
 (Bohrung, Schicht, GOK, Lageplan …).

@@ -44,6 +44,7 @@ The notes are in English and keep the German technical terms of the Gutachten an
 - [26 Bohrungen of the Länder without a service](26_laender_bohrungen_options.md): sources per Land, options (a)–(e), recommendation, and the WMS prototype (`bohrdaten_wms.py`, not yet wired).
 - [29 GroundTwin Analysis](29_groundtwin_analysis.md): concept (proposed): information package on AGSi, knowledge catalogue with computed dependencies, readiness planner, value kinds and provenance, roadmap A0–A7.
 - [30 GroundTwin Analysis research log](30_groundtwin_analysis_research.md): AGSi 1.0.1 schema findings, DAUB Teil 3 structure, DAUB TBM selection tables (SLS, EPB), screening experiment on real examples, PLAXIS interfaces.
+- [31 Agent guardrails](31_agent_guardrails.md): rules of CLAUDE.md as tests (`test_hausregeln.py`), feature map with proofs (`feature_map.json`), `dist` check in CI, commands `/regel` and `/verifizieren`.
 - [28 Homogenbereiche (VOB/C)](28_homogenbereiche.md): Einheiten per Gewerk (ATV) to Homogenbereiche, the Kennwerte matrix per ATV, Pset per Einheit and Bodenschicht, a model of Homogenbereiche only; colours of DIN 4023 Tab. 2/3.
 - [27 Ground Analysis and GemPy](27_ground_analysis_gempy.md): what GemPy needs and gives, measured on this project's data; the missing dip of the layers; the component and its phases. **G1 built** (`services/analyse`): Kreuzprobe, Unsicherheit, virtuelle Bohrung.
 
