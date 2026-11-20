@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D108 (D100–D103, D105–D108 proposed).
+- `docs/11_decisions.md`: decisions D1–D109 (D100–D103, D105–D109 proposed).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -68,8 +68,14 @@ license **AGPL-3.0-or-later** (D79).
   Roadmap A0–A7 + data workstream B (#18, #26, #27) as critical path.
 - `docs/24_agent_team.md`: agent team (MVP built in `agenten/`): Claude as orchestrator, Gemini API agents (no tools,
   patches in worktrees, Claude approves), measured token profile, Google subscription limits (no automation through `agy`).
+  Scheduled routines the user runs in Antigravity: `agenten/routinen/` (push only to `agy/routine-<name>`, docs/31 §6).
 
 ## Working rules
+- **Rules are checks** (docs/31, D109): `tests/test_hausregeln.py` enforces the layers of the code, network only
+  through `netz.py`, nothing swallowed silently, no third-party PDFs, no secrets or model ids, no `_char`, and the
+  baseline bound to the hash of `prototyp_v4.py` (`regression.py --write` writes `baseline_v4.modul.json`).
+  `docs/feature_map.json` lists every route and operation with its proof (`tests/test_funktionskarte.py`); a new
+  function gets an entry. When you correct an agent, use `/regel` (a check, not prose); before "done", `/verifizieren`.
 - **Blind test**: with a new PDF, freeze the predictions (`benchmark/blind_test.py freeze`)
   and **push them to the repo before opening the PDF**; then transcribe the ground truth in `benchmark/groundtruth/`.
 - Always keep blind figures apart from training figures.

@@ -19,6 +19,7 @@ from .anbieter import AnbieterFehler, Antwort
 from .einstellungen import Einstellungen
 
 GESCHUETZT = ("services/extractor/prototyp_v4.py", "benchmark/", "constraints.txt", ".github/workflows/", "CLAUDE.md",
+              "tests/test_hausregeln.py",          # Hausregeln (docs/31): nur Claude aendert sie
               "LICENSE", "agenten/", "AGENTS.md")
 BUDGET = {"pruefer": 60_000, "testanalyst": 80_000}
 SCHWERE = {"hoch": 3, "mittel": 2, "niedrig": 1}

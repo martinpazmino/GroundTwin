@@ -6,6 +6,12 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- House rules as tests (`tests/test_hausregeln.py`): layers of the code, network only through `netz.py`, nothing
+  swallowed silently, no third-party PDFs, ground truth with sha256, no secrets or model ids, no `_char`, and the
+  baseline bound to the hash of `prototyp_v4.py` (`regression.py --write` writes `baseline_v4.modul.json`) (docs/31).
+- Feature map `docs/feature_map.json` with a proof per function, checked against every API route and project
+  operation (`tests/test_funktionskarte.py`); CI fails when `apps/web/dist` does not match the source; commands
+  `/regel` and `/verifizieren` for agents (docs/31, D109).
 - Water level tables in the report (Aufschluss | Wasserstand m u. GOK | Wasserart): kind from footnote, column or the
   sentence on the table, merged into the levels of the Bohrungen with evidence (Issue #26, docs/06 §4).
 - Scanned report pages are read by OCR in the Kennwerte, laboratory and Homogenbereich stages; results carry
