@@ -693,7 +693,8 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     const m = daten?.modell ?? {};
     const info: string[] = [];
     if (daten) {
-      info.push(`${daten.einheiten.length} Einheiten · ${daten.bohrungen.length} Bohrungen`);
+      info.push(`${daten.einheiten.length} Einheiten · ${daten.bohrungen.length} Bohrungen` +
+        (daten.sondierungen.length ? ` · ${daten.sondierungen.length} Sondierungen` : ""));
       if (m.Lagebezug !== undefined) info.push(String(m.Lagebezug));
       if (m.Modellbasis_NHN !== undefined) info.push(`Basis ${m.Modellbasis_NHN} m NHN`);
       if (m.Pruefstand) info.push(`Prüfstand: ${m.Pruefstand}`);

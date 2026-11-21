@@ -476,7 +476,7 @@ class Arbeitsplatz:
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:
         """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser und Gebaeude (gehoeren zum IFC, nicht zur Geometrie)."""
         dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand"),
-                         self._hb_fuer_ifc(p)], sort_keys=True)
+                         self._hb_fuer_ifc(p), p.sondierung], sort_keys=True)          # Sondierungen gehoeren zum IFC
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
 
     def hb_vorschlag(self, sig: str, atv: str) -> dict:
@@ -587,12 +587,15 @@ class Arbeitsplatz:
             if not ziel.exists():
                 ziel.write_bytes(pl.ifc_bytes(m, vorb.docs, durchmesser=p.durchmesser,
                                               durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p)))
+                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p),
+                                      sondierungen=sd.fuer_ifc(docs, p)[0]))
                 alte = sorted((self.web / "modelle").glob("*.ifc"), key=lambda f: f.stat().st_mtime)[:-20]
                 for f in alte:
                     f.unlink(missing_ok=True)
+            raus = sd.fuer_ifc(docs, p)[1]
+            s_hinweis = ["Sondierungen nicht im IFC: " + ", ".join(f"{r['code']} ({r['grund']})" for r in raus)] if raus else []
             return {"schluessel": schluessel, "fehler": "", "bericht": bericht, "ifc": f"/dateien/modelle/{name}",
-                    "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"])),
+                    "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"] + s_hinweis)),
                     "nicht_im_modell": vorb.nicht_im_modell + bericht["ausgeschlossen"]}
 
     # ------------------------------------------------------------ Ground Analysis (docs/27, G2)
@@ -730,7 +733,8 @@ class Arbeitsplatz:
                 letzter = p.eincheckungen[-1] if p.eincheckungen else None
                 inhalt = pl.ifc_bytes(m, vorb.docs, pruefstand=pj.stand_text(letzter) if letzter else "nicht eingecheckt",
                                       durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p))
+                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p),
+                                      sondierungen=sd.fuer_ifc(docs, p)[0])
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
 

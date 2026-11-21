@@ -123,3 +123,62 @@ def test_ueber_die_app(client):
     r = client.post(f"/api/projekt/{sig}/aendern",
                     json={"ops": [{"op": "sondierung", "sondierung": "0:S0", "feld": "gok", "wert": "x"}]})
     assert r.status_code == 400
+
+
+def test_ifc_mit_sondierungen():
+    """Teil 3: je Sondierung mit Lage und GOK eine IfcBorehole 'Sondierung <Art>' mit Saeule an der richtigen Stelle,
+    Herkunft, Pruefvermerk und der Kurve als IfcPropertyTableValue; ohne Lage bleibt sie draussen (mit Grund)."""
+    ifcopenshell = pytest.importorskip("ifcopenshell")
+    validate = pytest.importorskip("ifcopenshell.validate")
+    import numpy as np
+
+    from ui import pipeline as pl
+    docs = lade("demo_synthetisch.json")
+    p = pj.neues_projekt(docs, "t")
+    for sid, x, y in (("0:S0", 565030.0, 5933020.0), ("0:S2", 565080.0, 5933060.0)):
+        pj.aendern(docs, p, {"op": "sondierung", "sondierung": sid, "feld": "x", "wert": x})
+        pj.aendern(docs, p, {"op": "sondierung", "sondierung": sid, "feld": "y", "wert": y})
+    pj.aendern(docs, p, {"op": "sondierung", "sondierung": "0:S0", "feld": "geprueft", "wert": True})
+    drin, raus = sd.fuer_ifc(docs, p)
+    assert [s["code"] for s in drin] == ["DPH 1", "CPT 1"] and raus == [{"id": "0:S1", "code": "DPH 2", "grund": "ohne Lage"}]
+    e = pj.einstellungen(p)
+    v = pj.modell_eingabe(docs, p, e)
+    m = pl.modell_bauen(v.docs, p.vorgabe, e.methode, e.puffer, e.raster, e.basis, pj.ursprung(p, v))
+    f = ifcopenshell.file.from_string(pl.ifc_bytes(m, v.docs, sondierungen=drin).decode())
+    log = validate.json_logger()
+    validate.validate(f, log)
+    assert not log.statements, log.statements[:3]
+    sond = {b.Name: b for b in f.by_type("IfcBorehole") if (b.ObjectType or "").startswith("Sondierung")}
+    assert set(sond) == {"DPH 1", "CPT 1"} and sond["DPH 1"].ObjectType == "Sondierung DPH"
+    assert len([b for b in f.by_type("IfcBorehole") if b.Description != "Sondierung"]) == 12   # Bohrungen unveraendert
+
+    def psets(b):
+        return {r.RelatingPropertyDefinition.Name: r.RelatingPropertyDefinition for r in b.IsDefinedBy}
+
+    ps = psets(sond["DPH 1"])
+    werte = {q.Name: q.NominalValue.wrappedValue for q in ps["CPset_Sondierung"].HasProperties}
+    assert werte["GOK_NHN"] == 38.6 and werte["Endtiefe_m"] == 6.0 and werte["Geprueft"] is True
+    (n10,) = ps["CPset_Sondierung_Werte"].HasProperties
+    assert n10.Name == "N10" and len(n10.DefiningValues) == 60
+    gelesen = [r[2] for r in docs[0]["sondierungen"][0]["werte"]]
+    assert [w.wrappedValue for w in n10.DefinedValues] == [float(x) for x in gelesen]   # unveraendert
+    cpt = {q.Name for q in psets(sond["CPT 1"])["CPset_Sondierung_Werte"].HasProperties}
+    assert {"q_c", "f_s"} <= cpt
+    # Saeule: Mitte an der Lage (lokal = absolut - Ursprung), von der GOK bis GOK - Endtiefe
+    rep = sond["DPH 1"].Representation.Representations[0].Items[0]
+    k = np.array(rep.Coordinates.CoordList)
+    assert np.allclose(k[:, :2].mean(axis=0), [565030.0 - m.ursprung[0], 5933020.0 - m.ursprung[1]], atol=0.01)
+    assert np.isclose(k[:, 2].max(), 38.6) and np.isclose(k[:, 2].min(), 32.6)
+    assert next(q.NominalValue.wrappedValue for g in f.by_type("IfcGeomodel") for r in g.IsDefinedBy
+                for q in r.RelatingPropertyDefinition.HasProperties if q.Name == "Sondierungen_im_IFC") == "DPH 1, CPT 1"
+
+
+def test_modell_nennt_sondierungen_ohne_lage(client):
+    sig = client.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
+    client.post(f"/api/projekt/{sig}/aendern", json={"ops": [
+        {"op": "sondierung", "sondierung": "0:S0", "feld": "x", "wert": 565030},
+        {"op": "sondierung", "sondierung": "0:S0", "feld": "y", "wert": 5933020}]})
+    m = client.post(f"/api/projekt/{sig}/modell", json={}).json()
+    assert "Sondierungen nicht im IFC: DPH 2 (ohne Lage), CPT 1 (ohne Lage)" in m["hinweise"]
+    ifc = client.get(m["ifc"]).text
+    assert "'Sondierung DPH'" in ifc and "'DPH 2'" not in ifc

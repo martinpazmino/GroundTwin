@@ -139,3 +139,42 @@ def viewer(docs: list[dict], p: Projekt) -> list[dict]:
     return [{"id": z["id"], "code": z["code"], "art": z["art"], "x": z["x"], "y": z["y"],
              "gok": z["gok"], "ende": z["endtiefe"], "geprueft": z["geprueft"]}
             for z in zeilen(docs, p) if not z["entfernt"]]
+
+
+def fuer_ifc(docs: list[dict], p: Projekt) -> tuple[list[dict], list[dict]]:
+    """Sondierungen fuer das IFC (baugrundmodell.modell.ifc_schreiben, Teil 3): im Projekt, mit Lage, GOK und Endtiefe.
+    Rueckgabe (drin, draussen); draussen nennt den Grund (ohne Lage / ohne GOK / ohne Endtiefe / entfernt)."""
+    drin, draussen = [], []
+    for z in zeilen(docs, p):
+        d, s = finden(docs, z["id"])
+        grund = ("entfernt" if z["entfernt"] else "ohne Lage" if z["x"] is None or z["y"] is None
+                 else "ohne GOK" if z["gok"] is None else "ohne Endtiefe" if not z["endtiefe"] else "")
+        if grund:
+            draussen.append({"id": z["id"], "code": z["code"], "grund": grund})
+            continue
+        dph = z["art"].upper().startswith(("DP", "SRS"))
+        werte = s.get("werte") or []
+        kurven, zensierte = [], []
+        if dph:
+            tiefen, n10 = [], []
+            for r in werte:
+                w, zen = _wert(r[2]) if len(r) >= 3 else (None, False)
+                if w is None:
+                    continue
+                tiefen.append(float(r[1]))
+                n10.append(w)
+                if zen:
+                    zensierte.append((float(r[0]), float(r[1]), w))
+            kurven.append(("N10", tiefen, n10, "Schläge/10 cm", "Schlagzahl je 10 cm, Tiefe = Unterkante der Stufe"))
+        else:
+            for i, name in ((1, "q_c"), (2, "f_s"), (3, "R_f")):
+                paare = [(float(r[0]), float(r[i])) for r in werte if len(r) > i and r[i] is not None]
+                if paare:
+                    kurven.append((name, [a for a, _ in paare], [b for _, b in paare],
+                                   (s.get("einheiten") or {}).get(name, "wie im Diagramm (Einheit nicht gelesen)"),
+                                   f"{name} über der Tiefe, aus dem Diagramm gelesen"))
+        beleg = s.get("beleg") or {}
+        drin.append({**z, "werte": werte, "kurven": kurven, "zensierte": zensierte,
+                     "sha256": d["document"].get("sha256"), "methode": beleg.get("methode"),
+                     "lage": z["lage_aus"] + (f" (EPSG:{z['epsg']})" if z["epsg"] else "")})
+    return drin, draussen

@@ -176,7 +176,34 @@ The tests hold the strongest ones: rule off → case fails (`tests/test_sondieru
   `demo_synthetisch.json` three synthetic ones read from the stress cases s01, s05, s04 (marked *synthetisch*).
 - Tests `tests/test_sondierungen_app.py`, end-to-end check *S* in `scripts/check_app.mjs`, feature map entry
   `bohrungen-sondierungen`.
-- Not yet: Sondierungen in the IFC and BoreholeML (parts 3–4), and Sondierungen as data for the layer model (#28).
+- Not yet: Sondierungen in BoreholeML (part 4), and Sondierungen as data for the layer model (#28). The IFC: §7.
+
+
+## 7. Sondierungen in the IFC (2026-11-21, Issue #27 part 3)
+
+**Decision:** IFC 4.3 has no class and no predefined type for a sounding (`IfcBorehole` has no `PredefinedType`), so a
+Sondierung is an `IfcBorehole` with `ObjectType` `Sondierung DPH` / `Sondierung CPT` and `Description` `Sondierung` —
+the IFC way for a type without an enumeration — next to the Bohrungen in the `IfcSite`. Other tools see a borehole of a
+user-defined type; nothing is lost.
+
+- **Which**: only Sondierungen in the project with a Lage, a GOK and an end depth (`ui.sondierung.fuer_ifc`). The
+  others stay out and the step *Modell* says so (`Sondierungen nicht im IFC: DPH 2 (ohne Lage)`).
+- **Geometry**: a slim column (0.4 × the Bohrung diameter, 8 sides) from the GOK to GOK − end depth at the Lage (local
+  = absolute − origin, as the Bohrungen); brown for DPH, blue for CPT. It is display only: Sondierungen do **not** enter
+  the layer model (whether they could is #28).
+- **`CPset_Sondierung`**: Art, Form, GOK_NHN + GOK_Quelle, Endtiefe_m + Endtiefe_aus, Werte_n, N10_max, censored
+  steps (`Zensiert_n`, `Zensiert_Tiefen`), Konfidenz, Geprueft, Hinweise.
+- **`CPset_Herkunft`**: Dokument, SHA256, Seite, Methode (vector diagram, table, Längsschnitt …), Quelle (Text/OCR), Lage.
+- **`CPset_Sondierung_Werte`**: the curve as `IfcPropertyTableValue` — DPH: `N10` (defining values: depth of the step
+  bottom in m, defined values: blows per 10 cm, exactly as read); CPT: `q_c`, `f_s`, `R_f` over the depth. A unit the
+  PDF does not print is written as *wie im Diagramm (Einheit nicht gelesen)*, never guessed.
+- `CPset_Baugrundmodell.Sondierungen_im_IFC` lists them. The IFC validates without findings (ifcopenshell.validate),
+  unit METRE.
+- **Viewer**: counts Sondierungen apart from the Bohrungen (*7 Einheiten · 12 Bohrungen · 2 Sondierungen*), shows and
+  hides them with the columns; a table property reads *60 Werte (Tiefe [m] -> N10 [Schläge/10 cm])*.
+- Tests `tests/test_sondierungen_app.py::test_ifc_mit_sondierungen` (validation, position, values unchanged) and
+  `test_modell_nennt_sondierungen_ohne_lage`.
+- Next: BoreholeML (part 4).
 
 
 Up: [Index](README.md)

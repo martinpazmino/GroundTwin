@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen in the IFC (Issue #27 part 3): `IfcBorehole` with `ObjectType` `Sondierung DPH/CPT`, a slim column
+  at its Lage, `CPset_Sondierung`, `CPset_Herkunft` and the curve as `IfcPropertyTableValue` (N10, q_c, f_s); those
+  without Lage or GOK stay out and are named in step *Modell*; the viewer counts them apart (docs/05 §7).
 - Sondierungen in the project and the app (Issue #27 part 2): extracted with every PDF, listed in step *Bohrungen*
   with their curve (DPH steps, CPT q_c/f_s) and the PDF page; reviewed / removed, GOK from the PDF or entered, Lage
   entered or set on the locked Lageplan, ▼ markers in the Lage editor; `GET /api/projekt/{sig}/sondierung/{sid}`

@@ -18,6 +18,7 @@ export interface Inhalt {
   einheiten: Einheit[];
   bohrsaeulen: number[];
   bohrungen: number[];
+  sondierungen: number[];                  // IfcBorehole mit Description "Sondierung" (Issue #27)
   gelaende: number[];
   gebaeude: number[];
   modellname: string;
@@ -35,7 +36,10 @@ export function psets(d: Datensatz): Psets {
     const name = String(wert(ps, "Name") ?? "Pset");
     const props: Record<string, unknown> = {};
     for (const p of (ps.HasProperties as Datensatz[] | undefined) ?? []) {
-      props[String(wert(p, "Name"))] = wert(p, "NominalValue");
+      const tabelle = (p.DefiningValues as Wert[] | undefined) ?? wert(p, "DefiningValues");
+      props[String(wert(p, "Name"))] = Array.isArray(tabelle)
+        ? `${tabelle.length} Werte (${String(wert(p, "Expression") ?? "Tabelle")})`   // Kurve (IfcPropertyTableValue)
+        : wert(p, "NominalValue");
     }
     out[name] = props;
   }
@@ -74,11 +78,15 @@ export async function inhalt(model: FragmentsModel): Promise<Inhalt> {
     };
   });
   einheiten.sort((a, b) => a.reihenfolge - b.reihenfolge);
+  const bohr = kat.IFCBOREHOLE ?? [];
+  const bohrDaten = bohr.length ? await model.getItemsData(bohr, { attributesDefault: false, attributes: ["Description"] }) : [];
+  const istSondierung = (i: number) => String(wert(bohrDaten[i] as Datensatz, "Description") ?? "") === "Sondierung";
   const gm = kat.IFCGEOMODEL?.length ? (await model.getItemsData(kat.IFCGEOMODEL.slice(0, 1), mitPsets))[0] : undefined;
   return {
     einheiten,
-    bohrsaeulen,
-    bohrungen: kat.IFCBOREHOLE ?? [],
+    bohrsaeulen: [...bohrsaeulen, ...bohr.filter((_, i) => istSondierung(i))],   // Sondierungen mit den Saeulen
+    bohrungen: bohr.filter((_, i) => !istSondierung(i)),
+    sondierungen: bohr.filter((_, i) => istSondierung(i)),
     gelaende: kat.IFCGEOGRAPHICELEMENT ?? [],
     gebaeude: kat.IFCBUILDINGELEMENTPROXY ?? [],                 // LoD2-Gebaeude der Umgebung
     modellname: gm ? String(wert(gm as Datensatz, "Name")) : "",
