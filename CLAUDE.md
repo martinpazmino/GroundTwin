@@ -63,7 +63,10 @@ license **AGPL-3.0-or-later** (D79).
 - Sondierungen (#27 part 1, docs/05 §5): stage `services/extractor/sondierungen.py` (DPH tables, diagrams, Längsschnitte,
   CPT; scans withheld when unsure), measured with `benchmark/sondierungen_eval.py` against
   `benchmark/groundtruth_sondierungen/` (training, agent-transcribed, checked samples) and `baseline_sondierungen.json`
-  (bound to the hash of the stage); tests `tests/test_sondierungen_extraktion.py`. Not yet in model, IFC, BoreholeML, app.
+  (bound to the hash of the stage); tests `tests/test_sondierungen_extraktion.py`. Part 2 (docs/05 §6): in the project
+  (`ui/sondierung.py`, field `sondierung`, op `sondierung`, ids `<doc>:S<n>`; GOK from the PDF or entered, Lage entered
+  or a point on the locked plan, never guessed) and the app (step Bohrungen: list, curve, PDF; Lage: ▼ markers);
+  tests `tests/test_sondierungen_app.py`. Not yet in IFC, BoreholeML (parts 3–4).
 - `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge
@@ -165,7 +168,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (58 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (59 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

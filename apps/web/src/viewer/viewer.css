@@ -249,6 +249,12 @@ body.waehlt .nadel, body.waehlt .punktmarke { pointer-events: none; }   /* Bildp
   border: 1px dashed rgba(255, 210, 63, 0.6);
 }
 .punktmarke.gewaehlt i { box-shadow: 0 0 0 3px var(--wf-green); }
+/* Sondierung (Issue #27): Dreieck mit Spitze nach unten, nur Anzeige */
+.sondmarke { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; align-items: center; gap: 3px; }
+.sondmarke i { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 10px solid #8a5a00; margin: -10px 0 0 -6px; }
+.sondmarke.geprueft i { border-top-color: var(--wf-green); }
+.sondmarke span { font-size: 11px; background: rgba(255,255,255,.85); padding: 0 3px; border-radius: 3px; color: #5a3b00; }
 .punktmarke.gewaehlt span { border: 1px solid var(--wf-green); }
 
 .passpunkt {

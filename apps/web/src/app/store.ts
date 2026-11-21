@@ -285,7 +285,7 @@ export async function viewerAktualisieren() {
   await v.setzen({
     projekt: z.signatur, titel: z.name, ueberhoehung: z.ueberhoehung, ursprung: z.viewer.ursprung, epsg: z.viewer.epsg,
     modus: z.viewer.modus, bohrungen: z.viewer.bohrungen, unterlage: z.unterlage, ifc: ifc ?? null,
-    punkte: z.viewer.punkte ?? [],
+    punkte: z.viewer.punkte ?? [], sondierungen: z.viewer.sondierungen ?? [],
   });
   if (S.schritt === "lage") v.editor.vorschau(S.entwurf ?? undefined);
 }

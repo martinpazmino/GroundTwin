@@ -9,7 +9,7 @@
 import * as THREE from "three";
 import * as OBC from "@thatopen/components";
 import { ausSzene, hoeheZuSzene, rahmen, zuSzene } from "./rahmen";
-import { ereignis, mitApp, type Kalibrierung, type Massstab, type Nadel, type Punkt, type Unterlage } from "./kanal";
+import { ereignis, mitApp, type Kalibrierung, type Massstab, type Nadel, type Punkt, type SondierungMarke, type Unterlage } from "./kanal";
 import { huelleMelden, strahl, szeneAktualisieren, verschieben } from "./kamera";
 
 type Welt = OBC.SimpleWorld<OBC.SimpleScene, OBC.OrthoPerspectiveCamera, OBC.BaseRenderer>;
@@ -97,6 +97,7 @@ export class LageEditor {
   ausgewaehlt: string | null = null;
   punktModus = false;                                   // Klick in den gesperrten Plan setzt einen Punkt
   readonly freiePunkte = new Map<string, { daten: Punkt; marke: HTMLDivElement }>();
+  readonly sondierungen = new Map<string, { daten: SondierungMarke; marke: HTMLDivElement }>();   // nur Anzeige (#27)
   punktGewaehlt: string | null = null;
 
   private readonly ebene = document.createElement("div");
@@ -135,7 +136,7 @@ export class LageEditor {
   }
 
   // ---------------------------------------------------------------- Daten
-  setzen(nadeln: Nadel[], unterlage: Unterlage | null, punkte: Punkt[] = []) {
+  setzen(nadeln: Nadel[], unterlage: Unterlage | null, punkte: Punkt[] = [], sondierungen: SondierungMarke[] = []) {
     const alt = new Set(this.nadeln.keys());
     this.radiusAuto = THREE.MathUtils.clamp(this.ausdehnung(nadeln) / 600, 0.4, 6);
     for (const n of nadeln) {
@@ -153,6 +154,7 @@ export class LageEditor {
     }
     for (const id of alt) this.entfernen(id);
     this.punkteSetzen(punkte);
+    this.sondierungenSetzen(sondierungen);
     if (unterlage?.url !== this.unterlage?.url || JSON.stringify(unterlage?.kalibrierung) !== JSON.stringify(this.unterlage?.kalibrierung)) {
       this.entwurf = undefined;                         // gespeicherter Stand gilt
     }
@@ -284,6 +286,33 @@ export class LageEditor {
     }
   }
 
+  /** Sondierungen mit Lage als Marken (▼ und Code); ohne Lage oder entfernt keine Marke. */
+  private sondierungenSetzen(liste: SondierungMarke[]) {
+    const alt = new Set(this.sondierungen.keys());
+    for (const s of liste) {
+      if (s.x === null || s.y === null) continue;
+      alt.delete(s.id);
+      let e = this.sondierungen.get(s.id);
+      if (!e) {
+        const el = document.createElement("div");
+        el.className = "sondmarke";
+        el.dataset.id = s.id;
+        el.innerHTML = `<i></i><span></span>`;
+        this.ebene.append(el);
+        e = { daten: s, marke: el };
+        this.sondierungen.set(s.id, e);
+      }
+      e.daten = s;
+      e.marke.querySelector("span")!.textContent = s.code;
+      e.marke.classList.toggle("geprueft", s.geprueft);
+      e.marke.title = `${s.code} (${s.art}) · R ${zahlText(s.x)} · H ${zahlText(s.y)}\nSondierung: Lage und Werte im Schritt Bohrungen`;
+    }
+    for (const id of alt) {
+      this.sondierungen.get(id)!.marke.remove();
+      this.sondierungen.delete(id);
+    }
+  }
+
   /** Freien Punkt waehlen (Entf loescht ihn); null hebt die Wahl auf. */
   punktWaehlen(id: string | null) {
     this.punktGewaehlt = id;
@@ -352,6 +381,12 @@ export class LageEditor {
     for (const e of this.freiePunkte.values()) {
       zuSzene(e.daten.x, e.daten.y, 0, this.punkt).setY(yPlan).project(kam);
       const drin = planSichtbar && Math.abs(this.punkt.x) <= 1.05 && Math.abs(this.punkt.y) <= 1.05;
+      e.marke.hidden = !drin;
+      if (drin) e.marke.style.transform = `translate(${(((this.punkt.x + 1) / 2) * w).toFixed(1)}px, ${(((1 - this.punkt.y) / 2) * h).toFixed(1)}px)`;
+    }
+    for (const e of this.sondierungen.values()) {               // Sondierungen: auf dem Plan bzw. in Hoehe 0 der Szene
+      zuSzene(e.daten.x!, e.daten.y!, 0, this.punkt).setY(yPlan).project(kam);
+      const drin = this.aktiv && rahmen.modus !== "reihe" && this.markenZeigen && Math.abs(this.punkt.x) <= 1.05 && Math.abs(this.punkt.y) <= 1.05;
       e.marke.hidden = !drin;
       if (drin) e.marke.style.transform = `translate(${(((this.punkt.x + 1) / 2) * w).toFixed(1)}px, ${(((1 - this.punkt.y) / 2) * h).toFixed(1)}px)`;
     }

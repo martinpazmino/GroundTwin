@@ -54,6 +54,7 @@ def _extraktor_stand() -> str:
                                                                  EXTRAKTOR.parent / "labor.py",
                                                                  EXTRAKTOR.parent / "textebene.py",
                                                                  EXTRAKTOR.parent / "wassertabelle.py",
+                                                                 EXTRAKTOR.parent / "sondierungen.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
@@ -92,6 +93,18 @@ def labor_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
         return labor.lesen(pdf, ocr=ocr)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Laborwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
+        return []
+
+
+def sondierungen_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
+    """Sondierungen DPH/CPT (services/extractor/sondierungen.py, Issue #27); ein Fehler dort haelt die Extraktion
+    nicht auf."""
+    extraktor()
+    try:
+        import sondierungen
+        return sondierungen.lesen(pdf, ocr=ocr)
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        print(f"Sondierungen nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
@@ -146,6 +159,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
         doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel, bool(ocr))   # Bereiche des Gutachters (Issue #21)
         doc["labor"] = labor_lesen(ziel, bool(ocr))                # Laborblaetter der Anlagen (Issue #18)
         wassertabelle_einarbeiten(doc, ziel, bool(ocr))           # Wasserstands-Tabellen des Berichts (Issue #26)
+        doc["sondierungen"] = sondierungen_lesen(ziel, bool(ocr))  # DPH/CPT, eigene Stufe (Issue #27)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr

@@ -781,6 +781,28 @@ try {
     await page.screenshot({ path: `${aus}/F_standort.png` });
   }
 
+  // ---------------------------------------------------------------- S: Sondierungen DPH/CPT (Issue #27, docs/05 §6)
+  {
+    const post = (pfad, daten) => page.request.post(url + pfad, { data: daten }).then((r) => r.json());
+    const ssig = (await post("/api/beispiel", { name: "demo" })).projekt;
+    await post(`/api/projekt/${ssig}/aendern`, { ops: [
+      { op: "sondierung", sondierung: "0:S0", feld: "geprueft", wert: false },
+      { op: "sondierung", sondierung: "0:S0", feld: "x", wert: 565030 }, { op: "sondierung", sondierung: "0:S0", feld: "y", wert: 5933020 }] });
+    await page.goto(`${url}/#/${ssig}/bohrungen`);
+    await page.reload();
+    await page.waitForSelector(".sondierungen-kopf", { timeout: 120000 });
+    await page.getByRole("option", { name: /DPH 1/ }).click();
+    await page.waitForSelector(".sondierung-kurve .treppe", { timeout: 30000 });
+    const stufen = await page.locator(".sondierung-kurve .treppe").getAttribute("d").then((d) => (d.match(/V/g) ?? []).length);
+    await page.getByRole("button", { name: /^✓ Geprüft$/ }).click();
+    await warte(() => (window.app.z.pruefstand.sondierungen ?? [0])[0] >= 1, null, 30000).catch(() => {});
+    const sz = (await stand()).z;
+    await page.screenshot({ path: `${aus}/S_sondierung.png` });
+    pruefe("Sondierungen: Liste, Treppe N10 je 10 cm, geprüft gezählt, Lage im Viewer",
+      stufen === 60 && sz.pruefstand.sondierungen[0] >= 1 && sz.viewer.sondierungen.some((s) => s.code === "DPH 1" && s.x === 565030),
+      `${stufen} Stufen, ${sz.pruefstand.sondierungen}`);
+  }
+
   // ---------------------------------------------------------------- H: Homogenbereiche (VOB/C, docs/28)
   {
     const post = (pfad, daten) => page.request.post(url + pfad, { data: daten }).then((r) => r.json());   // mit Anmeldung

@@ -32,6 +32,7 @@ import numpy as np
 from ui import pipeline as pl
 from ui import plausibilitaet as pb
 from ui import projekt as pj
+from ui import sondierung as sd
 
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
@@ -438,6 +439,7 @@ class Arbeitsplatz:
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
                 "seit_einchecken_geaendert": pj.seit_einchecken_geaendert(docs, p, schluessel),
                 "bohrungen": pj.bohrungen_liste(docs, p),
+                "sondierungen": sd.zeilen(docs, p),
                 "klassen": pj.klassen_liste(),
                 "hinweise": vorb.hinweise, "nicht_im_modell": vorb.nicht_im_modell,
                 "modell": {"schluessel": schluessel, "aktuell": gecacht is not None,
@@ -451,7 +453,7 @@ class Arbeitsplatz:
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
                            "modus": p.lage_modus,
-                           "punkte": p.punkte},
+                           "punkte": p.punkte, "sondierungen": sd.viewer(docs, p)},
             }
 
     def bohrung(self, sig: str, bid: str) -> dict:
@@ -461,6 +463,14 @@ class Arbeitsplatz:
             if zeile is None:
                 raise KeyError(bid)
             return {"bohrung": zeile, "schichten": pj.schichten_liste(docs, p, bid)}
+
+    def sondierung(self, sig: str, sid: str) -> dict:
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            try:
+                return sd.detail(docs, p, sid)
+            except ValueError:
+                raise KeyError(sid) from None
 
     # ------------------------------------------------------------ Modell
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:

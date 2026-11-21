@@ -149,6 +149,36 @@ The tests hold the strongest ones: rule off → case fails (`tests/test_sondieru
 - Figures are training figures. A blind test needs a new Gutachten with Sondierungen (#16).
 
 
+## 6. Sondierungen in the project and the app (2026-11-21, Issue #27 part 2)
+
+- **Extraction**: `ui/pipeline.py` runs the stage after the Bohrungen (`sondierungen_lesen`, part of the fingerprint, so
+  a changed stage re-extracts); the canonical JSON carries `sondierungen` next to `boreholes`. A failure of the stage
+  never stops the extraction of the Bohrungen.
+- **Project** (`ui/sondierung.py`, field `Projekt.sondierung`): the read values are never changed. The project holds
+  only what the user sets: `geprueft`, in the project or removed (`modell`), `gok`, `x`/`y` (+ `epsg`, `quelle`).
+  Ids `<document>:S<n>`, a namespace of their own next to the Bohrungen.
+  - GOK: `ansatzhoehe` from the PDF (`gok_quelle` PDF), else an input (Eingabe); clearing the input returns to the PDF.
+  - Lage: an input (Rechts-/Hochwert, `manuell`) or a point on the locked Lageplan (op `punkt` with `sondierung`, or a
+    free point assigned with `punkt_zuordnen`). **Never guessed**: a DPH next to a Bohrung with the same number does
+    not stand where the Bohrung stands.
+  - End depth: from the values; for a Sondierung read without values (scans) it is the end of the depth axis and is
+    shown as `Achse (≈)` (Berlin D 7/16: 26.0 vs 26.7 m in the ground truth).
+  - Op `sondierung` {`sondierung`, `feld` ∈ geprueft, modell, x, y, gok, `wert`}; invalid ids, fields, numbers or a GOK
+    outside −500…9000 m NHN are refused. Prüfstand: `sondierungen` [geprüft, im Projekt].
+- **API**: the state lists `sondierungen` and `viewer.sondierungen`; `GET /api/projekt/{sig}/sondierung/{sid}` gives
+  all values, units and the evidence (page, frame) for the curve and the PDF.
+- **App**: step *Bohrungen* has a group *Sondierungen* under the list (✓ reviewed, ⚠ without values); the detail shows
+  the curve (DPH as N10 steps, censored values marked `>`, CPT q_c and f_s), GOK, Lage, end depth with its source, the
+  hints, and on the right the PDF page with the diagram framed; buttons *Geprüft* and *Aus dem Projekt entfernen*. Step
+  *Lage*: free points can be assigned to a Sondierung; Sondierungen with a Lage appear in the Lage editor as ▼ with
+  their code (display only, not part of the model).
+- **Examples**: `berlin_v67b.json` carries the stage's real result (6 Sondierungen, scans, no values);
+  `demo_synthetisch.json` three synthetic ones read from the stress cases s01, s05, s04 (marked *synthetisch*).
+- Tests `tests/test_sondierungen_app.py`, end-to-end check *S* in `scripts/check_app.mjs`, feature map entry
+  `bohrungen-sondierungen`.
+- Not yet: Sondierungen in the IFC and BoreholeML (parts 3–4), and Sondierungen as data for the layer model (#28).
+
+
 Up: [Index](README.md)
 
 Related: [02 Bohrprofil](02_bohrprofil_generalization.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md)

@@ -249,6 +249,10 @@ def app_erstellen(arbeit: Path | None = None, passwort: str | None = None, max_m
     def bohrung(sig: str, bid: str):
         return ap.bohrung(sig, bid)
 
+    @app.get("/api/projekt/{sig}/sondierung/{sid}")
+    def sondierung(sig: str, sid: str):
+        return ap.sondierung(sig, sid)
+
     @app.get("/api/projekt/{sig}/seite/{dokument}/{seite}")
     def seite(sig: str, dokument: int, seite: int):
         return ap.seite(sig, dokument, seite)

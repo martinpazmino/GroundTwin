@@ -2046,5 +2046,181 @@
    "hoehe_bezug": "m NHN"
   }
  ],
- "labor": []
+ "labor": [],
+ "sondierungen": [
+  {
+   "code": "R1",
+   "art": "DPH",
+   "seite": 30,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 16.0,
+   "ansatzhoehe": 41.36,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     30
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     468.0,
+     113.8,
+     487.4,
+     128.2
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  },
+  {
+   "code": "R2",
+   "art": "DPH",
+   "seite": 30,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 12.0,
+   "ansatzhoehe": 36.52,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     30
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     1123.2,
+     254.2,
+     1143.0,
+     268.2
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  },
+  {
+   "code": "D 7/16",
+   "art": "CPT",
+   "seite": 31,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 26.0,
+   "ansatzhoehe": 35.02,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     31
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     404.3,
+     95.4,
+     440.6,
+     108.0
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  },
+  {
+   "code": "DS 1/17",
+   "art": "CPT",
+   "seite": 32,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 20.0,
+   "ansatzhoehe": 35.02,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     32
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     101.2,
+     125.3,
+     144.0,
+     136.1
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  },
+  {
+   "code": "DS 2/17",
+   "art": "CPT",
+   "seite": 32,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 20.0,
+   "ansatzhoehe": 35.03,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     32
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     734.0,
+     125.3,
+     777.2,
+     136.1
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  },
+  {
+   "code": "D 4/17",
+   "art": "CPT",
+   "seite": 33,
+   "form": "diagramm",
+   "werte": [],
+   "endtiefe": 62.0,
+   "ansatzhoehe": 34.86,
+   "konfidenz": 0.35,
+   "hinweise": [
+    "Gescanntes Diagramm: Achsen/Kurven durch OCR/Aufloesung nicht sicher auswertbar — keine Werte extrahiert (konservative Scan-Regel)."
+   ],
+   "beleg": {
+    "seiten": [
+     33
+    ],
+    "auch_auf_seiten": [],
+    "bbox": [
+     397.1,
+     95.0,
+     431.6,
+     106.2
+    ],
+    "methode": "raster_konservativ",
+    "achsen": {},
+    "datei": "berlin_v67b.pdf"
+   },
+   "quelle": "OCR"
+  }
+ ]
 }

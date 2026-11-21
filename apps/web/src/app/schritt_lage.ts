@@ -325,7 +325,25 @@ function bohrungenTeil(z: Zustand) {
           @click=${() => { if (punkte) punktModus(true, b.id); }}>${b.code}</span>`)}
       </div>` : html`<p class="leise klein">Alle Bohrungen im Modell haben eine Lage.</p>`}
     ${punkte ? punktListe(z) : nothing}
+    ${reihe ? nothing : sondierungenLage(z)}
     ${reihe ? reiheTeil(z) : nothing}`;
+}
+
+/** Sondierungen ohne Lage als Ziele eines freien Punktes (Issue #27). */
+function sondierungenFuerPunkte(z: Zustand) {
+  const s = (z.viewer.sondierungen ?? []);
+  if (!s.length) return nothing;
+  return html`<optgroup label="Sondierungen">${s.map((x) => html`<option value=${`S|${x.id}`}>${x.code}${x.x === null ? "" : " (ersetzen)"}</option>`)}</optgroup>`;
+}
+
+/** Lage der Sondierungen: wie viele gesetzt; eintragen im Schritt Bohrungen oder als Punkt auf dem gesperrten Plan. */
+function sondierungenLage(z: Zustand) {
+  const s = z.viewer.sondierungen ?? [];
+  if (!s.length) return nothing;
+  const mit = s.filter((x) => x.x !== null);
+  return html`<p class="klein">Sondierungen: ${mit.length}/${s.length} mit Lage ${hilfe("sondierungen")}
+    ${s.length > mit.length ? html`<span class="leise">– ohne: ${s.filter((x) => x.x === null).map((x) => x.code).join(", ")}
+      (Punkt auf dem gesperrten Plan setzen und hier zuordnen, oder Rechts-/Hochwert im Schritt Bohrungen)</span>` : nothing}</p>`;
 }
 
 /** Punktmodus an/aus; mit Bohrung: sie bekommt den naechsten Punkt. */
@@ -377,9 +395,11 @@ function punktListe(z: Zustand) {
             <td>${lage(pt.x, pt.y)}</td>
             <td><select aria-label=${`${pt.id} zuordnen`} @change=${(ev: Event) => {
                 const ziel = (ev.target as HTMLSelectElement).value;
-                if (ziel) void aendern([{ op: "punkt_zuordnen", punkt: pt.id, bohrung: ziel }]);
+                if (ziel.startsWith("S|")) void aendern([{ op: "punkt_zuordnen", punkt: pt.id, sondierung: ziel.slice(2) }]);
+                else if (ziel) void aendern([{ op: "punkt_zuordnen", punkt: pt.id, bohrung: ziel }]);
               }}>
               <option value="" selected>– Bohrung zuordnen –</option>
+              ${sondierungenFuerPunkte(z)}
               ${ohne.length ? html`<optgroup label="Ohne Lage">${ohne.map((b) => html`<option value=${b.id}>${b.code}</option>`)}</optgroup>` : nothing}
               <optgroup label="Mit Lage (ersetzen)">${alle.filter((b) => b.x !== null).map((b) => html`<option value=${b.id}>${b.code}</option>`)}</optgroup>
             </select></td>

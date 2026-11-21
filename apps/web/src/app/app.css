@@ -446,3 +446,15 @@ ul.dienste a { color: #8fc6ff; }
 .hb-vorschlag table { margin: 0.3rem 0; }
 .hb-werte { margin: 0.2rem 0; }
 .hb-werte summary { cursor: pointer; }
+
+/* Sondierungen DPH/CPT (Issue #27): Liste unter den Bohrungen, Kurve im Detail */
+.sondierungen-kopf { margin: 0.8rem 0 0.2rem; font-size: 0.85rem; }
+.sondierung-kurve { width: 100%; max-width: 320px; height: auto; font-size: 10px; }
+.sondierung-kurve text { fill: var(--leise, #666); }
+.sondierung-kurve .gitter { stroke: rgba(128, 128, 128, 0.25); stroke-width: 0.5; }
+.sondierung-kurve .treppe { fill: none; stroke: #8a5a00; stroke-width: 1.6; }
+.sondierung-kurve .qc { fill: none; stroke: #1f5fbf; stroke-width: 1.4; }
+.sondierung-kurve .fs { fill: none; stroke: #c0392b; stroke-width: 1.1; stroke-dasharray: 4 2; }
+.sondierung-kurve text.fs { fill: #c0392b; }
+.sondierung-kurve .zensiert { fill: #c0392b; font-weight: bold; }
+.sondierung-detail .felder { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }

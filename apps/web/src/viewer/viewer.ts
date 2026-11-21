@@ -1171,7 +1171,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       bezugGesetzt = true;
     }
     editor.markenZeigen = bohrungenAn;
-    editor.setzen(nadeln, a.unterlage ?? null, a.punkte ?? []);
+    editor.setzen(nadeln, a.unterlage ?? null, a.punkte ?? [], a.sondierungen ?? []);
     editor.setSichtbar(bohrungenAn && nadelnVonApp);
     status.marken = editor.nadeln.size;
     const url = a.ifc ?? "";
