@@ -233,3 +233,13 @@ def test_baseline_passt_zur_extraktion():
     assert modul_huelle(modul) == soll, (
         "prototyp_v4.py hat sich seit der Baseline geaendert. Regression laufen lassen (real, stress, synth; Befehl in "
         "CLAUDE.md); ohne Rueckgang mit --write die Baseline neu schreiben. Die Huelle wird dabei mitgeschrieben.")
+
+
+def test_baseline_der_sondierungen_passt_zur_stufe():
+    """Wie bei prototyp_v4: wer sondierungen.py aendert, misst neu (benchmark/sondierungen_eval.py --write)."""
+    seite = REPO / "benchmark/baseline_sondierungen.json"
+    assert seite.exists(), "benchmark/baseline_sondierungen.json fehlt: sondierungen_eval.py --write laufen lassen"
+    soll = json.loads(seite.read_text(encoding="utf-8"))["_meta"]["sha256"]
+    assert modul_huelle(REPO / "services/extractor/sondierungen.py") == soll, (
+        "sondierungen.py hat sich seit der Baseline geaendert. Messen (echte PDFs, Stress, synthetisch; docs/05 §5) "
+        "und ohne Rueckgang mit --write die Baseline neu schreiben.")

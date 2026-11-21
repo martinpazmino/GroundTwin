@@ -19,9 +19,7 @@ import numpy as np
 import pymupdf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from prototyp_v2 import PT_TO_M_AT_1_1  # noqa: E402
 from prototyp_v4 import (  # noqa: E402
-    SCALE_RE,
     Seg,
     _merge,
     _xform_drawing,
@@ -29,7 +27,6 @@ from prototyp_v4 import (  # noqa: E402
     find_columns,
     ocr_words,
     page_class,
-    plausible_scale,
     raster_segments,
     rows,
 )
@@ -48,6 +45,7 @@ REGELN: dict[str, bool] = {
     "laengsschnitt_hoehenmassstab": True,
     "scan_konservativ": True,
     "endpruefung_monoton_und_achse": True,
+    "einzelstriche_verketten": True,
 }
 
 DPH_ARTEN = {"DPH", "DPL", "DPM", "DPSH", "SRS"}
@@ -1588,6 +1586,12 @@ def _ist_bohrprofil_falle(sd: _SeitenDaten, rahmen: pymupdf.Rect, x_achsen: list
     return False
 
 
+
+def _rechteck(d: dict) -> pymupdf.Rect:
+    """Huelle einer Zeichnung, um 0,5 pt erweitert: ein senkrechter oder waagrechter Einzelstrich hat
+    sonst Breite oder Hoehe 0 und gilt in pymupdf als leer (jede Schnittmenge waere leer)."""
+    return pymupdf.Rect(d["rect"]) + (-0.5, -0.5, 0.5, 0.5)
+
 def _ist_gitterlinie(d: dict, rahmen: pymupdf.Rect, sf: float) -> bool:
     """Erkennt vollstaendige Gitterlinien, Rahmenlinien und weisse Masken."""
     r = pymupdf.Rect(d["rect"])
@@ -1615,6 +1619,39 @@ def _ist_gitterlinie(d: dict, rahmen: pymupdf.Rect, sf: float) -> bool:
     return False
 
 
+
+def _einzelstriche_verketten(drawings: list[dict], sf: float, min_glieder: int = 6) -> list[dict]:
+    """Manche CAD-Exporte zeichnen eine Treppenkurve als einzelne Striche (je ein Pfad mit einem 'l').
+    Striche gleicher Farbe und Breite, deren Enden aneinanderstossen (<= 0,5 pt), werden zu einem Pfad
+    verkettet; nur Ketten mit mindestens ``min_glieder`` Gliedern zaehlen (eine Kurve, kein Gitter)."""
+    einzeln = [d for d in drawings if len(d.get("items") or []) == 1 and d["items"][0][0] == "l"
+               and d.get("fill") is None and d.get("color") is not None]
+    gruppen: dict[tuple, list] = defaultdict(list)
+    for d in einzeln:
+        gruppen[(tuple(round(c, 3) for c in d["color"]), round(float(d.get("width") or 0), 2))].append(d["items"][0])
+    tol = 0.5 * sf
+    out: list[dict] = []
+    for (farbe, breite), striche in gruppen.items():
+        frei = list(striche)
+        while frei:
+            kette = [frei.pop(0)]
+            gewachsen = True
+            while gewachsen:
+                gewachsen = False
+                kopf, ende = kette[0][1], kette[-1][2]
+                for i, (_, a, b) in enumerate(frei):
+                    if abs(a.x - ende.x) <= tol and abs(a.y - ende.y) <= tol:
+                        kette.append(frei.pop(i)); gewachsen = True; break
+                    if abs(b.x - kopf.x) <= tol and abs(b.y - kopf.y) <= tol:
+                        kette.insert(0, frei.pop(i)); gewachsen = True; break
+            if len(kette) >= min_glieder:
+                r = pymupdf.Rect(kette[0][1], kette[0][1])
+                for _, a, b in kette:
+                    r |= a
+                    r |= b
+                out.append({"items": kette, "color": farbe, "fill": None, "width": breite, "rect": r})
+    return out
+
 def _extrahiere_dph_vektor(
     sd: _SeitenDaten,
     rahmen: pymupdf.Rect,
@@ -1625,7 +1662,7 @@ def _extrahiere_dph_vektor(
     sf = sd.scale_f
     innen = [
         d for d in sd.drawings
-        if not (pymupdf.Rect(d["rect"]) & pymupdf.Rect(
+        if not (_rechteck(d) & pymupdf.Rect(
             rahmen.x0 - 4 * sf, rahmen.y0 - 4 * sf, rahmen.x1 + 4 * sf, rahmen.y1 + 4 * sf
         )).is_empty
         and not _ist_gitterlinie(d, rahmen, sf)
@@ -1660,6 +1697,8 @@ def _extrahiere_dph_vektor(
 
     # Pfad B: Vertikale Segmente gestufter Treppenkurven
     v_segs: list[tuple[float, float, float]] = []
+    if REGELN.get("einzelstriche_verketten", True):
+        innen = innen + _einzelstriche_verketten(innen, sf)
     for d in innen:
         if d.get("color") is None and d.get("fill") is not None:
             continue
@@ -1756,7 +1795,7 @@ def _extrahiere_cpt_vektor(
     hinweise: list[str] = []
     innen = [
         d for d in sd.drawings
-        if not (pymupdf.Rect(d["rect"]) & pymupdf.Rect(
+        if not (_rechteck(d) & pymupdf.Rect(
             rahmen.x0 - 4 * sf, rahmen.y0 - 4 * sf, rahmen.x1 + 4 * sf, rahmen.y1 + 4 * sf
         )).is_empty
         and not _ist_gitterlinie(d, rahmen, sf)
