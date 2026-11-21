@@ -28,6 +28,8 @@ network: nothing reveals the site of the project, and they work in every Land.
 | [`geodaten/laender.py`](geodaten/laender.py) + [`laender.geojson`](geodaten/laender.geojson) | In which Land a point lies, and which Länder a radius touches (VG2500 of the BKG, dl-de/by-2.0, simplified to about 150 m) |
 | [`werkzeuge/laender_vg2500.py`](werkzeuge/laender_vg2500.py) | Makes `laender.geojson` again from VG2500 (download, GeoPackage via sqlite3, pyproj, shapely) |
 | [`geodaten/bohrdaten.py`](geodaten/bohrdaten.py) | Query around the site (WFS 2.0), UTM → longitude/latitude without PROJ, Gegenprobe, import of BoreholeML Schichtdaten; `am_ort`: what every service of the Länder delivers at a point (map and Standort) |
+| [`geodaten/bohrdaten_wms.py`](geodaten/bohrdaten_wms.py) | WMS-GetFeatureInfo header hints (Lage, GOK, Endteufe, profile link) from the BGR Bohrpunktkarte and Bremen for Länder without a BoreholeML WFS ([26](../../docs/26_laender_bohrungen_options.md)) |
+| [`geodaten/bohrdaten_datei.py`](geodaten/bohrdaten_datei.py) | Borehole import from local files downloaded from a state portal (`.xml` BoreholeML, `.gml` INSPIRE, `.gpkg` GeoPackage, `.csv`, `.zip`; [26](../../docs/26_laender_bohrungen_options.md)) |
 | [`geodaten/gebaeude.py`](geodaten/gebaeude.py) | LoD2 buildings from the CityGML tiles of the Länder (1 × 1 km), streamed; walls, roof and ground with openings; cut-out, zone prefix |
 | [`geodaten/utm.py`](geodaten/utm.py) | ETRS89/UTM with and without zone prefix (25832/4647, 25833/5650): normal form for the services, the offset between the two forms of one zone (lesson S17); UTM ↔ geodetic (Krüger series both ways, below 1 mm against PROJ; the zone by longitude for a click in the map), geodetic → ECEF and the east-north-up frame (GRS80) |
 | [`geodaten/quasigeoid.py`](geodaten/quasigeoid.py) | Quasigeoid GCG2016 of the BKG (PROJ-data GeoTIFF, CC BY 4.0): fetched once into the work folder, checked by sha256, read without GDAL (tiles, Deflate, floating-point predictor), ζ bilinear like PROJ |
@@ -72,6 +74,8 @@ Tests: `python -m pytest tests/test_gelaende.py tests/test_gelaende_app.py`.
 |---|---|---|---|
 | Brandenburg with Berlin | WCS `isk.geobasis-bb.de/ows/dgm_wcs`, coverage `bb_dgm` | DGM1, float32, EPSG:25833 | dl-de/by-2.0 (© GeoBasis-DE/LGB; © Geoportal Berlin) |
 | NRW | WCS `www.wcs.nrw.de/geobasis/wcs_nw_dgm`, coverage `nw_dgm` | DGM1, float32, EPSG:25832 | dl-de/zero-2.0 |
+| Niedersachsen | WCS `opendata.geoservices.lgln.niedersachsen.de/dgm_wcs` | DGM1, float32, EPSG:25832 | CC-BY-4.0 |
+| Mecklenburg-Vorpommern | WCS `www.geodaten-mv.de/dienste/dgm_wcs` | DGM1, float32, EPSG:25833 | CC-BY-4.0 |
 
 - Checked and not taken (with the reason in `dienste.json`): Baden-Württemberg (whole metres),
   Bayern (no free WCS).
@@ -124,7 +128,9 @@ Details: [docs/21 §4.5](../../docs/21_app_schritte_normen.md#45-bohrungen-der-l
 | Brandenburg | WFS-BPK `inspire.brandenburg.de/services/bpk_wfs` | header data with / without Schichtenverzeichnis, image | dl-de/by-2.0 |
 | NRW | BoreholeML WFS `www.bml3.nrw.de/service/bml` | BoreholeML 3.0 with the released Schichtdaten | dl-de/by-2.0 |
 | Baden-Württemberg | BoreholeML WFS `services.lgrb-bw.de/boreholeml/services/bml` | BoreholeML 3.0, often without petrography | not stated by the service |
-| the other 12 Länder | their portal (viewer, download or request) and the BGR Bohrpunktkarte | a link, marked *ungeprüft* | see the portal |
+| Hamburg | BoreholeML WFS `geodienste.hamburg.de/HH_WFS_BoreholeML3` | BoreholeML 3.0 with released Schichtdaten | dl-de/by-2.0 |
+| Bremen and BGR (13 Länder) | WMS-GetFeatureInfo (`geodienste.bremen.de/wms_bohrdatenbank`, `services.bgr.de/wms/geologie/gbl/`) | header hints (Lage, GOK, Endteufe, profile link where available) | CC BY / BGR-AGB |
+| the other Länder | their portal (viewer, download or request) and the BGR Bohrpunktkarte | a link, marked *ungeprüft* | see the portal |
 
 - Which Land: from the borders of the Länder (`laender.py`), at a border both (centre plus eight points on the radius),
   the Land of the centre first; a point outside every Land (lake, coast) falls back to the rectangles of the services.
@@ -157,6 +163,8 @@ Details: [docs/21 §4.6](../../docs/21_app_schritte_normen.md#46-gebäude-lod2-b
 | Berlin | `gdi.berlin.de/data/a_lod2/atom/LoD2_{e}_{n}.zip` (ATOM feed) | ZIP with CityGML 1.0, EPSG:25833 + DHHN2016 | dl-de/zero-2.0 |
 | Brandenburg | `data.geobasis-bb.de/…/lod2_gml/lod2_33{e}-{n}.zip` | ZIP with CityGML 1.0, EPSG:25833 + DHHN2016 | dl-de/by-2.0 |
 | NRW | `www.opengeodata.nrw.de/…/lod2_gml/LoD2_32_{e}_{n}_1_NW.gml` | CityGML 1.0, EPSG:25832 + DHHN2016 | dl-de/zero-2.0 |
+| Niedersachsen | `lod2.s3.eu-de.cloud-object-storage.appdomain.cloud/…` (1 × 1 km) | CityGML, EPSG:25832 + DHHN2016 | CC-BY-4.0 |
+| Bayern, Rheinland-Pfalz, Mecklenburg-Vorpommern, Sachsen | Open-data CityGML tile servers (1 × 1 km or 2 × 2 km grid per Land; [25](../../docs/25_laender_dgm_lod2_research.md)) | CityGML / ZIP, UTM + DHHN2016 | CC-BY-4.0 / dl-de/by-2.0 |
 
 - Tiles of 1 × 1 km (`{e}`, `{n}` in km), at most 9 per request; per tile the first service that has it.
 - Streamed with `iterparse`: an urban tile is 20–25 MB of GML.

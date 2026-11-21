@@ -31,6 +31,10 @@ python -m baugrundmodell.synthetisch demo demo.json        # cases: geneigt ausk
 | [`modell.py`](baugrundmodell/modell.py) | Orchestration, JSON report, Reifegrad (Gutachten / Vorerkundung / gemischt) from the `herkunft` of the Bohrungen ([21 §4.7](../../docs/21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)) |
 | [`synthetisch.py`](baugrundmodell/synthetisch.py) | Cases with known ground truth (tests and viewer demo) |
 | [`normen.py`](baugrundmodell/normen.py) + [`normen.json`](baugrundmodell/normen.json) | Mini database of norms (DIN 4023, EN ISO 14688-1, DIN 18196) and reading of the descriptions ([21 §3](../../docs/21_app_schritte_normen.md#3-mini-database-of-norms)) |
+| [`homogenbereiche.py`](baugrundmodell/homogenbereiche.py) + [`homogenbereiche.json`](baugrundmodell/homogenbereiche.json) | VOB/C Homogenbereiche per Gewerk (ATV), Kennwerte from descriptions, report tables and laboratory sheets, proposals per Anwendungsfall and from the Gutachter ([28](../../docs/28_homogenbereiche.md)) |
+| [`bodenkennwerte.py`](baugrundmodell/bodenkennwerte.py) | Proposal and assignment of extracted Bodenkennwerte (`kennwerte.py`) to the model Einheiten by name, Bodenart or NHN height range ([28 §9](../../docs/28_homogenbereiche.md#9-kennwerte-from-the-report-tables-issue-18-2026-11-19-training-pdfs-not-blind)) |
+| [`labor.py`](baugrundmodell/labor.py) | Assignment of laboratory samples (`services/extractor/labor.py`) to the Schicht of their Bohrung and summary per Einheit (`n`, `min`, `max`, `mean`) for ATV Kennwerte and `CPset_Laborwerte` ([28 §9b](../../docs/28_homogenbereiche.md#9b-laboratory-sheets-of-the-annexes-issue-18-2026-11-19-training-pdfs-not-blind)) |
+| [`wasser.py`](baugrundmodell/wasser.py) | Groundwater kind (`art`) and date per level, merging report water tables, and selection for the Grundwasserfläche ([06 §4](../../docs/06_grundwasser.md#4-data-model-and-ifc)) |
 
 See the result: [`apps/web` viewer](../../apps/web/README.md) or the step app (`python -m server`,
 [21](../../docs/21_app_schritte_normen.md)).
