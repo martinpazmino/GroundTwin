@@ -142,6 +142,16 @@ def _git_dateien() -> list[str]:
     return r.stdout.splitlines()
 
 
+def test_keine_pfade_die_sich_nur_in_gross_klein_schreibung_unterscheiden():
+    """Windows und macOS unterscheiden nicht: zwei solche Dateien ueberschreiben sich beim Auschecken (gesehen:
+    agenten/routinen/README.md und readme.md, 2026-11-21)."""
+    je: dict[str, list[str]] = {}
+    for d in _git_dateien():
+        je.setdefault(d.lower(), []).append(d)
+    fehler = [f"{' und '.join(v)}: unterscheiden sich nur in Gross-/Kleinschreibung. Eine umbenennen." for v in je.values() if len(v) > 1]
+    assert not fehler, "\n".join(fehler)
+
+
 EIGENE_PDF = {"data/beispiele/synthetisch_bohrprofil.pdf"}   # selbst erzeugt (synth_bohrprofil.py)
 
 
