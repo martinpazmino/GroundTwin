@@ -142,6 +142,16 @@ def _git_dateien() -> list[str]:
     return r.stdout.splitlines()
 
 
+def test_keine_pfade_die_sich_nur_in_gross_klein_schreibung_unterscheiden():
+    """Windows und macOS unterscheiden nicht: zwei solche Dateien ueberschreiben sich beim Auschecken (gesehen:
+    agenten/routinen/README.md und readme.md, 2026-11-21)."""
+    je: dict[str, list[str]] = {}
+    for d in _git_dateien():
+        je.setdefault(d.lower(), []).append(d)
+    fehler = [f"{' und '.join(v)}: unterscheiden sich nur in Gross-/Kleinschreibung. Eine umbenennen." for v in je.values() if len(v) > 1]
+    assert not fehler, "\n".join(fehler)
+
+
 EIGENE_PDF = {"data/beispiele/synthetisch_bohrprofil.pdf"}   # selbst erzeugt (synth_bohrprofil.py)
 
 
@@ -223,3 +233,13 @@ def test_baseline_passt_zur_extraktion():
     assert modul_huelle(modul) == soll, (
         "prototyp_v4.py hat sich seit der Baseline geaendert. Regression laufen lassen (real, stress, synth; Befehl in "
         "CLAUDE.md); ohne Rueckgang mit --write die Baseline neu schreiben. Die Huelle wird dabei mitgeschrieben.")
+
+
+def test_baseline_der_sondierungen_passt_zur_stufe():
+    """Wie bei prototyp_v4: wer sondierungen.py aendert, misst neu (benchmark/sondierungen_eval.py --write)."""
+    seite = REPO / "benchmark/baseline_sondierungen.json"
+    assert seite.exists(), "benchmark/baseline_sondierungen.json fehlt: sondierungen_eval.py --write laufen lassen"
+    soll = json.loads(seite.read_text(encoding="utf-8"))["_meta"]["sha256"]
+    assert modul_huelle(REPO / "services/extractor/sondierungen.py") == soll, (
+        "sondierungen.py hat sich seit der Baseline geaendert. Messen (echte PDFs, Stress, synthetisch; docs/05 §5) "
+        "und ohne Rueckgang mit --write die Baseline neu schreiben.")

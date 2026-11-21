@@ -75,6 +75,7 @@ doubtful value stays **marked**, never hidden.
 | G3 | Nested columns (inner strip, GWM pipe): keep the one with the **thickest edges** | Talheim GWM |
 | G4 | A column with numbers inside is a **table**, not a Bohrung | L5: table "B 6" of Wachenroth at M 1:12 |
 | G5 | Every boundary must be **confirmed 1:1 by a label**; otherwise it is marked (not deleted) | Talheim BK5: 1 extra boundary marked |
+| G6 | **A vertical or horizontal stroke has a hull of width or height 0, and pymupdf treats such a rect as empty**: every intersection test drops it. Widen the hull (0.5 pt) before testing; CAD exports that draw a curve as single strokes (one path per segment) were invisible to the Sondierung stage until then. Strokes of the same colour and width that join end to end form one path | `sondierungen._rechteck`, rule `einzelstriche_verketten`; probe in `tests/test_sondierungen_extraktion.py` |
 
 ## T. Labels, scale and headers
 
@@ -84,6 +85,8 @@ doubtful value stays **marked**, never hidden.
 | L8 | Labels with the unit attached (`0.20m`), decimal comma or point | Hausham (DC-Software) |
 | L9 | Non-normalised scales exist (log fitted to the sheet, M ≈ 1:35; Triefenstein 1:30): valid if ≥ 80 % of ≥ 3 labels confirm them | Hausham RKS, Triefenstein |
 | L14 | A group of values in **arithmetic progression** is an **axis** (elevation ruler, scale of a DPH diagram), not Schicht labels, **if** it has a round step (0.1 · 0.25 · 0.3 · 0.5 · 1 m…) and ≥ 8 values, or more values than the column has boundaries. Schichten of equal thickness (0.4 · 0.8 · 1.2…) are still labels | Marl BS 10 (DPH axis); case s15 (the first version of the rule deleted real labels) |
+| L14b | A **Sondierung** is a header (`DPH 3`, `CPT 1`, `Rammsondierung …`) plus a value axis in arithmetic progression plus a frame; its depth axis never comes from labels that can be Bohrung codes, and in a Längsschnitt it takes the height scale of the section. Without these two rules Marl gave 1 false Sondierung with 52 false values (the L14 failure in the new stage) | `sondierungen.REGELN` `tiefe_nicht_bohrungscode`, `laengsschnitt_hoehenmassstab`; docs/05 §5.4 |
+| L14c | A table with depths every 10 cm is a DPH only if its header names the blow count (`N10`, `Schlagzahl`, `Schläge`); water-level, laboratory and Kennwert tables have depths too | trap s08; Halle (water levels, Kennwerte) 0 found; rule `tabelle_kopf_schlagzahl` |
 | L15 | A column of values **in pairs** (Von/Bis of samples) are not Schicht labels | Marl (IDAT/GeoDin) |
 | L15b | A column without any confirmed label while the neighbouring ones have them → it is not a log (e.g. GWM construction drawing). If **no** column on the page has labels (OCR lost), the title-block scale is accepted and marked | Marl GWM 10; Rednitzhembach B 4 |
 | L4 | In the height representation the header sits far above the column: associate the header with the column **below** it, without a vertical limit | Wachenroth section, Talheim |

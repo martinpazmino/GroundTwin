@@ -55,6 +55,8 @@ that may break a rule; the list may only get shorter.
 | No secrets | No `.env`, no key patterns | SECURITY.md |
 | Characteristic values stay with the engineer | No `_char` key in the modeler | D108, docs/28 §9 |
 | **Extraction changes pass the regression** | `benchmark/baseline_v4.modul.json` holds the sha256 of `prototyp_v4.py` the baseline was computed with; `regression.py --write` writes it; a changed module without a new baseline fails | CLAUDE.md working rules |
+| Sondierungen are measured again | `benchmark/baseline_sondierungen.json` carries the hash of `sondierungen.py` (`sondierungen_eval.py --write`) | docs/05 §5 |
+| No paths that differ only in case | Two such files overwrite each other on Windows and macOS (seen: `agenten/routinen/README.md` and `readme.md`) | — |
 
 Each check was mutation-tested: an import of `server` in the modeler, a `urllib.request` in `ui`, a silent `except`,
 a renamed route and a changed `prototyp_v4.py` each made the suite fail.

@@ -27,7 +27,7 @@ So steht der eigentliche Auftrag versioniert im Repository (docs/31: Prosa so ku
 
 | Datei | Rhythmus | Push | Was |
 |---|---|---|---|
-| `readme.md` | wöchentlich | ja (Doku) | README und Index der Doku auf den Stand des Codes bringen |
+| `readme_aktualisieren.md` | wöchentlich | ja (Doku) | README und Index der Doku auf den Stand des Codes bringen |
 | `doku_pflege.md` | wöchentlich | ja (Doku) | CHANGELOG aus den Commits, tote Links, Doku ↔ Code (Funktionskarte, Entscheidungen) |
 | `dienste_pruefen.md` | wöchentlich | nur Bericht | alle Dienste der Länder vom Rechner des Nutzers aus ansprechen |
 | `regression.md` | wöchentlich | nur Bericht | Regression auf den echten PDFs des Nutzers (liegen außerhalb des Repositorys) |

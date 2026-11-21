@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen (DPH/DPL/DPM/DPSH, CPT/CPTu) read from real Gutachten as a stage of its own
+  (`services/extractor/sondierungen.py`): tables, vector diagrams, Längsschnitte, diagrams over two pages, censored
+  values, scans withheld when unsure; measuring tool `benchmark/sondierungen_eval.py` with ground truth of 32
+  Sondierungen and a baseline; on the training PDFs 1281/1564 DPH steps with 0 false values (Issue #27 part 1, docs/05 §5).
 - House rules as tests (`tests/test_hausregeln.py`): layers of the code, network only through `netz.py`, nothing
   swallowed silently, no third-party PDFs, ground truth with sha256, no secrets or model ids, no `_char`, and the
   baseline bound to the hash of `prototyp_v4.py` (`regression.py --write` writes `baseline_v4.modul.json`) (docs/31).
