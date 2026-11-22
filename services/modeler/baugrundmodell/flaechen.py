@@ -172,10 +172,13 @@ def _freie_grenzen(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]],
 
 
 def schichtmodell(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]], punkte: np.ndarray,
-                  xy_b: np.ndarray, basis: float, methode: str = "idw", oben: np.ndarray | None = None) -> dict:
+                  xy_b: np.ndarray, basis: float, methode: str = "idw", oben: np.ndarray | None = None,
+                  zusatz_stuetzpunkte: dict[int, list[tuple[float, float, float]]] | None = None) -> dict:
     """Grenzflaechen an allen Netzknoten: Zeile 0 = Gelaende, Zeile j+1 = Unterkante Einheit j.
 
     oben: Gelaende an den Knoten (aus dem DGM, an den Bohrungen = GOK); sonst aus den GOK interpoliert.
+    zusatz_stuetzpunkte: optionale zusaetzliche Stuetzpunkte je Einheit j als Liste (x_lokal, y_lokal, z_nhn),
+    z. B. aus Sondierungen (Issue #28, Standard None). Bohrungen haben immer Vorrang (Abstand <= 0,5 m verworfen).
 
     1. vorlaeufig aus exakten Kontakten (ohne solche: Mitte der freien Bereiche; ohne alles: Basis)
     2. freie Grenzen (Linsen) festlegen, neu interpolieren
@@ -189,12 +192,31 @@ def schichtmodell(bohrungen: list[Bohrung], kontakte: list[list[Kontakt]], punkt
         oben = interpolieren(punkte, xy_b, np.array([b.gok for b in bohrungen]), methode)
 
     def flaeche(daten: dict[int, float], j: int) -> np.ndarray:
-        if not daten:
+        zus = (zusatz_stuetzpunkte or {}).get(j) or []
+        if not daten and not zus:
             return np.full(len(punkte), basis)
-        bi = np.array(sorted(daten))
+        bi = np.array(sorted(daten), dtype=int)
+        xs = xy_b[bi] if len(bi) else np.empty((0, 2), dtype=float)
+        zs = np.array([daten[i] for i in bi], dtype=float) if len(bi) else np.empty(0, dtype=float)
+        if zus:
+            gefiltert_xy, gefiltert_z = [], []
+            for px, py, pz in zus:                         # Bohrkontakte haben Vorrang; keine doppelten (x, y) (TPS)
+                if len(xs) and float(np.hypot(xs[:, 0] - px, xs[:, 1] - py).min()) <= 0.5:
+                    continue
+                if gefiltert_xy and min(math.hypot(qx - px, qy - py) for qx, qy in gefiltert_xy) <= 0.5:
+                    continue
+                gefiltert_xy.append((px, py))
+                gefiltert_z.append(pz)
+            if gefiltert_xy:
+                z_xy = np.array(gefiltert_xy, dtype=float)
+                z_z = np.array(gefiltert_z, dtype=float)
+                xs = np.vstack([xs, z_xy]) if len(xs) else z_xy
+                zs = np.concatenate([zs, z_z]) if len(zs) else z_z
+        if not len(zs):
+            return np.full(len(punkte), basis)
         _lauf.flaeche = j                                  # fuer orientierung_vorgabe der Erweiterungen
         try:
-            return interpolieren(punkte, xy_b[bi], np.array([daten[i] for i in bi]), methode)
+            return interpolieren(punkte, xs, zs, methode)
         finally:
             _lauf.flaeche = None
 

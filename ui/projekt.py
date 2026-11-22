@@ -44,6 +44,7 @@ class Einstellungen:
     gok_relativ: bool = True                # fehlt die GOK bei allen: 0 m (relativ, markiert)
     gelaende_dgm: bool = True               # mit DGM: Oberkante aus dem DGM, an den Bohrungen auf die GOK (docs/21 §4.4)
     orientierung: dict | None = None        # implizit: je Einheit {"fallrichtung", "fallwinkel"} in Grad (docs/27 G4)
+    sondierungen_stuetzpunkte: bool = False # Sondierungen als Stuetzpunkte im Schichtmodell (Issue #28, Standard AUS)
 
 
 @dataclass

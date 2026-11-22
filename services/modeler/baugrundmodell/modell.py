@@ -83,12 +83,16 @@ def standard_raster(flaeche: float) -> float:
 def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str = "idw",
           raster: float | None = None, puffer: float | None = None, basis: float | None = None,
           ursprung: tuple[float, float] | None = None, gelaende=None, gelaende_info: dict | None = None,
-          orientierung: dict[str, dict] | None = None) -> Modell:
+          orientierung: dict[str, dict] | None = None,
+          sondierungen_stuetzpunkte: bool = False,
+          zusatz_stuetzpunkte: list[dict] | None = None) -> Modell:
     """ursprung: fester lokaler Nullpunkt (App: bleibt beim Verschieben von Bohrungen stehen, die Ansicht springt nicht).
 
     gelaende: DGM-Raster (x0, y0, dx, dy, z, epsg) fuer die Oberkante (umgebung.py); gelaende_info: Name und Quelle.
     orientierung: je Einheit {"fallrichtung", "fallwinkel"} in Grad, eingegeben (docs/27 G4); nutzt nur eine
     Erweiterung, die danach fragt (implizit); steht mit Quelle "Eingabe" im Bericht.
+    sondierungen_stuetzpunkte: Option (Standard AUS, Issue #28), zusaetzliche Stuetzpunkte aus Sondierungen
+    (zusatz_stuetzpunkte) in die Flaecheninterpolation einzubeziehen; Bohrkontakte bleiben exakt.
     """
     bohrungen, ausgeschlossen, epsg = bohrungen_aus_extraktion(docs)
     if not bohrungen:
@@ -143,10 +147,16 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
             hinweise.append(gel["hinweis"])
     erweiterung = ERWEITERUNGEN.get(methode)
     vorgaben = _orientierungen(orientierung, einheiten, hinweise) if hasattr(erweiterung, "beschreiben") else {}
+    zusatz_je, stuetz_proto = _sondierungs_stuetzpunkte(
+        zusatz_stuetzpunkte if sondierungen_stuetzpunkte else None, einheiten, ursprung, hinweise)
+    if stuetz_proto:
+        hinweise.append(f"{len(stuetz_proto)} Stützpunkte aus Sondierungen im Schichtmodell "
+                        "(abgeleitete Schichtwechsel, keine Bohrkontakte)")
     hinweise_starten()
     orientierungen_setzen(vorgaben)
     try:
-        sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben)
+        sm = schichtmodell(bohrungen, ks, punkte, xy_b, basis, methode, oben=oben,
+                           zusatz_stuetzpunkte=zusatz_je or None)
         beschrieben = erweiterung.beschreiben(einheiten, ks, bohrungen) if hasattr(erweiterung, "beschreiben") else None
     finally:
         orientierungen_setzen(None)
@@ -157,6 +167,8 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
                                       "durchmesser_auto_m": standard_durchmesser(ausdehnung),
                                       "praesenz_schwelle": PRAESENZ_SCHWELLE, "gelaende": gel,
                                       "reifegrad": grad, "herkunft": je_herkunft,
+                                      "sondierungen_stuetzpunkte": bool(sondierungen_stuetzpunkte),
+                                      **({"stuetzpunkte_sondierung": stuetz_proto} if stuetz_proto else {}),
                                       **({"orientierung": beschrieben} if beschrieben is not None else {}),
                                       **({"orientierung_vorgabe": {str(j): list(v) for j, v in vorgaben.items()}}
                                          if vorgaben else {})},
@@ -165,6 +177,35 @@ def bauen(docs: list[dict], vorgabe: list[Einheit] | None = None, methode: str =
     m.dgm = gelaende if oben is not None else None
     _koerper(m)
     return m
+
+
+def _sondierungs_stuetzpunkte(punkte: list[dict] | None, einheiten: list[Einheit],
+                              ursprung: tuple[float, float],
+                              hinweise: list[str]) -> tuple[dict[int, list[tuple[float, float, float]]], list[dict]]:
+    """Zusaetzliche Stuetzpunkte aus Sondierungen je Einheit-Index in lokalen Koordinaten (Issue #28)."""
+    je: dict[int, list[tuple[float, float, float]]] = {}
+    proto: list[dict] = []
+    if not punkte:
+        return je, proto
+    namen = {e.name: j for j, e in enumerate(einheiten)}
+    for p in punkte:
+        name = p.get("einheit")
+        if name not in namen:
+            hinweise.append(f"Stützpunkt aus Sondierung für '{name}' nicht verwendet: keine solche Einheit im Modell")
+            continue
+        x, y, z = float(p["x"]), float(p["y"]), float(p["z"])
+        if not (math.isfinite(x) and math.isfinite(y) and math.isfinite(z)):
+            continue
+        j = namen[name]
+        je.setdefault(j, []).append((x - ursprung[0], y - ursprung[1], z))
+        proto.append({
+            "einheit": name, "x": round(x, 3), "y": round(y, 3), "z": round(z, 3),
+            "quelle": p.get("quelle") or "Sondierung",
+            **({"code": p["code"]} if p.get("code") is not None else {}),
+            **({"tiefe_m": round(float(p["tiefe_m"]), 2)} if p.get("tiefe_m") is not None else {}),
+            **({"konfidenz": round(float(p["konfidenz"]), 2)} if p.get("konfidenz") is not None else {}),
+        })
+    return je, proto
 
 
 def _orientierungen(orientierung: dict[str, dict] | None, einheiten: list[Einheit],
@@ -445,6 +486,7 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
         "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise + hb_hinweise),
         "Modellart": f"Homogenbereiche {nur_homogenbereiche}" if nur_homogenbereiche else "Einheiten",
         "Sondierungen_im_IFC": ", ".join(s["code"] for s in sondierungen or []) or None,
+        "Stuetzpunkte_Sondierung": len(p.get("stuetzpunkte_sondierung") or []) or None,
         "Homogenbereiche_ATV": ", ".join(homogenbereiche) or None})
     gelaende = None
     if m.dgm is not None and umgebung > 0:
