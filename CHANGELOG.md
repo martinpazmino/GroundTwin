@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water levels in scans (Issue #40, by Antigravity, checked by Claude): depth scale from an OCR depth/elevation ruler
+  or `M 1:n` + GOK when interior lines vanish (rule `raster_massstab_ocr`, E8; a ruler contradicting the labels is
+  rejected and marked), and water levels read cell by cell from scanned Schichtenverzeichnis pages (rule `sv_wasser`,
+  W5). raster150 GW 6/18 → 13/18, 0 false; regression real/stress/synth without regression; stress s24–s27.
 - Sondierungen in BoreholeML (Issue #27 part 4): reviewed Sondierungen with values, UTM Lage and GOK as `bml:Borehole`
   with the curve as `bml:investigation` (type SM, parameter SON, CSV `valueMatrix`, censored steps `>`), DPU for CPT;
   valid against the official XSD; the import reads them back as Sondierungen with their Lage (docs/05 §8).
