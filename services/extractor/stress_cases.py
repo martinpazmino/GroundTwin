@@ -509,6 +509,51 @@ def build(out: Path) -> list[str]:
                  Spec("BK 23", L_STD, gok=45.0, gw=("symbol", 1.8), extra={"dach": 3.6, "legende": True}))
     save("s23_raster_legende_dach", _als_scan(src), [_truth("BK 23", L_STD, 45.0, [1.8, 3.6])],
          "W3+W4: Scan mit Legende fuer volles Dreieck und Dach-Symbol")
+
+    # s24 Scan mit Tiefenlineal (ohne Einzel-Schichtlabels, ohne Massstabstext) und vollem GW-Dreieck -> 1 Stand (E5/W5)
+    src = pymupdf.open(); p = src.new_page(width=595, height=842)
+    sp24 = Spec("B 24", L_STD, gok=45.20, scale=50, scale_text=None, ruler=1.0,
+                extra={"label_skip": set(range(len(L_STD)))})
+    draw_profile(p, sp24)
+    y_gw24, gx24 = sp24.top_y + 2.8 * (PT_PER_M_1_1 / sp24.scale), sp24.x0 - 60
+    p.draw_polyline([(gx24, y_gw24 - 6), (gx24 + 7, y_gw24 - 6), (gx24 + 3.5, y_gw24), (gx24, y_gw24 - 6)],
+                    color=(0, 0, 1), fill=(0, 0, 1), closePath=True, width=0.4)
+    _line(p, (gx24, y_gw24), (sp24.x0, y_gw24), 0.4)
+    save("s24_raster_tiefenlineal_gw", _als_scan(src), [_truth("B 24", L_STD, 45.20, [2.8])],
+         "E5/W5: Scan mit OCR-Tiefenlineal und GW-Dreieck")
+
+    # s25 Scan mit Tiefenlineal (1:100), das den Grenzbeschriftungen (1:50) widerspricht -> kein Stand, Hinweis (E5)
+    src = pymupdf.open(); p = src.new_page(width=595, height=842)
+    sp25 = Spec("B 25", L_STD, gok=45.20, scale=50, scale_text=None, label_dy=11, extra={"label_skip": {0, 2}})
+    draw_profile(p, sp25)
+    ppm25 = PT_PER_M_1_1 / sp25.scale
+    rx25 = sp25.x0 - 120
+    _line(p, (rx25, sp25.top_y), (rx25, sp25.top_y + 6.5 * ppm25), 0.5)
+    for i in range(7):
+        yy = sp25.top_y + i * ppm25
+        _line(p, (rx25, yy), (rx25 + 4, yy), 0.4)
+        p.insert_text((rx25 - 26, yy + 2), _fmt(2.0 * i, ","), fontsize=6)
+    y_gw25, gx25 = sp25.top_y + 2.8 * ppm25, sp25.x0 - 60
+    p.draw_polyline([(gx25, y_gw25 - 6), (gx25 + 7, y_gw25 - 6), (gx25 + 3.5, y_gw25), (gx25, y_gw25 - 6)],
+                    color=(0, 0, 1), fill=(0, 0, 1), closePath=True, width=0.4)
+    _line(p, (gx25, y_gw25), (sp25.x0, y_gw25), 0.4)
+    save("s25_raster_lineal_widerspruch", _als_scan(src), [_truth("B 25", L_STD, 45.20, [])],
+         "E5: Scan mit Tiefenlineal im Widerspruch zu den Grenzbeschriftungen -> kein Stand, Hinweis")
+
+    # s26 Schichtenverzeichnis mit Wasserstand ('Wasser angetroffen bei 3,00 m u. GOK') -> 1 Stand (W5)
+    doc = pymupdf.open()
+    draw_profile(doc.new_page(width=595, height=842), Spec("RKS 26", L_ABBR, shx=True, scale=200, scale_text=None))
+    sv_pages(doc, "RKS 26", L_ABBR, "Wasser angetroffen bei 3,00 m u. GOK am 18.07.2023", spaced=False, dup=False)
+    save("s26_sv_wasserstand", doc, [_truth("RKS 26", L_ABBR, None, [3.0], kind="rks", page=1)],
+         "W5: Wasserstand mit Art, Datum und Beleg aus dem Schichtenverzeichnis")
+
+    # s27 Schichtenverzeichnis mit 'kein Grundwasser' -> kein Stand, groundwater_status (W2/W5)
+    doc = pymupdf.open()
+    draw_profile(doc.new_page(width=595, height=842), Spec("RKS 27", L_ABBR, shx=True, scale=200, scale_text=None))
+    sv_pages(doc, "RKS 27", L_ABBR, "kein Grundwasser angetroffen", spaced=False, dup=False)
+    save("s27_sv_kein_grundwasser", doc,
+         [_truth("RKS 27", L_ABBR, None, [], "kein Grundwasser", kind="rks", page=1)],
+         "W2/W5: Schichtenverzeichnis 'kein Grundwasser' -> 0 Staende, groundwater_status")
     return made
 
 
