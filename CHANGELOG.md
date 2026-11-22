@@ -6,6 +6,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Information package v0 (Issue #33, A1 of GroundTwin Analysis): export `agsi` (Modell → Erweitert) with AGSi 1.0.1
+  (Einheiten, Homogenbereiche per ATV, Bohrungen as observations, Laborwerte as property summaries), manifest (value
+  kind and source per value, completeness, open items, Kreuzprobe), report, IFC and BoreholeML; valid against the
+  official AGSi JSON Schema; ids and references checked by the exporter. `services/geodaten/geodaten/agsi.py`,
+  `tests/test_agsi.py`, docs/29 §8.1.
 - Sondierungen as optional support points for the layer model (Issue #28, default OFF `sondierungen_stuetzpunkte=False`):
   changepoint detection on DPH `N10` and CPT `q_c` (`services/analyse/baugrundanalyse/sondierung.py`), unambiguous unit
   assignment against the baseline model without guessing a Bodenart, leak-free leave-one-out Kreuzprobe, synthetic ground
