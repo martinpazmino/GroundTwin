@@ -28,7 +28,7 @@ app: see the [glossary](docs/glossary.md).
      and **Bodenkennwerte** and **Laborwerte** read from the Gutachten ([docs/28](docs/28_homogenbereiche.md)).
   5. **Modell**: IFC 4.3 `IfcGeomodel` + `IfcBorehole` in the viewer with the TwinBimM controls, also
      for Trassen longer than 5 km. Includes *einchecken* of the review state, exports (IFC, report,
-     BoreholeML, **3D Tiles** for Cesium) and, under *Erweitert*, **GeolDG** deadlines, checklist and
+     BoreholeML, **3D Tiles** for Cesium, the **AGSi information package** with manifest, [docs/29 §8.1](docs/29_groundtwin_analysis.md)) and, under *Erweitert*, **GeolDG** deadlines, checklist and
      submission package ([docs/21 §5.3](docs/21_app_schritte_normen.md#53-geoldg-what-goes-to-the-geologischer-dienst)).
 
   Each step updates the next one.

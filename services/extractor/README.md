@@ -22,7 +22,7 @@ Every change passes the regression of the [benchmark](../../benchmark/README.md)
 | [`homogenbereiche_text.py`](homogenbereiche_text.py) | Homogenbereiche defined by the Gutachter in the report (tables, sections, sentences) ([28 §10](../../docs/28_homogenbereiche.md#10-the-gutachters-own-homogenbereiche-issue-21-2026-11-19-training-pdfs-not-blind)) |
 | [`wassertabelle.py`](wassertabelle.py) | Water level tables in the report (Aufschluss \| Wasserstand \| Wasserart) with water kind and footnote evidence ([06 §4](../../docs/06_grundwasser.md#4-data-model-and-ifc)) |
 | [`sondierungen.py`](sondierungen.py) | Sondierungen (DPH/DPL/DPM/DPSH `N10`, CPT/CPTu `q_c`/`f_s`/`R_f`) from tables, vector diagrams, Längsschnitte and scans; switchable rules in `REGELN` ([05 §5](../../docs/05_sondierungen.md#5-measured-stage-on-real-gutachten-2026-11-21-issue-27-part-1)) |
-| [`stress_cases.py`](stress_cases.py) | 23 stress cases (`s01`–`s23`), one per lesson, with ground truth |
+| [`stress_cases.py`](stress_cases.py) | 27 stress cases (`s01`–`s27`), one per lesson, with ground truth |
 | [`stress_sondierungen.py`](stress_sondierungen.py) | 8 synthetic stress cases (`s01`–`s08`, including two traps) with ground truth for Sondierungen |
 | [`synth_bohrprofil.py`](synth_bohrprofil.py) | Generates 6 simplified DIN 4023 layouts (A, A2, A3, A4, A5, B) + JSON with the ground truth |
 
@@ -33,7 +33,7 @@ From the repository root, with the dependencies of `requirements-server.txt` (OC
 
 ```bash
 python services/extractor/synth_bohrprofil.py /tmp/synth          # 6 synthetic layouts + ground truth
-python services/extractor/stress_cases.py /tmp/stress             # 23 stress cases + ground truth
+python services/extractor/stress_cases.py /tmp/stress             # 27 stress cases + ground truth
 python services/extractor/stress_sondierungen.py /tmp/stress_sond # 8 sounding stress cases + ground truth
 python benchmark/regression.py --module services/extractor/prototyp_v4.py \
   --real <pdfs> --stress /tmp/stress --synth /tmp/synth --baseline benchmark/baseline_v4.json

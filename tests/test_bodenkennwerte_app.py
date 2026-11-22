@@ -105,8 +105,6 @@ def test_zuordnung_entfernen_und_fehlerfaelle(client):
     assert c.get(f"/api/projekt/{sig}/bodenkennwerte").json()["zuordnung"] == {}
 
 
-@pytest.mark.xfail(strict=True,
-                   reason="bk.pruefen (bodenkennwerte.py:171) prueft kein dict und wirft AttributeError (500) statt ValueError (400)")
 def test_ungueltige_zuordnung_als_400(tmp_path, monkeypatch):
     monkeypatch.setattr(pl, "ARBEIT", tmp_path)
     with TestClient(app_erstellen(tmp_path), raise_server_exceptions=False) as c:

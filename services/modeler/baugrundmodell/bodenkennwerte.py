@@ -167,6 +167,8 @@ def pset(e: dict, zuordnung: str = "vom Bearbeiter bestätigt") -> dict:
 
 
 def pruefen(zuordnung: dict | None, refs: set[str]) -> dict | None:
-    """Zuordnung Einheit -> Verweis; unbekannte Verweise fallen weg."""
+    """Zuordnung Einheit -> Verweis; unbekannte Verweise fallen weg. Keine Zuordnung (kein dict) -> ValueError (400)."""
+    if zuordnung is not None and not isinstance(zuordnung, dict):
+        raise ValueError("Bodenkennwerte: Zuordnung als {Einheit: Verweis}")
     z = {str(k): str(v) for k, v in (zuordnung or {}).items() if v and str(v) in refs}
     return z or None
