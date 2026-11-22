@@ -213,3 +213,22 @@ def test_hangschutt_und_wiesenkalk_eigener_bereich():
         assert z["Schluff"] not in (z["Hangschutt"], z["Wiesenkalk"]), code
         grund = {g["name"]: g["grund"] for g in v["bereiche"]}
         assert grund[z["Hangschutt"]].startswith("Hangschutt") and grund[z["Wiesenkalk"]].startswith("Wiesenkalk")
+
+
+# Kennwerte fuer Boden je ATV, gegen den Volltext abgeglichen (Issue #17, 2026-11-22). Aendert sich eine Zelle, muss
+# die Ausgabe der ATV neu gelesen und "geprueft" angepasst werden.
+GEPRUEFT = {
+    "DIN 18301": ("2023-09", {"1", "2", "3a", "3b", "3c", "7", "9", "10b", "11b", "13", "18", "19"}),
+    "DIN 18304": ("2019-09", {"1", "2", "3a", "3b", "3c", "9", "10b", "11b", "13", "19"}),
+    "DIN 18311": ("2019-09", {"1", "2", "3a", "3b", "3c", "7", "9", "11a", "13", "14", "16", "17", "19"}),
+    "DIN 18324": ("2019-09", {"1", "2", "3a", "3b", "3c", "4", "5", "7", "9", "10b", "11b", "12", "13", "14", "15",
+                              "16", "17", "18", "19"}),
+}
+
+
+@pytest.mark.parametrize("code", sorted(GEPRUEFT))
+def test_matrix_gegen_volltext_der_atv(code):
+    ausgabe, soll = GEPRUEFT[code]
+    atv = next(a for a in hb.daten()["atv"] if a["code"] == code)
+    assert atv["geprueft"]["ausgabe"] == ausgabe
+    assert set(hb.daten()["matrix"][code]) == soll

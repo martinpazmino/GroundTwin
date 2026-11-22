@@ -1,7 +1,7 @@
 {
  "format": 1,
  "beschreibung": "Homogenbereiche nach VOB/C: die Kennwerte, die je ATV (Gewerk) fuer Boden anzugeben sind. Ein Homogenbereich fasst Boden mit vergleichbaren Eigenschaften fuer ein Gewerk zusammen; welche Schichten zusammengehoeren, entscheidet der Planer je Gewerk.",
- "quelle": "Abbildung 8 'Matrix mit den erforderlichen Kennwerten zur Baugrundbeschreibung fuer die jeweiligen ATV der VOB Teil C fuer Boden' (Kapitel 6 'Beschreibung von Homogenbereichen in der VOB/C', S. 29 einer Veroeffentlichung), vom Nutzer am 2026-11-11 als Bild bereitgestellt; Zellen je Grauwert ausgelesen (docs/28). Gegen die geltende Fassung der jeweiligen ATV pruefen.",
+ "quelle": "Abbildung 8 'Matrix mit den erforderlichen Kennwerten zur Baugrundbeschreibung fuer die jeweiligen ATV der VOB Teil C fuer Boden' (Kapitel 6 'Beschreibung von Homogenbereichen in der VOB/C', S. 29 einer Veroeffentlichung), vom Nutzer am 2026-11-11 als Bild bereitgestellt; Zellen je Grauwert ausgelesen (docs/28). Gegen die geltende Fassung der jeweiligen ATV pruefen. Je ATV mit Feld 'geprueft' gegen den Volltext abgeglichen (2026-11-22, Issue #17); die übrigen sind noch nur aus der Abbildung gelesen. DIN 18302:2023-09 (Ausbau von Bohrungen) hat keine Homogenbereiche.",
  "legende": {
   "erforderlich": "grau",
   "ergänzend (Vortrieb mit Schildmaschinen)": "dunkelgrau: ergaenzend fuer Vortriebe mit Schildmaschinen",
@@ -19,15 +19,36 @@
   },
   {
    "code": "DIN 18301",
-   "gewerk": "Bohrarbeiten"
+   "gewerk": "Bohrarbeiten",
+   "geprueft": {
+    "ausgabe": "2023-09",
+    "abschnitt": "2.3",
+    "datum": "2026-11-22",
+    "ergebnis": "Kohäsion (6) gestrichen: in der Ausgabe 2023-09 nicht mehr verlangt; übrige Zellen gleich",
+    "von": "Claude, Volltext der ATV (vob-online, vom Nutzer bereitgestellt; nicht im Repository)"
+   }
   },
   {
    "code": "DIN 18304",
-   "gewerk": "Ramm-, Rüttel- und Pressarbeiten"
+   "gewerk": "Ramm-, Rüttel- und Pressarbeiten",
+   "geprueft": {
+    "ausgabe": "2019-09",
+    "abschnitt": "2.3",
+    "datum": "2026-11-22",
+    "ergebnis": "alle Zellen gleich",
+    "von": "Claude, Volltext der ATV (vob-online, vom Nutzer bereitgestellt; nicht im Repository)"
+   }
   },
   {
    "code": "DIN 18311",
-   "gewerk": "Nassbaggerarbeiten"
+   "gewerk": "Nassbaggerarbeiten",
+   "geprueft": {
+    "ausgabe": "2019-09",
+    "abschnitt": "2.2",
+    "datum": "2026-11-22",
+    "ergebnis": "alle Zellen gleich; mobile Böden: nur Korngrößenverteilung und Konsistenz",
+    "von": "Claude, Volltext der ATV (vob-online, vom Nutzer bereitgestellt; nicht im Repository)"
+   }
   },
   {
    "code": "DIN 18312",
@@ -51,7 +72,14 @@
   },
   {
    "code": "DIN 18324",
-   "gewerk": "Horizontalspülbohrarbeiten"
+   "gewerk": "Horizontalspülbohrarbeiten",
+   "geprueft": {
+    "ausgabe": "2019-09",
+    "abschnitt": "2.2",
+    "datum": "2026-11-22",
+    "ergebnis": "alle Zellen gleich",
+    "von": "Claude, Volltext der ATV (vob-online, vom Nutzer bereitgestellt; nicht im Repository)"
+   }
   }
  ],
  "kennwerte": [
@@ -179,7 +207,6 @@
    "3a": "erforderlich",
    "3b": "erforderlich",
    "3c": "erforderlich",
-   "6": "erforderlich",
    "7": "erforderlich",
    "9": "erforderlich",
    "10b": "erforderlich",

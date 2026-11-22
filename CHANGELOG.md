@@ -12,6 +12,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
   entered it, a derived value only with its catalogue entry); tests `tests/test_wissen_schemas.py`.
 
 ### Changed
+- Homogenbereiche matrix checked against the ATV full text (Issue #17): DIN 18301:2023-09 no longer asks for
+  Kohäsion (removed); DIN 18304, 18311, 18324 (2019-09) equal; DIN 18302 has no Homogenbereiche. Field `geprueft`
+  per ATV, test `test_matrix_gegen_volltext_der_atv`, docs/28 §10a.
 - Decisions D100–D109 accepted (Issues #24, #32).
 - Homogenbereiche proposal (Issue #21, user decision): Hangschutt and Wiesenkalk always get a Bereich of their own,
   never *bindig*.
