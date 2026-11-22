@@ -182,3 +182,28 @@ def test_modell_nennt_sondierungen_ohne_lage(client):
     assert "Sondierungen nicht im IFC: DPH 2 (ohne Lage), CPT 1 (ohne Lage)" in m["hinweise"]
     ifc = client.get(m["ifc"]).text
     assert "'Sondierung DPH'" in ifc and "'DPH 2'" not in ifc
+
+
+def test_boreholeml_export_und_import_ueber_die_app(client):
+    """Teil 4: der Export der App traegt gepruefte Sondierungen mit Lage; der Import einer solchen Datei macht daraus
+    wieder Sondierungen (mit Lage aus der Datei), keine Bohrungen."""
+    sig = client.post("/api/beispiel", json={"name": "demo"}).json()["projekt"]
+    ops = [{"op": "alle_pruefen", "wert": True}]
+    for feld, wert in (("x", 565030), ("y", 5933020), ("geprueft", True)):
+        ops.append({"op": "sondierung", "sondierung": "0:S0", "feld": feld, "wert": wert})
+    assert client.post(f"/api/projekt/{sig}/aendern", json={"ops": ops}).status_code == 200
+    r = client.get(f"/api/projekt/{sig}/export/boreholeml")
+    assert r.status_code == 200
+    assert "1 Sondierungen exportiert (DPH 1)" in r.text and "CPT 1 (ohne Lage)" in r.text
+    a = client.post("/api/gutachten", files={"dateien": ("demo_bml.xml", r.content, "application/xml")},
+                    data={"ocr": "false"}).json()
+    import time
+    for _ in range(200):
+        a = client.get(f"/api/auftrag/{a['id']}").json()
+        if a["fertig"]:
+            break
+        time.sleep(0.05)
+    z = client.get(f"/api/projekt/{a['projekt']}").json()
+    assert len(z["bohrungen"]) == 12 and [s["code"] for s in z["sondierungen"]] == ["DPH 1"]
+    s = z["sondierungen"][0]
+    assert (s["x"], s["y"], s["lage_aus"], s["werte_n"]) == (565030.0, 5933020.0, "BoreholeML", 60)

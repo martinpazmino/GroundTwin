@@ -262,3 +262,63 @@ def test_export_mit_wasserarten_ist_gueltig_nach_amtlichem_xsd(schema):
     xml, _ = bml.exportieren([_mit_arten()], projekt="Berlin", sig="abc", heute=date(2026, 11, 19))
     fehler = [str(f)[:200] for f in schema.iter_errors(xml.decode("utf-8"))]
     assert not fehler, fehler
+
+
+# ---------------------------------------------------------------- Issue #27 Teil 4: Sondierungen
+def _demo_mit_sondierungen():
+    sys.path.insert(0, str(REPO))
+    from ui import projekt as pj
+    from ui import sondierung as sd
+    docs = [json.loads((REPO / "data" / "beispiele" / "demo_synthetisch.json").read_text(encoding="utf-8"))]
+    p = pj.neues_projekt(docs, "t")
+    for sid, x, y in (("0:S0", 565030, 5933020), ("0:S1", 565050, 5933030), ("0:S2", 565080, 5933060)):
+        for feld, wert in (("x", x), ("y", y), ("geprueft", sid != "0:S1")):
+            pj.aendern(docs, p, {"op": "sondierung", "sondierung": sid, "feld": feld, "wert": wert})
+    pj.alle_pruefen(docs, p, True)
+    drin, raus = sd.fuer_ifc(docs, p)
+    return pj.wirksame_docs(docs, p), drin, raus, docs
+
+
+def test_export_sondierungen_als_investigation_rundreise():
+    v, drin, raus, docs = _demo_mit_sondierungen()
+    xml, ber = bml.exportieren(v, projekt="Demo", sig="abc", heute=date(2026, 11, 22), sondierungen=drin,
+                               sondierungen_draussen=raus, epsg_projekt=25832)
+    assert ber["sondierungen"] == ["DPH 1", "CPT 1"] and len(ber["exportiert"]) == 12
+    assert {"code": "DPH 2", "grund": "Sondierung nicht geprüft"} in ber["ausgelassen"]
+    bh = bohrungen(xml)
+    dph = bh["DPH 1"]
+    assert dph.find("bml:intervalSeries", NS) is None                       # kein Schichtenverzeichnis
+    assert dph.find("bml:drillingMethod", NS).get(f"{{{bml.XSI}}}nil") == "true"   # DPH: kein Code in der Liste
+    assert bh["CPT 1"].findtext("bml:drillingMethod", namespaces=NS) == "DPU"
+    inv = dph.find("bml:investigation/bml:Investigation", NS)
+    assert inv.findtext("bml:investigationType", namespaces=NS) == "SM"
+    pv = inv.find("bml:investigationDetail/bml:Measurement/bml:measurementResult/bml:ParameterValues", NS)
+    assert pv.findtext("bml:parameterCommon", namespaces=NS) == "SON"
+    zeilen = ET.tostring(pv.find("bml:valueMatrix", NS), encoding="unicode", method="text").strip().splitlines()
+    assert zeilen[0] == "tiefe_unten_m;N10" and len(zeilen) == 61
+    zurueck = bml.importieren(xml, "x.xml")
+    assert len(zurueck["boreholes"]) == 12                                   # Sondierungen keine Bohrungen
+    s = {x["code"]: x for x in zurueck["sondierungen"]}
+    gelesen = docs[0]["sondierungen"][0]["werte"]
+    assert [w[2] for w in s["DPH 1"]["werte"]] == [float(w[2]) for w in gelesen] and s["DPH 1"]["art"] == "DPH"
+    assert (s["CPT 1"]["art"], len(s["CPT 1"]["werte"]), s["CPT 1"]["x"]) == ("CPT", 41, 565080.0)
+
+
+def test_export_zensierte_n10_bleiben_zensiert():
+    v, drin, _, _ = _demo_mit_sondierungen()
+    for s in drin:
+        s["geprueft"] = True
+    dph2 = next(s for s in drin if s["code"] == "DPH 2")
+    assert dph2["zensierte"]                                                 # s05: Werte ueber der Achse
+    xml, _ = bml.exportieren(v, projekt="Demo", sig="abc", heute=date(2026, 11, 22), sondierungen=drin, epsg_projekt=25832)
+    s = {x["code"]: x for x in bml.importieren(xml, "x.xml")["sondierungen"]}
+    zens = [w for w in s["DPH 2"]["werte"] if isinstance(w[2], dict)]
+    assert len(zens) == len(dph2["zensierte"]) and all(w[2]["zensiert"] for w in zens)
+
+
+def test_export_mit_sondierungen_ist_gueltig_nach_amtlichem_xsd(schema):
+    v, drin, raus, _ = _demo_mit_sondierungen()
+    xml, _ = bml.exportieren(v, projekt="Demo", sig="abc", heute=date(2026, 11, 22), sondierungen=drin,
+                             sondierungen_draussen=raus, epsg_projekt=25832)
+    fehler = [str(f)[:200] for f in schema.iter_errors(xml.decode("utf-8"))]
+    assert not fehler, fehler

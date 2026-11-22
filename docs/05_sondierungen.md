@@ -176,7 +176,7 @@ The tests hold the strongest ones: rule off → case fails (`tests/test_sondieru
   `demo_synthetisch.json` three synthetic ones read from the stress cases s01, s05, s04 (marked *synthetisch*).
 - Tests `tests/test_sondierungen_app.py`, end-to-end check *S* in `scripts/check_app.mjs`, feature map entry
   `bohrungen-sondierungen`.
-- Not yet: Sondierungen in BoreholeML (part 4), and Sondierungen as data for the layer model (#28). The IFC: §7.
+- IFC: §7; BoreholeML: §8. Not yet: Sondierungen as data for the layer model (#28).
 
 
 ## 7. Sondierungen in the IFC (2026-11-21, Issue #27 part 3)
@@ -203,7 +203,39 @@ user-defined type; nothing is lost.
   hides them with the columns; a table property reads *60 Werte (Tiefe [m] -> N10 [Schläge/10 cm])*.
 - Tests `tests/test_sondierungen_app.py::test_ifc_mit_sondierungen` (validation, position, values unchanged) and
   `test_modell_nennt_sondierungen_ohne_lage`.
-- Next: BoreholeML (part 4).
+- BoreholeML: §8.
+
+
+## 8. Sondierungen in BoreholeML (2026-11-22, Issue #27 part 4)
+
+**What the schema offers** (BoreholeML 3.2 XSD and the official code lists v2, read 2026-11-22): no element or type for
+a sounding. A `bml:Borehole` may carry `bml:investigation` → `Investigation` (`from`, `to`, `investigationType` from
+`InvestigationTypeList`) → `investigationDetail` → `Measurement` (`measurementID`, `measurementMethod`,
+`measurementAnnotation`, `measurementResult` → `ParameterValues` with `parameterCommon`, `parameterText` and a
+`valueMatrix` "as a csv-formatted table"). The code lists have **DPU – Drucksondierungen / Direct Push** as a drilling
+method, **no code for a Rammsondierung**, no investigation type for soundings (only *SM – sonstige Messungen*) and no
+parameter N10/q_c (only *SON – Sonstiges* with free text).
+
+**Export** (`geodaten.boreholeml.exportieren(..., sondierungen=, sondierungen_draussen=, epsg_projekt=)`):
+- Only **reviewed** Sondierungen with read values, a Lage in ETRS89/UTM (their own EPSG, else the project's) and a GOK;
+  the others are listed with the reason (*nicht geprüft*, *ohne gelesene Werte*, *ohne Lage* …).
+- Each one a `bml:Borehole`: location and path to the end depth, no `intervalSeries` (it has no Schichten),
+  `boreholeDescription` *Schwere Rammsondierung (DPH) nach DIN EN ISO 22476-2; aus dem Gutachten … S. … gelesen und
+  vom Bearbeiter geprüft*, `drillingMethod` DPU for CPT and nil for DPH (no code exists; never a wrong one).
+- One `bml:investigation` (type SM, 0 to end depth) with one `Measurement` per quantity: `parameterCommon` SON,
+  `parameterText` *N10 [Schläge/10 cm] über der Tiefe* (CPT: q_c, f_s, R_f; a unit not read stays *wie im Diagramm*),
+  `valueMatrix` CSV `tiefe_unten_m;N10` (semicolon, decimal point), censored steps as `>50`; source and page in the
+  annotation.
+- Valid against the official XSD (`tests/test_boreholeml.py::test_export_mit_sondierungen_ist_gueltig_nach_amtlichem_xsd`).
+
+**Import**: a `bml:Borehole` without `intervalSeries` whose measurements are N10 / q_c / f_s / R_f is read back as a
+Sondierung (`doc["sondierungen"]`, `form` BoreholeML, values and censoring kept), not as a Bohrung without Schichten;
+its Lage becomes the project's default (`lage_aus` BoreholeML). Round trip tested on the demo (60 N10 steps, 41 CPT
+points) and through the app (`tests/test_sondierungen_app.py::test_boreholeml_export_und_import_ueber_die_app`).
+
+**Limits**: the meaning of DPH/CPT in BoreholeML rests on free text (no codes); a Geological Survey reading the file
+sees an investigation *sonstige Messungen* with a CSV table. If the AK BoreholeML adds codes for soundings, only
+`INVESTIGATION`, `PARAMETER_SONSTIGES` and the drilling method need to change.
 
 
 Up: [Index](README.md)

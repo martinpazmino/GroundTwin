@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen in BoreholeML (Issue #27 part 4): reviewed Sondierungen with values, UTM Lage and GOK as `bml:Borehole`
+  with the curve as `bml:investigation` (type SM, parameter SON, CSV `valueMatrix`, censored steps `>`), DPU for CPT;
+  valid against the official XSD; the import reads them back as Sondierungen with their Lage (docs/05 §8).
 - Sondierungen in the IFC (Issue #27 part 3): `IfcBorehole` with `ObjectType` `Sondierung DPH/CPT`, a slim column
   at its Lage, `CPset_Sondierung`, `CPset_Herkunft` and the curve as `IfcPropertyTableValue` (N10, q_c, f_s); those
   without Lage or GOK stay out and are named in step *Modell*; the viewer counts them apart (docs/05 §7).

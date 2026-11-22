@@ -68,7 +68,9 @@ license **AGPL-3.0-or-later** (D79).
   or a point on the locked plan, never guessed) and the app (step Bohrungen: list, curve, PDF; Lage: ▼ markers);
   tests `tests/test_sondierungen_app.py`. Part 3 (docs/05 §7): IFC `IfcBorehole` ObjectType `Sondierung <Art>` (no
   class/enum in IFC 4.3), column at the Lage, curve as `IfcPropertyTableValue`, only with Lage + GOK, never in the layer
-  model (`sd.fuer_ifc`, `ifc_schreiben(sondierungen=)`). Not yet in BoreholeML (part 4).
+  model (`sd.fuer_ifc`, `ifc_schreiben(sondierungen=)`). Part 4 (docs/05 §8): BoreholeML has no sounding codes →
+  `bml:Borehole` + `bml:investigation` (SM, parameter SON + free text, CSV `valueMatrix`), DPU for CPT, nil for DPH;
+  only reviewed with values, UTM and GOK; import reads them back as Sondierungen; valid against the official XSD.
 - `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge

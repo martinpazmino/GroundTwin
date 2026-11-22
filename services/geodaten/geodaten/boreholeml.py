@@ -125,8 +125,13 @@ def exportierbar(b: dict) -> str:
 
 
 def exportieren(dokumente: list[dict], *, projekt: str, organisation: str = "", sig: str = "groundtwin",
-                heute: date | None = None, dgm_zelle: float | None = None) -> tuple[bytes, dict]:
+                heute: date | None = None, dgm_zelle: float | None = None, sondierungen: list[dict] | None = None,
+                sondierungen_draussen: list[dict] | None = None,
+                epsg_projekt: int | None = None) -> tuple[bytes, dict]:
     """dokumente: wirksame Dokumente (kanonisches JSON mit Korrekturen, Pruefvermerken und Quellen der Lage/GOK).
+    sondierungen: DPH/CPT mit Lage und GOK (ui.sondierung.fuer_ifc, Issue #27 Teil 4); exportiert werden die
+    gepruefte mit Werten und UTM-Lage, je als bml:Borehole mit der Kurve als bml:investigation (docs/05 §8).
+    epsg_projekt: System einer ohne EPSG eingetragenen Lage (das der Bohrungen des Projekts).
 
     Rueckgabe: BoreholeML (UTF-8) und Bericht {exportiert, ausgelassen [{code, grund}], hinweise}."""
     from baugrundmodell.normen import UNKLASSIFIZIERT, deuten   # Deutung wie in der App (services/modeler)
@@ -145,7 +150,19 @@ def exportieren(dokumente: list[dict], *, projekt: str, organisation: str = "", 
             _bohrung(_e(wurzel, SF, "featureMember"), b, d, f"GT_{_ncname(sig)}_{nr}", projekt, organisation, heute,
                      dgm_zelle, deuten, UNKLASSIFIZIERT, nicht_kodiert)
             bericht["exportiert"].append(b["code"])
-    if not bericht["exportiert"]:
+    bericht["sondierungen"] = []
+    for r in sondierungen_draussen or []:
+        bericht["ausgelassen"].append({"code": r["code"], "grund": r["grund"]})
+    for s in sondierungen or []:
+        epsg = s.get("epsg") or epsg_projekt
+        grund = sondierung_exportierbar(s, epsg)
+        if grund:
+            bericht["ausgelassen"].append({"code": s["code"], "grund": grund})
+            continue
+        nr = len(bericht["exportiert"]) + len(bericht["sondierungen"]) + 1
+        _sondierung(_e(wurzel, SF, "featureMember"), s, int(epsg), f"GT_{_ncname(sig)}_{nr}", projekt, organisation, heute)
+        bericht["sondierungen"].append(s["code"])
+    if not bericht["exportiert"] and not bericht["sondierungen"]:
         gruende = "; ".join(f"{a['code']}: {a['grund']}" for a in bericht["ausgelassen"][:8])
         raise ValueError("keine exportierbare Bohrung: " + (gruende or "keine Bohrung im Projekt"))
     bericht["hinweise"] = [
@@ -154,7 +171,10 @@ def exportieren(dokumente: list[dict], *, projekt: str, organisation: str = "", 
         "Grundwasserstände ohne Art im Gutachten (und Schichtenwasser) nur als Text im Schichtenverzeichnis.",
         "Kodierung der Schichten: Kurzzeichen nach DIN 4022/4023 (codingStandard DIN4022), Beschreibung aus dem "
         "Gutachten im Klartext; Petrographie und Genese über die amtlichen Codelisten.",
-    ] + [f"nicht kodiert (steht in der Beschreibung): {k} – {n} Schichten" for k, n in sorted(nicht_kodiert.items())]
+    ] + [f"nicht kodiert (steht in der Beschreibung): {k} – {n} Schichten" for k, n in sorted(nicht_kodiert.items())] + (
+        ["Sondierungen als bml:Borehole ohne Schichtenverzeichnis, die Kurve als bml:investigation (Untersuchungsart "
+         "SM, Parameter SON mit Freitext, Werte als CSV in valueMatrix); Bohrverfahren DPU für Drucksondierungen, "
+         "für Rammsondierungen hat die Codeliste keinen Eintrag (nil)."] if bericht["sondierungen"] else [])
     ET.indent(wurzel, space="  ")
     return ET.tostring(wurzel, encoding="utf-8", xml_declaration=True), bericht
 
@@ -231,6 +251,120 @@ def _bohrung(mitglied: ET.Element, b: dict, d: dict, fid: str, projekt: str, org
         _schicht(_e(_e(reihe, BML, "layer"), BML, "Interval"), ly, deuten, unklassifiziert, nicht_kodiert)
     _nil(bh, "installationDetail")
 
+
+
+# ---------------------------------------------------------------- Sondierungen (Issue #27 Teil 4)
+INVESTIGATION = {"code": "SM", "liste": "InvestigationTypeList"}          # sonstige Messungen
+PARAMETER_SONSTIGES = {"code": "SON", "liste": "ParameterCommonList"}     # Sonstiges (+ parameterText)
+BOHRVERFAHREN_CPT = {"code": "DPU", "liste": "DrillingMethodList"}       # Drucksondierungen / Direct Push
+VERFAHREN = {"DPL": "Leichte Rammsondierung (DPL)", "DPM": "Mittelschwere Rammsondierung (DPM)",
+             "DPH": "Schwere Rammsondierung (DPH)", "DPSH": "Superschwere Rammsondierung (DPSH)",
+             "SRS": "Rammsondierung (SRS)", "CPT": "Drucksondierung (CPT)", "CPTU": "Drucksondierung mit Porenwasserdruck (CPTu)"}
+NORM = {"DP": "DIN EN ISO 22476-2", "CP": "DIN EN ISO 22476-1"}
+
+
+def sondierung_exportierbar(s: dict, epsg: int | None) -> str:
+    """Grund, warum eine Sondierung nicht exportiert wird ('' = exportierbar)."""
+    if not s.get("geprueft"):
+        return "Sondierung nicht geprüft"
+    if not s.get("kurven") or not any(k[1] for k in s["kurven"]):
+        return "Sondierung ohne gelesene Werte"
+    if not epsg:
+        return "Sondierung ohne Koordinatensystem (EPSG)"
+    if int(epsg) not in SYSTEME_3D:
+        return f"Sondierung in EPSG:{int(epsg)} – für BoreholeML in ETRS89/UTM umrechnen"
+    if s.get("gok") is None:
+        return "Sondierung ohne GOK in m NHN"
+    return ""
+
+
+def _csv(kurve: tuple, zensierte: list) -> str:
+    """Werte einer Kurve als CSV (Semikolon, Dezimalpunkt); zensierte Stufen als '>Wert'."""
+    name, tiefen, werte = kurve[0], kurve[1], kurve[2]
+    if name == "N10":
+        ueber = {round(u, 2) for _, u, _ in zensierte}
+        zeilen = ["tiefe_unten_m;N10"] + [f"{t:.2f};{'>' if round(t, 2) in ueber else ''}{w:g}" for t, w in zip(tiefen, werte)]
+    else:
+        zeilen = [f"tiefe_m;{name}"] + [f"{t:.2f};{w:g}" for t, w in zip(tiefen, werte)]
+    return "\n".join(zeilen)
+
+
+def _sondierung(mitglied: ET.Element, s: dict, epsg: int, fid: str, projekt: str, organisation: str, heute: date) -> None:
+    """Eine Sondierung als bml:Borehole: Lage, Pfad bis zur Endtiefe, kein Schichtenverzeichnis, die Kurve als
+    bml:investigation mit einem bml:Measurement je Groesse (N10 bzw. q_c, f_s, R_f)."""
+    epsg3d, abzug = SYSTEME_3D[epsg]
+    x, y, gok, ende = float(s["x"]) - abzug, float(s["y"]), float(s["gok"]), float(s["endtiefe"])
+    art = (s.get("art") or "").upper()
+    verfahren = VERFAHREN.get(art, f"Sondierung ({s.get('art')})")
+    norm = NORM.get(art[:2], "")
+    bh = _e(mitglied, BML, "Borehole", **{f"{{{GML}}}id": fid})
+    _e(bh, GML, "identifier", s["code"], codeSpace=f"urn:groundtwin:{_ncname(projekt) or 'projekt'}")
+    punkt = _e(_e(bh, BML, "location"), GML, "Point", **{f"{{{GML}}}id": f"{fid}_LOC", "srsName": f"{EPSG_URI}{epsg3d}"})
+    _e(punkt, GML, "pos", f"{x:.3f} {y:.3f} {gok:.2f}")
+    linie = _e(_e(bh, BML, "boreholePath"), GML, "LineString",
+               **{f"{{{GML}}}id": f"{fid}_PATH", "srsName": f"{EPSG_URI}{epsg3d}"})
+    _e(linie, GML, "posList", f"{x:.3f} {y:.3f} {gok:.2f} {x:.3f} {y:.3f} {gok - ende:.2f}")
+    _e(bh, BML, "id", s["code"])
+    _text(bh, "shortName", s["code"])
+    _text(bh, "fullName", f"{projekt} {s['code']}".strip())
+    fest = CODES["fest"]
+    _code(bh, "boreholeStatus", fest["BoreholeStatusList"])
+    _laenge(bh, "totalLength", ende)
+    seg = _e(_e(bh, BML, "boreholeSegment"), BML, "BoreholeSegment")
+    _laenge(seg, "from", 0.0)
+    _laenge(seg, "to", ende)
+    _e(seg, BML, "azimuth", "0.00", uom="deg")
+    _e(seg, BML, "inclination", "0.00", uom="deg")
+    _code(seg, "segmentDataQuality", fest["SegmentDataQualityList"])
+    _code(bh, "databaseSource", fest["DatabaseSourceList"])
+    _e(bh, BML, "exportDate", heute.isoformat())
+    _e(_e(bh, BML, "language"), GMD, "LanguageCode", "deu", codeList=f"{CL}LanguageCode.xml", codeListValue="deu")
+    _code(bh, "codingStandard", fest["CodingStandardList"])
+    anbieter = _e(_e(bh, BML, "organisation"), BML, "BoreholeProvider")
+    _e(_e(anbieter, GMD, "organisationName"), GCO, "CharacterString", organisation.strip() or "nicht angegeben")
+    _e(_e(anbieter, GMD, "role"), GMD, "CI_RoleCode", "originator",
+       codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode",
+       codeListValue="originator")
+    if projekt:
+        _e(bh, BML, "project", projekt)
+    _nil(bh, "owner")
+    _nil(bh, "locationName")
+    herkunft = _e(_e(bh, BML, "origin"), BML, "Origin")
+    _e(herkunft, BML, "originalLocation", f"{float(s['x']):.3f} {y:.3f}", srsName=f"{EPSG_URI}{epsg}")
+    _e(herkunft, BML, "elevation", f"{gok:.2f}")
+    _code(herkunft, "locationMethod", CODES["lage"]["Plan (kalibriert)" if "Plan" in (s.get("lage") or "")
+                                                    else "manuell (Tabelle)"])
+    _code(herkunft, "levelMethod", _hoehenbestimmung("PDF" if s.get("gok_quelle") == "PDF" else "manuell", None))
+    _text(bh, "boreholeDescription", f"{verfahren}{f' nach {norm}' if norm else ''}; aus dem Gutachten "
+          f"{s.get('dokument') or ''} S. {s.get('seite') or '?'} mit GroundTwin gelesen und vom Bearbeiter geprüft.")
+    _nil(bh, "drillingDate")
+    if art.startswith("CP"):
+        _code(bh, "drillingMethod", BOHRVERFAHREN_CPT)
+    else:
+        _nil(bh, "drillingMethod")
+    _code(bh, "drillingPurpose", fest["DrillingPurposeList"])
+    _nil(bh, "groundwaterEncountered")
+    _nil(bh, "lastHorizon")
+    _nil(bh, "drillingProcess")
+    _nil(bh, "installationDetail")
+    inv = _e(_e(bh, BML, "investigation"), BML, "Investigation")
+    _laenge(inv, "from", 0.0)
+    _laenge(inv, "to", ende)
+    _code(inv, "investigationType", INVESTIGATION)
+    for i, kurve in enumerate(k for k in s["kurven"] if k[1]):
+        m = _e(_e(inv, BML, "investigationDetail"), BML, "Measurement")
+        _laenge(m, "from", 0.0)
+        _laenge(m, "to", ende)
+        _e(m, BML, "measurementID", f"{s['code']} {kurve[0]}")
+        _text(m, "measurementMethod", f"{verfahren}{f', {norm}' if norm else ''}")
+        bem = [f"Quelle: {s.get('dokument') or 'Gutachten'} S. {s.get('seite') or '?'} ({s.get('methode') or 'gelesen'})"]
+        if s.get("zensierte") and kurve[0] == "N10":
+            bem.append(f"{len(s['zensierte'])} Stufen über der Achse ('>' = mindestens dieser Wert)")
+        _text(m, "measurementAnnotation", "; ".join(bem))
+        pv = _e(_e(m, BML, "measurementResult"), BML, "ParameterValues")
+        _code(pv, "parameterCommon", PARAMETER_SONSTIGES)
+        _text(pv, "parameterText", f"{kurve[0]} [{kurve[3]}] über der Tiefe")
+        _text(pv, "valueMatrix", _csv(kurve, s.get("zensierte") or []))
 
 def _hoehenbestimmung(quelle: str | None, dgm_zelle: float | None) -> dict:
     hoehe = CODES["hoehe"]
@@ -364,9 +498,61 @@ def importieren(daten: bytes, name: str = "boreholeml.xml") -> dict:
     if not bohrungen:
         raise ValueError(f"{name}: keine BoreholeML-Bohrung (bml:Borehole) gefunden")
     rahmen = next((el.get("srsName") for el in wurzel.iter() if _lokal(el) == "Envelope" and el.get("srsName")), None)
+    sond = [b for b in bohrungen if _ist_sondierung(b)]
     return {"document": {"file": name, "sha256": hashlib.sha256(daten).hexdigest(), "parser_version": "boreholeml",
                          "pages": None},
-            "boreholes": [_bohrung_lesen(b, rahmen) for b in bohrungen], "soundings": {}}
+            "boreholes": [_bohrung_lesen(b, rahmen) for b in bohrungen if b not in sond], "soundings": {},
+            "sondierungen": [_sondierung_lesen(b, rahmen) for b in sond]}
+
+
+SOND_PARAMETER = re.compile(r"^(N10|q_c|f_s|R_f)\b")
+
+
+def _messungen(bh: ET.Element) -> list[tuple[str, str]]:
+    """(parameterText, valueMatrix) aller Messungen einer Bohrung."""
+    out = []
+    for pv in (el for el in bh.iter() if _lokal(el) == "ParameterValues"):
+        out.append((_textwert(_kind(pv, "parameterText")), _textwert(_kind(pv, "valueMatrix"))))
+    return out
+
+
+def _ist_sondierung(bh: ET.Element) -> bool:
+    """Sondierung (Export von GroundTwin, Teil 4): kein Schichtenverzeichnis, Messungen N10 bzw. q_c/f_s/R_f."""
+    return not any(_lokal(el) == "IntervalSeries" for el in bh.iter()) and \
+        any(SOND_PARAMETER.match(p) and m for p, m in _messungen(bh))
+
+
+def _sondierung_lesen(bh: ET.Element, rahmen_srs: str | None = None) -> dict:
+    """Sondierung aus BoreholeML -> Eintrag wie die Stufe services/extractor/sondierungen.py (mit Herkunft)."""
+    b = _bohrung_lesen(bh, rahmen_srs)
+    text = _textwert(_kind(bh, "boreholeDescription"))
+    art = next((a for a in ("DPSH", "DPH", "DPM", "DPL", "SRS", "CPTU", "CPT") if f"({a})" in text.upper()
+                or f"({a.capitalize()})" in text), "CPT" if "Drucksondierung" in text else "DPH" if "Rammsondierung" in text else "")
+    reihen: dict[str, list[tuple[float, float, bool]]] = {}
+    for param, matrix in _messungen(bh):
+        m = SOND_PARAMETER.match(param)
+        if not m:
+            continue
+        for zeile in matrix.splitlines()[1:]:
+            teile = zeile.split(";")
+            if len(teile) == 2:
+                w = teile[1].strip()
+                reihen.setdefault(m.group(1), []).append((float(teile[0]), float(w.lstrip(">")), w.startswith(">")))
+    werte: list = []
+    if "N10" in reihen:
+        alt = 0.0
+        for unten, w, zensiert in reihen["N10"]:
+            werte.append([round(alt, 2), unten, {"wert": w, "zensiert": True} if zensiert else w])
+            alt = unten
+    else:
+        tiefen = sorted({t for r in reihen.values() for t, _, _ in r})
+        je = {k: {t: w for t, w, _ in r} for k, r in reihen.items()}
+        werte = [[t] + [je.get(k, {}).get(t) for k in ("q_c", "f_s", "R_f")] for t in tiefen]
+    return {"code": b["code"], "art": art or "?", "seite": None, "form": "BoreholeML", "werte": werte,
+            "endtiefe": b["end_depth"], "ansatzhoehe": b["gok_nhn"], "x": b["x"], "y": b["y"], "crs_epsg": b["crs_epsg"],
+            "konfidenz": None, "quelle": "BoreholeML", "herkunft": b["herkunft"],
+            "hinweise": [h.replace("nicht aus dem Gutachten", "Sondierung, nicht aus dem Gutachten") for h in b["issues"][:1]],
+            "beleg": {"methode": "BoreholeML"}}
 
 
 def _bohrung_lesen(bh: ET.Element, rahmen_srs: str | None = None) -> dict:

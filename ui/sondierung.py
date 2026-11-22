@@ -112,7 +112,9 @@ def zeilen(docs: list[dict], p: Projekt) -> list[dict]:
             "n10_max": max(n10) if n10 else None,
             "zensiert": sum(_wert(r[2])[1] for r in werte if len(r) >= 3),
             "gok": gok, "gok_quelle": gok_q,
-            "x": o.get("x"), "y": o.get("y"), "epsg": o.get("epsg"), "lage_aus": o.get("quelle") or "",
+            # Lage: Eingabe/Plan im Projekt, sonst die einer importierten Sondierung (BoreholeML), sonst keine
+            "x": o.get("x", s.get("x")), "y": o.get("y", s.get("y")), "epsg": o.get("epsg", s.get("crs_epsg")),
+            "lage_aus": o.get("quelle") or (s.get("quelle") or "" if s.get("x") is not None else ""),
             "geprueft": bool(o.get("geprueft")), "entfernt": o.get("modell") is False,
             "konfidenz": s.get("konfidenz"),
             "hinweise": list(s.get("hinweise") or []) + ([] if werte else ["ohne Werte (nur Code und Seite gelesen)"]),

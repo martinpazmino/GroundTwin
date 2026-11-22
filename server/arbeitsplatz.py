@@ -91,6 +91,8 @@ def signatur(docs: list[dict]) -> str:
 def _mit_bericht(xml: bytes, bericht: dict) -> bytes:
     """Bericht des BoreholeML-Exports als Kommentar hinter die XML-Deklaration (wer die Datei oeffnet, sieht ihn)."""
     zeilen = [f"GroundTwin: {len(bericht['exportiert'])} Bohrungen exportiert ({', '.join(bericht['exportiert'])})."]
+    if bericht.get("sondierungen"):
+        zeilen.append(f"{len(bericht['sondierungen'])} Sondierungen exportiert ({', '.join(bericht['sondierungen'])}).")
     if bericht["ausgelassen"]:
         zeilen.append("Ausgelassen: " + "; ".join(f"{a['code']} ({a['grund']})" for a in bericht["ausgelassen"]) + ".")
     zeilen += bericht["hinweise"]
@@ -716,9 +718,12 @@ class Arbeitsplatz:
             if art == "projekt":
                 return pl.json_bytes(pj.speichern(p)), f"{stamm}_projekt.json", "application/json"
             if art == "boreholeml":                     # nur gepruefte Bohrungen mit UTM und GOK (docs/23 §2.1)
+                s_drin, s_raus = sd.fuer_ifc(docs, p)               # Sondierungen (Issue #27 Teil 4)
+                epsgs = Counter(b.get("crs_epsg") for d in vorb.docs for b in d["boreholes"] if b.get("crs_epsg"))
                 inhalt, bericht = boreholeml.exportieren(
                     vorb.docs, projekt=p.name, organisation=organisation, sig=sig,
-                    dgm_zelle=(p.dgm or {}).get("dx"))
+                    dgm_zelle=(p.dgm or {}).get("dx"), sondierungen=s_drin, sondierungen_draussen=s_raus,
+                    epsg_projekt=epsgs.most_common(1)[0][0] if epsgs else None)
                 return _mit_bericht(inhalt, bericht), f"{stamm}_boreholeml.xml", "application/xml"
         erg = self.modell(sig)
         if erg["fehler"]:
