@@ -408,6 +408,23 @@ End to end, with the Bohrungen in a schematic row:
 and every level (grob, standard, fein); they no longer count as *bindig* (Hangschutt is mixed-grained with Steine,
 Wiesenkalk/Seekreide calcareous-organogenic and compressible). Test `test_hangschutt_und_wiesenkalk_eigener_bereich`.
 
+## 10a. Matrix checked against the ATV full text (Issue #17, 2026-11-22)
+
+The user provided the full text of five ATV (vob-online print-outs; not in the repository, copyright DIN). The list
+"Für Boden" in Abschnitt 2.2/2.3 of each was compared cell by cell with the matrix read from Abbildung 8:
+
+| ATV | Edition | Abschnitt | Result |
+|---|---|---|---|
+| DIN 18301 Bohrarbeiten | 2023-09 | 2.3 | **Kohäsion (6) removed**: no longer required in 2023-09; other cells equal. Also new in 2.2: for exploration Bohrungen only bindig / nichtbindig / organisch / Fels; 2.3: Fels > 100 MPa a Bereich of its own |
+| DIN 18304 Ramm-, Rüttel-, Pressarbeiten | 2019-09 | 2.3 | equal |
+| DIN 18311 Nassbaggerarbeiten | 2019-09 | 2.2 | equal; for mobile Böden Korngrößenverteilung and Konsistenz suffice |
+| DIN 18324 Horizontalspülbohrarbeiten | 2019-09 | 2.2 | equal (19 cells) |
+| DIN 18302 Ausbau von Bohrungen | 2023-09 | 2 | no Homogenbereiche (Abschnitt 2 lists only Stoffe); not added |
+
+Each checked ATV carries `geprueft` (edition, Abschnitt, date, result) in `homogenbereiche.json`; the test
+`test_matrix_gegen_volltext_der_atv` fixes the checked cells. Still read only from the figure: DIN 18300 (and GK 1),
+18312, 18313, 18319, 18320, 18321. The Fels lists of the ATV are not modelled (the matrix covers Boden only).
+
 ## 10b. Scanned report pages: OCR (Issue #18, 2026-11-19, training PDFs, not blind)
 
 The three extra stages (Kennwerte §9, laboratory sheets §9b, the Gutachter's Homogenbereiche §10) read every page
