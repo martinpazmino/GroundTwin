@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 from baugrundmodell import synthetisch as syn
@@ -346,7 +345,7 @@ def kreuzprobe_sondierungen(m, sondierungen: list[dict], methoden: tuple[str, ..
     uebernommene Stuetzpunkte an der falschen Einheit landen (`falsche_grenzen`).
     """
     basis_kp = kreuzprobe(m, methoden=methoden)
-    nb, n_einh = len(m.bohrungen), len(m.einheiten)
+    nb = len(m.bohrungen)
     xy = m.punkte[:nb]
 
     out: dict = {"bohrungen": nb, "sondierungen": len(sondierungen or []), "methoden": {}}

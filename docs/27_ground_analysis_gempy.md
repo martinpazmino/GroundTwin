@@ -507,7 +507,7 @@ example (`berlin_v67b.json`) no Sondierung is usable today because the scanned c
 surveyed Lage. Default stays OFF (`sondierungen_stuetzpunkte=False`).**
 
 **Method** (`services/analyse/baugrundanalyse/sondierung.py`, modeler option in `baugrundmodell/flaechen.py` and
-`modell.py`, project setting `Einstellungen.sondierungen_stuetzpunkte = False`):
+`modell.py`; not a setting of the app yet: the server never passes support points, so the app model is unchanged):
 
 1. **Changepoint detection (`schichtwechsel_erkennen`)**: sliding window median (half-width `0.5 m`, ≥ 4 points per
    side) on `N10` (DPH/DPL/DPM/DPSH/SRS) or `q_c` (CPT/CPTu), ignoring single-step stone spikes. Accepted only when
