@@ -540,3 +540,38 @@ def test_reifegrad_gutachten_vorerkundung_gemischt(tmp_path):
         b["herkunft"] = "SGD"
     m = bauen([gemischt])
     assert bericht(m)["reifegrad"] == "gemischt" and m.parameter["herkunft"] == {"Gutachten": len(m.bohrungen) - 3, "SGD": 3}
+
+
+def test_sondierungen_stuetzpunkte_standard_aus_und_exakte_bohrkontakte(tmp_path):
+    doc = syn.dokument(syn.geneigt())
+    m0 = bauen([doc], methode="tps")
+    assert m0.parameter["sondierungen_stuetzpunkte"] is False
+    # Punkt mittig zwischen den Bohrungen (mit leicht verschobener Hoehe) plus Duplikat und unbekannte Einheit
+    zus = [
+        {"einheit": "Sand", "x": syn.URSPRUNG[0] + 25.0, "y": syn.URSPRUNG[1] + 25.0, "z": 31.0,
+         "quelle": "Sondierung", "code": "DPH 1", "tiefe_m": 9.25, "konfidenz": 0.85},
+        {"einheit": "Sand", "x": syn.URSPRUNG[0] + 25.1, "y": syn.URSPRUNG[1] + 25.0, "z": 31.1,
+         "quelle": "Sondierung", "code": "DPH 1b"},
+        {"einheit": "GibtEsNicht", "x": syn.URSPRUNG[0] + 25.0, "y": syn.URSPRUNG[1] + 25.0, "z": 30.0},
+    ]
+    # Standard AUS: unveraendert
+    m_aus = bauen([doc], methode="tps", zusatz_stuetzpunkte=zus)
+    assert np.array_equal(m_aus.flaechen, m0.flaechen)
+    # Option EIN: Flaeche reagiert zwischen den Bohrungen, Bohrkontakte exakt, Koerper geschlossen, IFC METRE gueltig
+    m_ein = bauen([doc], methode="tps", sondierungen_stuetzpunkte=True, zusatz_stuetzpunkte=zus)
+    assert m_ein.parameter["sondierungen_stuetzpunkte"] is True
+    assert not np.array_equal(m_ein.flaechen, m0.flaechen)
+    assert m_ein.max_abweichung < 1e-6
+    assert all(k["pruefung"]["geschlossen"] for k in m_ein.koerper)
+    assert any("GibtEsNicht" in h for h in m_ein.hinweise)
+    assert any("Stützpunkte aus Sondierungen" in h for h in m_ein.hinweise)
+    ifc_pfad = tmp_path / "stuetz.ifc"
+    ifc_schreiben(m_ein, ifc_pfad, [doc])
+    import ifcopenshell
+    import ifcopenshell.util.unit
+    import ifcopenshell.validate
+    f = ifcopenshell.open(str(ifc_pfad))
+    assert ifcopenshell.util.unit.calculate_unit_scale(f) == pytest.approx(1.0)
+    logger = ifcopenshell.validate.json_logger()
+    ifcopenshell.validate.validate(f, logger)
+    assert logger.statements == []

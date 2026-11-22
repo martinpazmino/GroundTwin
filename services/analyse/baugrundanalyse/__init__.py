@@ -5,12 +5,15 @@ Liest das Modell, aendert nie die Bohrungen. Der Modellierer liegt in services/m
 """
 from .grundwasser import grundwasser
 from .kreuzprobe import kreuzprobe
+from .sondierung import kreuzprobe_sondierungen, schichtwechsel_erkennen, stuetzpunkte_zuordnen
 from .unsicherheit import unsicherheit
 from .unsicherheit import zusammenfassung as unsicherheit_zusammenfassung
 from .virtuell import virtuelle_bohrung
 from .vorschlag import vorschlaege
 
-__all__ = ["grundwasser", "kreuzprobe", "unsicherheit", "unsicherheit_zusammenfassung", "virtuelle_bohrung", "vorschlaege", "analyse"]
+__all__ = ["grundwasser", "kreuzprobe", "kreuzprobe_sondierungen", "schichtwechsel_erkennen",
+           "stuetzpunkte_zuordnen", "unsicherheit", "unsicherheit_zusammenfassung",
+           "virtuelle_bohrung", "vorschlaege", "analyse"]
 
 
 def analyse(m, laeufe: int = 100, sigma_exakt: float | None = None, seed: int = 1) -> dict:
