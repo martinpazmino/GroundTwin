@@ -108,6 +108,14 @@ Codes are compared without spaces (`B1` = `B 1`), because OCR loses them.
    - *by order*: k-th label ↔ k-th boundary, dropping up to 3 boundaries; max. residual < 3 cm
      (accepts < 6 cm). If the first label is > 0, the top = 0 is added.
    - *scale text*: `M 1:50`, `Höhenmaßstab 1:30` → a = scale · 0.3528 mm, b from the top.
+   - *OCR ruler* (rule `raster_massstab_ocr`, E8, Issue #40): on scanned pages (`pcls != "vektor"`),
+     `raster_ruler_scale` searches for vertical depth rulers (`0..30 m`, top within 35 pt of
+     `col.bounds[0]`) and elevation rulers (`-50..3000 m NHN`, converted via `depth = gok - elev`)
+     within 220 pt of the column (600 pt on sections with ≥ 2 anchored columns). Requires ≥ 4
+     vertically aligned OCR numbers (`Δx ≤ 14 pt`, `Δy ≥ 8 pt`) in arithmetic progression
+     (`step ± 0.035` or 6 %, round step in `{0.1, 0.2, 0.25, 0.3, 0.5, 1, 2, 2.5, 5, 10}`, linear
+     fit `R² ≥ 0.995`, `0.002 ≤ a ≤ 0.25`). Depth rulers are excluded from `label_groups` (L14) so
+     ruler ticks never become Schicht boundaries.
 4. **Admissibility:** normalised scale (±4 %) or, otherwise, ≥ 80 % of ≥ 3 labels confirmed (L9).
 5. **Choice:** maximum number of confirmed labels (tolerance 3 cm); tie-break direct > order > text
    (L3).
@@ -120,10 +128,18 @@ Codes are compared without spaces (`B1` = `B 1`), because OCR loses them.
    confirmed if there is a line within 0.3 m. Among duplicates, this mode loses against one where
    lines and labels agree. With ≥ 8 labels on a straight line a non-normalised scale is also
    accepted (reduced printed PDF).
-8. **Contradiction (E5):** if only the title-block scale is left and < 30 % of ≥ 3 labels confirm
+8. **Contradiction (E5, E8):** if only the title-block scale is left and < 30 % of ≥ 3 labels confirm
    it, the Bohrung is emitted **without Schichten** and with the warning "Massstabstext und
    Tiefenlabels widersprechen sich" (reduced or recomposed PDF). Among duplicates a version with
-   Schichten wins.
+   Schichten wins. If `raster_ruler_scale` finds a depth ruler whose slope `a` differs by > 12 % from
+   the boundary labels (`label_line` slope or `max(v) / (col.bounds[-1] - col.bounds[0])`), the scale
+   is rejected and the Bohrung is emitted without Schichten and without water with the warning
+   "Tiefenlineal und Grenzbeschriftungen widersprechen sich: Massstab verworfen". Conversely, on scans
+   where coloured/hatched interior layer lines vanish at 150 dpi so only top and base remain
+   (`len(col.bounds) ≤ 2`), when `raster_massstab_ocr` is enabled and `M 1:n` + `gok` or the OCR
+   elevation ruler confirms the column end depth `a · (col.bounds[-1] - col.bounds[0]) ≈ max(v)`
+   within `max(0.35 m, 8 %)` (or `label_line` slope within 12 %), that scale is kept (`scale_text` or
+   `ocr_ruler`) to compute water-symbol depths without inventing unconfirmed interior Schichten.
 
 ## E5. Schichten
 
@@ -225,6 +241,66 @@ label, L3):
      `s20_raster_gw_symbol` (1/1→0/1), `s23_raster_legende_dach` (2/2→0/2) (plus `raster150/hausham` 4/4→0/4);
      `raster_gw_legende` protects `s23_raster_legende_dach` (2/2→1/2); `gw_symbol_filter` additionally protects
      `s22_raster_dreieck_ohne_linie` (0→1 false GW).
+4d. **Water levels in scans from OCR depth scale and from the Schichtenverzeichnis** (rules `raster_massstab_ocr`,
+   `sv_wasser`, E8/W5, Issue #40, 2026-11-22):
+   - *OCR depth scale (`raster_massstab_ocr`)*: supplies a vertical scale from an OCR depth/elevation ruler
+     (`raster_ruler_scale`) or retains `M 1:n` + `gok` when coloured/hatched interior layer lines vanish in a scan
+     (`len(col.bounds) ≤ 2`) and the column bottom depth `a · (col.bounds[-1] - col.bounds[0])` matches `max(v)` within
+     `max(0.35 m, 8 %)` (`talheim` `raster150` `BK1..BK3`, `berlin_v67b` `B 1/17`). A ruler whose slope contradicts
+     boundary labels (`label_line` or `col.bounds` ↔ `max(v)`) by `> 12 %` is rejected with the issue
+     `"Tiefenlineal und Grenzbeschriftungen widersprechen sich: Massstab verworfen"` (`s25_raster_lineal_widerspruch`).
+     In `raster_gw_symbols`, unanchored phantom rectangles sharing a vertical edge with an anchored column (such as the
+     vertical water-rise arrow next to `BK2` in `talheim`) are excluded from `real_cols` so they do not mask the water
+     line or symbol.
+   - *Water sentences in the Schichtenverzeichnis (`sv_wasser`)*: on single-Bohrung DIN 4022 pages
+     (`len(hdr_codes) == 1`), full-page y-sorted lines in scans interleave Column 1 layer depths (`3,30` in
+     Triefenstein p. 22) and Column 6 sample depths (`2.50` in Hausham p. 32) into the middle of Column 3 water sentences
+     (S2). `schichtenverzeichnis` reads Column 3 (`Wasserführung / Bohrwerkzeuge`, `x_col3 - 25 ≤ x < x_col4`) and
+     Column 2 (`x_a - 2 ≤ x < x_col3 - 4`) as separate vertical cells (`Δy ≤ 16 pt`), matches `SV_GW_FULL_RE`
+     (`Wasser angetroffen/angebohrt/eingemessen/nach Bohrende/nach Sondierung/bei/in`,
+     `Wasserstand/-spiegel/-anschnitt/-zutritt`, `(Grund|Ruhe|Schichten|Stau|Sicker)wasser*`, `GW` in `m u. GOK/AP`),
+     rejects any snippet containing a foreign Bohrung code, and extracts depth, kind (`gw_info`, never guessed), date
+     and `evidence`.
+
+   Measured before / after (`prototyp_v4.py`, `GEO_OCR_CACHE`, **0 false GW** across all sets and variants):
+
+   | PDF / Set (pages) | `real` GW (before → after) | `raster150` GW (before → after) | `rot90` GW (before → after) | `scale70` GW (before → after) | `raster150` Bohrungen · Grenzen (before → after) | `raster150` runtime (s · ms/p) |
+   |---|---:|---:|---:|---:|---:|---:|
+   | `16132` (2 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/1 → 0/1 · 0/0 → 0/0 | 2.1s · 1050 |
+   | `A7367` (1 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 1/1 → 1/1 · 11/11 → 11/11 | 1.0s · 1000 |
+   | `berlin_v67b` (33 p.) | 3/8 → 3/8 | **2/8 → 3/8** | 3/8 → 3/8 | **5/8 → 6/8** | **4/11 → 5/11** · 19/55 → 19/55 | 35.9s · 1088 |
+   | `clipping_test` (1 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 · 0/0 → 0/0 | 0.7s · 700 |
+   | `example_borehole_profile` (1 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 1/1 → 1/1 · 14/15 → 14/15 | 2.5s · 2500 |
+   | `halle` (17 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 · 0/0 → 0/0 | 14.2s · 835 |
+   | `hausham` (61 p.) | 4/4 → 4/4 | 4/4 → 4/4* | 4/4 → 4/4 | 4/4 → 4/4 | 9/9 → 9/9 · 45/45 → 45/45 | 56.0s · 918 |
+   | `marl_251` (62 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 5/12 → 5/12 · 26/97 → 26/97 | 58.7s · 947 |
+   | `rednitzhembach` (36 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 4/4 → 4/4 · 15/15 → 15/15 | 34.7s · 964 |
+   | `talheim` (22 p.) | 4/4 → 4/4 | **0/4 → 4/4** | 4/4 → 4/4 | 0/4 → 0/4 | 10/10 → 10/10 · 7/65 → 7/65 | 23.0s · 1045 |
+   | `triefenstein_bp41` (51 p.) | 2/2 → 2/2 | **0/2 → 2/2** | 2/2 → 2/2 | 2/2 → 2/2 | 5/5 → 5/5 · 24/24 → 24/24 | 48.3s · 947 |
+   | `wachenroth` (59 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 6/6 → 6/6 · 18/18 → 18/18 | 54.1s · 917 |
+   | `wesel_anlage12` (17 p.) | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 0/0 → 0/0 | 1/1 → 1/1 · 24/24 → 24/24 | 16.6s · 976 |
+   | **Sum 13 PDFs (363 p.)** | **13/18 → 13/18** | **6/18 → 13/18** | **13/18 → 13/18** | **11/18 → 12/18** | **46/61 → 47/61** · **203/369 → 203/369** | **347.8s · 958** |
+   | **False GW (`falsches GW`)** | **0 → 0** | **0 → 0** | **0 → 0** | **0 → 0** | `falsche Bohrungen`: 0 · `falsche Grenzen`: 0 | — |
+   | `stress` s01–s23 | 11/11 → 11/11 | — | — | — | 24/24 → 24/24 · 113/121 → 113/121 | 15.8s · 658 |
+   | `stress` s24–s27 (new) | — → **2/2** | — | — | — | — → **4/4** · — → **17/22** (s25: 0/5 expected) | 4.7s · 1175 |
+   | `synth` (6) | 17/17 → 17/17 | — | — | — | 17/17 → 17/17 · 102/102 → 102/102 | 7.3s · 1217 |
+   | **Full regression (`real`+`stress`+`synth`)** | **41/46 → 43/48** | — | — | — | **97/102 → 101/106** · **584/592 → 601/614** (`GW-Status`: 19/22 → 20/23) | **OK: keine Regression** |
+
+   *Notes:*
+   - `*` `hausham` (`raster150`): in addition to the 4/4 profile symbols (W4), `sv_wasser` now also reads all 4/4 water
+     levels (`3.62 m`, `4.49 m`, `2.53 m`, `2.88 m`) with kind (`Ruhewasser`), date (`29.06.2016`) and `evidence` from
+     the scanned Schichtenverzeichnis pages (pp. 32, 34, 48, 52), confirming the profile levels and their kind/date.
+   - Ablation (`ablation.py` on `stress` s01–s27 + `synth`):
+     - `raster_massstab_ocr` protects `s24_raster_tiefenlineal_gw` (Bohrungen 1/1→0/1, Grenzen 5/5→0/5, Bodenart 5/5→-,
+       GOK 1/1→0/1, GW 1/1→0/1) and `s25_raster_lineal_widerspruch` (`falsches GW` 0→1);
+     - `sv_wasser` protects `s26_sv_wasserstand` (GW 1/1→0/1);
+     - `scale_contradiction` protects `s14_massstab_widerspruch` (`falsche Grenzen` 0→8) and
+       `s25_raster_lineal_widerspruch` (`falsches GW` 0→1);
+     - `sv_source` protects `s11_shx_sv`, `s26_sv_wasserstand` (GW 1/1→0/1) and `s27_sv_kein_grundwasser`
+       (GW-Status 1/1→0/1).
+   - Baseline files (`benchmark/baseline_v4.json`, `benchmark/baseline_v4.modul.json`) were intentionally not overwritten
+     per assignment rules (Claude updates them after review; `test_baseline_passt_zur_extraktion` in
+     `tests/test_hausregeln.py` is therefore expectedly red because `prototyp_v4.py` changed).
 5. **Levels of the report text** (not of a Bohrung): `Bemessungswasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
    `MNGW` followed within 60 characters by a number with `m NHN` → `wasserstaende` of the document (kind, m NHN,
    page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.
@@ -240,10 +316,12 @@ Schicht) into `kennwerte` of the document; rules and figures in [28 §9](28_homo
 
 - **Schichtenverzeichnis** (DIN 4022 form): page with the title (also spaced out) and `Ansatz`; code
   in the header; depths = numbers to the left of the first `a)`; name = the words on the `a)` row up
-  to column 3 (`Wasserführung`); water from the text of the page. Duplicated text is deduplicated by
-  (x, y, text) (S1, S3). It uses the **same primitives** as E1 (rotation, OCR), so it also reads
-  scanned forms; it accepts the marker glued to the text (`a)Auffullung`) and words without umlauts
-  (S8).
+  to column 3 (`Wasserführung`); water from the text of the page and, when `sv_wasser` is active on a
+  single-Bohrung page, from the non-interleaved cells (`Δy ≤ 16 pt`) of Column 3 (`Wasserführung`)
+  and Column 2 so numbers from Column 1 and Column 6 never break water sentences in scans (S2, W5).
+  Duplicated text is deduplicated by (x, y, text) (S1, S3). It uses the **same primitives** as E1
+  (rotation, OCR), so it also reads scanned forms; it accepts the marker glued to the text
+  (`a)Auffullung`) and words without umlauts (S8).
 - **Codes:** every match (pages, duplicates, SV, coordinates) compares the normalised code without
   spaces (`B 1` = `B1`), because OCR does not keep the spaces.
 - **Schicht table (S6):** if the page has a single header and no anchored column, a column of
@@ -291,10 +369,10 @@ Schicht) into `kennwerte` of the document; rules and figures in [28 §9](28_homo
 ## How it is tested
 
 [`regression.py`](../benchmark/regression.py) runs the full set: 13 real PDFs with ground truth
-(9 German, 4 Swiss), 17 stress cases (one per lesson,
+(9 German, 4 Swiss), 27 stress cases (one per lesson,
 [`stress_cases.py`](../services/extractor/stress_cases.py)) and 6 synthetic layouts, and compares
 with a baseline (`baseline_v4.json`); [`ablation.py`](../benchmark/ablation.py) switches off each
-rule and lists which cases get worse (22 of 28 rules protected,
+rule and lists which cases get worse (20 of 32 rules protected,
 [table](../benchmark/ablation_v4.md)). Results: [15 §8](15_results_real_pdfs.md).
 
 ## Known limits

@@ -1497,6 +1497,12 @@ def extract(pdf: Path):
             if chosen is None:
                 continue
             a, b, mode, pairs, support, n_labels = chosen
+            if support == 0 and page_has_labels and RULES["labelless_column"] and not sheet_anchor \
+                    and mode != "lineal-ocr":
+                continue                                    # Nachbarsaeulen haben Labels, diese nicht: Ausbau o. ae.
+            lf = None
+            if RULES["label_first"] and n_labels >= 5 and support < 0.5 * n_labels:
+                lf = label_line(gs)
             if RULES["scale_contradiction"] and scanned and RULES["raster_massstab_ocr"] \
                     and ruler_fit is not None and gs and len(gs[0]) >= 3:
                 ra, rb = ruler_fit
@@ -1504,19 +1510,17 @@ def extract(pdf: Path):
                 sup_r = label_support(col, g0, ra, rb, tol=0.05)
                 max_v = max(v for _, v in g0)
                 d_col_r = ra * (col.bounds[-1] - col.bounds[0])
-                if sup_r < 0.3 * len(g0) and (abs(d_col_r - max_v) > max(0.15, 0.03 * max_v)
-                                              or (mode in ("direkt", "reihenfolge") and abs(ra - a) / a > 0.12)):
+                lf_widerspruch = lf is not None and abs(ra - lf[0]) / lf[0] > 0.12
+                ohne_lf_widerspruch = lf is None and (
+                    abs(d_col_r - max_v) > max(0.15, 0.03 * max_v)
+                    or (mode in ("direkt", "reihenfolge") and abs(ra - a) / a > 0.12)
+                )
+                if sup_r < 0.3 * len(g0) and (lf_widerspruch or ohne_lf_widerspruch):
                     bh = Borehole(code, pno + 1, None, f"widerspruch ({sup_r}/{len(g0)} Labels)", gok)
                     bh.page_class, bh.bbox = pclass, tuple(round(v, 1) for v in col.rect)
                     bh.issues.append("Tiefenlineal und Grenzbeschriftungen widersprechen sich: Massstab verworfen")
                     found[ckey(code)].append(bh)
                     continue
-            if support == 0 and page_has_labels and RULES["labelless_column"] and not sheet_anchor \
-                    and mode != "lineal-ocr":
-                continue                                    # Nachbarsaeulen haben Labels, diese nicht: Ausbau o. ae.
-            lf = None
-            if RULES["label_first"] and n_labels >= 5 and support < 0.5 * n_labels:
-                lf = label_line(gs)
             if not lf and RULES["scale_contradiction"] and mode in ("massstab-text", "lineal-ocr") and n_labels >= 3 \
                     and support < 0.3 * n_labels:
                 # Im Scan fehlen oft die inneren Schichtlinien (len(bounds) == 2), waehrend Lineal oder M 1:n + GOK
