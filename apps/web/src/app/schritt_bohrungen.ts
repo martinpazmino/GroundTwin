@@ -7,6 +7,7 @@ import { api, type Bohrung, type Schicht } from "./api";
 import { hilfe } from "./hilfe";
 import { epsgAuswahl, lagePruefen } from "./epsg";
 import { saeule } from "./profil";
+import { sondierungDetail, sondierungListe } from "./sondierungen";
 import { S, aendern, bohrungWaehlen, naechsteOffene, neu, sichtbareBohrungen, versuchen } from "./store";
 
 const zahl = (v: number | null | undefined, s = 2) =>
@@ -166,6 +167,7 @@ function liste() {
               </li>`)}
           </ul>
         </details>` : nothing}
+      ${sondierungListe()}
       <p class="leise klein tasten">↑/↓ blättern · N nächste offene · G alle Schichten geprüft und weiter</p>
     </aside>`;
 }
@@ -351,6 +353,10 @@ export function schrittBohrungen() {
   const b = z.bohrungen.find((x) => x.id === S.bid);
   const di = b ? Number(b.id.split(":")[0]) : 0;
   const ohnePdf = !z.dokumente[di]?.pdf;
+  const sond = S.bid ? null : sondierungDetail();     // gewaehlte Sondierung (S.bid leer), sonst die Bohrung
+  if (sond) {
+    return html`<div class="schritt-bohrungen">${pruefleiste()}${liste()}${sond}</div>`;
+  }
   return html`
     <div class=${`schritt-bohrungen ${ohnePdf ? "ohne-pdf" : ""}`}>
       ${pruefleiste()}

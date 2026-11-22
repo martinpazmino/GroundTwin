@@ -6,6 +6,20 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water levels in scans (Issue #40, by Antigravity, checked by Claude): depth scale from an OCR depth/elevation ruler
+  or `M 1:n` + GOK when interior lines vanish (rule `raster_massstab_ocr`, E8; a ruler contradicting the labels is
+  rejected and marked), and water levels read cell by cell from scanned Schichtenverzeichnis pages (rule `sv_wasser`,
+  W5). raster150 GW 6/18 → 13/18, 0 false; regression real/stress/synth without regression; stress s24–s27.
+- Sondierungen in BoreholeML (Issue #27 part 4): reviewed Sondierungen with values, UTM Lage and GOK as `bml:Borehole`
+  with the curve as `bml:investigation` (type SM, parameter SON, CSV `valueMatrix`, censored steps `>`), DPU for CPT;
+  valid against the official XSD; the import reads them back as Sondierungen with their Lage (docs/05 §8).
+- Sondierungen in the IFC (Issue #27 part 3): `IfcBorehole` with `ObjectType` `Sondierung DPH/CPT`, a slim column
+  at its Lage, `CPset_Sondierung`, `CPset_Herkunft` and the curve as `IfcPropertyTableValue` (N10, q_c, f_s); those
+  without Lage or GOK stay out and are named in step *Modell*; the viewer counts them apart (docs/05 §7).
+- Sondierungen in the project and the app (Issue #27 part 2): extracted with every PDF, listed in step *Bohrungen*
+  with their curve (DPH steps, CPT q_c/f_s) and the PDF page; reviewed / removed, GOK from the PDF or entered, Lage
+  entered or set on the locked Lageplan, ▼ markers in the Lage editor; `GET /api/projekt/{sig}/sondierung/{sid}`
+  (docs/05 §6).
 - Sondierungen (DPH/DPL/DPM/DPSH, CPT/CPTu) read from real Gutachten as a stage of its own
   (`services/extractor/sondierungen.py`): tables, vector diagrams, Längsschnitte, diagrams over two pages, censored
   values, scans withheld when unsure; measuring tool `benchmark/sondierungen_eval.py` with ground truth of 32

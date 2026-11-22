@@ -53,6 +53,8 @@ class Vorbereitung:
     nicht_im_modell: list[dict] = field(default_factory=list)
     lage: dict[str, tuple] = field(default_factory=dict)   # id -> (x, y, Quelle) der Bohrungen mit Lage
 
+from ui import sondierung as sd  # noqa: E402
+
 
 @dataclass
 class Projekt:
@@ -83,6 +85,7 @@ class Projekt:
     homogenbereiche: dict | None = None     # je ATV {Einheit: Homogenbereich} (VOB/C, docs/28)
     hb_modell: str | None = None            # ATV, nach der das IFC nur aus Homogenbereichen besteht (None = Einheiten)
     bodenkennwerte: dict | None = None      # {Einheit: 'Datei#Index'} Kennwert-Zeile des Gutachtens (Issue #18)
+    sondierung: dict[str, dict] = field(default_factory=dict)  # id -> {geprueft, modell, x, y, gok, epsg, quelle} (#27)
     angelegt: str = ""
     geaendert: str = ""
 
@@ -621,7 +624,11 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         if x is None or y is None:
             raise ValueError("Punkt ohne Koordinate")
         ziel = op.get("bohrung")
-        if ziel:
+        if op.get("sondierung"):                         # Sondierung auf den Plan setzen (Issue #27)
+            sid = op["sondierung"]
+            ersetzt = sd.vom_plan(docs, p, sid, x, y, kal)
+            meldung = f"{sd.finden(docs, sid)[1]['code']}: Lage R {de(x)} · H {de(y)}{' (ersetzt)' if ersetzt else ''}"
+        elif ziel:
             if ziel not in codes:
                 raise ValueError(f"Bohrung {ziel} gibt es nicht")
             ersetzt = _lage_vom_plan(p, ziel, x, y, kal)
@@ -633,11 +640,18 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         kal = _plan_gesperrt(p)
         pt = _punkt(p, op.get("punkt"))
         ziel = op.get("bohrung")
-        if ziel not in codes:
-            raise ValueError(f"Bohrung {ziel} gibt es nicht")
-        p.punkte.remove(pt)
-        ersetzt = _lage_vom_plan(p, ziel, pt["x"], pt["y"], kal)
-        meldung = f"{pt['id']} → {codes[ziel]}{' (Lage ersetzt)' if ersetzt else ''}"
+        if op.get("sondierung"):                         # freier Punkt -> Lage einer Sondierung
+            sid = op["sondierung"]
+            sd.finden(docs, sid)
+            p.punkte.remove(pt)
+            ersetzt = sd.vom_plan(docs, p, sid, pt["x"], pt["y"], kal)
+            meldung = f"{pt['id']} → {sd.finden(docs, sid)[1]['code']}{' (Lage ersetzt)' if ersetzt else ''}"
+        else:
+            if ziel not in codes:
+                raise ValueError(f"Bohrung {ziel} gibt es nicht")
+            p.punkte.remove(pt)
+            ersetzt = _lage_vom_plan(p, ziel, pt["x"], pt["y"], kal)
+            meldung = f"{pt['id']} → {codes[ziel]}{' (Lage ersetzt)' if ersetzt else ''}"
     elif art == "punkt_loeschen":
         pt = _punkt(p, op.get("punkt"))
         p.punkte.remove(pt)
@@ -732,6 +746,8 @@ def aendern(docs: list[dict], p: Projekt, op: dict) -> str:
         p.bodenkennwerte = bk.pruefen(op.get("zuordnung"), refs)
         n = len(p.bodenkennwerte or {})
         meldung = f"Bodenkennwerte aus dem Gutachten: {n} Einheiten zugeordnet" if n else "Bodenkennwerte entfernt"
+    elif art == "sondierung":                            # Sondierung: geprueft, im Projekt, Lage, GOK (Issue #27)
+        meldung = sd.setzen(docs, p, str(op.get("sondierung") or ""), str(op.get("feld") or ""), op.get("wert"))
     elif art == "geoldg":                                # Beginn/Abschluss der Untersuchung (Fristen §§ 8-10 GeolDG)
         p.geoldg = geoldg_angaben({**p.geoldg, **{k: op[k] for k in ("beginn", "abschluss", "behoerde") if k in op}})
         meldung = "Angaben zur Untersuchung übernommen"
@@ -1147,7 +1163,8 @@ def pruefstand(docs: list[dict], p: Projekt) -> dict:
     manuell = sum(1 for o in p.bohrung.values() if "x" in o) + len(p.reihe["station"]) + len(p.reihe["abstand"])
     entfernt = sum(1 for o in p.bohrung.values() if o.get("modell") is False)
     return {"bohrungen": [b_gep, b_ges], "schichten": [s_gep, s_ges], "unklassifiziert": unklass,
-            "unklassifiziert_offen": offen, "korrigiert": korrigiert, "manuelle_lage": manuell, "entfernt": entfernt}
+            "unklassifiziert_offen": offen, "korrigiert": korrigiert, "manuelle_lage": manuell, "entfernt": entfernt,
+            "sondierungen": sd.pruefstand(docs, p)}
 
 
 def stand_text(eintrag: dict) -> str:

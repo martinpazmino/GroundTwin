@@ -55,6 +55,8 @@ export interface Unterlage {
 
 /** Freier Punkt auf dem gesperrten Lageplan (noch keiner Bohrung zugeordnet). */
 export interface Punkt { id: string; x: number; y: number }
+/** Sondierung DPH/CPT mit Lage (Issue #27): nur eine Marke im Lage-Editor, nicht im Modell. */
+export interface SondierungMarke { id: string; code: string; art: string; x: number | null; y: number | null; geprueft: boolean }
 
 export interface Args {
   ifc?: string | null;
@@ -67,6 +69,7 @@ export interface Args {
   bohrungen?: Nadel[] | null;
   unterlage?: Unterlage | null;
   punkte?: Punkt[] | null;
+  sondierungen?: SondierungMarke[] | null;
 }
 
 let nr = 0;

@@ -149,6 +149,95 @@ The tests hold the strongest ones: rule off → case fails (`tests/test_sondieru
 - Figures are training figures. A blind test needs a new Gutachten with Sondierungen (#16).
 
 
+## 6. Sondierungen in the project and the app (2026-11-21, Issue #27 part 2)
+
+- **Extraction**: `ui/pipeline.py` runs the stage after the Bohrungen (`sondierungen_lesen`, part of the fingerprint, so
+  a changed stage re-extracts); the canonical JSON carries `sondierungen` next to `boreholes`. A failure of the stage
+  never stops the extraction of the Bohrungen.
+- **Project** (`ui/sondierung.py`, field `Projekt.sondierung`): the read values are never changed. The project holds
+  only what the user sets: `geprueft`, in the project or removed (`modell`), `gok`, `x`/`y` (+ `epsg`, `quelle`).
+  Ids `<document>:S<n>`, a namespace of their own next to the Bohrungen.
+  - GOK: `ansatzhoehe` from the PDF (`gok_quelle` PDF), else an input (Eingabe); clearing the input returns to the PDF.
+  - Lage: an input (Rechts-/Hochwert, `manuell`) or a point on the locked Lageplan (op `punkt` with `sondierung`, or a
+    free point assigned with `punkt_zuordnen`). **Never guessed**: a DPH next to a Bohrung with the same number does
+    not stand where the Bohrung stands.
+  - End depth: from the values; for a Sondierung read without values (scans) it is the end of the depth axis and is
+    shown as `Achse (≈)` (Berlin D 7/16: 26.0 vs 26.7 m in the ground truth).
+  - Op `sondierung` {`sondierung`, `feld` ∈ geprueft, modell, x, y, gok, `wert`}; invalid ids, fields, numbers or a GOK
+    outside −500…9000 m NHN are refused. Prüfstand: `sondierungen` [geprüft, im Projekt].
+- **API**: the state lists `sondierungen` and `viewer.sondierungen`; `GET /api/projekt/{sig}/sondierung/{sid}` gives
+  all values, units and the evidence (page, frame) for the curve and the PDF.
+- **App**: step *Bohrungen* has a group *Sondierungen* under the list (✓ reviewed, ⚠ without values); the detail shows
+  the curve (DPH as N10 steps, censored values marked `>`, CPT q_c and f_s), GOK, Lage, end depth with its source, the
+  hints, and on the right the PDF page with the diagram framed; buttons *Geprüft* and *Aus dem Projekt entfernen*. Step
+  *Lage*: free points can be assigned to a Sondierung; Sondierungen with a Lage appear in the Lage editor as ▼ with
+  their code (display only, not part of the model).
+- **Examples**: `berlin_v67b.json` carries the stage's real result (6 Sondierungen, scans, no values);
+  `demo_synthetisch.json` three synthetic ones read from the stress cases s01, s05, s04 (marked *synthetisch*).
+- Tests `tests/test_sondierungen_app.py`, end-to-end check *S* in `scripts/check_app.mjs`, feature map entry
+  `bohrungen-sondierungen`.
+- IFC: §7; BoreholeML: §8. Not yet: Sondierungen as data for the layer model (#28).
+
+
+## 7. Sondierungen in the IFC (2026-11-21, Issue #27 part 3)
+
+**Decision:** IFC 4.3 has no class and no predefined type for a sounding (`IfcBorehole` has no `PredefinedType`), so a
+Sondierung is an `IfcBorehole` with `ObjectType` `Sondierung DPH` / `Sondierung CPT` and `Description` `Sondierung` —
+the IFC way for a type without an enumeration — next to the Bohrungen in the `IfcSite`. Other tools see a borehole of a
+user-defined type; nothing is lost.
+
+- **Which**: only Sondierungen in the project with a Lage, a GOK and an end depth (`ui.sondierung.fuer_ifc`). The
+  others stay out and the step *Modell* says so (`Sondierungen nicht im IFC: DPH 2 (ohne Lage)`).
+- **Geometry**: a slim column (0.4 × the Bohrung diameter, 8 sides) from the GOK to GOK − end depth at the Lage (local
+  = absolute − origin, as the Bohrungen); brown for DPH, blue for CPT. It is display only: Sondierungen do **not** enter
+  the layer model (whether they could is #28).
+- **`CPset_Sondierung`**: Art, Form, GOK_NHN + GOK_Quelle, Endtiefe_m + Endtiefe_aus, Werte_n, N10_max, censored
+  steps (`Zensiert_n`, `Zensiert_Tiefen`), Konfidenz, Geprueft, Hinweise.
+- **`CPset_Herkunft`**: Dokument, SHA256, Seite, Methode (vector diagram, table, Längsschnitt …), Quelle (Text/OCR), Lage.
+- **`CPset_Sondierung_Werte`**: the curve as `IfcPropertyTableValue` — DPH: `N10` (defining values: depth of the step
+  bottom in m, defined values: blows per 10 cm, exactly as read); CPT: `q_c`, `f_s`, `R_f` over the depth. A unit the
+  PDF does not print is written as *wie im Diagramm (Einheit nicht gelesen)*, never guessed.
+- `CPset_Baugrundmodell.Sondierungen_im_IFC` lists them. The IFC validates without findings (ifcopenshell.validate),
+  unit METRE.
+- **Viewer**: counts Sondierungen apart from the Bohrungen (*7 Einheiten · 12 Bohrungen · 2 Sondierungen*), shows and
+  hides them with the columns; a table property reads *60 Werte (Tiefe [m] -> N10 [Schläge/10 cm])*.
+- Tests `tests/test_sondierungen_app.py::test_ifc_mit_sondierungen` (validation, position, values unchanged) and
+  `test_modell_nennt_sondierungen_ohne_lage`.
+- BoreholeML: §8.
+
+
+## 8. Sondierungen in BoreholeML (2026-11-22, Issue #27 part 4)
+
+**What the schema offers** (BoreholeML 3.2 XSD and the official code lists v2, read 2026-11-22): no element or type for
+a sounding. A `bml:Borehole` may carry `bml:investigation` → `Investigation` (`from`, `to`, `investigationType` from
+`InvestigationTypeList`) → `investigationDetail` → `Measurement` (`measurementID`, `measurementMethod`,
+`measurementAnnotation`, `measurementResult` → `ParameterValues` with `parameterCommon`, `parameterText` and a
+`valueMatrix` "as a csv-formatted table"). The code lists have **DPU – Drucksondierungen / Direct Push** as a drilling
+method, **no code for a Rammsondierung**, no investigation type for soundings (only *SM – sonstige Messungen*) and no
+parameter N10/q_c (only *SON – Sonstiges* with free text).
+
+**Export** (`geodaten.boreholeml.exportieren(..., sondierungen=, sondierungen_draussen=, epsg_projekt=)`):
+- Only **reviewed** Sondierungen with read values, a Lage in ETRS89/UTM (their own EPSG, else the project's) and a GOK;
+  the others are listed with the reason (*nicht geprüft*, *ohne gelesene Werte*, *ohne Lage* …).
+- Each one a `bml:Borehole`: location and path to the end depth, no `intervalSeries` (it has no Schichten),
+  `boreholeDescription` *Schwere Rammsondierung (DPH) nach DIN EN ISO 22476-2; aus dem Gutachten … S. … gelesen und
+  vom Bearbeiter geprüft*, `drillingMethod` DPU for CPT and nil for DPH (no code exists; never a wrong one).
+- One `bml:investigation` (type SM, 0 to end depth) with one `Measurement` per quantity: `parameterCommon` SON,
+  `parameterText` *N10 [Schläge/10 cm] über der Tiefe* (CPT: q_c, f_s, R_f; a unit not read stays *wie im Diagramm*),
+  `valueMatrix` CSV `tiefe_unten_m;N10` (semicolon, decimal point), censored steps as `>50`; source and page in the
+  annotation.
+- Valid against the official XSD (`tests/test_boreholeml.py::test_export_mit_sondierungen_ist_gueltig_nach_amtlichem_xsd`).
+
+**Import**: a `bml:Borehole` without `intervalSeries` whose measurements are N10 / q_c / f_s / R_f is read back as a
+Sondierung (`doc["sondierungen"]`, `form` BoreholeML, values and censoring kept), not as a Bohrung without Schichten;
+its Lage becomes the project's default (`lage_aus` BoreholeML). Round trip tested on the demo (60 N10 steps, 41 CPT
+points) and through the app (`tests/test_sondierungen_app.py::test_boreholeml_export_und_import_ueber_die_app`).
+
+**Limits**: the meaning of DPH/CPT in BoreholeML rests on free text (no codes); a Geological Survey reading the file
+sees an investigation *sonstige Messungen* with a CSV table. If the AK BoreholeML adds codes for soundings, only
+`INVESTIGATION`, `PARAMETER_SONSTIGES` and the drilling method need to change.
+
+
 Up: [Index](README.md)
 
 Related: [02 Bohrprofil](02_bohrprofil_generalization.md) · [09 Validation](09_validation_benchmark.md) · [Architecture](ARCHITECTURE_BAUGRUNDMODELL.md)

@@ -693,7 +693,8 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
     const m = daten?.modell ?? {};
     const info: string[] = [];
     if (daten) {
-      info.push(`${daten.einheiten.length} Einheiten · ${daten.bohrungen.length} Bohrungen`);
+      info.push(`${daten.einheiten.length} Einheiten · ${daten.bohrungen.length} Bohrungen` +
+        (daten.sondierungen.length ? ` · ${daten.sondierungen.length} Sondierungen` : ""));
       if (m.Lagebezug !== undefined) info.push(String(m.Lagebezug));
       if (m.Modellbasis_NHN !== undefined) info.push(`Basis ${m.Modellbasis_NHN} m NHN`);
       if (m.Pruefstand) info.push(`Prüfstand: ${m.Pruefstand}`);
@@ -1171,7 +1172,7 @@ export async function viewerStarten(huelle: HTMLElement, opt: ViewerOptionen = {
       bezugGesetzt = true;
     }
     editor.markenZeigen = bohrungenAn;
-    editor.setzen(nadeln, a.unterlage ?? null, a.punkte ?? []);
+    editor.setzen(nadeln, a.unterlage ?? null, a.punkte ?? [], a.sondierungen ?? []);
     editor.setSichtbar(bohrungenAn && nadelnVonApp);
     status.marken = editor.nadeln.size;
     const url = a.ifc ?? "";

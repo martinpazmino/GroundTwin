@@ -54,6 +54,7 @@ def _extraktor_stand() -> str:
                                                                  EXTRAKTOR.parent / "labor.py",
                                                                  EXTRAKTOR.parent / "textebene.py",
                                                                  EXTRAKTOR.parent / "wassertabelle.py",
+                                                                 EXTRAKTOR.parent / "sondierungen.py",
                                                                  REPO / "geo_agent" / "soil.py"]:
         h.update(f.read_bytes())
     return h.hexdigest()[:12]
@@ -92,6 +93,18 @@ def labor_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
         return labor.lesen(pdf, ocr=ocr)
     except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
         print(f"Laborwerte nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
+        return []
+
+
+def sondierungen_lesen(pdf: Path, ocr: bool = True) -> list[dict]:
+    """Sondierungen DPH/CPT (services/extractor/sondierungen.py, Issue #27); ein Fehler dort haelt die Extraktion
+    nicht auf."""
+    extraktor()
+    try:
+        import sondierungen
+        return sondierungen.lesen(pdf, ocr=ocr)
+    except Exception as err:                          # noqa: BLE001 - die Bohrungen gehen vor
+        print(f"Sondierungen nicht gelesen: {type(err).__name__}: {err}", file=sys.stderr)
         return []
 
 
@@ -146,6 +159,7 @@ def pdf_extrahieren(name: str, daten: bytes, ocr: bool = True,
         doc["homogenbereiche_gutachten"] = homogenbereiche_lesen(ziel, bool(ocr))   # Bereiche des Gutachters (Issue #21)
         doc["labor"] = labor_lesen(ziel, bool(ocr))                # Laborblaetter der Anlagen (Issue #18)
         wassertabelle_einarbeiten(doc, ziel, bool(ocr))           # Wasserstands-Tabellen des Berichts (Issue #26)
+        doc["sondierungen"] = sondierungen_lesen(ziel, bool(ocr))  # DPH/CPT, eigene Stufe (Issue #27)
     finally:
         mod.primitives = original
         mod.RULES["ocr"], mod.RULES["ocr_supplement"] = alt_ocr
@@ -202,14 +216,16 @@ def modell_bauen(docs: list[dict], vorgabe: list[dict] | None = None, methode: s
 def ifc_bytes(m, docs: list[dict], pruefstand: str | None = None, durchmesser: float | None = None,
               durchmesser_je: dict[str, float] | None = None, gebaeude: list[dict] | None = None,
               gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
-              nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None) -> bytes:
+              nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None,
+              sondierungen: list[dict] | None = None) -> bytes:
     ARBEIT.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".ifc", dir=ARBEIT, delete=False) as fh:
         pfad = Path(fh.name)
     try:
         ifc_schreiben(m, pfad, docs, pruefstand=pruefstand, durchmesser=durchmesser, durchmesser_je=durchmesser_je,
                       gebaeude=gebaeude, gebaeude_info=gebaeude_info, homogenbereiche=homogenbereiche,
-                      nur_homogenbereiche=nur_homogenbereiche, bodenkennwerte=bodenkennwerte)
+                      nur_homogenbereiche=nur_homogenbereiche, bodenkennwerte=bodenkennwerte,
+                      sondierungen=sondierungen)
         return pfad.read_bytes()
     finally:
         pfad.unlink(missing_ok=True)

@@ -408,6 +408,51 @@
   "falsche Grenzen": 0,
   "falsches GW": 0
  },
+ "stress/s24_raster_tiefenlineal_gw": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "0/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s25_raster_lineal_widerspruch": {
+  "Bohrungen": "1/1",
+  "Grenzen": "0/5",
+  "Grenzen exakt": "0/5",
+  "Bodenart": "0/5",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s26_sv_wasserstand": {
+  "Bohrungen": "1/1",
+  "Grenzen": "6/6",
+  "Grenzen exakt": "6/6",
+  "Bodenart": "6/6",
+  "GOK": "0/0",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s27_sv_kein_grundwasser": {
+  "Bohrungen": "1/1",
+  "Grenzen": "6/6",
+  "Grenzen exakt": "6/6",
+  "Bodenart": "6/6",
+  "GOK": "0/0",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0,
+  "GW-Status": "1/1"
+ },
  "synth/synth_A": {
   "Bohrungen": "3/3",
   "Grenzen": "18/18",

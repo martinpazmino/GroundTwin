@@ -134,6 +134,47 @@ class IfcAusgabe:
             ps = api.pset.add_pset(self.f, product=produkt, name=name)
             api.pset.edit_pset(self.f, pset=ps, properties=werte)
 
+    def _tabelle(self, name: str, tiefen: list[float], werte: list[float], einheit: str, beschreibung: str):
+        """Kurve als IfcPropertyTableValue: Tiefe [m] -> Wert (Stufen bzw. Messpunkte), die Einheit im Ausdruck."""
+        f = self.f
+        return f.create_entity(
+            "IfcPropertyTableValue", Name=name, Specification=beschreibung,
+            DefiningValues=[f.create_entity("IfcLengthMeasure", float(t)) for t in tiefen],
+            DefinedValues=[f.create_entity("IfcReal", float(w)) for w in werte],
+            Expression=f"Tiefe [m] -> {name} [{einheit}]", CurveInterpolation="LINEAR" if name != "N10" else "NOTDEFINED")
+
+    def sondierung(self, s: dict, xy: tuple[float, float], durchmesser: float = 0.4):
+        """Sondierung (Issue #27, docs/05 §7) als IfcBorehole mit ObjectType 'Sondierung <Art>' (IFC 4.3 kennt keine
+        eigene Klasse und keinen PredefinedType dafuer): schlanke Saeule GOK -> Endtiefe, Herkunft, Pruefvermerk und die
+        Kurve als IfcPropertyTableValue (DPH: N10 je Stufe, Tiefe = Stufenunterkante; CPT: q_c, f_s, R_f je Tiefe).
+        Die Werte sind die gelesenen, unveraendert; nichts davon geht in das Schichtmodell ein."""
+        f = self.f
+        ent = api.root.create_entity(f, ifc_class="IfcBorehole", name=s["code"])
+        ent.ObjectType = f"Sondierung {s['art']}"
+        ent.Description = "Sondierung"
+        api.spatial.assign_container(f, products=[ent], relating_structure=self.site)
+        gok, ende = float(s["gok"]), float(s["endtiefe"])
+        kn, fl = prisma(xy[0], xy[1], gok, gok - ende, r=float(durchmesser) / 2, n=8)
+        self._geometrie(ent, kn, fl, (0.54, 0.35, 0.0) if s["art"].upper().startswith("DP") else (0.12, 0.37, 0.75),
+                        "Sondierung", geschlossen=True)
+        self._pset(ent, "CPset_Sondierung", {
+            "Art": s["art"], "Form": s.get("form"), "GOK_NHN": round(gok, 3), "GOK_Quelle": s.get("gok_quelle"),
+            "Endtiefe_m": round(ende, 2), "Endtiefe_aus": s.get("endtiefe_aus"), "Werte_n": len(s.get("werte") or []),
+            "N10_max": s.get("n10_max"), "Zensiert_n": s.get("zensiert") or None,
+            "Zensiert_Tiefen": "; ".join(f"{o:.2f}-{u:.2f} m > {w:g}" for o, u, w in s.get("zensierte") or []),
+            "Konfidenz": s.get("konfidenz"), "Geprueft": bool(s.get("geprueft")),
+            "Hinweise": "; ".join(s.get("hinweise") or [])})
+        self._pset(ent, "CPset_Herkunft", {
+            "Dokument": s.get("dokument"), "SHA256": s.get("sha256"), "Seite": s.get("seite"),
+            "Methode": s.get("methode"), "Quelle": s.get("quelle"), "Lage": s.get("lage"),
+            "Hoehe": "m NHN", "Herkunft": "Gutachten"})
+        tabellen = [self._tabelle(name, tiefen, werte, einheit, beschreibung)
+                    for name, tiefen, werte, einheit, beschreibung in s.get("kurven") or [] if tiefen]
+        if tabellen:
+            ps = api.pset.add_pset(f, product=ent, name="CPset_Sondierung_Werte")
+            ps.HasProperties = list(ps.HasProperties or []) + tabellen
+        return ent
+
     def bohrung(self, dokument: dict, b: dict, xy: tuple[float, float], lage: str, hoehe: str | None = None,
                 psets_je_schicht: list[dict] | None = None,
                 durchmesser: float = 1.0, durchmesser_quelle: str = "Standard (Darstellung)"):

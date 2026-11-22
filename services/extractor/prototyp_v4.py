@@ -88,6 +88,8 @@ RULES = {
     "scale_contradiction": True, # E5   Massstabstext ohne Bestaetigung durch vorhandene Labels: keine Grenzen
     "raster_gw_symbol": True,    # W4   GW-Symbol im Scan: Vorlagenabgleich an waagrechten Linien + Formpruefung
     "raster_gw_legende": True,   # W4   Legende im Scan lesen (kleine Symbole links vom Wassertext, fuer Dach + Art)
+    "raster_massstab_ocr": True, # E5   Tiefenmassstab im Scan aus OCR-Tiefenlineal/Hoehenleiste oder M 1:n + Ansatzhoehe
+    "sv_wasser": True,           # W5   Wasserstaende im Schichtenverzeichnis spaltenweise mit Art, Datum und Beleg lesen
 }
 
 CODE_TOKEN = r"[A-Z0-9][A-Za-z0-9]*(?:[-/.][A-Za-z0-9]+)*"
@@ -531,11 +533,15 @@ def raster_gw_symbols(page: pymupdf.Page, cols: list["Column"], acols: list["Col
     y_lo = min(c.rect.y0 for c in acols) - 6
     y_hi = max(c.rect.y1 for c in acols) + 6
     max_w = 0.75 * page.rect.width
+    real_cols = [c for c in cols if c in acols or not any(
+        abs(c.rect.x1 - a.rect.x0) < 3 or abs(c.rect.x0 - a.rect.x1) < 3 or (c.rect & a.rect).get_area() > 0
+        for a in acols)]
 
     def _passende_linie(s: Seg) -> bool:
         if not (y_lo <= s.y0 <= y_hi and s.x1 - s.x0 < max_w):
             return False
-        if any(c.rect.x0 - 2 <= s.x0 and s.x1 <= c.rect.x1 + 2 and c.rect.y0 - 2 <= s.y0 <= c.rect.y1 + 2 for c in cols):
+        if any(c.rect.x0 - 2 <= s.x0 and s.x1 <= c.rect.x1 + 2 and c.rect.y0 - 2 <= s.y0 <= c.rect.y1 + 2
+               for c in real_cols):
             return False                                    # Schichtgrenze in einer Saeule
         if any(s.x0 < c.rect.x0 - 5 and s.x1 > c.rect.x1 + 5 and c.rect.y0 - 2 <= s.y0 <= c.rect.y1 + 2 for c in acols):
             return False                                    # Trenn-/GOK-Linie quer durch eine Saeule
@@ -545,7 +551,7 @@ def raster_gw_symbols(page: pymupdf.Page, cols: list["Column"], acols: list["Col
     hlines = [s for s in _raster_hlines(img, dpi, min_len_pt=15.0) if _passende_linie(s)]
     for _sc, form, x0, y0, x1, y1, s in _match_raster_gw_on_hlines(img, hlines, dpi, allow_v=allow_v):
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        if any(c.rect.x0 - 2 <= cx <= c.rect.x1 + 2 and c.rect.y0 - 2 <= cy <= c.rect.y1 + 2 for c in cols):
+        if any(c.rect.x0 - 2 <= cx <= c.rect.x1 + 2 and c.rect.y0 - 2 <= cy <= c.rect.y1 + 2 for c in real_cols):
             continue                                        # Symbol in einer Saeule = Schraffur
         out.append(_as_raster_drawing(form, x0, y0, x1, y1, wline=s))
     return out
@@ -697,7 +703,7 @@ def depth_value(t: str) -> float | None:
     return None
 
 
-def label_groups(words, col: Column, cols: list[Column]):
+def label_groups(words, col: Column, cols: list[Column], scanned: bool = False):
     """Dezimalzahlen-Spalten, die dieser Saeule am naechsten liegen (nicht einer Nachbarsaeule)."""
     def hdist(r, c):
         return max(c.rect.x0 - r.x1, r.x0 - c.rect.x1, 0)
@@ -720,9 +726,124 @@ def label_groups(words, col: Column, cols: list[Column]):
     for g in groups.values():
         g.sort(key=lambda e: e[0].y0)
         g = _longest_non_decreasing(g)                    # versprengte Zahlen (andere Texte) entfernen
-        if len(g) >= 2 and not (RULES["axis_filter"] and _axis(g, col)) and not (RULES["paired_filter"] and _paired(g)):
+        if len(g) >= 2 and not (RULES["axis_filter"] and _axis(g, col)) and not (RULES["paired_filter"] and _paired(g)) \
+                and not (scanned and RULES["raster_massstab_ocr"] and _is_ruler_group(g, col)):
             out.append(g)
     return sorted(out, key=lambda g: (-len(g), hdist(g[0][0], col)))
+
+
+RULER_NUM_RE = re.compile(r"^~?[+-]?\d{1,4}(?:[.,]\d{1,2})?\s?m?$")
+RULER_STEPS = (0.1, 0.2, 0.25, 0.3, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0)
+
+
+def _is_ruler_group(g, col: Column) -> bool:
+    """L14 im Scan: ein kurzes Tiefenlineal (>= 4 Werte mit rundem Schritt auf einer Geraden, das nicht auf den
+    Schichtgrenzen der Saeule sitzt) ist eine Achse und keine Schichtbeschriftung."""
+    if len(g) < 4:
+        return False
+    vs = [v for _, v in g]
+    d = np.diff(vs)
+    step = round(vs[1] - vs[0], 2)
+    if d.min() <= 0 or float(d.max() - d.min()) > 0.015 or not any(abs(step - r) < 0.015 for r in RULER_STEPS):
+        return False
+    ys = np.array([(r.y0 + r.y1) / 2 for r, _ in g])
+    a, b = np.polyfit(ys, np.array(vs), 1)
+    if a <= 0 or float(np.max(np.abs(np.polyval([a, b], ys) - vs))) > 0.04 * max(step, 0.25):
+        return False
+    if len(col.bounds) <= 2:
+        return True
+    return label_support(col, g, float(a), float(-a * col.bounds[0]), tol=0.04) < 0.6 * len(g)
+
+
+def _arith_ruler_subseq(items: list[tuple[pymupdf.Rect, float, bool]], decreasing: bool = False):
+    """Laengste arithmetische Teilfolge (>= 4 Werte, runder Schritt, Geraden-Restfehler <= 4 % des Schritts)."""
+    if len(items) < 4:
+        return None
+    dedup: list[tuple[pymupdf.Rect, float, bool]] = []
+    for it in sorted(items, key=lambda e: (e[0].y0 + e[0].y1) / 2):
+        if not dedup or abs((it[0].y0 + it[0].y1) / 2 - (dedup[-1][0].y0 + dedup[-1][0].y1) / 2) > 3.0:
+            dedup.append(it)
+    best = None
+    steps = (0.2, 0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0) if decreasing else RULER_STEPS
+    for s in steps:
+        signed_s = -s if decreasing else s
+        for i in range(len(dedup)):
+            chain = [dedup[i]]
+            for j in range(i + 1, len(dedup)):
+                dv = dedup[j][1] - chain[-1][1]
+                if abs(dv - signed_s) <= 0.02 * max(s, 1.0) or abs(dv - 2 * signed_s) <= 0.02 * max(s, 1.0):
+                    chain.append(dedup[j])
+            if len(chain) < 4:
+                continue
+            ys = np.array([(r.y0 + r.y1) / 2 for r, _, _ in chain])
+            vs = np.array([v for _, v, _ in chain])
+            a, b = np.polyfit(ys, vs, 1)
+            res = float(np.max(np.abs(np.polyval([a, b], ys) - vs)))
+            slope = -float(a) if decreasing else float(a)
+            if slope > 0 and res <= 0.04 * max(s, 0.25) and \
+                    (plausible_scale(slope / PT_TO_M_AT_1_1, tol=0.06) or RULES["nonstandard_scale"]):
+                if best is None or len(chain) > len(best[2]):
+                    best = (slope, float(b), chain, s)
+    return best
+
+
+def raster_ruler_scale(words, col: Column, cols: list[Column], gok: float | None = None) -> tuple[float, float] | None:
+    """E5: Tiefenmassstab im Scan aus OCR-Zahlen eines Tiefenlineals oder einer Hoehenleiste (>= 4 Werte,
+    arithmetische Reihe, senkrecht ausgerichtet)."""
+    def hdist(r, c):
+        return max(c.rect.x0 - r.x1, r.x0 - c.rect.x1, 0)
+    y_min = min(c.rect.y0 for c in cols) - 40
+    y_max = max(c.rect.y1 for c in cols) + 150
+    x_left_min = min(c.rect.x0 for c in cols)
+    local_buckets: dict[tuple[str, int], list] = defaultdict(list)
+    page_buckets: dict[tuple[str, int], list] = defaultdict(list)
+    for r, t, *_ in words:
+        ts = t.strip()
+        if not RULER_NUM_RE.match(ts):
+            continue
+        try:
+            v = float(re.sub(r"[~m\s]", "", ts).replace(",", "."))
+        except ValueError:
+            continue
+        cy = (r.y0 + r.y1) / 2
+        if not (y_min <= cy <= y_max):
+            continue
+        is_int = not bool(DEPTH_RE.match(ts))
+        near = [c for c in cols if c.rect.y0 - 35 <= cy <= c.rect.y1 + 150]
+        if col.rect.y0 - 35 <= cy <= col.rect.y1 + 150 and hdist(r, col) <= 160 and near \
+                and min(near, key=lambda c: hdist(r, c)) is col:
+            local_buckets[("L", round(r.x0 / 6))].append((r, v, is_int))
+            local_buckets[("R", round(r.x1 / 6))].append((r, v, is_int))
+        if r.x1 <= x_left_min + 20 or (near and min(near, key=lambda c: hdist(r, c)) is col and hdist(r, col) <= 160):
+            page_buckets[("L", round(r.x0 / 6))].append((r, v, is_int))
+            page_buckets[("R", round(r.x1 / 6))].append((r, v, is_int))
+    best_depth = None
+    for items in local_buckets.values():
+        cand = _arith_ruler_subseq(items, decreasing=False)
+        if not cand:
+            continue
+        a, _, chain, _ = cand
+        g_pairs = [(r, v) for r, v, _ in chain]
+        all_int = all(is_int for _, _, is_int in chain)
+        if not (all_int or _axis(g_pairs, col) or _is_ruler_group(g_pairs, col)):
+            continue
+        if best_depth is None or len(chain) > best_depth[0]:
+            best_depth = (len(chain), a, float(-a * col.bounds[0]))
+    if best_depth:
+        return best_depth[1], best_depth[2]
+    best_elev = None
+    for items in page_buckets.values():
+        cand = _arith_ruler_subseq(items, decreasing=True)
+        if not cand:
+            continue
+        a, b_elev, chain, s = cand
+        if gok is not None:
+            elev_top = -a * col.bounds[0] + b_elev
+            if abs(elev_top - gok) > max(0.35, 0.25 * s):
+                continue
+        if best_elev is None or len(chain) > best_elev[0]:
+            best_elev = (len(chain), a, float(-a * col.bounds[0]))
+    return (best_elev[1], best_elev[2]) if best_elev else None
 
 
 def _arithmetic(g, tol: float = 0.011) -> bool:
@@ -1072,8 +1193,16 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
 
 
 SV_CODE_RE = re.compile(r"(?<![A-Za-z0-9])((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d+[a-z]?(?:/\d{2})?)(?![\d.,])")
-SV_NO_GW_RE = re.compile(r"kein(?:e[nr]?)?\s*(?:Grund)?wasser|Wasser\s*nicht\s*angetroffen", re.I)
+SV_NO_GW_RE = re.compile(r"kein(?:e[nr]?)?\s*(?:Grund)?wasser\w*|Wasser\s*nicht\s*angetroffen", re.I)
 SV_GW_RE = re.compile(r"(?:Wasserstand|Wasserspiegel|Grundwasser\w*|Ruhewasser\w*|\bGW)\D{0,40}?(\d{1,2}[.,]\d{1,2})\s*m\b", re.I)
+SV_GW_FULL_RE = re.compile(
+    r"(?:Wasser(?:stand|spiegel|anschnitt|zutritt)"
+    r"|Wasser\s+(?:angetroffen|angebohrt|eingemessen|nach\s+(?:Bohrende|Sondierung)|bei\b|in\b)"
+    r"|(?:Grund|Ruhe|Schichten|Stau|Sicker)wasser\w*|\bGW\b)"
+    r"(?:(?!(?:\bnicht\b|\bkein\w*\b))[^0-9\n]){0,45}?"
+    r"(\d{1,2}[.,]\d{1,2})\s*m(?![A-Za-z0-9])",
+    re.I,
+)
 
 
 def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
@@ -1099,11 +1228,13 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
         x_col3 = min([w[0] - 4 for w in ws if re.match(r"Wasserf|Bohrwerkzeug", w[4]) and w[1] < y_hdr]
                      + [page.rect.width * 0.6])                                  # Spalte 3
         blocks = [w for w in marks if w[1] > y_hdr]
-        code = None                                         # 'B 1 Bohrung Nr.', 'Nr.: B 1 / Blatt 1', 'RKS 1 - Weg'
+        hdr_codes: list[str] = []                           # 'B 1 Bohrung Nr.', 'Nr.: B 1 / Blatt 1', 'RKS 1 - Weg'
         for r, t in sorted(plines, key=lambda e: (e[0].y0, e[0].x0)):
-            if r.y1 <= y_hdr and (m := SV_CODE_RE.search(re.sub(r"\s+", " ", t))):
-                code = m.group(1)
-                break
+            if r.y1 <= y_hdr:
+                for m in SV_CODE_RE.finditer(re.sub(r"\s+", " ", t)):
+                    if ckey(m.group(1)) not in {ckey(c) for c in hdr_codes}:
+                        hdr_codes.append(m.group(1))
+        code = hdr_codes[0] if hdr_codes else None
         if code is None or not blocks:
             continue
         rec = out.setdefault(ckey(code), {"code": code, "bottoms": [], "names": [], "gw": [], "gw_status": None,
@@ -1122,14 +1253,51 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
                 name = (b[4][2:] + " " + name).strip()
             rec["bottoms"].append(float(d[4].rstrip("m ").replace(",", ".")))
             rec["names"].append(name)
-        flat = " ".join(txt.split())
-        for m in SV_GW_RE.finditer(flat):
-            d = float(m.group(1).replace(",", "."))
-            rec["gw"].append(d)
-            if RULES["gw_art"]:                             # Stichwort davor, Datum dahinter ('Ruhewasser 3.62m u. AP 14.04.2020')
-                rec["gw_info"].setdefault(d, gw_info(flat[max(0, m.start() - 25):m.end() + 30]))
-        if SV_NO_GW_RE.search(flat):
-            rec["gw_status"] = "kein Grundwasser"
+        if RULES["sv_wasser"]:
+            if len(hdr_codes) == 1:                         # nur wenn das SV-Blatt eindeutig zu einer Bohrung gehoert
+                x_col4 = min([w[0] - 4 for w in ws if re.match(r"Entnommene|Art$", w[4])
+                              and w[1] < y_hdr + 30 and w[0] > x_col3 + 20] + [page.rect.width])
+                col3_ws = sorted((w for w in ws if x_col3 - 25 <= w[0] < x_col4 and w[1] > y_hdr),
+                                 key=lambda w: (round(w[1] / 3), w[0]))
+                col2_ws = sorted((w for w in ws if x_a - 2 <= w[0] < x_col3 - 4 and w[1] > y_hdr),
+                                 key=lambda w: (round(w[1] / 3), w[0]))
+                cells: list[str] = []
+                for cws in (col3_ws, col2_ws):
+                    cur: list[str] = []
+                    last_y = None
+                    for w in cws:
+                        if last_y is not None and w[1] - last_y > 16:
+                            cells.append(" ".join(cur))
+                            cur = []
+                        cur.append(w[4])
+                        last_y = w[1]
+                    if cur:
+                        cells.append(" ".join(cur))
+                for s_txt in cells:
+                    for m in SV_GW_FULL_RE.finditer(s_txt):
+                        if re.search(r"\bkein\w*\s*$", s_txt[max(0, m.start() - 15):m.start()], re.I):
+                            continue
+                        beleg = " ".join(s_txt[max(0, m.start() - 25):min(len(s_txt), m.end() + 30)].split())
+                        if {ckey(c.group(1)) for c in SV_CODE_RE.finditer(beleg)} - {ckey(code)}:
+                            continue
+                        d = float(m.group(1).replace(",", "."))
+                        rec["gw"].append(d)
+                        if RULES["gw_art"]:
+                            gi = gw_info(beleg)
+                            if beleg:
+                                gi.setdefault("evidence", beleg[:120])
+                            rec["gw_info"].setdefault(d, gi)
+                    if not rec["gw"] and SV_NO_GW_RE.search(s_txt):
+                        rec["gw_status"] = "kein Grundwasser"
+        else:
+            flat = " ".join(txt.split())
+            for m in SV_GW_RE.finditer(flat):
+                d = float(m.group(1).replace(",", "."))
+                rec["gw"].append(d)
+                if RULES["gw_art"]:                         # Stichwort davor, Datum dahinter ('Ruhewasser 3.62m u. AP 14.04.2020')
+                    rec["gw_info"].setdefault(d, gw_info(flat[max(0, m.start() - 25):m.end() + 30]))
+            if SV_NO_GW_RE.search(flat):
+                rec["gw_status"] = "kein Grundwasser"
     return {k: v for k, v in out.items() if v["bottoms"]}
 
 
@@ -1306,11 +1474,12 @@ def extract(pdf: Path):
         acols = [c for _, _, c in anchored]
         if scanned and acols and RULES["raster_gw_symbol"]:
             drawings = drawings + raster_gw_symbols(page, cols, acols, lines)
-        chosen_all = [choose_scale(c, label_groups(words, c, acols), scale_txt) for _, _, c in anchored]
+        groups_all = [label_groups(words, c, [c] if sheet_anchor else acols, scanned=scanned) for _, _, c in anchored]
+        chosen_all = [choose_scale(c, gs, scale_txt) for (_, _, c), gs in zip(anchored, groups_all)]
         page_has_labels = any(ch and ch[4] > 0 for ch in chosen_all)
         if RULES["coords_text"]:
             xy_text.update(coords_from_text(lines, anchored))
-        for (hr, code, col), chosen in zip(anchored, chosen_all):
+        for (hr, code, col), gs, chosen in zip(anchored, groups_all, chosen_all):
             hx = (hr.x0 + hr.x1) / 2
             gok = None
             for r, t in lines:
@@ -1318,20 +1487,74 @@ def extract(pdf: Path):
                     gok = float((m.group(1) or m.group(2)).replace(",", "."))
             if gok is None and sheet_anchor:                  # Einzelblatt: Kopfdaten irgendwo ueber dem Profil
                 gok = page_gok(lines, col.rect.y0)
+            ruler_fit = raster_ruler_scale(words, col, [col] if sheet_anchor else acols, gok) \
+                if (scanned and RULES["raster_massstab_ocr"]) else None
+            if chosen is None and ruler_fit is not None:
+                ra, rb = ruler_fit
+                g0 = gs[0] if gs else []
+                pairs_r = [(y, v) for _, v in g0 for y in col.bounds if abs(ra * y + rb - v) <= 0.04]
+                chosen = (ra, rb, "lineal-ocr", pairs_r, label_support(col, g0, ra, rb, tol=0.04), len(g0))
             if chosen is None:
                 continue
             a, b, mode, pairs, support, n_labels = chosen
-            if support == 0 and page_has_labels and RULES["labelless_column"] and not sheet_anchor:
+            if support == 0 and page_has_labels and RULES["labelless_column"] and not sheet_anchor \
+                    and mode != "lineal-ocr":
                 continue                                    # Nachbarsaeulen haben Labels, diese nicht: Ausbau o. ae.
             lf = None
             if RULES["label_first"] and n_labels >= 5 and support < 0.5 * n_labels:
-                lf = label_line(label_groups(words, col, [col] if sheet_anchor else acols))
-            if not lf and RULES["scale_contradiction"] and mode == "massstab-text" and n_labels >= 3 \
+                lf = label_line(gs)
+            if RULES["scale_contradiction"] and scanned and RULES["raster_massstab_ocr"] \
+                    and ruler_fit is not None and gs and len(gs[0]) >= 3:
+                ra, rb = ruler_fit
+                g0 = gs[0]
+                sup_r = label_support(col, g0, ra, rb, tol=0.05)
+                max_v = max(v for _, v in g0)
+                d_col_r = ra * (col.bounds[-1] - col.bounds[0])
+                lf_widerspruch = lf is not None and abs(ra - lf[0]) / lf[0] > 0.12
+                ohne_lf_widerspruch = lf is None and (
+                    abs(d_col_r - max_v) > max(0.15, 0.03 * max_v)
+                    or (mode in ("direkt", "reihenfolge") and abs(ra - a) / a > 0.12)
+                )
+                if sup_r < 0.3 * len(g0) and (lf_widerspruch or ohne_lf_widerspruch):
+                    bh = Borehole(code, pno + 1, None, f"widerspruch ({sup_r}/{len(g0)} Labels)", gok)
+                    bh.page_class, bh.bbox = pclass, tuple(round(v, 1) for v in col.rect)
+                    bh.issues.append("Tiefenlineal und Grenzbeschriftungen widersprechen sich: Massstab verworfen")
+                    found[ckey(code)].append(bh)
+                    continue
+            if not lf and RULES["scale_contradiction"] and mode in ("massstab-text", "lineal-ocr") and n_labels >= 3 \
                     and support < 0.3 * n_labels:
-                # Massstabstext widerspricht den Labels (verkleinerter Druck): Bohrung melden, Schichten nicht raten
-                bh = Borehole(code, pno + 1, None, f"widerspruch ({support}/{n_labels} Labels)", gok)
-                bh.page_class, bh.bbox = pclass, tuple(round(v, 1) for v in col.rect)
-                bh.issues.append("Massstabstext und Tiefenlabels widersprechen sich: Schichten nicht ausgegeben")
+                # Im Scan fehlen oft die inneren Schichtlinien (len(bounds) == 2), waehrend Lineal oder M 1:n + GOK
+                # und die Endtiefe am Saeulenfuss uebereinstimmen -> Tiefenmassstab fuer Wasserstaende nutzbar (E5/W5)
+                max_v = max(v for _, v in gs[0]) if gs and gs[0] else 0.0
+                d_col = a * (col.bounds[-1] - col.bounds[0])
+                ocr_scale_ok = (scanned and RULES["raster_massstab_ocr"] and len(col.bounds) <= 2
+                                and (ruler_fit is not None or (bool(scale_txt) and gok is not None))
+                                and (ruler_fit is None or abs(ruler_fit[0] - a) / a <= 0.08)
+                                and abs(d_col - max_v) <= max(0.08, 0.015 * max_v))
+                if not ocr_scale_ok:
+                    # Massstabstext/Lineal widerspricht den Labels (verkleinerter Druck): Schichten nicht raten
+                    bh = Borehole(code, pno + 1, None, f"widerspruch ({support}/{n_labels} Labels)", gok)
+                    bh.page_class, bh.bbox = pclass, tuple(round(v, 1) for v in col.rect)
+                    bh.issues.append("Massstabstext und Tiefenlabels widersprechen sich: Schichten nicht ausgegeben")
+                    found[ckey(code)].append(bh)
+                    continue
+                fit = (float(a), float(b))
+                bh = Borehole(code, pno + 1, round(a / PT_TO_M_AT_1_1), f"lineal-ocr ({support}/{n_labels} Labels)", gok)
+                bh.page_class, bh.bbox, bh.fit = pclass, tuple(round(v, 1) for v in col.rect), fit
+                bh.issues.append("Innere Schichtlinien im Scan nicht erkannt: Tiefenmassstab aus OCR fuer Wasserstand")
+                bh.gw_depths = _groundwater(drawings, segs, col, acols, fit, words, lines, bh.gw_info)
+                near = rows([(r, t) for r, t in lines if hr.y0 - 2 <= r.y0 <= col.rect.y1 + 60
+                             and abs((r.x0 + r.x1) / 2 - (col.rect.x0 + col.rect.x1) / 2) < 170])
+                if not bh.gw_depths and RULES["gw_text"]:
+                    for _, t in near:
+                        if m := GW_TEXT_RE.search(t):
+                            d = float((m.group(1) or m.group(2)).replace(",", "."))
+                            if RULES["gw_art"]:
+                                bh.gw_info.setdefault(d, gw_info(t))
+                            bh.gw_depths.append(d)
+                    bh.gw_depths = sorted(set(bh.gw_depths))
+                if not bh.gw_depths and any(NO_GW_RE.search(t) for _, t in near):
+                    bh.gw_status = "kein Grundwasser"
                 found[ckey(code)].append(bh)
                 continue
             if lf:                                           # T4: Grenzen = gedruckte Werte, Linien bestaetigen

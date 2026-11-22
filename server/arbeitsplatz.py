@@ -32,6 +32,7 @@ import numpy as np
 from ui import pipeline as pl
 from ui import plausibilitaet as pb
 from ui import projekt as pj
+from ui import sondierung as sd
 
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
@@ -90,6 +91,8 @@ def signatur(docs: list[dict]) -> str:
 def _mit_bericht(xml: bytes, bericht: dict) -> bytes:
     """Bericht des BoreholeML-Exports als Kommentar hinter die XML-Deklaration (wer die Datei oeffnet, sieht ihn)."""
     zeilen = [f"GroundTwin: {len(bericht['exportiert'])} Bohrungen exportiert ({', '.join(bericht['exportiert'])})."]
+    if bericht.get("sondierungen"):
+        zeilen.append(f"{len(bericht['sondierungen'])} Sondierungen exportiert ({', '.join(bericht['sondierungen'])}).")
     if bericht["ausgelassen"]:
         zeilen.append("Ausgelassen: " + "; ".join(f"{a['code']} ({a['grund']})" for a in bericht["ausgelassen"]) + ".")
     zeilen += bericht["hinweise"]
@@ -438,6 +441,7 @@ class Arbeitsplatz:
                 "eingecheckt": pj.stand_text(letzter) if letzter else None,
                 "seit_einchecken_geaendert": pj.seit_einchecken_geaendert(docs, p, schluessel),
                 "bohrungen": pj.bohrungen_liste(docs, p),
+                "sondierungen": sd.zeilen(docs, p),
                 "klassen": pj.klassen_liste(),
                 "hinweise": vorb.hinweise, "nicht_im_modell": vorb.nicht_im_modell,
                 "modell": {"schluessel": schluessel, "aktuell": gecacht is not None,
@@ -451,7 +455,7 @@ class Arbeitsplatz:
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
                            "modus": p.lage_modus,
-                           "punkte": p.punkte},
+                           "punkte": p.punkte, "sondierungen": sd.viewer(docs, p)},
             }
 
     def bohrung(self, sig: str, bid: str) -> dict:
@@ -462,11 +466,19 @@ class Arbeitsplatz:
                 raise KeyError(bid)
             return {"bohrung": zeile, "schichten": pj.schichten_liste(docs, p, bid)}
 
+    def sondierung(self, sig: str, sid: str) -> dict:
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            try:
+                return sd.detail(docs, p, sid)
+            except ValueError:
+                raise KeyError(sid) from None
+
     # ------------------------------------------------------------ Modell
     def _ifc_name(self, schluessel: str, docs: list[dict], p: pj.Projekt) -> str:
         """IFC fuer den Viewer: Geometrie-Schluessel + Durchmesser und Gebaeude (gehoeren zum IFC, nicht zur Geometrie)."""
         dm = json.dumps([p.durchmesser, pj.durchmesser_je_code(docs, p), (p.gebaeude or {}).get("stand"),
-                         self._hb_fuer_ifc(p)], sort_keys=True)
+                         self._hb_fuer_ifc(p), p.sondierung], sort_keys=True)          # Sondierungen gehoeren zum IFC
         return f"{schluessel}_{hashlib.sha256(dm.encode()).hexdigest()[:6]}.ifc"
 
     def hb_vorschlag(self, sig: str, atv: str) -> dict:
@@ -577,12 +589,15 @@ class Arbeitsplatz:
             if not ziel.exists():
                 ziel.write_bytes(pl.ifc_bytes(m, vorb.docs, durchmesser=p.durchmesser,
                                               durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p)))
+                                              **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p),
+                                      sondierungen=sd.fuer_ifc(docs, p)[0]))
                 alte = sorted((self.web / "modelle").glob("*.ifc"), key=lambda f: f.stat().st_mtime)[:-20]
                 for f in alte:
                     f.unlink(missing_ok=True)
+            raus = sd.fuer_ifc(docs, p)[1]
+            s_hinweis = ["Sondierungen nicht im IFC: " + ", ".join(f"{r['code']} ({r['grund']})" for r in raus)] if raus else []
             return {"schluessel": schluessel, "fehler": "", "bericht": bericht, "ifc": f"/dateien/modelle/{name}",
-                    "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"])),
+                    "hinweise": list(dict.fromkeys(vorb.hinweise + bericht["hinweise"] + s_hinweis)),
                     "nicht_im_modell": vorb.nicht_im_modell + bericht["ausgeschlossen"]}
 
     # ------------------------------------------------------------ Ground Analysis (docs/27, G2)
@@ -703,9 +718,12 @@ class Arbeitsplatz:
             if art == "projekt":
                 return pl.json_bytes(pj.speichern(p)), f"{stamm}_projekt.json", "application/json"
             if art == "boreholeml":                     # nur gepruefte Bohrungen mit UTM und GOK (docs/23 §2.1)
+                s_drin, s_raus = sd.fuer_ifc(docs, p)               # Sondierungen (Issue #27 Teil 4)
+                epsgs = Counter(b.get("crs_epsg") for d in vorb.docs for b in d["boreholes"] if b.get("crs_epsg"))
                 inhalt, bericht = boreholeml.exportieren(
                     vorb.docs, projekt=p.name, organisation=organisation, sig=sig,
-                    dgm_zelle=(p.dgm or {}).get("dx"))
+                    dgm_zelle=(p.dgm or {}).get("dx"), sondierungen=s_drin, sondierungen_draussen=s_raus,
+                    epsg_projekt=epsgs.most_common(1)[0][0] if epsgs else None)
                 return _mit_bericht(inhalt, bericht), f"{stamm}_boreholeml.xml", "application/xml"
         erg = self.modell(sig)
         if erg["fehler"]:
@@ -720,7 +738,8 @@ class Arbeitsplatz:
                 letzter = p.eincheckungen[-1] if p.eincheckungen else None
                 inhalt = pl.ifc_bytes(m, vorb.docs, pruefstand=pj.stand_text(letzter) if letzter else "nicht eingecheckt",
                                       durchmesser=p.durchmesser, durchmesser_je=pj.durchmesser_je_code(docs, p),
-                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p))
+                                      **self._gebaeude_fuer_ifc(sig, p, m), **self._hb_fuer_ifc(p),
+                                      sondierungen=sd.fuer_ifc(docs, p)[0])
                 return inhalt, f"{stamm}.ifc", "application/x-step"
         raise KeyError(art)
 

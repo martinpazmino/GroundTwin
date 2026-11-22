@@ -365,7 +365,8 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
                   durchmesser: float | None = None, durchmesser_je: dict[str, float] | None = None,
                   umgebung: float = UMGEBUNG_STANDARD, gebaeude: list[dict] | None = None,
                   gebaeude_info: dict | None = None, homogenbereiche: dict | None = None,
-                  nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None) -> dict:
+                  nur_homogenbereiche: str | None = None, bodenkennwerte: dict | None = None,
+                  sondierungen: list[dict] | None = None) -> dict:
     """IfcGeomodel (Einheiten) + IfcBorehole (Bohrsaeulen der modellierten Bohrungen) + Gelaende um das Modell.
 
     pruefstand: Stand der Pruefung durch den Nutzer (App: "Einchecken"), steht im CPset_Baugrundmodell.
@@ -375,6 +376,8 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
     homogenbereiche: {ATV: {Einheit: Bereich}} (docs/28): je Einheit und Bodenschicht ein Pset je ATV.
     nur_homogenbereiche: ATV, nach der das Modell aus Homogenbereichen statt Einheiten besteht (gleiche Koerper, je
     Bereich zusammengefasst; Einheiten ohne Bereich bleiben einzeln und sind markiert).
+    sondierungen: DPH/CPT mit Lage und GOK (ui.sondierung.fuer_ifc, Issue #27): je eine IfcBorehole 'Sondierung <Art>'
+    mit Kurve; sie gehen nicht in das Schichtmodell ein.
     """
     homogenbereiche = hb.pruefen(homogenbereiche) or {}
     if nur_homogenbereiche and nur_homogenbereiche not in homogenbereiche:
@@ -441,6 +444,7 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
         "Herkunft_Bohrungen": ", ".join(f"{h} {n}" for h, n in sorted((p.get("herkunft") or {}).items())),
         "Pruefstand": pruefstand, "Hinweise": "; ".join(m.hinweise + hb_hinweise),
         "Modellart": f"Homogenbereiche {nur_homogenbereiche}" if nur_homogenbereiche else "Einheiten",
+        "Sondierungen_im_IFC": ", ".join(s["code"] for s in sondierungen or []) or None,
         "Homogenbereiche_ATV": ", ".join(homogenbereiche) or None})
     gelaende = None
     if m.dgm is not None and umgebung > 0:
@@ -455,6 +459,9 @@ def ifc_schreiben(m: Modell, pfad, docs: list[dict], bohrsaeulen: bool = True,
             "Abstand_m": gelaende["abstand_m"], "Schrittweite_m": gelaende["schritt_m"],
             "Hinweis": "Gelände um das Baugrundmodell; innerhalb bildet die Oberkante des Modells das Gelände "
                        "(an den Bohrungen auf ihre GOK gezogen)"})
+    for s in sondierungen or []:                       # Issue #27: Lage absolut -> lokal wie die Bohrungen
+        aus.sondierung(s, (float(s["x"]) - m.ursprung[0], float(s["y"]) - m.ursprung[1]),
+                       durchmesser=0.4 * (durchmesser or standard_durchmesser(m.parameter.get("ausdehnung_m", 100.0))))
     if bohrsaeulen:
         codes = {b.code: b for b in m.bohrungen}
         auto = standard_durchmesser(m.parameter.get("ausdehnung_m", 100.0))

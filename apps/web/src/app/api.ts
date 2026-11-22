@@ -38,6 +38,21 @@ export interface Eincheckung {
 export interface Pruefstand {
   bohrungen: [number, number]; schichten: [number, number]; unklassifiziert: number; unklassifiziert_offen: number;
   korrigiert: number; manuelle_lage: number; entfernt: number;
+  sondierungen?: [number, number];                  // [geprüft, im Projekt] (Issue #27)
+}
+
+/** Sondierung DPH/CPT aus der Stufe services/extractor/sondierungen.py (docs/05 §6). */
+export interface Sondierung {
+  id: string; code: string; art: string; form: string; dokument: string; dokument_index: number;
+  seite: number | null; quelle: string; werte_n: number; endtiefe: number | null; endtiefe_aus: string;
+  n10_max: number | null; zensiert: number;
+  gok: number | null; gok_quelle: string; x: number | null; y: number | null; epsg: number | null; lage_aus: string;
+  geprueft: boolean; entfernt: boolean; konfidenz: number | null; hinweise: string[];
+}
+export type SondierungWert = [number, number, number | { wert: number; zensiert: boolean }] | (number | null)[];
+export interface SondierungDetail {
+  sondierung: Sondierung; werte: SondierungWert[]; einheiten: Record<string, string>;
+  beleg: { seiten?: number[]; bbox?: number[]; methode?: string };
 }
 
 export interface ReiheZeile { id: string; nr: number; code: string; abstand: number | null; station: number; quelle: string; quelle_text: string }
@@ -138,6 +153,7 @@ export interface Zustand {
   bodenkennwerte?: Record<string, string> | null;   // {Einheit: 'Datei#Index'} Kennwert-Zeile des Gutachtens (Issue #18)
   eincheckungen: Eincheckung[]; pruefstand: Pruefstand; eingecheckt: string | null; seit_einchecken_geaendert: boolean;
   bohrungen: Bohrung[]; klassen: Klasse[];
+  sondierungen?: Sondierung[];                      // DPH/CPT (Issue #27)
   hinweise: string[]; nicht_im_modell: { id?: string; code: string; dokument: string; grund: string }[];
   modell: { schluessel: string; aktuell: boolean; ifc: string | null };
   punkte: Punkt[];                                    // freie Punkte auf dem Plan (noch keiner Bohrung zugeordnet)
@@ -148,7 +164,9 @@ export interface Zustand {
   reifegrad: Reifegrad;
   geoldg: Geoldg;                                     // Übermittlung an den Geologischen Dienst (GeolDG)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
-            punkte: Punkt[] };
+            punkte: Punkt[];
+            sondierungen?: { id: string; code: string; art: string; x: number | null; y: number | null;
+                             gok: number | null; ende: number | null; geprueft: boolean }[] };
 }
 
 export interface EinheitBericht {
@@ -270,6 +288,8 @@ export const api = {
   aendern: (sig: string, ops: Op[]) => anfrage<{ meldungen: string[]; zustand: Zustand }>(`/api/projekt/${sig}/aendern`, json({ ops })),
   zuruecksetzen: (sig: string) => anfrage<Zustand>(`/api/projekt/${sig}/zuruecksetzen`, { method: "POST" }),
   loeschen: (sig: string) => anfrage<{ ok: boolean }>(`/api/projekt/${sig}`, { method: "DELETE" }),
+  sondierung: (sig: string, sid: string) =>
+    anfrage<SondierungDetail>(`/api/projekt/${sig}/sondierung/${encodeURIComponent(sid)}`),
   bohrung: (sig: string, bid: string) => anfrage<{ bohrung: Bohrung; schichten: Schicht[] }>(`/api/projekt/${sig}/bohrung/${encodeURIComponent(bid)}`),
   seite: (sig: string, dokument: number, seite: number) =>
     anfrage<{ url: string; px_je_pt: number; breite_pt: number; hoehe_pt: number; seite: number; seiten: number | null }>(
