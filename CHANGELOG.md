@@ -6,6 +6,12 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen as optional support points for the layer model (Issue #28, default OFF `sondierungen_stuetzpunkte=False`):
+  changepoint detection on DPH `N10` and CPT `q_c` (`services/analyse/baugrundanalyse/sondierung.py`), unambiguous unit
+  assignment against the baseline model without guessing a Bodenart, leak-free leave-one-out Kreuzprobe, synthetic ground
+  truth cases (`eben`, `geneigt`, `rinne`, `cpt_rinne`, `linse`, `ohne_sprung`) and distance study (`docs/27 §6.8`,
+  `docs/16` M43). Cuts Rinne base MAE by 24–34 % with 0 false boundaries; keeps Bohrung contacts exact, solids closed and
+  IFC 4.3 valid in METRE; tests `services/analyse/tests/test_sondierung.py`.
 - GroundTwin Analysis schemas (D108 accepted, Issue #32): `services/wissen/schemas/katalog_eintrag.schema.json` (one
   catalogue entry: kind, authority, verified source, inputs/outputs, validity, uncertainty, `when_missing`, tests) and
   `manifest.schema.json` (value kind and provenance per AGSi object; a characteristic value only with the engineer who

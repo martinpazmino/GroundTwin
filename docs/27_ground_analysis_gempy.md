@@ -496,6 +496,69 @@ them. It needs no GemPy.
 | `gempy_probability` | The σ of §6.1 already comes without it, calibrated by the Kreuzprobe. The package is a separate install that must follow `gempy_engine`; adding it would only repeat the Monte Carlo with a heavier stack. | a question σ cannot answer (e.g. a probability that an Einheit exists at a point, beyond the IDW presence of §6.4) |
 | Blind test of Ground Analysis on a real Gutachten | needs a new PDF from the user; the blind-test rule (freeze before opening) applies | the user uploads a Gutachten |
 
+### 6.8 Sondierungen as optional support points for the layer model (Issue #28, 2026-11-22)
+
+**Question:** A Sondierung (DPH `N10`, CPT `q_c`) shows changes in penetration resistance over depth, but no Bodenart.
+Does it make the layer model more accurate between the Bohrungen?
+
+**Measured answer: conditional yes — only on non-planar boundaries with a clear contrast in Lagerungsdichte and within
+roughly half the borehole spacing; on planar layers with TPS it adds 4–6 cm of step-noise jitter, and on the real
+example (`berlin_v67b.json`) no Sondierung is usable today because the scanned curves have no read values and no
+surveyed Lage. Default stays OFF (`sondierungen_stuetzpunkte=False`).**
+
+**Method** (`services/analyse/baugrundanalyse/sondierung.py`, modeler option in `baugrundmodell/flaechen.py` and
+`modell.py`, project setting `Einstellungen.sondierungen_stuetzpunkte = False`):
+
+1. **Changepoint detection (`schichtwechsel_erkennen`)**: sliding window median (half-width `0.5 m`, ≥ 4 points per
+   side) on `N10` (DPH/DPL/DPM/DPSH/SRS) or `q_c` (CPT/CPTu), ignoring single-step stone spikes. Accepted only when
+   `|m_R − m_L| ≥ 4` (DPH) or `2 MN/m²` (CPT), ratio `≥ 1.45`, robust MAD-scaled `SNR ≥ 3.0` and side consistency
+   `≥ 75 %` (rejects gradual compaction ramps). Non-maximum suppression within `0.8 m` ranks by `konsistenz × snr` so
+   shifted windows do not win ties. Confidence is `0.50–0.95`; no Bodenart is ever guessed.
+2. **Unambiguous unit assignment (`stuetzpunkte_zuordnen`)**: each changepoint `z = GOK − depth` is compared against the
+   **baseline model built without Sondierungen** at `(x, y)`. It is assigned to the closest Einheit with an exact base
+   only if `d1 ≤ 2.5 m`, separated from the second-closest Einheit by `d2 − d1 ≥ 0.8 m` and `d1 / d2 ≤ 0.45`, unique per
+   Einheit in that Sondierung, and stratigraphically ordered. Anything unclear is rejected with its reason (`ohne Lage`,
+   `ohne GOK`, `ohne Messwerte`, `kein deutlicher Sprung erkannt`, `mehrdeutig`, `zu weit von nächster Basis`).
+3. **Optional support points in the modeler**: `bauen(..., sondierungen_stuetzpunkte=False, zusatz_stuetzpunkte=…)`
+   keeps `sondierungen_stuetzpunkte=False` by default. When switched on, support points within `0.5 m` of a Bohrung or
+   of each other are skipped so Bohrung contacts remain exact (`max_abweichung = 0.000 m`), all solids stay closed, the
+   IFC validates with 0 findings in unit `METRE` (M17), and every point is recorded with `quelle = "Sondierung"` in
+   `parameter.stuetzpunkte_sondierung`, `hinweise` and `CPset_Baugrundmodell.Stuetzpunkte_Sondierung`.
+4. **Leak-free leave-one-out (`kreuzprobe_sondierungen`)**: for each held-out Bohrung `bi`, Sondierungen are assigned
+   strictly from the `(N − 1)`-Bohrung baseline model without `bi`, then evaluated at `bi`.
+
+**Measured before / after** (mean absolute error of exact bases in m; `falsche Grenzen` = accepted support points
+assigned to the wrong true Einheit or > 0.5 m from the true base):
+
+| Case (surface shape) | IDW without → with (Δ) | TPS without → with (Δ) | Target unit (Δ IDW / Δ TPS) | Support pts (full) | Rejected (full / LOO) | False boundaries (full / LOO) |
+|---|---:|---:|---|---:|---:|---:|
+| `eben` (flat planes, DPH) | 0.000 → 0.011 (+0.011) | 0.000 → 0.038 (+0.038) | all flat (+0.011 / +0.038) | 36 | 0 / 0 | **0 / 0** |
+| `geneigt` (inclined planes, DPH) | **0.656 → 0.453 (−0.203)** | 0.000 → 0.060 (+0.060) | Sand (−0.238 / +0.074) | 36 | 0 / 0 | **0 / 0** |
+| `rinne` (2.6 m channel, DPH) | **0.611 → 0.415 (−0.196)** | **0.354 → 0.301 (−0.053)** | **Sand (−0.478 / −0.252)** | 35 | 0 / 0 | **0 / 0** |
+| `cpt_rinne` (2.6 m channel, CPT `q_c`) | **0.611 → 0.418 (−0.193)** | **0.354 → 0.286 (−0.068)** | **Sand (−0.466 / −0.298)** | 36 | 0 / 0 | **0 / 0** |
+| `linse` (local Kies lens, DPH) | 0.418 → 0.360 (−0.058) | 0.150 → 0.186 (+0.036) | Kies (+0.000 / +0.000) | 24 | 2 / 20* | **0 / 0** |
+| `ohne_sprung` (same density, DPH) | 0.656 → 0.656 (+0.000) | 0.000 → 0.000 (+0.000) | all (+0.000 / +0.000) | 0 | 12 / 108† | **0 / 0** |
+| `berlin_v67b.json` (real, 5 B., 6 S.) | 0.777 → 0.777 (+0.000) | 0.803 → 0.803 (+0.000) | — (scans: no values, no Lage) | 0 | 6 / 30 | — |
+| `demo_synthetisch.json` (12 B., 3 S.) | 0.511 → 0.511 (+0.000) | 0.244 → 0.244 (+0.000) | — (3 Sondierungen without Lage) | 0 | 3 / 36 | — |
+
+*\* `linse`: 2 Sondierungen placed directly inside the Kies lens produce 16 `mehrdeutig zwischen Kies` and 4 `zu weit von
+nächster Basis` rejections in LOO, keeping false boundaries at 0. † `ohne_sprung`: 100 % rejected (`kein deutlicher
+Sprung erkannt`).*
+
+**Distance study** (distance `d` from Sondierung to held-out Bohrung; 0 false boundaries in all runs):
+
+| Distance `d` | `geneigt` IDW (without 0.656) | `geneigt` TPS (without 0.000) | `rinne` IDW (without 0.611) | `rinne` TPS (without 0.354) |
+|---:|---:|---:|---:|---:|
+| 5 m | **0.220 (−0.436)** | 0.056 (+0.056) | **0.193 (−0.418)** | **0.096 (−0.258)** |
+| 10 m | **0.287 (−0.369)** | 0.046 (+0.046) | **0.314 (−0.297)** | **0.169 (−0.185)** |
+| 20 m | **0.525 (−0.131)** | 0.055 (+0.055) | **0.466 (−0.145)** | **0.265 (−0.089)** |
+| 35 m | 0.676 (+0.020) | 0.068 (+0.068) | 0.552 (−0.059) | 0.464 (+0.110) |
+
+**Recommendation:** keep `sondierungen_stuetzpunkte` **OFF by default**. Enable it only when a project has surveyed
+Sondierungen with reviewed curves, a clear contrast in penetration resistance on a non-planar surface (e.g. a Rinne),
+and the leave-one-out Kreuzprobe confirms a reduction in error. Tests: `services/analyse/tests/test_sondierung.py`,
+`services/modeler/tests/test_modell.py::test_sondierungen_stuetzpunkte_standard_aus_und_exakte_bohrkontakte`.
+
 ## 7. Risks
 
 | Risk | Answer |
