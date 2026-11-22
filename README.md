@@ -22,9 +22,14 @@ app: see the [glossary](docs/glossary.md).
   3. **Lage**: calibrate a Lageplan or a Längsschnitt PDF (measured distance → scale, reference point
      with a coordinate, lock) and place the Bohrungen on it by dragging or with points. A row with
      your own distances also works.
-  4. **Einheiten**: decide how the Schichten are joined into model Einheiten.
+  4. **Einheiten**: decide how the Schichten are joined into model Einheiten. Under *Erweitert*:
+     **Ground Analysis** (Kreuzprobe, Unsicherheit, virtuelle Bohrung, Grundwasserfläche; [docs/27](docs/27_ground_analysis_gempy.md)),
+     **Homogenbereiche** per ATV (proposal, Gutachter definitions, Kennwerte; [docs/28](docs/28_homogenbereiche.md)),
+     and **Bodenkennwerte** and **Laborwerte** read from the Gutachten ([docs/28](docs/28_homogenbereiche.md)).
   5. **Modell**: IFC 4.3 `IfcGeomodel` + `IfcBorehole` in the viewer with the TwinBimM controls, also
-     for Trassen longer than 5 km. Includes *einchecken* of the review state and export.
+     for Trassen longer than 5 km. Includes *einchecken* of the review state, exports (IFC, report,
+     BoreholeML, **3D Tiles** for Cesium) and, under *Erweitert*, **GeolDG** deadlines, checklist and
+     submission package ([docs/21 §5.3](docs/21_app_schritte_normen.md#53-geoldg-what-goes-to-the-geologischer-dienst)).
 
   Each step updates the next one.
 * **Excel nach Vorlage (v1):** Bohrprofil + Längsschnitt (Hamburg layout) → `.xlsx` with 4 sheets
@@ -56,7 +61,7 @@ versions, the same as the container and the CI.
 **With Docker:**
 
 ```bash
-docker build -t groundtwin .              # without OCR: --build-arg OCR=0
+docker build -t groundtwin .              # without OCR: --build-arg OCR=0; with GemPy: --build-arg ANALYSE=1
 docker run -p 8500:8500 -v groundtwin-daten:/data groundtwin
 ```
 
@@ -103,16 +108,20 @@ and how to update the versions.
 
 > [!IMPORTANT]
 > Without `GEO_AGENT_PASSWORT`, anyone with the URL can see and change the Gutachten. With it, the
-> browser asks for a user (any, or `GEO_AGENT_BENUTZER`) and the password. `/gesund` answers without
+> browser asks for a user (any, or `GEO_AGENT_BENUTZER`) and the password (`GEO_AGENT_MAX_MB` caps the
+> upload size, default 200 MB; `GEO_AGENT_ARBEIT` sets the data folder). `/gesund` answers without
 > a password, for the platform's health check. `start_online.bat` always sets a password.
 
 ## What it does
 
-1. **Extraction v4** ([docs/17](docs/17_extraction_algorithm.md)): page class, columns, scale,
-   boundaries, Bodenart, Grundwasser, Schichtenverzeichnis and coordinates. Every Schicht carries its
-   confidence and its provenance (page, bbox).
+1. **Extraction v4 and annex stages** ([docs/17](docs/17_extraction_algorithm.md), [services/extractor](services/extractor/README.md)):
+   page class, columns, scale, boundaries, Bodenart, Grundwasser (with kind, date and report water tables,
+   [docs/06](docs/06_grundwasser.md)), Schichtenverzeichnis and coordinates, plus separate stages for
+   **Sondierungen** (DPH/CPT, [docs/05](docs/05_sondierungen.md)), **Bodenkennwerte**, **Laborversuche** and
+   Gutachter **Homogenbereiche** ([docs/28](docs/28_homogenbereiche.md)). Every Schicht and value carries its
+   confidence and its provenance (page, bbox, Text or OCR).
 2. **Review** ([docs/21](docs/21_app_schritte_normen.md)): Bohrung by Bohrung, with the PDF page and
-   the Schicht marked.
+   the Schicht marked, plus a plausibility report per Bohrung ([docs/21 §2.1](docs/21_app_schritte_normen.md#21-plausibility-report-per-bohrung)).
    - Warnings only for **unclassified** Schichten.
    - A proposal by norm with one click.
    - *Everything reviewed*; remove and restore Bohrungen.
@@ -136,16 +145,20 @@ and how to update the versions.
      Gegenprobe with the Gutachten and the import of released Schichtdaten ([docs/21 §4.5](docs/21_app_schritte_normen.md#45-bohrungen-der-länder-existing-boreholes-around-the-site)).
      All 16 Länder are in one file, [`dienste.json`](services/geodaten/geodaten/dienste.json), with a tool to maintain
      the links (`dienste.html`, [docs/21 §4.8](docs/21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)).
-   - Gebäude (LoD2): the 3D buildings of Berlin, Brandenburg and NRW around the site (on a click), in the
-     IFC and the viewer ([docs/21 §4.6](docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site)).
+   - Gebäude (LoD2): the 3D buildings of 8 Länder (Berlin, Brandenburg, NRW, Niedersachsen, Bayern,
+     Rheinland-Pfalz, Mecklenburg-Vorpommern, Sachsen) around the site (on a click), in the
+     IFC and the viewer ([docs/21 §4.6](docs/21_app_schritte_normen.md#46-gebäude-lod2-buildings-around-the-site), [docs/25](docs/25_laender_dgm_lod2_research.md)).
    - BoreholeML: the reviewed Bohrungen go out in the exchange format of the state geological surveys,
      and BoreholeML files come in like a Gutachten ([docs/21 §5.1](docs/21_app_schritte_normen.md#51-boreholeml-for-the-geologische-dienste)).
    - Standort ohne Gutachten: a point instead of a PDF gives a first model from the Bohrungen of the Länder,
      marked as **Vorerkundung** in the app, the viewer, the report and the IFC; a Gutachten added later keeps
      both sources apart ([docs/21 §4.7](docs/21_app_schritte_normen.md#47-standort-ohne-gutachten-a-vorerkundung-from-a-point)).
-5. **Layer model** ([docs/18](docs/18_layer_modeler.md)): Einheiten by correlating the sequences,
-   surfaces that honour every contact, closed solids and a valid IFC 4.3 in metres; with a DGM and the
-   LoD2 of the Land, the terrain and the buildings around the model.
+5. **Layer model, Ground Analysis and Homogenbereiche** ([docs/18](docs/18_layer_modeler.md), [docs/27](docs/27_ground_analysis_gempy.md), [docs/28](docs/28_homogenbereiche.md)):
+   Einheiten by correlating the sequences, surfaces that honour every contact, closed solids and a valid
+   IFC 4.3 in metres; with a DGM and the LoD2 of the Land, the terrain and the buildings around the model.
+   Under *Erweitert*: **Ground Analysis** (Kreuzprobe, Unsicherheit σ, virtuelle Bohrung, Erkundungsvorschlag,
+   Grundwasserfläche, optional GemPy interpolation), **Homogenbereiche (VOB/C)** per ATV with **Bodenkennwerte**
+   and **Laborwerte** from the report, **3D Tiles 1.1** for Cesium and the **GeolDG** submission package.
 6. **That Open viewer** ([apps/web](apps/web/README.md)): compact toolbar, help on every setting and
    the Lage editor. With every change, the model is recomputed.
 
@@ -160,10 +173,12 @@ server/                     Baugrundmodell app: FastAPI + projects, background e
 ui/                         project state (projekt.py), pipeline without UI, Excel v1 page
 app.py                      Streamlit: Excel v1 only
 start.bat  start_excel.bat  start on Windows; start_online.bat: free online via Cloudflare Tunnel
-services/extractor/         extraction v4 used by the app (reference of the regression, docs/17)
-services/modeler/           `baugrundmodell` modeler and norms database (python -m baugrundmodell …)
-services/geodaten/          DGM, GOK check, BoreholeML, Bohrungen und Gebäude der Länder (open data plan, docs/23)
+services/extractor/         extraction v4 and annex stages (kennwerte, labor, homogenbereiche_text, wassertabelle, sondierungen; docs/17)
+services/modeler/           `baugrundmodell` modeler, norms, Homogenbereiche, Bodenkennwerte, Labor and water (python -m baugrundmodell …)
+services/analyse/           `baugrundanalyse`: Kreuzprobe, Unsicherheit, virtuelle Bohrung, Erkundungsvorschlag, Grundwasserfläche, GemPy (docs/27)
+services/geodaten/          DGM, GOK check, BoreholeML, 3D Tiles, GeolDG, Bohrungen und Gebäude der Länder (docs/23, docs/25, docs/26)
 apps/web/                   step app and That Open viewer (Vite + TypeScript + lit); dist/ compiled in the repo
+agenten/                    development checks (`python -m agenten pruefen`), Gemini/Antigravity hand-offs and scheduled routines (docs/24, docs/31)
 geo_agent/                  v1 package (Excel)
 data/beispiele/             examples (factual and synthetic data)
 tests/  scripts/            tests of the app and the API; end-to-end test (Playwright); synthetic plans; online.py
@@ -177,8 +192,9 @@ requirements*.txt           dependencies; constraints.txt pins the tested versio
 
 ## Tests
 
-- `pytest tests` (project logic, API, online script) and `cd services/modeler && pytest tests`
-  (modeler and norms).
+- `pytest tests` (project logic, API, house rules, feature map, online script),
+  `cd services/modeler && pytest tests` (modeler and norms) and `cd services/analyse && pytest tests`
+  (Ground Analysis), or all checks at once with `python -m agenten pruefen`.
 - Viewer: `python scripts/testplan.py plans && cd apps/web && node scripts/check.mjs <model.ifc> ../../plans screenshots`.
 - App: start `python -m server --port 8511 --kein-browser --arbeit <empty folder>` and then
   `node scripts/check_app.mjs http://localhost:8511 plans screenshots`.

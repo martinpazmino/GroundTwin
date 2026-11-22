@@ -1,7 +1,7 @@
 ---
 title: "GroundTwin documentation: index"
 date: 2026-10-23
-updated: 2026-11-05
+updated: 2026-11-21
 tags: [index, geo_agent]
 aliases: [Index, Map of documents]
 ---
@@ -39,14 +39,14 @@ The notes are in English and keep the German technical terms of the Gutachten an
 ## Next
 
 - [23 Open data and open-source integration](23_open_data_integration.md): evaluation and intervention plan for BoreholeML, the BGR Bohrpunktkarte and the state geological surveys, a Baugrundmodell from a point, the Umgebungsmodell (DGM + LoD2 buildings), basemaps, Cesium / 3D Tiles and OpenStreetMap.
-- [24 Agent team (proposal)](24_agent_team.md): Claude as orchestrator and Gemini as specialists — where Claude's tokens go (measured), what the Google subscription and the Gemini API allow, roles, protocol, permissions, metrics and the roadmap.
-- [25 DGM1 and LoD2 of the Länder](25_laender_dgm_lod2_research.md): the 13 Länder without a data service surveyed and checked live; NI and MV connected, proposals for new service types.
-- [26 Bohrungen of the Länder without a service](26_laender_bohrungen_options.md): sources per Land, options (a)–(e), recommendation, and the WMS prototype (`bohrdaten_wms.py`, not yet wired).
+- [24 Agent team](24_agent_team.md): Claude as orchestrator, Gemini through the API and Antigravity by hand-off (`agenten/`) — compact checks (`python -m agenten pruefen`), review, diagnosis in a git worktree, mutation-checked tests, token/cost tracking and metrics.
+- [25 DGM1 and LoD2 of the Länder](25_laender_dgm_lod2_research.md): the 13 Länder without a data service surveyed and checked live; NI and MV connected for DGM1, NI/BY/RP/MV/SN connected for LoD2.
+- [26 Bohrungen of the Länder without a service](26_laender_bohrungen_options.md): sources per Land, options (a)–(e), Hamburg BoreholeML WFS, WMS-GetFeatureInfo header hints (`bohrdaten_wms.py`, BGR and Bremen) and local file import (`bohrdaten_datei.py`).
 - [29 GroundTwin Analysis](29_groundtwin_analysis.md): concept (proposed): information package on AGSi, knowledge catalogue with computed dependencies, readiness planner, value kinds and provenance, roadmap A0–A7.
 - [30 GroundTwin Analysis research log](30_groundtwin_analysis_research.md): AGSi 1.0.1 schema findings, DAUB Teil 3 structure, DAUB TBM selection tables (SLS, EPB), screening experiment on real examples, PLAXIS interfaces.
-- [31 Agent guardrails](31_agent_guardrails.md): rules of CLAUDE.md as tests (`test_hausregeln.py`), feature map with proofs (`feature_map.json`), `dist` check in CI, commands `/regel` and `/verifizieren`.
-- [28 Homogenbereiche (VOB/C)](28_homogenbereiche.md): Einheiten per Gewerk (ATV) to Homogenbereiche, the Kennwerte matrix per ATV, Pset per Einheit and Bodenschicht, a model of Homogenbereiche only; colours of DIN 4023 Tab. 2/3.
-- [27 Ground Analysis and GemPy](27_ground_analysis_gempy.md): what GemPy needs and gives, measured on this project's data; the missing dip of the layers; the component and its phases. **G1 built** (`services/analyse`): Kreuzprobe, Unsicherheit, virtuelle Bohrung.
+- [31 Agent guardrails](31_agent_guardrails.md): rules of CLAUDE.md as tests (`test_hausregeln.py`), feature map with proofs (`feature_map.json`), `dist` check in CI, commands `/regel` and `/verifizieren`, and scheduled routines (`agenten/routinen/`).
+- [28 Homogenbereiche (VOB/C)](28_homogenbereiche.md): Einheiten per Gewerk (ATV) to Homogenbereiche, the Kennwerte matrix per ATV, proposals per Anwendungsfall and from the Gutachter's own Homogenbereiche, Bodenkennwerte and laboratory sheets from the report, Pset per Einheit and Bodenschicht, and a model of Homogenbereiche only; colours of DIN 4023 Tab. 2/3.
+- [27 Ground Analysis and GemPy](27_ground_analysis_gempy.md): what GemPy needs and gives, measured on this project's data; the missing dip of the layers; **G1–G5 built** (`services/analyse` and step Einheiten → Erweitert): Kreuzprobe, Unsicherheit, virtuelle Bohrung, Erkundungsvorschlag, Grundwasserfläche and optional GemPy interpolation.
 
 ## Extraction: problem and design
 
@@ -54,8 +54,8 @@ The notes are in English and keep the German technical terms of the Gutachten an
 - [02 Layout-independent Bohrprofil](02_bohrprofil_generalization.md): columns from geometry, scale by regression, description, merging; the core of the solution.
 - [03 Längsschnitt without constants](03_laengsschnitt_generalization.md): axes, tunnel, vector geology; design for the second PDF.
 - [04 Schraffur DIN 4023](04_schraffur_din4023.md): the graphic column as a second signal, classified with the legend.
-- [05 Sondierungen DPH/CPT](05_sondierungen.md): digitising curves with calibrated axes.
-- [06 Grundwasser](06_grundwasser.md): symbol, keywords, colour and water lines.
+- [05 Sondierungen DPH/CPT](05_sondierungen.md): digitising curves, tables and Längsschnitte (`services/extractor/sondierungen.py`, measured with `benchmark/sondierungen_eval.py`).
+- [06 Grundwasser](06_grundwasser.md): symbol (vector and scan), legend, water kinds, dates and report water tables.
 - [07 Coordinates and georeferencing](07_coordinates.md): tables, Lageplan, alignment; German CRSs; it unlocks 3D.
 
 ## Measurement
@@ -80,8 +80,8 @@ Kept because the decisions refer to them; the current state is in the sections a
 
 ## Code
 
-- [Extractor](../services/extractor/README.md): extraction v4 used by the app, prototype v2, stress cases and the synthetic PDF generator.
-- [`baugrundmodell` modeler](../services/modeler/README.md): canonical JSON → Einheiten → solids → IFC 4.3 (`IfcGeomodel`), norms database, with tests.
+- [Extractor](../services/extractor/README.md): extraction v4 used by the app, annex stages (`kennwerte`, `labor`, `homogenbereiche_text`, `wassertabelle`, `sondierungen`), prototype v2, stress cases and the synthetic PDF generator.
+- [`baugrundmodell` modeler](../services/modeler/README.md): canonical JSON → Einheiten → solids → IFC 4.3 (`IfcGeomodel`), norms database, Homogenbereiche, Bodenkennwerte, Laborwerte and water, with tests.
 - [Web app and viewer](../apps/web/README.md): step app and That Open Engine viewer; Einheiten, properties, sections, vertical exaggeration, Lage editor.
 - [Benchmark](../benchmark/README.md): public corpus, ground truth, blind test, regression, ablation and perturbations.
 - [Supabase](../supabase/README.md): migration tested on PostGIS and loader of the canonical JSON.
