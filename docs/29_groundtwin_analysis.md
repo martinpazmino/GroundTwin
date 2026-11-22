@@ -3,7 +3,7 @@ title: "29 GroundTwin Analysis: concept, knowledge architecture and roadmap"
 date: 2026-11-17
 tags: [groundtwin-analysis, ground-model, agsi, eurocode-7, knowledge-base, uncertainty, provenance, roadmap]
 aliases: [GroundTwin Analysis, Analysis package, Knowledge catalogue]
-status: proposed
+status: accepted
 ---
 
 # 29 GroundTwin Analysis: concept, knowledge architecture and roadmap

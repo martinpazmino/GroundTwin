@@ -6,6 +6,17 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- GroundTwin Analysis schemas (D108 accepted, Issue #32): `services/wissen/schemas/katalog_eintrag.schema.json` (one
+  catalogue entry: kind, authority, verified source, inputs/outputs, validity, uncertainty, `when_missing`, tests) and
+  `manifest.schema.json` (value kind and provenance per AGSi object; a characteristic value only with the engineer who
+  entered it, a derived value only with its catalogue entry); tests `tests/test_wissen_schemas.py`.
+
+### Changed
+- Decisions D100–D109 accepted (Issues #24, #32).
+- Homogenbereiche proposal (Issue #21, user decision): Hangschutt and Wiesenkalk always get a Bereich of their own,
+  never *bindig*.
+
+### Added (earlier)
 - Water levels in scans (Issue #40, by Antigravity, checked by Claude): depth scale from an OCR depth/elevation ruler
   or `M 1:n` + GOK when interior lines vanish (rule `raster_massstab_ocr`, E8; a ruler contradicting the labels is
   rejected and marked), and water levels read cell by cell from scanned Schichtenverzeichnis pages (rule `sv_wasser`,

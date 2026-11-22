@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/martinpazmino/GroundTwin/services/wissen/schemas/manifest.schema.json",
+  "title": "Manifest des Informationspakets von GroundTwin Analysis (D108, docs/29 §4-5)",
+  "description": "AGSi verbietet eigene Attribute; Wertart, Herkunft, Unsicherheit und offene Punkte je Wert stehen deshalb hier, verknuepft ueber die AGSi-Objekt-IDs. GroundTwin liefert abgeleitete Werte; charakteristische Werte nur, wenn der Ingenieur sie eingibt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "projekt", "erzeugt", "quellen", "werte"],
+  "properties": {
+    "format": {"const": "groundtwin-manifest/1"},
+    "projekt": {"type": "string"},
+    "erzeugt": {"type": "string", "format": "date-time"},
+    "groundtwin_version": {"type": "string"},
+    "teile": {"type": "object", "description": "Dateien des Pakets mit sha256",
+              "additionalProperties": {"$ref": "#/$defs/datei"}},
+    "quellen": {"type": "array", "items": {"$ref": "#/$defs/quelle"}},
+    "werte": {"type": "array", "items": {"$ref": "#/$defs/wert"}},
+    "offen": {"type": "array", "items": {"type": "object", "required": ["was", "warum"],
+              "properties": {"was": {"type": "string"}, "warum": {"type": "string"}, "fuer": {"type": "array", "items": {"type": "string"}}}}},
+    "vollstaendigkeit": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}}
+  },
+  "$defs": {
+    "datei": {"type": "object", "required": ["pfad", "sha256"],
+              "properties": {"pfad": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                             "format": {"type": "string"}}},
+    "quelle": {"type": "object", "required": ["id", "art"],
+               "properties": {"id": {"type": "string"}, "art": {"enum": ["gutachten", "boreholeml", "dienst", "eingabe", "dgm", "katalog"]},
+                              "datei": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                              "url": {"type": "string"}, "lizenz": {"type": "string"}}},
+    "wert": {
+      "type": "object", "additionalProperties": false,
+      "required": ["agsi_id", "groesse", "kind", "herkunft"],
+      "properties": {
+        "agsi_id": {"type": "string", "description": "ID des AGSi-Objekts (dataID / Element-ID)"},
+        "groesse": {"type": "string"},
+        "kind": {"enum": ["observed", "interpreted", "derived", "modelled", "assumed", "missing"]},
+        "charakteristisch": {"type": "boolean", "default": false,
+                             "description": "true nur fuer vom Ingenieur eingegebene Werte; GroundTwin setzt es nie selbst"},
+        "eingegeben_von": {"type": "string"},
+        "herkunft": {"type": "object", "required": ["quellen"],
+                     "properties": {
+                       "quellen": {"type": "array", "items": {"type": "string"}},
+                       "seite": {"type": "integer"}, "methode": {"type": "string"},
+                       "katalog": {"type": "object", "required": ["id", "version"],
+                                   "properties": {"id": {"type": "string"}, "version": {"type": "string"}}},
+                       "eingaben": {"type": "array", "items": {"type": "string"}, "description": "IDs der Eingangswerte (PROV used)"}}},
+        "unsicherheit": {"type": "object", "description": "je Komponente getrennt, nicht zu einer Zahl verschmolzen",
+                         "properties": {
+                           "messung": {"type": "number"}, "klassifikation": {"type": "string"}, "transformation": {"type": "number"},
+                           "statistik_n": {"type": "integer", "minimum": 0}, "raeumlich_sigma_m": {"type": "number"},
+                           "zeitlich": {"type": "string"}, "hinweis": {"type": "string"}}}
+      },
+      "allOf": [
+        {"if": {"properties": {"charakteristisch": {"const": true}}, "required": ["charakteristisch"]},
+         "then": {"required": ["eingegeben_von"]}},
+        {"if": {"properties": {"kind": {"const": "derived"}}}, "then": {"properties": {"herkunft": {"required": ["katalog", "eingaben"]}}}}
+      ]
+    }
+  }
+}

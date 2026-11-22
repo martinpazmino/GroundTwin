@@ -404,8 +404,9 @@ End to end, with the Bohrungen in a schematic row:
 - **Triefenstein:** Beton → A1, Sand → B1 (Sandbett). Schluff and Kies stay without a Bereich, because the Gutachter
   calls B3 "Lößlehme" with TL/TM; the difference is shown, not hidden.
 
-**Open (needs the user):** whether Hangschutt and Wiesenkalk should stay a Bereich of their own in our proposal
-(today they count as *bindig*).
+**Decided (user, 2026-11-22):** Hangschutt and Wiesenkalk get a Bereich of their own in our proposal, for every ATV
+and every level (grob, standard, fein); they no longer count as *bindig* (Hangschutt is mixed-grained with Steine,
+Wiesenkalk/Seekreide calcareous-organogenic and compressible). Test `test_hangschutt_und_wiesenkalk_eigener_bereich`.
 
 ## 10b. Scanned report pages: OCR (Issue #18, 2026-11-19, training PDFs, not blind)
 

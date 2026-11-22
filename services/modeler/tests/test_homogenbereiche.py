@@ -196,3 +196,20 @@ def test_vorschlag_aus_den_bereichen_des_gutachtens():
     assert {"Torf", "Ton"} <= ohne                                          # Modell hat Einheiten, die das Gutachten nicht nennt
     assert "D" in v["bereiche_ohne_einheit"]                                # und umgekehrt
     assert hb.pruefen({"DIN 18300": z})                                     # uebernehmbar wie der eigene Vorschlag
+
+
+def test_hangschutt_und_wiesenkalk_eigener_bereich():
+    """Entscheidung zu #21: Hangschutt und Wiesenkalk sind nie "bindig" und nie mit Schluff/Lehm in einem Bereich,
+    in jeder Stufe (grob, standard, fein)."""
+    s = lambda t, b: {"beschreibung": t, "bodenart": b}
+    e = [{"name": "Hangschutt", "bodenarten": ["Hangschutt"], "schichten": [s("Hangschutt, Schluff, steinig", "Hangschutt")]},
+         {"name": "Lehm", "bodenarten": ["Lehm"], "schichten": [s("Lehm, schluffig", "Lehm")]},
+         {"name": "Schluff", "bodenarten": ["Schluff"], "schichten": [s("Schluff, tonig", "Schluff")]},
+         {"name": "Wiesenkalk", "bodenarten": ["Wiesenkalk"], "schichten": [s("Seekreide, weich", "Wiesenkalk")]}]
+    for code in [a["code"] for a in hb.daten()["atv"]]:
+        v = hb.vorschlag_fuer(code, e)
+        z = v["zuordnung"]
+        assert len({z["Hangschutt"], z["Wiesenkalk"], z["Lehm"]}) == 3, code
+        assert z["Schluff"] not in (z["Hangschutt"], z["Wiesenkalk"]), code
+        grund = {g["name"]: g["grund"] for g in v["bereiche"]}
+        assert grund[z["Hangschutt"]].startswith("Hangschutt") and grund[z["Wiesenkalk"]].startswith("Wiesenkalk")
