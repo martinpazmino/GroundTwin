@@ -12,7 +12,7 @@ license **AGPL-3.0-or-later** (D79).
   second sources S, swissgeol R, model M, environment X). Respect them.
 - `docs/17_extraction_algorithm.md`: specification of the algorithm (stages, parameters, confidence).
 - `docs/15_results_real_pdfs.md`: blind and training results.
-- `docs/11_decisions.md`: decisions D1–D109 (D100–D103, D105–D109 proposed).
+- `docs/11_decisions.md`: decisions D1–D109 (D100–D109 accepted 2026-11-22).
 - `docs/18_layer_modeler.md`: layer model (N3) and That Open viewer.
 - `docs/19_app_v2.md`: Streamlit app v2 (history; superseded by 21).
 - `docs/20_lage_pruefung_viewer.md`: viewer with TwinBimM controls, models > 5 km, Lage on the plan, Prüfstand.
@@ -71,7 +71,7 @@ license **AGPL-3.0-or-later** (D79).
   model (`sd.fuer_ifc`, `ifc_schreiben(sondierungen=)`). Part 4 (docs/05 §8): BoreholeML has no sounding codes →
   `bml:Borehole` + `bml:investigation` (SM, parameter SON + free text, CSV `valueMatrix`), DPU for CPT, nil for DPH;
   only reviewed with values, UTM and GOK; import reads them back as Sondierungen; valid against the official XSD.
-- `docs/29_groundtwin_analysis.md` (D108, proposed, nothing built) and `docs/30_groundtwin_analysis_research.md`:
+- `docs/29_groundtwin_analysis.md` (D108, accepted; schemas in `services/wissen/schemas`, tests `tests/test_wissen_schemas.py`) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge
   catalogue with computed dependencies, readiness planner. GroundTwin derives, the engineer sets characteristic

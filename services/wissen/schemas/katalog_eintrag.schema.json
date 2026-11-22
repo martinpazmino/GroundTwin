@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/martinpazmino/GroundTwin/services/wissen/schemas/katalog_eintrag.schema.json",
+  "title": "Eintrag im Wissenskatalog von GroundTwin Analysis (D108, docs/29 §3)",
+  "description": "Eine Regel, Korrelation, Spanne, Analyse oder Anforderung mit Quelle, Eingaben, Gueltigkeit und Unsicherheit. Abhaengigkeiten werden aus inputs/outputs berechnet, nie von Hand gezeichnet.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "kind", "authority", "source", "inputs", "outputs", "validity", "uncertainty", "when_missing", "tests"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$", "description": "stabil, wird von jedem Ergebnis zitiert"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "kind": {"enum": ["rule", "correlation", "empirical_range", "analysis", "requirement"]},
+    "authority": {"enum": ["standard", "correlation", "empirical", "expert", "research"]},
+    "title": {"type": "string"},
+    "source": {
+      "type": "object", "additionalProperties": false, "required": ["citation", "verified"],
+      "properties": {
+        "citation": {"type": "string", "minLength": 3},
+        "edition": {"type": ["integer", "string"]},
+        "url": {"type": "string"},
+        "verified": {"type": "boolean", "description": "true erst, nachdem der Quelltext gelesen wurde"}
+      }
+    },
+    "inputs": {
+      "type": "object", "additionalProperties": false, "required": ["required"],
+      "properties": {"required": {"$ref": "#/$defs/groessen"}, "optional": {"$ref": "#/$defs/groessen"}}
+    },
+    "outputs": {"$ref": "#/$defs/groessen", "minItems": 1},
+    "preconditions": {"type": "array", "items": {"type": "string"}},
+    "validity": {"type": "object", "description": "Gueltigkeitsbereich je Groesse: [min, max] oder Liste erlaubter Werte",
+                 "additionalProperties": {"oneOf": [{"type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2},
+                                                    {"type": "array", "items": {"type": "string"}, "minItems": 1}]}},
+    "uncertainty": {
+      "type": "object", "required": ["model"],
+      "properties": {
+        "model": {"enum": ["none", "categorical", "absolute", "relative", "lognormal", "interval", "monte_carlo"]},
+        "value": {"type": "number"},
+        "note": {"type": "string"}
+      }
+    },
+    "when_missing": {"type": "object", "description": "je Eingabe: block (nicht rechnen), assume (nur mit Kennzeichnung 'assumed'), skip",
+                     "additionalProperties": {"enum": ["block", "assume", "skip"]}},
+    "value_kind_of_outputs": {"enum": ["derived", "modelled", "interpreted"], "default": "derived"},
+    "tests": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+  },
+  "$defs": {
+    "groessen": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"}, "uniqueItems": true}
+  }
+}

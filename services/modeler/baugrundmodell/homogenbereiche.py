@@ -90,9 +90,15 @@ def vorschlag(einheiten: list[str]) -> dict[str, str]:
 _NICHTBINDIG = {"Kies", "Sand", "Steine", "Bloecke"}
 _BINDIG_BODEN = {"Schluff", "Ton"}
 _BEFESTIGT = {"Beton", "Asphalt", "Schwarzdecke", "Pflaster"}        # gebundene Schichten, kein Boden
+# Geologische Benennungen, die sich im Bau anders verhalten als ihre Hauptbodenart (Entscheidung des Nutzers zu #21,
+# 2026-11-22): Hangschutt ist gemischtkoernig mit Steinen/Bloecken, Wiesenkalk/Seekreide kalkig-organogen und
+# setzungsempfindlich. Beide bekommen im Vorschlag immer einen eigenen Bereich, nie "bindig".
+_EIGENER_BEREICH = {"Hangschutt": "hangschutt", "Wiesenkalk": "wiesenkalk"}
 MIN_ANTEIL_GRUPPE = 0.5        # Bodengruppe trennt nur, wenn mindestens die Haelfte der Schichten sie nennt
 VERHALTEN_TEXT = {"anthropogen": "anthropogen (Auffüllung)", "befestigt": "befestigt (Beton, Asphalt, Pflaster)",
                   "organisch": "organisch", "fels": "Fels",
+                  "hangschutt": "Hangschutt (gemischtkörnig, mit Steinen)",
+                  "wiesenkalk": "Wiesenkalk/Seekreide (kalkig-organogen)",
                   "nichtbindig": "nichtbindig", "bindig": "bindig", "unbekannt": "nicht klassifiziert"}
 
 
@@ -103,6 +109,8 @@ def _verhalten(bodenarten: list[str]) -> str:
         art = "fels" if b.startswith("Fels") else KLASSEN.get(b, {}).get("art", "unbekannt")   # auch "Fels (Tonstein)"
         if b in _BEFESTIGT:
             arten.add("befestigt")
+        elif b in _EIGENER_BEREICH:
+            arten.add(_EIGENER_BEREICH[b])
         elif art == "boden":
             arten.add("nichtbindig" if b in _NICHTBINDIG else "bindig" if b in _BINDIG_BODEN else "unbekannt")
         elif art == "geologisch":
@@ -159,7 +167,7 @@ def vorschlag_fuer(code: str, einheiten: list[dict]) -> dict:
         v = m["verhalten"]
         if v == "unbekannt":
             k, grund = ("einzeln", e["name"]), "nicht eindeutig klassifiziert: eigener Bereich"
-        elif st == "grob" or v in ("anthropogen", "befestigt", "organisch", "fels"):
+        elif st == "grob" or v in ("anthropogen", "befestigt", "organisch", "fels", *_EIGENER_BEREICH.values()):
             k, grund = (v,), VERHALTEN_TEXT[v]
         else:
             art = m["bodengruppe"] or m["hauptbodenart"]
