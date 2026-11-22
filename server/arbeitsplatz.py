@@ -37,7 +37,7 @@ from ui import sondierung as sd
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
+from geodaten import agsi, bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
 
 _ANALYSE = str(Path(__file__).resolve().parents[1] / "services" / "analyse")
@@ -707,6 +707,8 @@ class Arbeitsplatz:
             return self._export_3dtiles(sig)
         if art == "geoldg":
             return self._export_geoldg(sig, organisation)
+        if art == "agsi":
+            return self._export_agsi(sig, organisation)
         with self.sperre(sig):
             docs, p = self.laden(sig)
             stamm = p.name or "baugrundmodell"
@@ -805,6 +807,48 @@ class Arbeitsplatz:
             dateien["bewertungsdaten_GeolDG_10/modelldokumentation.txt"] = doku.encode("utf-8")
         fehlt.append("das Gutachten selbst (PDF; Bewertungsdaten nach § 10 Abs. 2 Satz 1 Nr. 1) – liegt Ihnen vor")
         return geoldg.paket(u, name, dateien, fehlt), f"{p.name or 'baugrundmodell'}_geoldg.zip", "application/zip"
+
+    def _export_agsi(self, sig: str, organisation: str = "") -> tuple[bytes, str, str]:
+        """Informationspaket v0 (Issue #33, docs/29): AGSi 1.0.1 + Manifest + Bericht, dazu IFC und BoreholeML.
+        Die Ground Analysis geht mit, wenn sie schon gerechnet ist; sonst nur die Kreuzprobe (ab drei Bohrungen)."""
+        from urllib.parse import quote
+
+        from server.api import VERSION                     # spaet: api importiert dieses Modul
+        ifc = self.export(sig, "ifc")[0]                   # ValueError ohne Modell
+        try:
+            bml = self.export(sig, "boreholeml", organisation)[0]
+        except ValueError:
+            bml = None                                     # keine exportierbare Bohrung: steht im Manifest unter offen
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            vorb, _, schluessel = self.vorbereitung(docs, p)
+            m, bericht = self._modelle[schluessel]
+            a = self._analysen.get(schluessel)
+            meth = m.parameter.get("methode", "idw")
+            analyse = None
+            try:
+                k = a["kreuzprobe"] if a else ga.kreuzprobe(m)
+            except ValueError:                             # unter drei Bohrungen: keine Kreuzprobe
+                k = None
+            if k is not None and meth in k.get("methoden", {}):
+                analyse = {"kreuzprobe": {"methode": meth, "gesamt": k["methoden"][meth]["gesamt"]}}
+                if a:
+                    s_ = a["unsicherheit"]["_sigma"]
+                    if np.isfinite(s_).any():
+                        analyse["sigma_max_m"] = round(float(np.nanmax(s_)), 2)
+                    analyse["unsicherheit_laeufe"] = a["laeufe"]
+            stamm = geoldg.dateiname(p.name or "baugrundmodell")
+            dateien = {f"geometrie/{stamm}.ifc": ifc}
+            if bml:
+                dateien[f"fachdaten/{stamm}_boreholeml.xml"] = bml
+            g, manifest = agsi.bauen(m, bericht, vorb.docs, projekt=p.name or "Baugrundmodell",
+                                     ifc_uri=quote(f"geometrie/{stamm}.ifc"),
+                                     boreholeml_uri=quote(f"fachdaten/{stamm}_boreholeml.xml") if bml else None,
+                                     homogenbereiche=p.homogenbereiche or None, analyse=analyse, version=VERSION)
+        fehler = agsi.pruefen(g) + agsi.manifest_pruefen(g, manifest)
+        if fehler:                                         # Fehler des Exporters, nicht der Eingabe
+            raise RuntimeError("AGSi-Paket inkonsistent: " + "; ".join(fehler[:5]))
+        return agsi.paket(g, manifest, stamm, dateien), f"{p.name or 'baugrundmodell'}_agsi.zip", "application/zip"
 
     @staticmethod
     def _quellen(docs: list[dict], p: pj.Projekt) -> list[str]:

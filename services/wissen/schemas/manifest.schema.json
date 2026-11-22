@@ -17,7 +17,8 @@
     "werte": {"type": "array", "items": {"$ref": "#/$defs/wert"}},
     "offen": {"type": "array", "items": {"type": "object", "required": ["was", "warum"],
               "properties": {"was": {"type": "string"}, "warum": {"type": "string"}, "fuer": {"type": "array", "items": {"type": "string"}}}}},
-    "vollstaendigkeit": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}}
+    "vollstaendigkeit": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "analyse": {"type": "object", "description": "Zusammenfassung der Ground Analysis (Kreuzprobe, Unsicherheit), wenn gerechnet"}
   },
   "$defs": {
     "datei": {"type": "object", "required": ["pfad", "sha256"],

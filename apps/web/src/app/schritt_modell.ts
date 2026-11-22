@@ -133,7 +133,8 @@ export function schrittModell() {
   // vorn das Modell (IFC) und der Prüfbericht; alle weiteren Ausgaben unter „Erweitert“
   const exporte: [string, string][] = [["ifc", "Baugrundmodell (IFC 4.3)"], ["bericht", "Prüfbericht (JSON)"]];
   const weitere: [string, string][] = [["einheiten", "Einheiten-Vorlage (JSON)"], ["extraktion", "Extraktion (JSON)"],
-    ["eingabe", "Modell-Eingabe mit Korrekturen (JSON)"], ["projekt", "Projektstand (JSON)"]];
+    ["eingabe", "Modell-Eingabe mit Korrekturen (JSON)"], ["projekt", "Projektstand (JSON)"],
+    ["agsi", "Informationspaket AGSi (ZIP)"]];
   const erweitert = erweitertAuf || !!(z.geoldg?.angaben.beginn || z.geoldg?.angaben.abschluss);   // GeolDG in Arbeit
   return html`
     <div class="app-panel rechts">

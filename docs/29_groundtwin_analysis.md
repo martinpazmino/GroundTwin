@@ -137,8 +137,8 @@ existing rule *the LLM proposes, the geometry decides* (architecture §6.9).
 
 | Phase | Content | Depends on |
 |---|---|---|
-| A0 | decisions and vocabulary (D108): scope, value kinds, package parts, catalogue schema | — |
-| A1 | package v0: AGSi export + manifest + report from existing data | A0 |
+| A0 | decisions and vocabulary (D108): scope, value kinds, package parts, catalogue schema (**done** 2026-11-22: `services/wissen/schemas`) | — |
+| A1 | package v0: AGSi export + manifest + report from existing data (**built** 2026-11-22, §8.1) | A0 |
 | A2 | catalogue v0 + planner; migrate `normen.json`, `homogenbereiche.json`, Homogenbereich proposal | A0 |
 | A3 | readiness view per project (§6 generated) in the app and the report | A2 |
 | B | data extension: groundwater kind/date (#26), Sondierungen (#27), report tables and lab values (#18) | parallel; critical path |
@@ -146,6 +146,29 @@ existing rule *the LLM proposes, the geometry decides* (architecture §6.9).
 | A5 | exports: AGS4, PLAXIS-oriented boreholes/CPT, LLM tools (#30) | A1 |
 | A6 | screening analyses (DAUB TBM pre-selection, clogging, face support, settlement) with an engineer partner | A2, B |
 | A7 | semantic export (JSON-LD, PROV-O, GSO) on demand | A1 |
+
+### 8.1 A1 built: information package v0 (Issue #33, 2026-11-22)
+
+`services/geodaten/geodaten/agsi.py`, export `GET /api/projekt/{sig}/export/agsi` (app: *Modell → Erweitert → Weitere
+Exporte → Informationspaket AGSi*). The ZIP holds:
+
+| File | Content |
+|---|---|
+| `<name>_agsi.json` | AGSi 1.0.1: `agsProject` with CRS (EPSG of the project or local; heights as in the Gutachten, the height datum is not asserted), a document set (each source with sha256, the IFC, the BoreholeML), three code sets (`CS_EIG` property codes, `CS_CASE` cases, `CS_GEO` Einheiten). Model `M1` (*Geological model*, *Observational*): one `agsiModelElement` per Einheit (`Geological unit`, colour, geometry `agsiGeometryFromFile` → the IFC, `filePart` names the `IfcGeotechnicalStratum`), Laborwerte as `agsiDataPropertySummary` with `caseID` `Labor`; the Bohrungen as `agsiObservationExpHole` with one column per Schicht, `geologyCode` = Einheit. One model per ATV for the Homogenbereiche, Kennwerte from the descriptions with `caseID` `Ansprache`. |
+| `geometrie/<name>.ifc` | the model as exported by the app |
+| `fachdaten/<name>_boreholeml.xml` | factual data, only when reviewed Bohrungen with UTM and GOK exist |
+| `manifest.json` | valid against `manifest.schema.json`: per AGSi id the value kind (`observed` Laborwerte, columns, positions; `interpreted` Kennwerte from the Ansprache, entered positions; `modelled` geometry), sources and inputs (sample references), completeness (`E<n>/Unterkante_belegt`, `HB…/Kennwerte_belegt`), open items, Ground Analysis summary (Kreuzprobe, σ if computed), sha256 of every file |
+| `bericht.md`, `LIESMICH.txt` | report generated from the same data |
+
+Rules kept: properties only, never `agsiDataParameterValue`; the Gutachten's Kennwerte tables are parameters of the
+Gutachter and stay **open** (listed, in the IFC as `CPset_Bodenkennwerte_Gutachten`), as do Sondierungen (factual:
+IFC and BoreholeML) and characteristic values (engineer). `caseID` carries the kind of statistic, not the value kind
+(§6.2 of docs/30). The exporter checks unique ids and every reference (`agsi.pruefen`) and that every data value has a
+manifest entry with kind and source (`agsi.manifest_pruefen`); an inconsistent package is refused.
+
+Measured: Berlin, Talheim and the demo validate against the official AGSi JSON Schema 1.0.1 (2019-09) with format
+checking (schema ZIP sha256 `8d8529d8…`, fetched by the test, never committed) and the manifest against its schema.
+Tests `tests/test_agsi.py` (schema test skipped offline).
 
 ## 9. Alternatives considered
 

@@ -1079,7 +1079,7 @@ import"./viewer-C5b86ahh.js";import{_ as Ce}from"./preload-helper-Ct5FWWRu.js";/
         <p class="klein leise">Aus dem Bohrprotokoll ergänzen (Spalten in pruefliste.csv): ${l.join(" · ")}.</p>
         <a class="knopf" href=${i} download>Paket für den Geologischen Dienst (ZIP)</a>`:u}
       <p class="leise klein">${e.quelle.hinweis}</p>
-    </section>`}let On=!1;function la(){const e=s.z,n=s.modell,t=n?.bericht,i=e.pruefstand,l=e.eincheckungen[e.eincheckungen.length-1],r=[["ifc","Baugrundmodell (IFC 4.3)"],["bericht","Prüfbericht (JSON)"]],o=[["einheiten","Einheiten-Vorlage (JSON)"],["extraktion","Extraktion (JSON)"],["eingabe","Modell-Eingabe mit Korrekturen (JSON)"],["projekt","Projektstand (JSON)"]],d=On||!!(e.geoldg?.angaben.beginn||e.geoldg?.angaben.abschluss);return a`
+    </section>`}let On=!1;function la(){const e=s.z,n=s.modell,t=n?.bericht,i=e.pruefstand,l=e.eincheckungen[e.eincheckungen.length-1],r=[["ifc","Baugrundmodell (IFC 4.3)"],["bericht","Prüfbericht (JSON)"]],o=[["einheiten","Einheiten-Vorlage (JSON)"],["extraktion","Extraktion (JSON)"],["eingabe","Modell-Eingabe mit Korrekturen (JSON)"],["projekt","Projektstand (JSON)"],["agsi","Informationspaket AGSi (ZIP)"]],d=On||!!(e.geoldg?.angaben.beginn||e.geoldg?.angaben.abschluss);return a`
     <div class="app-panel rechts">
       <section class="abschnitt-flach">
         <h3>Modell</h3>
