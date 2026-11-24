@@ -101,6 +101,24 @@ Längsschnitt as a `WATER` stratum or a surface in the model.
   The other PDFs give no rows (no false ones). Halle's Bohrprofile are not extracted yet, so the rows stay in
   `wassertabelle` of the document until they are.
 
+**Water lines in the Längsschnitt** (2026-11-24, Issue #26 part 2b, rule `ls_wasserlinien`, W6):
+
+- **Rule:** a blue or dashed open polyline (`width ≥ 80 pt`) on a vector Längsschnitt is extracted only when **(a)** an
+  unambiguous water-kind label (`Bemessungswasserstand`, `Bauwasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
+  `MNGW`, `GW <Datum>`, or a legend-defined abbreviation such as `Bau` → `Bauwasserstand`) is attached within `14 pt`,
+  **(b)** the vertical NHN elevation axis is calibrated (`≥ 4` decreasing margin labels with `R² ≥ 0.998`, agreeing if
+  two axes exist; or `≥ 2` Bohrung GOKs + `H 1:n` agreeing within `0.12 m`), and **(c)** it is neither the GOK terrain
+  line nor a Schichtgrenze. Unclear or uncalibrated lines are withheld and reported in `wasserlinien_hinweise`.
+- **Merging into `wasserstaende`:** stored alongside text levels with `quelle: "Laengsschnitt"` (constant `nhn` if
+  variation `≤ 5 cm`, else `stuetzpunkte` per station or `x_pt`). Same kind and height within `±5 cm` merges into one
+  entry (`quelle: "Text+Laengsschnitt"`, both evidences, confidence `0.95`); a contradiction keeps both entries with a
+  `hinweis`. Never enters `boreholes[*].groundwater` or the Grundwasserfläche (G5).
+- **Measured:** across the 13 real PDFs, only `marl_251.pdf` p. 6 (Anlage 3.1) has a drawn water polyline
+  (`Bauwasserstand` `54.17–56.05 m NHN`, 13 vertices, 0.00 m error; `Bem = GOK` sits on the black terrain line and is
+  not emitted as a false line); all 12 other real PDFs give **0 false lines**. Synthetic suite
+  `services/extractor/synth_laengsschnitt.py` (5 cases: constant, sloped with stations, text merge/contradiction, 4
+  traps, uncalibrated): **6/6** right, **0 false**; stress `s29`–`s30`; `tests/test_wasserlinien_laengsschnitt.py`.
+
 Up: [Index](README.md)
 
 Related: [02 Bohrprofil](02_bohrprofil_generalization.md) · [03 Längsschnitt](03_laengsschnitt_generalization.md) · [08 swissgeol](08_swissgeol_reuse.md)

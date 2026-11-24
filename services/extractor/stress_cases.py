@@ -554,6 +554,65 @@ def build(out: Path) -> list[str]:
     save("s27_sv_kein_grundwasser", doc,
          [_truth("RKS 27", L_ABBR, None, [], "kein Grundwasser", kind="rks", page=1)],
          "W2/W5: Schichtenverzeichnis 'kein Grundwasser' -> 0 Staende, groundwater_status")
+
+    # s28 Zeichen einer Zeile auf leicht unterschiedlicher Grundlinie / gemischte Schriftgroesse ('B 2') (#49)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    sp28 = Spec("B 2", L_STD, title="", gok=45.20, gw=("symbol", 2.8))
+    draw_profile(p, sp28)
+    # 'B' normal (10 pt), '2' groesser und minimal hoeher -> gleiche Zeile, aber y0('2') < y0('B')
+    p.insert_text((sp28.x0 - 20, sp28.top_y - 40), "B", fontsize=10)
+    p.insert_text((sp28.x0 - 10, sp28.top_y - 40.6), "2", fontsize=12)
+    save("s28_zeile_grundlinie", doc, [_truth("B 2", L_STD, 45.20, [2.8])],
+         "E9/#49: Woerter einer Zeile mit versetzter Grundlinie / gemischter Schriftgroesse ('B 2')")
+
+    # s29 Laengsschnitt mit kalibrierter NHN-Achse und HGW/MGW-Linien (#26 2b, W6)
+    import synth_laengsschnitt as sl
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    g29 = sl._zeichne_grundgeruest(
+        p,
+        gok_punkte=[(0.0, 46.8), (0.5, 47.2), (1.0, 46.6)],
+        bohrungen=[("B 29a", 0.2, 47.0, [2.0, 5.5, 9.0]), ("B 29b", 0.8, 46.8, [1.8, 5.0, 8.8])],
+    )
+    for art, hoehe, lx in (("HGW", 42.50, g29["x1"] - 32), ("MGW", 40.20, g29["x0"] + 6)):
+        yy = sl._nhn_zu_y(hoehe, g29["nhn_oben"], g29["y_oben"], g29["pt_pro_m"])
+        p.draw_line((g29["x0"], yy), (g29["x1"], yy), color=(0.0, 0.25, 0.9), width=0.9, dashes="[6 3] 0")
+        p.insert_text((lx, yy - 3), art, fontsize=7.5, color=(0.0, 0.25, 0.9))
+    doc.save(out / "s29_ls_wasserlinien.pdf")
+    (out / "s29_ls_wasserlinien.json").write_text(json.dumps({
+        "file": "s29_ls_wasserlinien.pdf",
+        "notes": "W6/#26 2b: Laengsschnitt mit HGW (42.50) und MGW (40.20 m NHN); keine Bohrungs-GW",
+        "boreholes": [],
+        "wasserlinien": [
+            {"art": "HGW", "nhn": 42.50, "seite": 1, "konstant": True},
+            {"art": "MGW", "nhn": 40.20, "seite": 1, "konstant": True},
+        ],
+    }, indent=1, ensure_ascii=False))
+    made.append("s29_ls_wasserlinien")
+
+    # s30 Laengsschnitt-Fallen (unbeschriftet, GOK, blaue Schichtgrenze, mehrdeutiges MHGW) -> 0 Wasserlinien (#26 2b)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    g30 = sl._zeichne_grundgeruest(
+        p,
+        gok_punkte=[(0.0, 46.8), (0.5, 47.2), (1.0, 46.6)],
+        bohrungen=[("B 30a", 0.2, 47.0, [2.0, 5.5, 9.0]), ("B 30b", 0.8, 46.8, [1.8, 5.0, 8.8])],
+    )
+    y_unb = sl._nhn_zu_y(44.0, g30["nhn_oben"], g30["y_oben"], g30["pt_pro_m"])
+    p.draw_line((g30["x0"], y_unb), (g30["x1"], y_unb), color=(0.0, 0.2, 0.9), width=0.9, dashes="[5 3] 0")
+    y_a30 = sl._nhn_zu_y(39.2, g30["nhn_oben"], g30["y_oben"], g30["pt_pro_m"])
+    p.draw_line((g30["x0"], y_a30), (g30["x1"], y_a30), color=(0.0, 0.2, 0.9), width=0.8, dashes="[5 3] 0")
+    p.draw_line((g30["x0"], y_a30 + 5.0), (g30["x1"], y_a30 + 5.0), color=(0.0, 0.2, 0.9), width=0.8, dashes="[5 3] 0")
+    p.insert_text((g30["x0"] + 20, y_a30 + 4.5), "MHGW", fontsize=7, color=(0.0, 0.2, 0.9))
+    doc.save(out / "s30_ls_wasserlinien_fallen.pdf")
+    (out / "s30_ls_wasserlinien_fallen.json").write_text(json.dumps({
+        "file": "s30_ls_wasserlinien_fallen.pdf",
+        "notes": "W6/#26 2b: Fallen (unbeschriftete blaue Linie, mehrdeutiges MHGW) -> 0 Wasserlinien",
+        "boreholes": [],
+        "wasserlinien": [],
+    }, indent=1, ensure_ascii=False))
+    made.append("s30_ls_wasserlinien_fallen")
     return made
 
 

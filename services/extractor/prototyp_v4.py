@@ -90,6 +90,8 @@ RULES = {
     "raster_gw_legende": True,   # W4   Legende im Scan lesen (kleine Symbole links vom Wassertext, fuer Dach + Art)
     "raster_massstab_ocr": True, # E5   Tiefenmassstab im Scan aus OCR-Tiefenlineal/Hoehenleiste oder M 1:n + Ansatzhoehe
     "sv_wasser": True,           # W5   Wasserstaende im Schichtenverzeichnis spaltenweise mit Art, Datum und Beleg lesen
+    "line_reading_order": True,  # E9   Woerter einer Zeile in Leserichtung (word_no/Achse), nicht nach y0 (#49)
+    "ls_wasserlinien": True,     # W6   Wasserlinien (HGW/MGW/Bemessungswasserstand/GW <Datum>) im Laengsschnitt (#26 2b)
 }
 
 CODE_TOKEN = r"[A-Z0-9][A-Za-z0-9]*(?:[-/.][A-Za-z0-9]+)*"
@@ -112,6 +114,13 @@ GW_DATUM_RE = re.compile(r"(?<![\d.])(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?![\d.]
 # Staende im Text des Gutachtens, keine Staende einer Bohrung: Bemessungswasserstand, (ze)HGW, MHGW, MGW
 WSP_TEXT_RE = re.compile(r"(Bemessungs(?:grund)?wasserstand|zeHGW|HHGW|MHGW|HGW|MGW|MNGW)\b([^0-9]{0,60}?)"
                          r"\+?\s?(\d{1,4}[.,]\d{1,2})\s*m\s*(?:ü\.?\s*)?NHN", re.I)
+# Beschriftung einer Wasserlinie im Laengsschnitt (Issue #26 Teil 2b)
+WSP_LINIE_RE = re.compile(
+    r"\b(Bemessungs(?:grund)?wasserstand|Bauwasserstand|zeHGW|HHGW|MHGW|HGW|MGW|MNGW)\b"
+    r"|\bGW\s*(?:am\s*)?(\d{1,2}\.\d{1,2}\.\d{2,4})\b",
+    re.I,
+)
+STATION_RE = re.compile(r"^(?:km\s*)?(\d{1,2})\+(\d{3}(?:[.,]\d{1,3})?)$", re.I)
 WATER_DESC_RE = re.compile(r"Wasser(?:anschnitt|stand|spiegel|zutritt)\s*(?:bei|in|:)?\s*(\d{1,2}[.,]\d{1,2})", re.I)
 COORD_E_RE = re.compile(r"(?:Rechtswert|Ostwert|Easting|\bRW\b)(?:\D|UTM\d{2}N?){0,30}?(\d{6,8}(?:[.,]\d+)?)", re.I)
 COORD_N_RE = re.compile(r"(?:Hochwert|Nordwert|Northing|\bHW\b)(?:\D|UTM\d{2}N?){0,30}?(\d{7}(?:[.,]\d+)?)", re.I)
@@ -557,9 +566,29 @@ def raster_gw_symbols(page: pymupdf.Page, cols: list["Column"], acols: list["Col
     return out
 
 
+def _zeile_ordnen(ws: list[tuple[pymupdf.Rect, str, int]]) -> list[tuple[pymupdf.Rect, str, int]]:
+    """Woerter einer (Block, Zeile)-Gruppe in Leserichtung ordnen (Issue #49).
+
+    Nutzt die Wortnummer aus MuPDF/OCR (folgt der Zeilenrichtung `dir`, auch bei gedrehtem oder
+    senkrechtem Text); fehlen eindeutige Wortnummern, nach Hauptachse der Zeile (x0 bei waagrecht,
+    sonst y0) - nie nach (y0, x0) innerhalb einer waagrechten Zeile.
+    """
+    if len(ws) <= 1:
+        return ws
+    if len({w[2] for w in ws}) == len(ws):
+        return sorted(ws, key=lambda w: w[2])
+    cxs = [(w[0].x0 + w[0].x1) / 2 for w in ws]
+    cys = [(w[0].y0 + w[0].y1) / 2 for w in ws]
+    if max(cxs) - min(cxs) >= max(cys) - min(cys):
+        return sorted(ws, key=lambda w: (w[0].x0, w[2]))
+    return sorted(ws, key=lambda w: (w[0].y0, w[2]))
+
+
 def primitives(page: pymupdf.Page):
     m = page.rotation_matrix if RULES["rotation"] else pymupdf.Matrix(1, 1)
-    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in page.get_text("words")]
+    raw_words = page.get_text("words")
+    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in raw_words]
+    word_nos = [int(w[7]) if len(w) > 7 else i for i, w in enumerate(raw_words)]
     drawings = [_xform_drawing(d, m) for d in page.get_drawings()]
     segs: list[Seg] = []
     pclass = page_class(page, words, drawings)
@@ -568,7 +597,9 @@ def primitives(page: pymupdf.Page):
         segs = raster_segments(page)
     if (pclass in ("raster", "vektor_ohne_text") and RULES["ocr"]) or (pclass == "raster_ocr" and RULES["ocr_supplement"]):
         native = [r for r, *_ in words]
-        words += [w for w in ocr_words(page) if not any((w[0] & r).get_area() > 0.3 * w[0].get_area() for r in native)]
+        ocr_extra = [w for w in ocr_words(page) if not any((w[0] & r).get_area() > 0.3 * w[0].get_area() for r in native)]
+        words += ocr_extra
+        word_nos += list(range(len(ocr_extra)))
     for d in ([] if scanned and len(drawings) < 5 else drawings):   # Vektoren neben dem Bild behalten
         stroked = d.get("color") is not None and "s" in d.get("type", "")
         fill = d.get("fill")
@@ -591,15 +622,18 @@ def primitives(page: pymupdf.Page):
             for a, b in pts:
                 segs.append(Seg(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y), w, stroked, dashed))
     lines: dict[tuple, list] = defaultdict(list)
-    for r, t, b, ln in words:
-        lines[(b, ln)].append((r, t))
+    for (r, t, b, ln), wno in zip(words, word_nos):
+        lines[(b, ln)].append((r, t, wno))
     text_lines = []
     for ws in lines.values():
-        ws.sort(key=lambda x: (x[0].y0, x[0].x0))
+        if RULES["line_reading_order"]:
+            ws = _zeile_ordnen(ws)
+        else:
+            ws.sort(key=lambda x: (x[0].y0, x[0].x0))
         r = pymupdf.Rect(ws[0][0])
-        for q, _ in ws[1:]:
+        for q, _, _ in ws[1:]:
             r |= q
-        text_lines.append((r, " ".join(t for _, t in ws)))
+        text_lines.append((r, " ".join(t for _, t, _ in ws)))
     return words, text_lines, drawings, segs, scanned, pclass
 
 
@@ -1039,6 +1073,8 @@ def _gw_text_am(lines, x: float, y: float) -> str:
     """Text rechts oder links neben einem Wassersymbol: Zeilen, deren Mitte hoechstens 9 pt ueber/unter der
     Spitze liegt und die nicht weiter als 90 pt vom Symbol beginnen (Datum und Art stehen am Symbol, DIN 4023)."""
     near = [(r, t) for r, t in lines if abs((r.y0 + r.y1) / 2 - y) <= 9 and min(abs(r.x0 - x), abs(r.x1 - x)) <= 90]
+    if RULES["line_reading_order"]:
+        return " ".join(t for _, t in rows(near, dy=3.0))
     return " ".join(t for r, t in sorted(near, key=lambda e: (round(e[0].y0), e[0].x0)))
 
 
@@ -1057,8 +1093,556 @@ def wasserstaende_text(doc, prims: dict | None = None) -> list[dict]:
             if (art, nhn) in seen:
                 continue
             seen.add((art, nhn))
-            out.append({"kind": art, "nhn": nhn, "page": pno, "evidence": flat[max(0, m.start() - 40):m.end() + 20]})
+            out.append({"kind": art, "nhn": nhn, "page": pno, "quelle": "Text",
+                        "evidence": flat[max(0, m.start() - 40):m.end() + 20]})
     return out
+
+
+# ---------------------------------------------------------------------------
+# E7c: Wasserlinien im Laengsschnitt (Issue #26 Teil 2b, Regel ls_wasserlinien)
+# ---------------------------------------------------------------------------
+_NHN_SCHRITTE = (0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, 20.0, 25.0, 50.0)
+_GOK_LABEL_RE = re.compile(r"^\s*(?:GOK|Gel(?:ä|ae)nde(?:oberkante|linie)?|OK\s*Gel(?:ä|ae)nde)\s*$", re.I)
+_WSP_ART_NORM = {
+    "bemessungswasserstand": "Bemessungswasserstand",
+    "bemessungsgrundwasserstand": "Bemessungswasserstand",
+    "bauwasserstand": "Bauwasserstand",
+    "zehgw": "zeHGW",
+    "hhgw": "HHGW",
+    "mhgw": "MHGW",
+    "hgw": "HGW",
+    "mgw": "MGW",
+    "mngw": "MNGW",
+}
+
+
+def _ols_gerade(xs: np.ndarray, ys: np.ndarray) -> tuple[float, float, float, float]:
+    """Lineare Regression ys = a * xs + b; gibt (a, b, r2, max_res) zurueck."""
+    xm, ym = float(np.mean(xs)), float(np.mean(ys))
+    dx = xs - xm
+    den = float(np.dot(dx, dx))
+    if den <= 1e-12:
+        return 0.0, ym, 0.0, float("inf")
+    a = float(np.dot(dx, ys - ym) / den)
+    b = ym - a * xm
+    pred = a * xs + b
+    res = np.abs(ys - pred)
+    ss_tot = float(np.sum((ys - ym) ** 2))
+    ss_res = float(np.sum((ys - pred) ** 2))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-12 else 1.0
+    return a, b, r2, float(np.max(res))
+
+
+def _nhn_achse(words, text_lines, segs) -> tuple[tuple[float, float, float, str] | None, str | None]:
+    """Kalibriert die Hoehenachse nhn = a * y + b (a < 0) eines Laengsschnitts.
+
+    1. Senkrechte NHN-Hoehenleiste (>= 4 fallende Werte in runder Schrittweite, R^2 >= 0.998, Residuum <= 0.10 m).
+       Bei zwei Achsen (links/rechts) muessen beide innerhalb 0.15 m uebereinstimmen.
+    2. Fallback ohne Randleiste: >= 2 verankerte Bohrungssaeulen mit GOK (+m NHN) und Hoehenmassstab H 1:n,
+       deren gemeinsamer Achsenabschnitt b = gok - a * y_top innerhalb 0.10 m uebereinstimmt.
+    """
+    kands: list[tuple[pymupdf.Rect, float]] = []
+    for r, t, *_ in words:
+        tok = str(t).strip().rstrip("m")
+        if not re.fullmatch(r"[+-]?\d{1,4}[.,]\d{1,2}", tok):
+            continue
+        v = float(tok.replace(",", "."))
+        if -50.0 <= v <= 3000.0:
+            kands.append((pymupdf.Rect(r), v))
+
+    achsen: list[tuple[int, float, float, float, float]] = []  # (n, x_mitte, a, b, r2)
+    for align in (0, 1):
+        spalten: dict[int, list[tuple[pymupdf.Rect, float]]] = defaultdict(list)
+        for r, v in kands:
+            spalten[round((r.x0 if align == 0 else r.x1) / 6.0)].append((r, v))
+        for grp in spalten.values():
+            if len(grp) < 4:
+                continue
+            grp.sort(key=lambda e: (e[0].y0 + e[0].y1) / 2.0)
+            dedup: list[tuple[pymupdf.Rect, float]] = []
+            for r, v in grp:
+                yc = (r.y0 + r.y1) / 2.0
+                if not dedup or abs(yc - (dedup[-1][0].y0 + dedup[-1][0].y1) / 2.0) > 2.0:
+                    dedup.append((r, v))
+            if len(dedup) < 4:
+                continue
+            ys = np.array([(r.y0 + r.y1) / 2.0 for r, _ in dedup], dtype=float)
+            vs = np.array([v for _, v in dedup], dtype=float)
+            if not np.all(np.diff(vs) < -1e-6):
+                continue
+            diffs = -np.diff(vs)
+            med = float(np.median(diffs))
+            if med <= 1e-6 or not any(abs(med - s) <= 0.02 * s for s in _NHN_SCHRITTE):
+                continue
+            if float(np.max(diffs) - np.min(diffs)) > 0.08 * med + 1e-4:
+                continue
+            a, b, r2, res_max = _ols_gerade(ys, vs)
+            if a < 0 and r2 >= 0.998 and res_max <= 0.10:
+                xm = float(np.mean([(r.x0 + r.x1) / 2.0 for r, _ in dedup]))
+                if not any(abs(xm - ex[1]) < 30.0 for ex in achsen):
+                    achsen.append((len(dedup), xm, a, b, r2))
+    if achsen:
+        achsen.sort(key=lambda e: (-e[0], -e[4]))
+        best = achsen[0]
+        if len(achsen) >= 2:
+            for alt in achsen[1:]:
+                if abs(alt[1] - best[1]) > 100.0:
+                    # Pruefen, ob beide Achsen auf dem Bildbereich uebereinstimmen
+                    y_test = np.array([100.0, 400.0, 700.0])
+                    if float(np.max(np.abs((best[2] * y_test + best[3]) - (alt[2] * y_test + alt[3])))) > 0.15:
+                        return None, "Widerspruechliche NHN-Hoehenachsen im Laengsschnitt: Kalibrierung verworfen"
+        return (best[2], best[3], best[4], "NHN-Achse"), None
+
+    # Fallback: GOK an >= 2 Bohrungssaeulen + expliziter Hoehenmassstab H 1:n (z. B. marl_251 S. 6)
+    volltext = " ".join(t for _, t in text_lines)
+    m_h = re.search(r"(?:H(?:ö|oe)hen-?Ma(?:ss|ß)stab|\bH)\s*1\s*:\s*(\d{2,4})\b", volltext)
+    if m_h and segs:
+        scale_h = int(m_h.group(1))
+        a_h = -scale_h * PT_TO_M_AT_1_1
+        cols = find_columns(segs)
+        bs_vals: list[tuple[float, float]] = []
+        for c in cols:
+            cx = (c.rect.x0 + c.rect.x1) / 2.0
+            y_top = c.bounds[0]
+            best_g = None
+            for r, t in text_lines:
+                if abs((r.x0 + r.x1) / 2.0 - cx) <= 95.0 and y_top - 80.0 <= (r.y0 + r.y1) / 2.0 <= y_top + 15.0:
+                    mg = GOK_RE.search(t)
+                    if mg:
+                        g_tok = mg.group(1) or mg.group(2)
+                        g_val = float(g_tok.replace(",", "."))
+                        dist = abs((r.x0 + r.x1) / 2.0 - cx) + abs(r.y1 - y_top)
+                        if best_g is None or dist < best_g[0]:
+                            best_g = (dist, g_val)
+            if best_g is not None:
+                bs_vals.append((best_g[1], best_g[1] - a_h * y_top))
+        # Groesster konsistenter Cluster (b innerhalb 0.12 m) mit >= 2 verschiedenen GOKs
+        best_cl: list[tuple[float, float]] = []
+        for _, b0 in bs_vals:
+            cl = [(g, b) for g, b in bs_vals if abs(b - b0) <= 0.12]
+            if len(cl) > len(best_cl):
+                best_cl = cl
+        if len(best_cl) >= 2:
+            goks = [g for g, _ in best_cl]
+            bs = [b for _, b in best_cl]
+            if max(goks) - min(goks) >= 0.15 and max(bs) - min(bs) <= 0.12:
+                return (a_h, float(np.median(bs)), 0.999, f"GOK+H1:{scale_h}"), None
+    return None, None
+
+
+def _station_achse(words) -> tuple[float, float] | None:
+    """Kalibriert die Stationsachse station_m = ax * x + bx aus Beschriftungen wie '0+100'."""
+    zeilen: dict[int, list[tuple[float, float]]] = defaultdict(list)
+    for r, t, *_ in words:
+        m = STATION_RE.match(str(t).strip())
+        if m:
+            st = int(m.group(1)) * 1000.0 + float(m.group(2).replace(",", "."))
+            zeilen[round(((r.y0 + r.y1) / 2.0) / 4.0)].append(((r.x0 + r.x1) / 2.0, st))
+    best = None
+    for grp in zeilen.values():
+        if len(grp) < 2:
+            continue
+        grp.sort(key=lambda e: e[0])
+        xs = np.array([e[0] for e in grp], dtype=float)
+        sts = np.array([e[1] for e in grp], dtype=float)
+        if not np.all(np.diff(sts) > 1e-3):
+            continue
+        ax, bx, r2, res_max = _ols_gerade(xs, sts)
+        if ax > 0 and (len(grp) == 2 or (r2 >= 0.995 and res_max <= 1.0)):
+            if best is None or len(grp) > best[0]:
+                best = (len(grp), ax, bx)
+    return (best[1], best[2]) if best else None
+
+
+def _wasser_legende_kuerzel(text_lines) -> tuple[dict[str, str], pymupdf.Rect | None]:
+    """Liest Kuerzel aus einer Legende ('Bau' -> 'Bauwasserstand', 'Bem' -> 'Bemessungswasserstand')."""
+    leg_hdr = [r for r, t in text_lines if re.match(r"^\s*Legende\b", t, re.I)]
+    if not leg_hdr:
+        return {}, None
+    hdr = leg_hdr[0]
+    leg_box = pymupdf.Rect(hdr.x0 - 25.0, hdr.y0 - 5.0, hdr.x0 + 360.0, hdr.y0 + 260.0)
+    in_leg = [(r, t.strip()) for r, t in text_lines if leg_box.intersects(r) and t.strip()]
+    kuerzel: dict[str, str] = {}
+    for r_art, t_art in in_leg:
+        m = WSP_LINIE_RE.search(t_art)
+        if not m or not m.group(1):
+            continue
+        art = _WSP_ART_NORM.get(m.group(1).lower(), m.group(1))
+        yc = (r_art.y0 + r_art.y1) / 2.0
+        for r_k, t_k in in_leg:
+            if r_k == r_art or r_k.x1 > r_art.x0 + 2.0:
+                continue
+            if abs((r_k.y0 + r_k.y1) / 2.0 - yc) <= 10.0 and re.fullmatch(r"[A-Za-zÄÖÜäöü]{2,8}", t_k):
+                if t_k.lower() != art.lower():
+                    kuerzel[t_k] = art
+    return kuerzel, leg_box
+
+
+def _wasserlinien_polylinien(drawings, page_w: float, page_h: float) -> list[dict]:
+    """Sammelt offene gezeichnete Polylinien (blau oder gestrichelt, >= 80 pt breit, keine Rahmen)."""
+    polylinien: list[dict] = []
+    kurze_blaue: list[tuple[tuple[float, ...], float, float, float, float, float]] = []
+
+    for d in drawings:
+        col = d.get("color")
+        if col is None or "s" not in d.get("type", ""):
+            continue
+        ist_blau = len(col) == 3 and col[2] > col[0] + 0.12 and col[2] > 0.25
+        ist_gestrichelt = d.get("dashes") not in (None, "[] 0", "[] 0.0")
+        if not (ist_blau or ist_gestrichelt):
+            continue
+        # Nur Linien-Items ('l'); Rechtecke ('re') und Quads ('qu') sind Rahmen/Kasten
+        l_items = [(it[1], it[2]) for it in d.get("items", ()) if it[0] == "l"]
+        if not l_items:
+            continue
+        # Zusammenhaengende Ketten bilden
+        ketten: list[list[tuple[float, float]]] = []
+        for a, b in l_items:
+            p0, p1 = (float(a.x), float(a.y)), (float(b.x), float(b.y))
+            if ketten and abs(ketten[-1][-1][0] - p0[0]) <= 1.5 and abs(ketten[-1][-1][1] - p0[1]) <= 1.5:
+                ketten[-1].append(p1)
+            else:
+                ketten.append([p0, p1])
+        for k in ketten:
+            xs = [p[0] for p in k]
+            ys = [p[1] for p in k]
+            span_x, span_y = max(xs) - min(xs), max(ys) - min(ys)
+            if min(ys) < 12.0 or max(ys) > page_h - 12.0:
+                continue
+            if span_x >= 80.0 and (span_y <= 2.0 or span_x >= 2.5 * span_y):
+                k_sort = k if k[0][0] <= k[-1][0] else list(reversed(k))
+                polylinien.append({
+                    "pts": k_sort, "x0": min(xs), "x1": max(xs), "y0": min(ys), "y1": max(ys),
+                    "blau": ist_blau, "gestrichelt": ist_gestrichelt,
+                })
+            elif ist_blau and 3.0 <= span_x < 80.0 and span_y <= 2.5:
+                ck = tuple(round(c, 2) for c in col)
+                kurze_blaue.append((ck, round(d.get("width") or 0.0, 2), min(xs), max(xs), (min(ys) + max(ys)) / 2.0, span_x))
+
+    # Gestrichelte CAD-Einzelsegmente gleicher Farbe/Hoehe zu einer Polylinie verketten (G6)
+    gruppen: dict[tuple, list[tuple[float, float, float]]] = defaultdict(list)
+    for ck, w_, x0_, x1_, yc_, _ in kurze_blaue:
+        gruppen[(ck, w_, round(yc_ / 2.0))].append((x0_, x1_, yc_))
+    for segs_g in gruppen.values():
+        if len(segs_g) < 4:
+            continue
+        segs_g.sort(key=lambda s: s[0])
+        cur = [segs_g[0]]
+        for s in segs_g[1:]:
+            if s[0] - cur[-1][1] <= 25.0:
+                cur.append(s)
+            else:
+                if len(cur) >= 4 and cur[-1][1] - cur[0][0] >= 80.0:
+                    ym = float(np.median([c[2] for c in cur]))
+                    polylinien.append({"pts": [(cur[0][0], ym), (cur[-1][1], ym)],
+                                       "x0": cur[0][0], "x1": cur[-1][1], "y0": ym, "y1": ym,
+                                       "blau": True, "gestrichelt": True})
+                cur = [s]
+        if len(cur) >= 4 and cur[-1][1] - cur[0][0] >= 80.0:
+            ym = float(np.median([c[2] for c in cur]))
+            polylinien.append({"pts": [(cur[0][0], ym), (cur[-1][1], ym)],
+                               "x0": cur[0][0], "x1": cur[-1][1], "y0": ym, "y1": ym,
+                               "blau": True, "gestrichelt": True})
+    return polylinien
+
+
+def _y_auf_linie(pts: list[tuple[float, float]], x: float) -> float:
+    """Lineare Interpolation der y-Koordinate einer Polylinie an Stelle x (am Rand geklemmt)."""
+    if x <= pts[0][0]:
+        return pts[0][1]
+    if x >= pts[-1][0]:
+        return pts[-1][1]
+    for i in range(len(pts) - 1):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i + 1]
+        if x0 <= x <= x1:
+            if abs(x1 - x0) <= 1e-6:
+                return (y0 + y1) / 2.0
+            t = (x - x0) / (x1 - x0)
+            return y0 + t * (y1 - y0)
+    return pts[-1][1]
+
+
+def _linie_ist_gok_oder_schicht(pl: dict, cols: list[Column], text_lines) -> str | None:
+    """Prueft, ob eine Polylinie eine Gelaendelinie (GOK) oder Schichtgrenze ist (Regel c)."""
+    pts = pl["pts"]
+    # Ueberlappende Spalten je x-Lage zusammenfassen; gleichmaessige Gitter (z. B. DPH-Raster, L14) ignorieren
+    echte_cols: list[Column] = []
+    for c in cols:
+        if any(abs((c.rect.x0 + c.rect.x1) / 2.0 - (e.rect.x0 + e.rect.x1) / 2.0) < 25.0 for e in echte_cols):
+            continue
+        echte_cols.append(c)
+
+    gok_hits, schicht_hits, crossed = 0, 0, 0
+    for c in echte_cols:
+        cx = (c.rect.x0 + c.rect.x1) / 2.0
+        if not (pl["x0"] - 10.0 <= cx <= pl["x1"] + 10.0):
+            continue
+        yl = _y_auf_linie(pts, cx)
+        if abs(yl - c.bounds[0]) <= 4.5:
+            gok_hits += 1
+        else:
+            # Gleichmaessiges Tiefengitter (DPH-Raster, >= 6 Grenzen und Mehrheit im selben Rasterabstand, L14)
+            if len(c.bounds) >= 6:
+                ds = np.diff(c.bounds)
+                med_d = float(np.median(ds))
+                if med_d >= 5.0 and int(np.sum(np.abs(ds - med_d) <= 1.5)) >= max(5, int(0.6 * len(ds))):
+                    continue
+            crossed += 1
+            if any(abs(yl - b) <= 3.5 for b in c.bounds[1:]):
+                schicht_hits += 1
+    if gok_hits >= 2 and gok_hits >= 0.5 * (gok_hits + crossed):
+        return "Gelaendelinie"
+    if schicht_hits >= 2 and schicht_hits >= 0.6 * crossed:
+        return "Schichtgrenze"
+    for r, t in text_lines:
+        if _GOK_LABEL_RE.search(t):
+            cx = (r.x0 + r.x1) / 2.0
+            cy = (r.y0 + r.y1) / 2.0
+            if pl["x0"] - 40.0 <= cx <= pl["x1"] + 40.0 and abs(_y_auf_linie(pts, cx) - cy) <= 10.0:
+                return "Gelaendelinie"
+    return None
+
+
+def wasserlinien_laengsschnitt(doc, prims: dict | None = None) -> tuple[list[dict], list[str]]:
+    """Liest HGW/MGW/Bemessungswasserstand/Bauwasserstand/GW-Linien aus Laengsschnitten (Issue #26 2b).
+
+    Eine Linie wird nur uebernommen, wenn (a) eine eindeutige Beschriftung mit Wasserart an ihr haengt,
+    (b) die NHN-Hoehenachse kalibriert ist und (c) sie weder Gelaendelinie noch Schichtgrenze ist.
+    Unklare Faelle werden nie ausgegeben, sondern als Hinweis gemeldet.
+    """
+    if not RULES["ls_wasserlinien"]:
+        return [], []
+    out: list[dict] = []
+    hinweise: list[str] = []
+
+    for pno, page in enumerate(doc):
+        if prims and pno in prims:
+            words, text_lines, drawings, segs, scanned, _ = prims[pno]
+            if scanned or not drawings:
+                continue
+        else:
+            raw_drawings = page.get_drawings()
+            if not raw_drawings:
+                continue
+            m = page.rotation_matrix if RULES["rotation"] else pymupdf.Matrix(1, 1)
+            raw_words = page.get_text("words")
+            words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in raw_words]
+            if page_class(page, words, raw_drawings) in ("raster", "raster_ocr"):
+                continue
+            drawings = [_xform_drawing(d, m) for d in raw_drawings]
+            word_nos = [int(w[7]) if len(w) > 7 else i for i, w in enumerate(raw_words)]
+            lmap: dict[tuple, list] = defaultdict(list)
+            for (r, t, b, ln), wno in zip(words, word_nos):
+                lmap[(b, ln)].append((r, t, wno))
+            text_lines = []
+            for ws in lmap.values():
+                ws = _zeile_ordnen(ws) if RULES["line_reading_order"] else sorted(ws, key=lambda x: (x[0].y0, x[0].x0))
+                rr = pymupdf.Rect(ws[0][0])
+                for q, _, _ in ws[1:]:
+                    rr |= q
+                text_lines.append((rr, " ".join(t for _, t, _ in ws)))
+            segs = []
+            for d in drawings:
+                stroked = d.get("color") is not None and "s" in d.get("type", "")
+                fill = d.get("fill")
+                if not stroked and not (fill is not None and min(fill) < 0.97):
+                    continue
+                w_ = d.get("width") or 0.0
+                dashed = d.get("dashes") not in (None, "[] 0", "[] 0.0")
+                for it in d["items"]:
+                    if it[0] == "l":
+                        pts = [(it[1], it[2])]
+                    elif it[0] == "re":
+                        r_ = it[1]
+                        pts = [(r_.tl, r_.tr), (r_.tr, r_.br), (r_.br, r_.bl), (r_.bl, r_.tl)]
+                    elif it[0] == "qu":
+                        q_ = it[1]
+                        pts = [(q_.ul, q_.ur), (q_.ur, q_.lr), (q_.lr, q_.ll), (q_.ll, q_.ul)]
+                    else:
+                        continue
+                    for a_, b_ in pts:
+                        segs.append(Seg(min(a_.x, b_.x), min(a_.y, b_.y), max(a_.x, b_.x), max(a_.y, b_.y), w_, stroked, dashed))
+        polylinien = _wasserlinien_polylinien(drawings, page.rect.width, page.rect.height)
+        if not polylinien:
+            continue
+
+        leg_kuerzel, leg_box = _wasser_legende_kuerzel(text_lines)
+
+        # Beschriftungen mit Wasserart sammeln (ausserhalb der Legende)
+        labels: list[tuple[pymupdf.Rect, str, str | None, str, str]] = []
+        for r, t in text_lines:
+            if leg_box is not None and leg_box.intersects(r):
+                continue
+            for m in WSP_LINIE_RE.finditer(t):
+                if m.group(1):
+                    art = _WSP_ART_NORM.get(m.group(1).lower(), m.group(1))
+                    labels.append((r, art, None, m.group(0).strip(), ""))
+                elif m.group(2):
+                    gi = gw_info(m.group(0))
+                    if gi.get("observed_on"):
+                        labels.append((r, "GW", gi["observed_on"], m.group(0).strip(), ""))
+        if leg_kuerzel:
+            for r, t, *_ in words:
+                if leg_box is not None and leg_box.intersects(r):
+                    continue
+                tok = t.strip()
+                if tok in leg_kuerzel:
+                    labels.append((r, leg_kuerzel[tok], None, tok, f"Legende: {tok} -> {leg_kuerzel[tok]}"))
+        if not labels:
+            continue
+
+        # (b) NHN-Hoehenachse kalibrieren
+        nhn_cal, cal_hinweis = _nhn_achse(words, text_lines, segs)
+        if cal_hinweis:
+            hinweise.append(f"S. {pno + 1}: {cal_hinweis}")
+        if nhn_cal is None:
+            # Pruefen, ob ein Label direkt an einer blauen/gestrichelten Linie haengt -> Hinweis
+            for r, art, _, raw, _ in labels:
+                cx, cy = (r.x0 + r.x1) / 2.0, (r.y0 + r.y1) / 2.0
+                if any(pl["x0"] - 80.0 <= cx <= pl["x1"] + 80.0 and abs(_y_auf_linie(pl["pts"], cx) - cy) <= 14.0
+                       for pl in polylinien):
+                    hinweise.append(f"S. {pno + 1}: Wasserlinie '{raw}' ohne kalibrierte NHN-Hoehenachse nicht uebernommen")
+            continue
+
+        a_nhn, b_nhn, r2_nhn, cal_art = nhn_cal
+        st_cal = _station_achse(words)
+        # Fuer GOK-/Schichtgrenzen-Pruefung nur nicht-blaue Segmente nutzen, damit blaue Wasserlinien
+        # selbst nicht als eigene Schichtgrenzen in col.bounds landen
+        segs_ohne_blau: list[Seg] = []
+        for d in drawings:
+            col_d = d.get("color")
+            if col_d is not None and len(col_d) == 3 and col_d[2] > col_d[0] + 0.12 and col_d[2] > 0.25:
+                continue
+            stroked = col_d is not None and "s" in d.get("type", "")
+            fill = d.get("fill")
+            if not stroked and not (fill is not None and min(fill) < 0.97):
+                continue
+            w_ = d.get("width") or 0.0
+            dashed = d.get("dashes") not in (None, "[] 0", "[] 0.0")
+            for it in d["items"]:
+                if it[0] == "l":
+                    pts_d = [(it[1], it[2])]
+                elif it[0] == "re":
+                    r_ = it[1]
+                    pts_d = [(r_.tl, r_.tr), (r_.tr, r_.br), (r_.br, r_.bl), (r_.bl, r_.tl)]
+                elif it[0] == "qu":
+                    q_ = it[1]
+                    pts_d = [(q_.ul, q_.ur), (q_.ur, q_.lr), (q_.lr, q_.ll), (q_.ll, q_.ul)]
+                else:
+                    continue
+                for a_, b_ in pts_d:
+                    segs_ohne_blau.append(Seg(min(a_.x, b_.x), min(a_.y, b_.y), max(a_.x, b_.x), max(a_.y, b_.y), w_, stroked, dashed))
+        cols = find_columns(segs_ohne_blau)
+
+        # (c) Gelaende- und Schichtlinien markieren
+        for pl in polylinien:
+            pl["ausgeschlossen"] = _linie_ist_gok_oder_schicht(pl, cols, text_lines)
+
+        # (a) Jede Beschriftung eindeutig genau einer aktiven Wasserlinie zuordnen
+        gewaehlt: dict[tuple[int, str, str | None], dict] = {}
+        for r, art, datum, raw, leg_b in labels:
+            cx, cy = (r.x0 + r.x1) / 2.0, (r.y0 + r.y1) / 2.0
+            nahe = []
+            for idx, pl in enumerate(polylinien):
+                if pl["x0"] - 80.0 <= cx <= pl["x1"] + 80.0:
+                    d = abs(_y_auf_linie(pl["pts"], cx) - cy)
+                    if d <= 14.0:
+                        nahe.append((d, idx, pl))
+            if not nahe:
+                continue
+            nahe.sort(key=lambda e: e[0])
+            d1, idx1, pl1 = nahe[0]
+            if pl1["ausgeschlossen"]:
+                if d1 <= 6.0:
+                    hinweise.append(
+                        f"S. {pno + 1}: Beschriftung '{raw}' liegt auf {pl1['ausgeschlossen']}: nicht als Wasserlinie uebernommen"
+                    )
+                continue
+            if len(nahe) >= 2:
+                d2 = nahe[1][0]
+                if d2 <= 8.0 or (d2 - d1) < 4.0:
+                    hinweise.append(
+                        f"S. {pno + 1}: Wasserlinie unklar (mehrere Linien nahe '{raw}'): nicht uebernommen"
+                    )
+                    continue
+
+            key = (idx1, art, datum)
+            if key in gewaehlt:
+                continue
+            nhns = [round(a_nhn * y + b_nhn, 2) for _, y in pl1["pts"]]
+            konstant = (max(nhns) - min(nhns)) <= 0.05
+            nhn_val = round(float(np.median(nhns)), 2) if konstant else round(float(np.mean(nhns)), 2)
+            beleg_teile = [f"Laengsschnitt S. {pno + 1}: {raw}"]
+            if leg_b:
+                beleg_teile.append(leg_b)
+            beleg_teile.append(f"{cal_art} R²={r2_nhn:.3f}")
+            eintrag: dict = {
+                "kind": art,
+                "nhn": nhn_val,
+                "page": pno,
+                "quelle": "Laengsschnitt",
+                "confidence": 0.85 if (konstant or st_cal is not None) else 0.75,
+                "evidence": "; ".join(beleg_teile),
+            }
+            if datum:
+                eintrag["observed_on"] = datum
+            if not konstant:
+                if st_cal is not None:
+                    ax_s, bx_s = st_cal
+                    eintrag["stuetzpunkte"] = [
+                        {"station": round(ax_s * x + bx_s, 1), "nhn": round(a_nhn * y + b_nhn, 2)}
+                        for x, y in pl1["pts"]
+                    ]
+                else:
+                    eintrag["stuetzpunkte"] = [
+                        {"x_pt": round(x, 1), "nhn": round(a_nhn * y + b_nhn, 2)}
+                        for x, y in pl1["pts"]
+                    ]
+            gewaehlt[key] = eintrag
+
+        out.extend(gewaehlt.values())
+    return out, hinweise
+
+
+def _wasserstaende_zusammenfuehren(text_staende: list[dict], ls_staende: list[dict]) -> tuple[list[dict], list[str]]:
+    """Fuehrt Wasserstaende aus Berichtstext und Laengsschnitt zusammen (Issue #26 2b).
+
+    Gleiche Art und Hoehe (+/-5 cm, konstant) -> ein Eintrag mit beiden Belegen.
+    Widerspruch (> 5 cm) -> beide Eintraege bleiben erhalten, jeweils mit Hinweis.
+    """
+    ergebnis = [dict(e, quelle=e.get("quelle", "Text")) for e in text_staende]
+    hinweise: list[str] = []
+    for ls in ls_staende:
+        gleich = None
+        widerspruch = None
+        for idx, t in enumerate(ergebnis):
+            if t.get("quelle") != "Text":
+                continue
+            if t["kind"] != ls["kind"] or t.get("observed_on") != ls.get("observed_on"):
+                continue
+            if "stuetzpunkte" not in ls and abs(float(t["nhn"]) - float(ls["nhn"])) <= 0.05:
+                gleich = idx
+                break
+            widerspruch = idx
+        if gleich is not None:
+            t = ergebnis[gleich]
+            t["quelle"] = "Text+Laengsschnitt"
+            t["belege"] = [t["evidence"], ls["evidence"]]
+            t["evidence"] = f"{t['evidence']} | {ls['evidence']}"
+            t["confidence"] = 0.95
+        elif widerspruch is not None:
+            t = ergebnis[widerspruch]
+            msg = (f"Widerspruch {ls['kind']}: Text {t['nhn']:.2f} m NHN (S. {t['page'] + 1}) "
+                   f"vs. Laengsschnitt {ls['nhn']:.2f} m NHN (S. {ls['page'] + 1})")
+            t["hinweis"] = msg
+            neu = dict(ls)
+            neu["hinweis"] = msg
+            ergebnis.append(neu)
+            hinweise.append(msg)
+        else:
+            ergebnis.append(dict(ls))
+    return ergebnis, hinweise
 
 
 def _gw_v(d) -> pymupdf.Point | None:
@@ -1247,8 +1831,11 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
                 continue
             b = blk[-1]
             y_b = min([w[1] for w in ws if w[4] == "b)" and w[1] > b[1] + 1] + [b[1] + 12])
-            name = " ".join(w[4] for w in sorted(ws, key=lambda w: (round(w[1]), w[0]))
-                            if b[1] - 3 <= w[1] < y_b - 1 and w[0] > b[2] and w[0] < x_col3 - 2)
+            name_ws = [w for w in ws if b[1] - 3 <= w[1] < y_b - 1 and w[0] > b[2] and w[0] < x_col3 - 2]
+            if RULES["line_reading_order"]:
+                name = " ".join(t for _, t in rows([(pymupdf.Rect(w[:4]), w[4]) for w in name_ws], dy=3.0))
+            else:
+                name = " ".join(w[4] for w in sorted(name_ws, key=lambda w: (round(w[1]), w[0])))
             if b[4] != "a)":                                 # Benennung klebt am Marker (OCR)
                 name = (b[4][2:] + " " + name).strip()
             rec["bottoms"].append(float(d[4].rstrip("m ").replace(",", ".")))
@@ -1824,8 +2411,15 @@ def to_canonical(pdf: Path, boreholes: list, dph: dict | None = None, version: s
     out = {"document": {"file": Path(pdf).name, "sha256": hashlib.sha256(data).hexdigest(),
                         "parser_version": f"prototyp_{version}", "pages": pymupdf.open(pdf).page_count},
            "boreholes": [], "soundings": {k: [list(map(float, st)) for st in v] for k, v in (dph or {}).items()}}
-    if RULES["gw_art"]:                                   # Bemessungswasserstand, HGW... (Issue #26)
-        out["wasserstaende"] = wasserstaende_text(pymupdf.open(pdf))
+    if RULES["gw_art"] or RULES["ls_wasserlinien"]:       # Bemessungswasserstand, HGW... (Issue #26 2a + 2b)
+        with pymupdf.open(pdf) as wsp_doc:
+            t_wsp = wasserstaende_text(wsp_doc) if RULES["gw_art"] else []
+            ls_wsp, ls_hinw = wasserlinien_laengsschnitt(wsp_doc) if RULES["ls_wasserlinien"] else ([], [])
+        wsp_alle, zus_hinw = _wasserstaende_zusammenfuehren(t_wsp, ls_wsp)
+        out["wasserstaende"] = wsp_alle
+        alle_hinw = ls_hinw + zus_hinw
+        if alle_hinw:
+            out["wasserlinien_hinweise"] = alle_hinw
     for bh in boreholes:
         method = "schichtenverzeichnis" if bh.mode == "schichtenverzeichnis" else METHOD.get(bh.page_class, "vector")
         layers = []
