@@ -57,7 +57,11 @@ overlapping native words by > 30 % are discarded; cache per page image.
 ## E1. Primitives
 
 - **Words:** `(rect, text, block, line)`. OCR boxes are one line; their words get an x range
-  proportional to their position in the string.
+  proportional to their position in the string. Words within each `(block, line)` are joined in
+  **reading order** (rule `line_reading_order`, E9, Issue #49): by MuPDF's `word_no` (`w[7]`, which
+  follows the line's writing direction `dir` on horizontal, rotated and vertical text; fallback to
+  the line's main axis `x0` / `y0`, never `(y0, x0)`). This makes line assembly invariant to
+  sub-point baseline/ascender shifts across PyMuPDF versions (2.0 vs 2.1).
 - **Segments:** every path (line, rectangle, quad) is broken into segments with width, stroke and
   dash pattern (L1). In raster, horizontal/vertical morphological opening with a kernel of ~3 mm;
   lines ≤ 10 px thick (L11).

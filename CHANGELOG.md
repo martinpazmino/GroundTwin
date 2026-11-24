@@ -23,6 +23,12 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
   entered it, a derived value only with its catalogue entry); tests `tests/test_wissen_schemas.py`.
 
 ### Changed
+- Extraction word order within a line independent of PyMuPDF version (Issue #49, rule `line_reading_order`, E9):
+  words of a `(block, line)` in `prototyp_v4.py`, `sondierungen.py` and `prototyp_v2.py` are ordered by MuPDF's
+  `word_no` (reading direction, fallback main axis) instead of `(y0, x0)`, and `_gw_text_am` / Schichtenverzeichnis
+  `a)` names cluster lines with `rows(..., dy=3.0)` instead of `round(y0)`. Identical scores across PyMuPDF 2.0 and
+  2.1 (`real/rednitzhembach` 4/4 Bohrungen, 15/15 Grenzen, 0 false); new stress case `s28_zeile_grundlinie` and jitter
+  tests `tests/test_zeilen_leserichtung.py`; `requirements-server.txt` sets `PyMuPDF>=2.0`.
 - Homogenbereiche matrix checked against the ATV full text (Issue #17): DIN 18301:2023-09 no longer asks for
   Kohäsion (removed); DIN 18304, 18311, 18324 (2019-09) equal; DIN 18302 has no Homogenbereiche. Field `geprueft`
   per ATV, test `test_matrix_gegen_volltext_der_atv`, docs/28 §10a.
