@@ -6,6 +6,14 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water lines in the Längsschnitt (Issue #26 part 2b, rule `ls_wasserlinien`, W6): reads HGW, MGW, MHGW, HHGW, zeHGW,
+  MNGW, Bemessungswasserstand, Bauwasserstand and `GW <Datum>` polylines from calibrated vector Längsschnitte
+  (NHN margin axis or borehole GOKs + `H 1:n`, optional station axis `0+100`, legend abbreviations, GOK and
+  Schichtgrenze exclusion, ambiguity rejection with hints) into document `wasserstaende` (`quelle: "Laengsschnitt"` /
+  `"Text+Laengsschnitt"`, contradiction hints, never in borehole groundwater or G5). Real corpus: `marl_251` p. 6
+  `Bauwasserstand` `54.17–56.05 m NHN`, 0 false across all 13 real PDFs; synthetic generator
+  `services/extractor/synth_laengsschnitt.py` (5 cases incl. 4 traps, 6/6 right, 0 false); stress `s29`–`s30`;
+  `tests/test_wasserlinien_laengsschnitt.py`; docs/03 §6, docs/06 §4, docs/16 W6, docs/17 E7.6.
 - Information package v0 (Issue #33, A1 of GroundTwin Analysis): export `agsi` (Modell → Erweitert) with AGSi 1.0.1
   (Einheiten, Homogenbereiche per ATV, Bohrungen as observations, Laborwerte as property summaries), manifest (value
   kind and source per value, completeness, open items, Kreuzprobe), report, IFC and BoreholeML; valid against the

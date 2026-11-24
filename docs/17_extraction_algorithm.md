@@ -307,8 +307,20 @@ label, L3):
      `tests/test_hausregeln.py` is therefore expectedly red because `prototyp_v4.py` changed).
 5. **Levels of the report text** (not of a Bohrung): `Bemessungswasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
    `MNGW` followed within 60 characters by a number with `m NHN` → `wasserstaende` of the document (kind, m NHN,
-   page, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays in the text.
-   Only the text layer (no OCR for this).
+   page, `quelle: "Text"`, evidence), once per kind and height. A level "auf Geländeoberkante" without a number stays
+   in the text. Only the text layer (no OCR for this).
+6. **Water lines in the Längsschnitt** (rule `ls_wasserlinien`, W6, Issue #26 part 2b): on vector pages, open blue or
+   dashed polylines (`width ≥ 80 pt`, chaining collinear CAD dash segments, G6) are accepted only when (a) an
+   unambiguous water-kind label (`Bemessungswasserstand`, `Bauwasserstand`, `zeHGW`, `HHGW`, `MHGW`, `HGW`, `MGW`,
+   `MNGW`, `GW <Datum>`, or a legend-defined abbreviation such as `Bau` → `Bauwasserstand`) lies within `14 pt` (a
+   second candidate within `8 pt` or `< 4 pt` further rejects the label with a hint in `wasserlinien_hinweise`), (b)
+   the vertical NHN scale is calibrated (vertical NHN axis with `≥ 4` decreasing values, `R² ≥ 0.998`, `max_res ≤ 0.10 m`,
+   two axes must agree within `0.15 m`; or `≥ 2` borehole GOKs + `H 1:n` agreeing within `0.12 m`), and (c) the line is
+   neither the GOK terrain line nor a Schichtgrenze (checked against non-blue column geometry excluding uniform DPH
+   grids). Constant lines (`ΔNHN ≤ 0.05 m`) emit `nhn`; sloped lines also emit `stuetzpunkte` (`station` if a station
+   axis `0+100` is calibrated, else `x_pt`). Merged into `wasserstaende` with text levels: same kind within `±5 cm`
+   (constant) → one entry (`quelle: "Text+Laengsschnitt"`, both evidences, confidence `0.95`); contradiction → both kept
+   with `hinweis`. Never enters `boreholes[*].groundwater` or the Grundwasserfläche (G5).
 
 ## E7b. Bodenkennwerte (separate stage, Issue #18)
 

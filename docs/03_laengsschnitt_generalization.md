@@ -64,8 +64,14 @@ same ID.
 
 - Terrain GOK: the terrain polyline (its own layer/style) instead of the first pixel of geology
   colour (`geo_agent/laengsschnitt.py:242`).
-- Water lines (HGW, MGW, Bemessungswasserstand, usually blue and dashed) → polylines in
-  `(station, NHN)` → [06](06_grundwasser.md).
+- Water lines (HGW, MGW, Bemessungswasserstand, Bauwasserstand, `GW <Datum>`, usually blue or dashed) → polylines in
+  `(station, NHN)` → [06](06_grundwasser.md). **Built (Issue #26 part 2b, 2026-11-24):** rule `ls_wasserlinien` in
+  `services/extractor/prototyp_v4.py` (`wasserlinien_laengsschnitt`, W6, [17 E7.6](17_extraction_algorithm.md#e7-water))
+  calibrates the vertical NHN axis (margin ruler `R² ≥ 0.998`, or borehole GOKs + `H 1:n`) and optional station axis
+  (`0+100`), excludes GOK terrain lines and Schichtgrenzen, requires an unambiguous water-kind label (or legend-defined
+  short label), and merges results into document `wasserstaende` (`quelle: "Laengsschnitt"` / `"Text+Laengsschnitt"`).
+  Verified on `marl_251.pdf` p. 6 (`Bauwasserstand` `54.17–56.05 m NHN`, 0 false across all 13 real PDFs) and
+  `services/extractor/synth_laengsschnitt.py` (5 synthetic cases incl. 4 traps, 0 false).
 
 ## 7. Other fixes
 
