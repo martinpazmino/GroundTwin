@@ -131,7 +131,7 @@ def text_lines(page) -> list[tuple[pymupdf.Rect, str]]:
         lines[(w[5], w[6])].append(w)
     out = []
     for ws in lines.values():
-        ws.sort(key=lambda w: w[0])
+        ws.sort(key=lambda w: (w[7] if len(w) > 7 else 0, w[0]))
         r = pymupdf.Rect(ws[0][:4])
         for w in ws[1:]:
             r |= pymupdf.Rect(w[:4])

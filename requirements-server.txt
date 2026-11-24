@@ -3,7 +3,7 @@
 fastapi>=0.110
 uvicorn>=0.29
 python-multipart>=0.0.9
-PyMuPDF>=1.24
+PyMuPDF>=2.0                # gemessen mit 2.0 (constraints.txt) und 2.1 (#49); aeltere 1.x nicht mehr getestet
 numpy>=1.26
 scipy>=1.11
 ifcopenshell>=0.8

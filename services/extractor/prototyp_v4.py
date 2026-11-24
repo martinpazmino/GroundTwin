@@ -90,6 +90,7 @@ RULES = {
     "raster_gw_legende": True,   # W4   Legende im Scan lesen (kleine Symbole links vom Wassertext, fuer Dach + Art)
     "raster_massstab_ocr": True, # E5   Tiefenmassstab im Scan aus OCR-Tiefenlineal/Hoehenleiste oder M 1:n + Ansatzhoehe
     "sv_wasser": True,           # W5   Wasserstaende im Schichtenverzeichnis spaltenweise mit Art, Datum und Beleg lesen
+    "line_reading_order": True,  # E9   Woerter einer Zeile in Leserichtung (word_no/Achse), nicht nach y0 (#49)
 }
 
 CODE_TOKEN = r"[A-Z0-9][A-Za-z0-9]*(?:[-/.][A-Za-z0-9]+)*"
@@ -557,9 +558,29 @@ def raster_gw_symbols(page: pymupdf.Page, cols: list["Column"], acols: list["Col
     return out
 
 
+def _zeile_ordnen(ws: list[tuple[pymupdf.Rect, str, int]]) -> list[tuple[pymupdf.Rect, str, int]]:
+    """Woerter einer (Block, Zeile)-Gruppe in Leserichtung ordnen (Issue #49).
+
+    Nutzt die Wortnummer aus MuPDF/OCR (folgt der Zeilenrichtung `dir`, auch bei gedrehtem oder
+    senkrechtem Text); fehlen eindeutige Wortnummern, nach Hauptachse der Zeile (x0 bei waagrecht,
+    sonst y0) - nie nach (y0, x0) innerhalb einer waagrechten Zeile.
+    """
+    if len(ws) <= 1:
+        return ws
+    if len({w[2] for w in ws}) == len(ws):
+        return sorted(ws, key=lambda w: w[2])
+    cxs = [(w[0].x0 + w[0].x1) / 2 for w in ws]
+    cys = [(w[0].y0 + w[0].y1) / 2 for w in ws]
+    if max(cxs) - min(cxs) >= max(cys) - min(cys):
+        return sorted(ws, key=lambda w: (w[0].x0, w[2]))
+    return sorted(ws, key=lambda w: (w[0].y0, w[2]))
+
+
 def primitives(page: pymupdf.Page):
     m = page.rotation_matrix if RULES["rotation"] else pymupdf.Matrix(1, 1)
-    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in page.get_text("words")]
+    raw_words = page.get_text("words")
+    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in raw_words]
+    word_nos = [int(w[7]) if len(w) > 7 else i for i, w in enumerate(raw_words)]
     drawings = [_xform_drawing(d, m) for d in page.get_drawings()]
     segs: list[Seg] = []
     pclass = page_class(page, words, drawings)
@@ -568,7 +589,9 @@ def primitives(page: pymupdf.Page):
         segs = raster_segments(page)
     if (pclass in ("raster", "vektor_ohne_text") and RULES["ocr"]) or (pclass == "raster_ocr" and RULES["ocr_supplement"]):
         native = [r for r, *_ in words]
-        words += [w for w in ocr_words(page) if not any((w[0] & r).get_area() > 0.3 * w[0].get_area() for r in native)]
+        ocr_extra = [w for w in ocr_words(page) if not any((w[0] & r).get_area() > 0.3 * w[0].get_area() for r in native)]
+        words += ocr_extra
+        word_nos += list(range(len(ocr_extra)))
     for d in ([] if scanned and len(drawings) < 5 else drawings):   # Vektoren neben dem Bild behalten
         stroked = d.get("color") is not None and "s" in d.get("type", "")
         fill = d.get("fill")
@@ -591,15 +614,18 @@ def primitives(page: pymupdf.Page):
             for a, b in pts:
                 segs.append(Seg(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y), w, stroked, dashed))
     lines: dict[tuple, list] = defaultdict(list)
-    for r, t, b, ln in words:
-        lines[(b, ln)].append((r, t))
+    for (r, t, b, ln), wno in zip(words, word_nos):
+        lines[(b, ln)].append((r, t, wno))
     text_lines = []
     for ws in lines.values():
-        ws.sort(key=lambda x: (x[0].y0, x[0].x0))
+        if RULES["line_reading_order"]:
+            ws = _zeile_ordnen(ws)
+        else:
+            ws.sort(key=lambda x: (x[0].y0, x[0].x0))
         r = pymupdf.Rect(ws[0][0])
-        for q, _ in ws[1:]:
+        for q, _, _ in ws[1:]:
             r |= q
-        text_lines.append((r, " ".join(t for _, t in ws)))
+        text_lines.append((r, " ".join(t for _, t, _ in ws)))
     return words, text_lines, drawings, segs, scanned, pclass
 
 
@@ -1039,6 +1065,8 @@ def _gw_text_am(lines, x: float, y: float) -> str:
     """Text rechts oder links neben einem Wassersymbol: Zeilen, deren Mitte hoechstens 9 pt ueber/unter der
     Spitze liegt und die nicht weiter als 90 pt vom Symbol beginnen (Datum und Art stehen am Symbol, DIN 4023)."""
     near = [(r, t) for r, t in lines if abs((r.y0 + r.y1) / 2 - y) <= 9 and min(abs(r.x0 - x), abs(r.x1 - x)) <= 90]
+    if RULES["line_reading_order"]:
+        return " ".join(t for _, t in rows(near, dy=3.0))
     return " ".join(t for r, t in sorted(near, key=lambda e: (round(e[0].y0), e[0].x0)))
 
 
@@ -1247,8 +1275,11 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
                 continue
             b = blk[-1]
             y_b = min([w[1] for w in ws if w[4] == "b)" and w[1] > b[1] + 1] + [b[1] + 12])
-            name = " ".join(w[4] for w in sorted(ws, key=lambda w: (round(w[1]), w[0]))
-                            if b[1] - 3 <= w[1] < y_b - 1 and w[0] > b[2] and w[0] < x_col3 - 2)
+            name_ws = [w for w in ws if b[1] - 3 <= w[1] < y_b - 1 and w[0] > b[2] and w[0] < x_col3 - 2]
+            if RULES["line_reading_order"]:
+                name = " ".join(t for _, t in rows([(pymupdf.Rect(w[:4]), w[4]) for w in name_ws], dy=3.0))
+            else:
+                name = " ".join(w[4] for w in sorted(name_ws, key=lambda w: (round(w[1]), w[0])))
             if b[4] != "a)":                                 # Benennung klebt am Marker (OCR)
                 name = (b[4][2:] + " " + name).strip()
             rec["bottoms"].append(float(d[4].rstrip("m ").replace(",", ".")))
