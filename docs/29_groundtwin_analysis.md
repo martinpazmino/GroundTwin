@@ -139,7 +139,7 @@ existing rule *the LLM proposes, the geometry decides* (architecture §6.9).
 |---|---|---|
 | A0 | decisions and vocabulary (D108): scope, value kinds, package parts, catalogue schema (**done** 2026-11-22: `services/wissen/schemas`) | — |
 | A1 | package v0: AGSi export + manifest + report from existing data (**built** 2026-11-22, §8.1) | A0 |
-| A2 | catalogue v0 + planner; migrate `normen.json`, `homogenbereiche.json`, Homogenbereich proposal | A0 |
+| A2 | catalogue v0 + planner; migrate `normen.json`, `homogenbereiche.json`, Homogenbereich proposal (**built** 2026-11-24, §8.2) | A0 |
 | A3 | readiness view per project (§6 generated) in the app and the report | A2 |
 | B | data extension: groundwater kind/date (#26), Sondierungen (#27), report tables and lab values (#18) | parallel; critical path |
 | A4 | first correlations with uncertainty (CPT SBT, DPH density; #28, #29) | A2, B |
@@ -169,6 +169,33 @@ manifest entry with kind and source (`agsi.manifest_pruefen`); an inconsistent p
 Measured: Berlin, Talheim and the demo validate against the official AGSi JSON Schema 1.0.1 (2019-09) with format
 checking (schema ZIP sha256 `8d8529d8…`, fetched by the test, never committed) and the manifest against its schema.
 Tests `tests/test_agsi.py` (schema test skipped offline).
+
+### 8.2 A2 built: knowledge catalogue v0 and planner (Issue #34, 2026-11-24)
+
+Package `wissen` (`services/wissen/wissen`, see its README):
+- a vocabulary of 35 quantities with what provides each;
+- 14 entries: DIN 4023 class and DIN 18196 group from the description, Konsistenz/Lagerung from the Ansprache, layer
+  model, Kreuzprobe, Unsicherheit, Grundwasserfläche, Labor statistics, I<sub>c</sub>, fines content, k,
+  Homogenbereich proposal and Kennwerte, and the DAUB TBM pre-selection (SLS/EPB soil part);
+- a planner with computed dependencies.
+
+**Migration without changing behaviour:** an entry describes the knowledge (inputs, outputs, validity, uncertainty,
+source, value kind) and points to the code and data that compute it today. Nothing is re-implemented, so the modeler,
+Homogenbereiche and normen tests are untouched. A test checks that every pointer resolves.
+
+**`verified`:** `true` only where the source text was read:
+- DAUB SLS/EPB (docs/30 §3) and GroundTwin's own components;
+- `false` for the norm-based rules whose text was not read here (DIN 4023/18196 tables from the user's templates, DIN
+  EN ISO 17892) and for the VOB/C matrix (4 of 11 ATV checked, docs/28 §10a).
+
+**Planner on the vocabulary:**
+- **Bohrprofile only:** model, analyses and Homogenbereich proposal are *möglich*; Labor rules are blocked; DAUB is
+  *hinweisend* at 2/8 inputs (Konsistenz and Lagerung from the Ansprache, as in docs/30 §4).
+- **With laboratory sheets:** DAUB reaches 5/8; the rest (support pressure, swelling, abrasivity) is listed with the
+  test or person that provides it.
+- **CPT:** shows up as *ungenutzt* until A4 adds correlations.
+
+The readiness view (A3, #35) renders this per project.
 
 ## 9. Alternatives considered
 

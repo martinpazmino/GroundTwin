@@ -1,0 +1,240 @@
+{
+ "id": "daub.tbm_vorauswahl_boden",
+ "version": "1.0.0",
+ "title": "DAUB-Vorauswahl TBM: Boden, Flüssigkeitsschild (SLS) und Erddruckschild (EPB)",
+ "kind": "empirical_range",
+ "authority": "guideline",
+ "source": {
+  "citation": "DAUB, Recommendations for the Selection of Tunnel Boring Machines, Abschnitt 7.1 und Anhang 3.4/3.5 (Boden)",
+  "verified": true,
+  "edition": "2022-01, rev. 2025-08",
+  "url": "https://www.daub-ita.de/fileadmin/documents/daub/gtcrec1/2025-08_Selection_of_Tunnel_Borng_Machines.pdf"
+ },
+ "inputs": {
+  "required": [],
+  "optional": [
+   "boden.feinkornanteil",
+   "boden.durchlaessigkeit_k",
+   "boden.konsistenzzahl",
+   "boden.konsistenz_klasse",
+   "boden.lagerungsdichte_klasse",
+   "tunnel.stuetzdruck",
+   "boden.quellpotential",
+   "boden.abrasivitaet_aequ"
+  ]
+ },
+ "outputs": [
+  "daub.eignung_sls",
+  "daub.eignung_epb"
+ ],
+ "preconditions": [
+  "Eingaben sind charakteristische Werte des Gutachtens (DAUB 7.1.1); GroundTwin setzt sie nicht",
+  "ersetzt keine Stuetzdruckberechnung; Ergebnis ist eine Einstufung je Parameter, nie eine Maschinenwahl"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "+ Hauptanwendung, o erweitert, – begrenzt; nur SLS und EPB gegen die Seite geprueft"
+ },
+ "when_missing": {
+  "boden.feinkornanteil": "skip",
+  "boden.durchlaessigkeit_k": "skip",
+  "boden.konsistenzzahl": "skip",
+  "boden.konsistenz_klasse": "skip",
+  "boden.lagerungsdichte_klasse": "skip",
+  "tunnel.stuetzdruck": "skip",
+  "boden.quellpotential": "skip",
+  "boden.abrasivitaet_aequ": "skip"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "daten": {
+  "symbole": {
+   "+": "Hauptanwendung",
+   "o": "erweitert (zusaetzliche Massnahmen)",
+   "–": "begrenzt (Risikoanalyse)"
+  },
+  "tabellen": {
+   "feinkornanteil": {
+    "groesse": "boden.feinkornanteil",
+    "klassen": [
+     "< 5 %",
+     "5–15 %",
+     "15–40 %",
+     "> 40 %"
+    ],
+    "grenzen": [
+     5,
+     15,
+     40
+    ],
+    "SLS": [
+     "+",
+     "+",
+     "+",
+     "o"
+    ],
+    "EPB": [
+     "–",
+     "o",
+     "o/+",
+     "+"
+    ]
+   },
+   "durchlaessigkeit": {
+    "groesse": "boden.durchlaessigkeit_k",
+    "klassen": [
+     "> 1e-2",
+     "1e-2–1e-4",
+     "1e-4–1e-6",
+     "< 1e-6"
+    ],
+    "grenzen_abnehmend": [
+     0.01,
+     0.0001,
+     1e-06
+    ],
+    "SLS": [
+     "–",
+     "o",
+     "+",
+     "o"
+    ],
+    "EPB": [
+     "–",
+     "–",
+     "o",
+     "+"
+    ]
+   },
+   "konsistenz": {
+    "groesse": "boden.konsistenzzahl",
+    "klassen": [
+     "breiig",
+     "weich",
+     "steif",
+     "halbfest",
+     "fest"
+    ],
+    "grenzen": [
+     0.5,
+     0.75,
+     1.0,
+     1.25
+    ],
+    "SLS": [
+     "–/o",
+     "o",
+     "o",
+     "o",
+     "o"
+    ],
+    "EPB": [
+     "o",
+     "+",
+     "+",
+     "o",
+     "o"
+    ]
+   },
+   "lagerungsdichte": {
+    "groesse": "boden.lagerungsdichte_klasse",
+    "klassen": [
+     "dicht",
+     "mitteldicht",
+     "locker"
+    ],
+    "SLS": [
+     "+",
+     "+",
+     "o"
+    ],
+    "EPB": [
+     "+",
+     "+",
+     "+"
+    ]
+   },
+   "stuetzdruck": {
+    "groesse": "tunnel.stuetzdruck",
+    "klassen": [
+     "0",
+     "1–4",
+     "4–7",
+     "7–15"
+    ],
+    "grenzen": [
+     1,
+     4,
+     7
+    ],
+    "SLS": [
+     "o",
+     "+",
+     "+",
+     "+"
+    ],
+    "EPB": [
+     "+",
+     "+",
+     "o",
+     "–"
+    ]
+   },
+   "quellpotential": {
+    "groesse": "boden.quellpotential",
+    "klassen": [
+     "kein",
+     "gering",
+     "mittel",
+     "hoch"
+    ],
+    "SLS": [
+     "+",
+     "+",
+     "o",
+     "–"
+    ],
+    "EPB": [
+     "+",
+     "+",
+     "o",
+     "–"
+    ]
+   },
+   "abrasivitaet": {
+    "groesse": "boden.abrasivitaet_aequ",
+    "klassen": [
+     "0–5",
+     "5–15",
+     "15–35",
+     "35–75",
+     "75–100"
+    ],
+    "grenzen": [
+     5,
+     15,
+     35,
+     75
+    ],
+    "SLS": [
+     "+",
+     "+",
+     "+",
+     "o",
+     "o"
+    ],
+    "EPB": [
+     "+",
+     "+",
+     "o",
+     "o",
+     "–"
+    ]
+   }
+  },
+  "hinweis": "Werte als Fakten mit Quelle (docs/30 §3); fuer die Anwendung die Empfehlung selbst lesen."
+ }
+}

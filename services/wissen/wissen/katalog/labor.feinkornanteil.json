@@ -1,0 +1,39 @@
+{
+ "id": "labor.feinkornanteil",
+ "version": "1.0.0",
+ "title": "Feinkornanteil < 0,063 mm = Ton + Schluff",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN 18196 (Feinkorn < 0,063 mm), DIN EN ISO 17892-4",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "labor.korngroesse"
+  ]
+ },
+ "outputs": [
+  "boden.feinkornanteil"
+ ],
+ "preconditions": [],
+ "validity": {
+  "boden.feinkornanteil": [
+   0.0,
+   100.0
+  ]
+ },
+ "uncertainty": {
+  "model": "none"
+ },
+ "when_missing": {
+  "labor.korngroesse": "block"
+ },
+ "value_kind_of_outputs": "derived",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "daten": {
+  "formel": "ton + schluff"
+ }
+}

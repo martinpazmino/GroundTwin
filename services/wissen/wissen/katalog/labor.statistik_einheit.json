@@ -1,0 +1,35 @@
+{
+ "id": "labor.statistik_einheit",
+ "version": "1.0.0",
+ "title": "Laborwerte je Einheit (n, min, max, Mittel)",
+ "kind": "rule",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin, baugrundmodell/labor.py (docs/28 §9b); gemessene Werte, keine charakteristischen",
+  "verified": true
+ },
+ "inputs": {
+  "required": [
+   "labor.messwerte",
+   "modell.einheiten"
+  ]
+ },
+ "outputs": [
+  "labor.statistik_einheit"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "none",
+  "note": "Statistik der Proben; n wird mitgegeben"
+ },
+ "when_missing": {
+  "labor.messwerte": "block",
+  "modell.einheiten": "block"
+ },
+ "value_kind_of_outputs": "derived",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.labor:statistik"
+}

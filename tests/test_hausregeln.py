@@ -23,6 +23,7 @@ BEREICHE = {
     "baugrundmodell": "services/modeler/baugrundmodell",
     "geodaten": "services/geodaten/geodaten",
     "baugrundanalyse": "services/analyse/baugrundanalyse",
+    "wissen": "services/wissen/wissen",
     "ui": "ui",
     "server": "server",
     "agenten": "agenten",
@@ -33,6 +34,7 @@ ERLAUBT = {
     "baugrundmodell": set(),                              # Modellierer: reine Rechnung aus dem JSON
     "geodaten": {"baugrundmodell"},                       # BoreholeML deutet wie die App (normen)
     "baugrundanalyse": {"baugrundmodell"},                # Analyse liest das Modell, aendert die Bohrungen nie
+    "wissen": set(),                                      # Wissenskatalog: Daten und Planer; Code nur als Verweis (A2)
     "ui": {"extractor", "baugrundmodell", "baugrundanalyse", "geodaten"},
     "server": {"ui", "baugrundmodell", "geodaten", "baugrundanalyse"},
     "agenten": set(),

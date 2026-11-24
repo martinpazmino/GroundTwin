@@ -1,0 +1,32 @@
+{
+ "id": "labor.durchlaessigkeit",
+ "version": "1.0.0",
+ "title": "Durchlaessigkeit k aus dem Laborversuch",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN EN ISO 17892-11",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "labor.kf"
+  ]
+ },
+ "outputs": [
+  "boden.durchlaessigkeit_k"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "lognormal",
+  "note": "Laborprobe; im Feld oft eine Groessenordnung anders"
+ },
+ "when_missing": {
+  "labor.kf": "block"
+ },
+ "value_kind_of_outputs": "derived",
+ "tests": [
+  "tests/test_wissen.py"
+ ]
+}

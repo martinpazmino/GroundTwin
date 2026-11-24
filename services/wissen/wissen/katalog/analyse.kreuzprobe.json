@@ -1,0 +1,35 @@
+{
+ "id": "analyse.kreuzprobe",
+ "version": "1.0.0",
+ "title": "Kreuzprobe: jede Bohrung aus den Nachbarn vorhersagen",
+ "kind": "analysis",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin Ground Analysis G1, docs/27",
+  "verified": true
+ },
+ "inputs": {
+  "required": [
+   "modell.flaechen"
+  ]
+ },
+ "outputs": [
+  "analyse.kreuzprobe"
+ ],
+ "preconditions": [
+  "mindestens drei Bohrungen"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "absolute",
+  "note": "Fehler in m je Unterkante (MAE, RMSE, max)"
+ },
+ "when_missing": {
+  "modell.flaechen": "block"
+ },
+ "value_kind_of_outputs": "modelled",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundanalyse.kreuzprobe:kreuzprobe"
+}
