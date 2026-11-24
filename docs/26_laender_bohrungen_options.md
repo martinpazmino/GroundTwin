@@ -338,6 +338,71 @@ was tested locally outside the repository:
 Not verified on real files: only `MV` was read. Bremen's `inspire_ge_bohrdaten.zip` is reported in EPSG:4258, which the
 importer rejects as a whole file until geographic coordinates are converted.
 
+## 4. Portal links checked (Issue #19, 2026-11-24)
+
+The 38 entries marked *ungeprueft* (portal links, D98) were checked live from the cloud session against the
+findings of docs/25 §2 and §1 of this note. An entry became **geprueft** only if both of these held:
+- the page answers;
+- a machine-checkable proof (`beleg`) returns the expected content: an Atom feed, a Metalink/WCS XML, a ZIP header, a
+  STAC/JSON document, or the ISO metadata naming the product and the licence.
+
+Each such entry now carries the licence, its URL and the attribution. Where docs/25 found a more specific page, the
+link was moved from the home page to it: SH LoD2 download client, Hessen Downloadcenter paths, Sachsen batch
+download, LGB online maps, the Sachsen geology page.
+
+Licences differ by data family:
+- **Portals of the Geologische Dienste:** for viewing only (`Ansicht im Portal (© …)`); no open licence for the
+  Schichtdaten.
+- **Exceptions:** MV with its GeoPackage (CC BY-SA 3.0 DE) and Bremen (CC BY).
+
+**Result: 30 checked, 8 remain *ungeprueft* with the reason in their `hinweis`:**
+- Saarland: an intermittent captcha for the portal, and the DGM/LoD2 licence is not machine-readable.
+- Sachsen-Anhalt LVermGeo: the whole website returned HTTP 500 on that day, although its WCS and Atom answered.
+- Thüringen: a Link11 / Friendly Captcha gate.
+
+These need a person in a browser (tool `dienste.html`). `scripts/dienste_pruefen.py` keeps checking all of them.
+
+| ID | Kind | Licence | Proof (2026-11-24) | Status |
+|---|---|---|---|---|
+| `DE-BGR` | portal-bohrungen | BGR-AGB | HTTP 200, 1185 ms, HTML | **geprueft**  |
+| `SH` | portal-bohrungen | Ansicht im Portal (© LfU SH) | HTTP 200, 701 ms, HTML | **geprueft**  |
+| `SH-DGM` | portal-dgm | CC BY 4.0 | HTTP 200, 16770 ms, Atom-Feed | **geprueft**  |
+| `SH-LOD2` | portal-gebaeude | CC BY 4.0 | HTTP 200, 790 ms, HTML | **geprueft**  |
+| `HH-DGM` | portal-dgm | dl-de/by-2.0 | HTTP 206, 885 ms, ZIP | **geprueft**  |
+| `HH-LOD2` | portal-gebaeude | dl-de/by-2.0 | HTTP 206, 1492 ms, JSON | **geprueft**  |
+| `NI` | portal-bohrungen | Ansicht im Portal (© LBEG) | HTTP 200, 1527 ms, HTML | **geprueft**  |
+| `NI-DGM` | portal-dgm | CC BY 4.0 | HTTP 200, 787 ms, JSON | **geprueft**  |
+| `NI-LOD2` | portal-gebaeude | CC BY 4.0 | HTTP 200, 749 ms, JSON | **geprueft**  |
+| `HB` | portal-bohrungen | CC BY | HTTP 200, 826 ms, <?xml version='1.0' encoding | **geprueft**  |
+| `HB-DGM` | portal-dgm | CC BY 4.0 | HTTP 206, 537 ms, ZIP | **geprueft**  |
+| `HB-LOD2` | portal-gebaeude | CC BY 4.0 | HTTP 206, 466 ms, ZIP | **geprueft**  |
+| `HE` | portal-bohrungen | Ansicht im Portal (© HLNUG) | HTTP 200, 1496 ms, HTML | **geprueft**  |
+| `HE-DGM` | portal-dgm | dl-de/zero-2.0 | ISO metadata: DGM1/LoD2 and dl-de/zero-2.0 confirmed | **geprueft**  |
+| `HE-LOD2` | portal-gebaeude | dl-de/zero-2.0 | ISO metadata: DGM1/LoD2 and dl-de/zero-2.0 confirmed | **geprueft**  |
+| `RP` | portal-bohrungen | Ansicht im Portal (© LGB) | HTTP 200, 1194 ms, HTML | **geprueft**  |
+| `RP-DGM` | portal-dgm | dl-de/by-2.0 | HTTP 200, 1610 ms, <?xml version="1.0" encoding | **geprueft**  |
+| `RP-LOD2` | portal-gebaeude | dl-de/by-2.0 | HTTP 200, 1281 ms, <?xml version="1.0" encoding | **geprueft**  |
+| `BW-DGM` | portal-dgm | dl-de/by-2.0 | HTTP 206, 403 ms, JSON | **geprueft**  |
+| `BW-LOD2` | portal-gebaeude | dl-de/by-2.0 | HTTP 206, 517 ms, JSON | **geprueft**  |
+| `BY` | portal-bohrungen | Ansicht im Portal (© LfU) | HTTP 200, 1284 ms, HTML | **geprueft**  |
+| `BY-DGM` | portal-dgm | CC BY 4.0 | HTTP 200, 2800 ms, <?xml version="1.0" encoding | **geprueft**  |
+| `BY-LOD2` | portal-gebaeude | CC BY 4.0 | HTTP 200, 1518 ms, <?xml version="1.0" encoding | **geprueft**  |
+| `SL` | portal-bohrungen | – | HTTP 200, 2064 ms, Captcha | ungeprueft Geoportal zeigt automatisierten Abrufen zeitweise ein Captcha (2026-11-24); von Hand prüfen. |
+| `SL-DGM` | portal-dgm | – | – | ungeprueft Lizenz nicht maschinenlesbar belegt (docs/25); von Hand beim LVGL prüfen. |
+| `SL-LOD2` | portal-gebaeude | – | – | ungeprueft Lizenz nicht maschinenlesbar belegt (docs/25); von Hand beim LVGL prüfen. |
+| `MV` | portal-bohrungen | CC BY-SA 3.0 DE | HTTP 206, 496 ms, ZIP | **geprueft**  |
+| `MV-DGM` | portal-dgm | CC BY 4.0 | HTTP 200, 1074 ms, <?xml version="1.0" encoding | **geprueft**  |
+| `MV-LOD2` | portal-gebaeude | CC BY 4.0 | HTTP 200, 1602 ms, Atom-Feed | **geprueft**  |
+| `SN` | portal-bohrungen | Ansicht im Portal (© LfULG) | HTTP 200, 2564 ms, HTML | **geprueft**  |
+| `SN-DGM` | portal-dgm | dl-de/by-2.0 | HTTP 200, 1042 ms, HTML | **geprueft**  |
+| `SN-LOD2` | portal-gebaeude | dl-de/by-2.0 | HTTP 200, 1056 ms, HTML | **geprueft**  |
+| `ST` | portal-bohrungen | Ansicht im Portal (© LAGB) | HTTP 200, 1370 ms, HTML | **geprueft**  |
+| `ST-DGM` | portal-dgm | – | HTTP 200, 3845 ms, <?xml version="1.0" encoding | ungeprueft Seite des LVermGeo am 2026-11-24 mit HTTP 500 (ganze Website); WCS und Atom erreichbar – erneut prüfen. |
+| `ST-LOD2` | portal-gebaeude | – | HTTP 200, 775 ms, Atom-Feed | ungeprueft Seite des LVermGeo am 2026-11-24 mit HTTP 500 (ganze Website); Atom-Feed erreichbar – erneut prüfen. |
+| `TH` | portal-bohrungen | – | – | ungeprueft Portal hinter Link11-Captcha; automatisch nicht prüfbar (docs/26). |
+| `TH-DGM` | portal-dgm | – | – | ungeprueft Portal hinter Friendly-Captcha; WMS-Capabilities nennen dl-de/by-2.0 (docs/25). |
+| `TH-LOD2` | portal-gebaeude | – | – | ungeprueft Portal hinter Friendly-Captcha; Lizenz ohne Captcha nicht prüfbar (docs/25). |
+
 Up: [Index](README.md)
 
 Related: [07 Coordinates](07_coordinates.md) · [14 Licensing](14_licensing.md) · [21 Step app and norms](21_app_schritte_normen.md) · [23 Open data integration](23_open_data_integration.md)
