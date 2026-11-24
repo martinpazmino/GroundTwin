@@ -554,6 +554,17 @@ def build(out: Path) -> list[str]:
     save("s27_sv_kein_grundwasser", doc,
          [_truth("RKS 27", L_ABBR, None, [], "kein Grundwasser", kind="rks", page=1)],
          "W2/W5: Schichtenverzeichnis 'kein Grundwasser' -> 0 Staende, groundwater_status")
+
+    # s28 Zeichen einer Zeile auf leicht unterschiedlicher Grundlinie / gemischte Schriftgroesse ('B 2') (#49)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    sp28 = Spec("B 2", L_STD, title="", gok=45.20, gw=("symbol", 2.8))
+    draw_profile(p, sp28)
+    # 'B' normal (10 pt), '2' groesser und minimal hoeher -> gleiche Zeile, aber y0('2') < y0('B')
+    p.insert_text((sp28.x0 - 20, sp28.top_y - 40), "B", fontsize=10)
+    p.insert_text((sp28.x0 - 10, sp28.top_y - 40.6), "2", fontsize=12)
+    save("s28_zeile_grundlinie", doc, [_truth("B 2", L_STD, 45.20, [2.8])],
+         "E9/#49: Woerter einer Zeile mit versetzter Grundlinie / gemischter Schriftgroesse ('B 2')")
     return made
 
 
