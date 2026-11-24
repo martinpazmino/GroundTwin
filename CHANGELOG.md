@@ -23,6 +23,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
   entered it, a derived value only with its catalogue entry); tests `tests/test_wissen_schemas.py`.
 
 ### Changed
+- Dienste der Länder (Issue #19): 30 of the 38 portal links checked live and marked *geprueft* with licence,
+  attribution and a machine-checkable proof (`beleg`); 8 stay *ungeprueft* with their reason (Saarland, Sachsen-Anhalt
+  outage, Thüringen captcha). docs/26 §4.
 - Homogenbereiche matrix checked against the ATV full text (Issue #17): DIN 18301:2023-09 no longer asks for
   Kohäsion (removed); DIN 18304, 18311, 18324 (2019-09) equal; DIN 18302 has no Homogenbereiche. Field `geprueft`
   per ATV, test `test_matrix_gegen_volltext_der_atv`, docs/28 §10a.

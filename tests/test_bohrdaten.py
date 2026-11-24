@@ -192,7 +192,7 @@ def test_land_ohne_datendienst_nennt_portale():
     assert erg["dienste"] == ["DE-BGR-WMS"] and erg["fehler"] == [] and erg["treffer"] == []   # nur der Hinweisdienst
     portale = {p["dienst"]: p for p in erg["portale"]}
     assert set(portale) == {"BY", "DE-BGR"} and portale["BY"]["url"].startswith("https://www.umweltatlas.bayern.de")
-    assert all(p["status"] == "ungeprueft" for p in portale.values())
+    assert all(p["status"] == "geprueft" for p in portale.values())                    # seit Issue #19 (2026-11-24)
 
 
 def test_ausnahme_des_dienstes_wird_fehler():

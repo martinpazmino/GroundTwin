@@ -14,6 +14,7 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(REPO), str(REPO / "services" / "geodaten")]
 from geodaten import bohrdaten, utm  # noqa: E402
+from geodaten import dienste as dienste_modul  # noqa: E402
 
 # (EPSG, Rechtswert, Hochwert, Laenge, Breite) aus PROJ
 PROJ = [(25833, 394774.3, 5818338.1, 13.4496729128, 52.5050027515),
@@ -47,7 +48,10 @@ def test_dienste_am_ort():
     assert [d["dienst"] for d in muenchen if d["art"] == "bohrungen"] == ["BY", "DE-BGR", "DE-BGR-WMS"]
     assert "kein Datendienst – im Portal ansehen" in muenchen[0]["text"] and muenchen[0]["url"].startswith("https://")
     assert {d["art"] for d in muenchen} == {"bohrungen", "dgm", "gebaeude"}
-    assert {d["status"] for d in muenchen if d["art"] != "gebaeude" and d["dienst"] != "DE-BGR-WMS"} == {"ungeprueft"}
+    # Portale Bayerns seit Issue #19 (2026-11-24) geprueft; der Status kommt unveraendert aus dem Register
+    register = {d["id"]: d["status"] for d in dienste_modul.laden()["dienste"]}
+    assert all(d["status"] == register[d["dienst"]] for d in muenchen)
+    assert {d["status"] for d in muenchen if d["art"] != "gebaeude" and d["dienst"] != "DE-BGR-WMS"} == {"geprueft"}
     lod2 = [d for d in muenchen if d["art"] == "gebaeude"]                             # LoD2 Bayern seit 2026-11-07
     assert [(d["dienst"], d["status"], d["url"]) for d in lod2] == [("BY-LOD2-GML", "geprueft", "")]
     assert all(d["url"] == "" and d["status"] == "geprueft" for d in berlin)            # angebunden: kein Portal-Link
