@@ -290,7 +290,9 @@ def _seiten_primitive(page: pymupdf.Page, seite_nr: int, ocr: bool) -> _SeitenDa
     """Bereitet rotierte Seitenprimitive ohne globale Seiteneffekte auf prototyp_v4.RULES auf."""
     m = page.rotation_matrix
     scale_f = min(page.rect.width, page.rect.height) / 595.0
-    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in page.get_text("words")]
+    raw_words = page.get_text("words")
+    words = [(pymupdf.Rect(w[:4]) * m, w[4], w[5], w[6]) for w in raw_words]
+    word_nos = [int(w[7]) if len(w) > 7 else i for i, w in enumerate(raw_words)]
     raw_drawings = page.get_drawings()
     pclass = page_class(page, words, raw_drawings)
     scanned = pclass in ("raster", "raster_ocr") or (len(raw_drawings) < 5 and bool(page.get_images()))
@@ -304,18 +306,27 @@ def _seiten_primitive(page: pymupdf.Page, seite_nr: int, ocr: bool) -> _SeitenDa
         ]
         if ocr_w:
             words.extend(ocr_w)
+            word_nos.extend(range(len(ocr_w)))
             quelle = "OCR"
 
     lines_map: dict[tuple, list] = defaultdict(list)
-    for r, t, b, ln in words:
-        lines_map[(b, ln)].append((r, t))
+    for (r, t, b, ln), wno in zip(words, word_nos):
+        lines_map[(b, ln)].append((r, t, wno))
     text_lines: list[tuple[pymupdf.Rect, str]] = []
     for ws in lines_map.values():
-        ws.sort(key=lambda x: (x[0].y0, x[0].x0))
+        if len({w[2] for w in ws}) == len(ws):
+            ws.sort(key=lambda w: w[2])
+        else:
+            cxs = [(w[0].x0 + w[0].x1) / 2 for w in ws]
+            cys = [(w[0].y0 + w[0].y1) / 2 for w in ws]
+            if max(cxs) - min(cxs) >= max(cys) - min(cys):
+                ws.sort(key=lambda w: (w[0].x0, w[2]))
+            else:
+                ws.sort(key=lambda w: (w[0].y0, w[2]))
         rr = pymupdf.Rect(ws[0][0])
-        for q, _ in ws[1:]:
+        for q, _, _ in ws[1:]:
             rr |= q
-        text_lines.append((rr, " ".join(t for _, t in ws)))
+        text_lines.append((rr, " ".join(t for _, t, _ in ws)))
     zeilen = rows(text_lines, dy=3.0 * scale_f)
 
     seiten_text = _falten_norm(" ".join(t for _, t in zeilen))

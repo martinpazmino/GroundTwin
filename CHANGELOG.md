@@ -6,6 +6,14 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water lines in the Längsschnitt (Issue #26 part 2b, rule `ls_wasserlinien`, W6): reads HGW, MGW, MHGW, HHGW, zeHGW,
+  MNGW, Bemessungswasserstand, Bauwasserstand and `GW <Datum>` polylines from calibrated vector Längsschnitte
+  (NHN margin axis or borehole GOKs + `H 1:n`, optional station axis `0+100`, legend abbreviations, GOK and
+  Schichtgrenze exclusion, ambiguity rejection with hints) into document `wasserstaende` (`quelle: "Laengsschnitt"` /
+  `"Text+Laengsschnitt"`, contradiction hints, never in borehole groundwater or G5). Real corpus: `marl_251` p. 6
+  `Bauwasserstand` `54.17–56.05 m NHN`, 0 false across all 13 real PDFs; synthetic generator
+  `services/extractor/synth_laengsschnitt.py` (5 cases incl. 4 traps, 6/6 right, 0 false); stress `s29`–`s30`;
+  `tests/test_wasserlinien_laengsschnitt.py`; docs/03 §6, docs/06 §4, docs/16 W6, docs/17 E7.6.
 - Information package v0 (Issue #33, A1 of GroundTwin Analysis): export `agsi` (Modell → Erweitert) with AGSi 1.0.1
   (Einheiten, Homogenbereiche per ATV, Bohrungen as observations, Laborwerte as property summaries), manifest (value
   kind and source per value, completeness, open items, Kreuzprobe), report, IFC and BoreholeML; valid against the
@@ -26,6 +34,12 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - Dienste der Länder (Issue #19): 30 of the 38 portal links checked live and marked *geprueft* with licence,
   attribution and a machine-checkable proof (`beleg`); 8 stay *ungeprueft* with their reason (Saarland, Sachsen-Anhalt
   outage, Thüringen captcha). docs/26 §4.
+- Extraction word order within a line independent of PyMuPDF version (Issue #49, rule `line_reading_order`, E9):
+  words of a `(block, line)` in `prototyp_v4.py`, `sondierungen.py` and `prototyp_v2.py` are ordered by MuPDF's
+  `word_no` (reading direction, fallback main axis) instead of `(y0, x0)`, and `_gw_text_am` / Schichtenverzeichnis
+  `a)` names cluster lines with `rows(..., dy=3.0)` instead of `round(y0)`. Identical scores across PyMuPDF 2.0 and
+  2.1 (`real/rednitzhembach` 4/4 Bohrungen, 15/15 Grenzen, 0 false); new stress case `s28_zeile_grundlinie` and jitter
+  tests `tests/test_zeilen_leserichtung.py`; `requirements-server.txt` sets `PyMuPDF>=2.0`.
 - Homogenbereiche matrix checked against the ATV full text (Issue #17): DIN 18301:2023-09 no longer asks for
   Kohäsion (removed); DIN 18304, 18311, 18324 (2019-09) equal; DIN 18302 has no Homogenbereiche. Field `geprueft`
   per ATV, test `test_matrix_gegen_volltext_der_atv`, docs/28 §10a.
