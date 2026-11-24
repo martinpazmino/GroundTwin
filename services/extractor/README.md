@@ -14,9 +14,16 @@ Every change passes the regression of the [benchmark](../../benchmark/README.md)
 
 | File | What it does |
 |---|---|
-| [`prototyp_v4.py`](prototyp_v4.py) | **Used by the app.** Algorithm by stages E0–E9: page class, OCR, generic headers, labels as the final value, "label first" mode, Schicht tables, Schichtenverzeichnis, coordinates, confidence and canonical JSON; switchable rules in `RULES` |
+| [`prototyp_v4.py`](prototyp_v4.py) | **Used by the app.** Algorithm by stages E0–E9: page class, OCR, generic headers, labels as the final value, "label first" mode, Schicht tables, Schichtenverzeichnis, coordinates, water symbols in vector and scan (W3, W4), confidence and canonical JSON; switchable rules in `RULES` |
 | [`prototyp_v2.py`](prototyp_v2.py) | First layout-independent extractor (columns, header/GOK, scale by regression, Schraffur, water, DPH, coordinates); v4 imports its basic functions |
-| [`stress_cases.py`](stress_cases.py) | 17 stress cases, one per lesson, with ground truth |
+| [`textebene.py`](textebene.py) | Shared page text / OCR reader for the additional report and annex stages, marking `quelle: Text` or `OCR` |
+| [`kennwerte.py`](kennwerte.py) | Bodenkennwerte (Wichte, Reibungswinkel, Kohäsion, Steifemodul …) from report tables and lists ([28 §9](../../docs/28_homogenbereiche.md#9-kennwerte-from-the-report-tables-issue-18-2026-11-19-training-pdfs-not-blind)) |
+| [`labor.py`](labor.py) | Bodenmechanische Laborversuche (Wassergehalt, Zustandsgrenzen, Korngröße, Glühverlust, Kalkgehalt, Durchlässigkeit, Proctor, CBR) from annex sheets ([28 §9b](../../docs/28_homogenbereiche.md#9b-laboratory-sheets-of-the-annexes-issue-18-2026-11-19-training-pdfs-not-blind)) |
+| [`homogenbereiche_text.py`](homogenbereiche_text.py) | Homogenbereiche defined by the Gutachter in the report (tables, sections, sentences) ([28 §10](../../docs/28_homogenbereiche.md#10-the-gutachters-own-homogenbereiche-issue-21-2026-11-19-training-pdfs-not-blind)) |
+| [`wassertabelle.py`](wassertabelle.py) | Water level tables in the report (Aufschluss \| Wasserstand \| Wasserart) with water kind and footnote evidence ([06 §4](../../docs/06_grundwasser.md#4-data-model-and-ifc)) |
+| [`sondierungen.py`](sondierungen.py) | Sondierungen (DPH/DPL/DPM/DPSH `N10`, CPT/CPTu `q_c`/`f_s`/`R_f`) from tables, vector diagrams, Längsschnitte and scans; switchable rules in `REGELN` ([05 §5](../../docs/05_sondierungen.md#5-measured-stage-on-real-gutachten-2026-11-21-issue-27-part-1)) |
+| [`stress_cases.py`](stress_cases.py) | 27 stress cases (`s01`–`s27`), one per lesson, with ground truth |
+| [`stress_sondierungen.py`](stress_sondierungen.py) | 8 synthetic stress cases (`s01`–`s08`, including two traps) with ground truth for Sondierungen |
 | [`synth_bohrprofil.py`](synth_bohrprofil.py) | Generates 6 simplified DIN 4023 layouts (A, A2, A3, A4, A5, B) + JSON with the ground truth |
 
 ## Run
@@ -25,10 +32,13 @@ From the repository root, with the dependencies of `requirements-server.txt` (OC
 `requirements-ocr.txt`):
 
 ```bash
-python services/extractor/synth_bohrprofil.py /tmp/synth     # 6 synthetic layouts + ground truth
-python services/extractor/stress_cases.py /tmp/stress        # 17 stress cases + ground truth
+python services/extractor/synth_bohrprofil.py /tmp/synth          # 6 synthetic layouts + ground truth
+python services/extractor/stress_cases.py /tmp/stress             # 27 stress cases + ground truth
+python services/extractor/stress_sondierungen.py /tmp/stress_sond # 8 sounding stress cases + ground truth
 python benchmark/regression.py --module services/extractor/prototyp_v4.py \
   --real <pdfs> --stress /tmp/stress --synth /tmp/synth --baseline benchmark/baseline_v4.json
+python benchmark/sondierungen_eval.py --real <pdfs> --stress /tmp/stress_sond --synth /tmp/synth \
+  --baseline benchmark/baseline_sondierungen.json
 ```
 
 ## History

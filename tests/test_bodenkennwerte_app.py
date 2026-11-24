@@ -76,3 +76,39 @@ def test_laborwerte_talheim_je_einheit_und_atv(client):
     fels = next(b for b in hk["bereiche"] if b["name"] == "Fels (Tonstein)")
     w = next(z for z in fels["kennwerte"] if z["nr"] == "9")
     assert w["wert"].startswith("Labor: 11,1–16,9 %")
+
+
+def test_zuordnung_entfernen_und_fehlerfaelle(client):
+    """Unbekanntes Projekt -> 404; Zuordnung entfernen loescht das Pset aus dem IFC; unbekannte Verweise entfernen."""
+    c, arbeit = client
+    assert c.get("/api/projekt/nichtda/bodenkennwerte").status_code == 404
+    sig = c.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
+    k = c.get(f"/api/projekt/{sig}/bodenkennwerte").json()
+    e, ref = k["einheiten"][0], k["zeilen"][0]["ref"]
+    r1 = c.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "bodenkennwerte", "zuordnung": {e: ref}}]})
+    assert r1.status_code == 200 and r1.json()["meldungen"] == ["Bodenkennwerte aus dem Gutachten: 1 Einheiten zugeordnet"]
+    assert c.get(f"/api/projekt/{sig}/bodenkennwerte").json()["zuordnung"] == {e: ref}
+
+    # Zuordnung entfernen -> Meldung, leere Zuordnung und kein Pset im IFC
+    r2 = c.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "bodenkennwerte", "zuordnung": None}]})
+    assert r2.status_code == 200 and r2.json()["meldungen"] == ["Bodenkennwerte entfernt"]
+    assert c.get(f"/api/projekt/{sig}/bodenkennwerte").json()["zuordnung"] == {}
+    m = c.post(f"/api/projekt/{sig}/modell").json()
+    f = ifcopenshell.open(str(arbeit / "web" / m["ifc"].lstrip("/").removeprefix("dateien/")))
+    gm = f.by_type("IfcGeomodel")[0]
+    for x in gm.IsDecomposedBy[0].RelatedObjects:
+        assert "CPset_Bodenkennwerte_Gutachten" not in ue.get_psets(x)
+
+    # nur unbekannte Verweise -> ebenfalls geleert
+    r3 = c.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "bodenkennwerte", "zuordnung": {e: "unbekannt#99"}}]})
+    assert r3.status_code == 200 and r3.json()["meldungen"] == ["Bodenkennwerte entfernt"]
+    assert c.get(f"/api/projekt/{sig}/bodenkennwerte").json()["zuordnung"] == {}
+
+
+def test_ungueltige_zuordnung_als_400(tmp_path, monkeypatch):
+    monkeypatch.setattr(pl, "ARBEIT", tmp_path)
+    with TestClient(app_erstellen(tmp_path), raise_server_exceptions=False) as c:
+        sig = c.post("/api/beispiel", json={"name": "talheim"}).json()["projekt"]
+        r = c.post(f"/api/projekt/{sig}/aendern", json={"ops": [{"op": "bodenkennwerte", "zuordnung": ["ungueltig"]}]})
+        assert r.status_code == 400
+

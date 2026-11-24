@@ -8,12 +8,14 @@ aliases: [Web viewer]
 # Step app and Baugrundmodell viewer (That Open Engine)
 
 Vite + TypeScript + lit + `@thatopen/components` / `components-front` 3.6 + `@thatopen/ui` /
-`ui-obc` 3.4. Two pages:
+`ui-obc` 3.4. Three pages:
 
 - **`index.html`**: the step app (Gutachten → Bohrungen → Lage → Einheiten → Modell), served by
   `python -m server` ([docs/21](../../docs/21_app_schritte_normen.md)).
 - **`viewer.html`**: the viewer on its own, which opens an IFC (`?ifc=`) or pins and a plan as from
   the app (`?bohrungen=<args.json>`).
+- **`dienste.html`**: the tool *Dienste der Länder* (`src/dienste/dienste.ts`) to inspect, test and
+  edit the registry of state services ([docs/21 §4.8](../../docs/21_app_schritte_normen.md#48-dienste-der-länder-one-file-one-tool)).
 
 The viewer has:
 
@@ -37,7 +39,9 @@ node scripts/check.mjs <model.ifc> <plans> <screenshots>   # 18 headless viewer 
 |---|---|
 | [`src/app/start.ts`](src/app/start.ts) | Frame of the app: steps, Zurück/Weiter, warnings, address `#/<project>/<step>/<Bohrung>` |
 | [`src/app/store.ts`](src/app/store.ts) | State, changes to the server (`/aendern`), model, viewer per step |
-| [`src/app/schritt_*.ts`](src/app) | The five steps; [`hilfe.ts`](src/app/hilfe.ts) the "?" help texts; [`profil.ts`](src/app/profil.ts) SVG columns |
+| [`src/app/schritt_*.ts`](src/app) | The five steps; [`hilfe.ts`](src/app/hilfe.ts) the "?" help texts; [`profil.ts`](src/app/profil.ts) SVG columns; [`karte.ts`](src/app/karte.ts) Standort map pop-up |
+| [`src/app/analyse.ts`](src/app/analyse.ts), [`homogenbereiche.ts`](src/app/homogenbereiche.ts), [`bodenkennwerte.ts`](src/app/bodenkennwerte.ts) | Ground Analysis, Homogenbereiche per ATV and Bodenkennwerte / Laborwerte in the *Einheiten* step ([docs/27](../../docs/27_ground_analysis_gempy.md), [docs/28](../../docs/28_homogenbereiche.md)) |
+| [`src/dienste/dienste.ts`](src/dienste/dienste.ts) | Tool *Dienste der Länder* (`dienste.html`) |
 | [`src/viewer/viewer.ts`](src/viewer/viewer.ts) | `viewerStarten()`: world, postproduction, Highlighter/Hider/Clipper, bar, gear, ViewCube, HUD, side panel |
 | [`src/viewer/kamera.ts`](src/viewer/kamera.ts) | near/far on every move, grid according to the scene, views, framing |
 | [`src/viewer/lage.ts`](src/viewer/lage.ts) | Pins, plan (image) and calibration, picking points on the plan, dragging with the lock and the GOK rule |
