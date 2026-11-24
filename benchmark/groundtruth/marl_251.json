@@ -523,5 +523,15 @@
    ],
    "gw_depths": []
   }
+ ],
+ "wasserlinien": [
+  {
+   "art": "Bauwasserstand",
+   "seite": 6,
+   "konstant": false,
+   "nhn_min": 54.17,
+   "nhn_max": 56.05,
+   "hinweis": "Blaue Polylinie 5,0 m u. GOK im Geotechnischen Laengsschnitt (Anlage 3.1, S. 6), beschriftet 'Bau' (Legende: Bauwasserstand). 'Bem' (Bemessungswasserstand) liegt direkt auf der schwarzen GOK-Gelaendelinie (keine eigene Wasserlinie)."
+  }
  ]
 }
