@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Blind round 5 (docs/15 §8.8): four German reports with Sondierungen, predictions frozen before opening, ground truth
+  for 200 Bohrungen and 109 Sondierungen (values not transcribed), `blind_test.py score` also scores frozen
+  Sondierungen (strict by code and by page). Main findings: one false Bohrung from a project number, codes with a
+  station not read, GOK and water 0.
 - Sondierungen in the Homogenbereich Kennwerte (Issue #29): N10 (DPH) and q_c (CPT) assigned per Einheit by height
   at the Sondierung's Lage (`baugrundanalyse/sondierung_einheiten.py`); range, median, n and censored values shown
   next to the Ansprache at Kennwert 13 (Lagerungsdichte) or 11a/11b (bindig), as measured values, never classified;

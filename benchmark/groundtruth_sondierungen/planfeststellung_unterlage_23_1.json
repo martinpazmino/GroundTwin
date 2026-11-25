@@ -1,0 +1,275 @@
+{
+ "file": "Antragsunterlagen_Planfeststellung_23-Geotechnischer_Bericht_Unterlage_23.1_Geotechnischer_Bericht.pdf",
+ "source": "vom Nutzer bereitgestellt am 2026-11-25 (Blindtest Runde 5; oeffentliche URL nicht bekannt)",
+ "sha256": "629e533d241aa4bafcdfb62f8e4c7669b6ff7783a54b0ba91dbeab2561ebba64",
+ "transkribiert_von": "agent",
+ "notes": "Blindtest Runde 5. 13 CPT (Spitzenwiderstand q_c und Reibungsverhaeltnis R_f, S. 52-59) und 11 DPH (S. 62-68) in den Baugrundschnitten; Code, Ansatzhoehe und Endteufe aus den Koordinatentabellen S. 12-13 (Tabellen 3 und 5), Seite = Diagramm im Schnitt (Lageplan S. 49-50 nicht als Fundstelle). Werte nicht transkribiert.",
+ "sondierungen": [
+  {
+   "code": "CPT 1",
+   "art": "CPT",
+   "seite": 52,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 211.07,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 2",
+   "art": "CPT",
+   "seite": 52,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 215.5,
+   "endtiefe": 14.84,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 3c",
+   "art": "CPT",
+   "seite": 52,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 214.96,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 4",
+   "art": "CPT",
+   "seite": 53,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 215.92,
+   "endtiefe": 2.94,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 5",
+   "art": "CPT",
+   "seite": 54,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 211.78,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 6",
+   "art": "CPT",
+   "seite": 54,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 213.39,
+   "endtiefe": 14.22,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 7",
+   "art": "CPT",
+   "seite": 55,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 213.28,
+   "endtiefe": 1.07,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 8",
+   "art": "CPT",
+   "seite": 56,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 211.94,
+   "endtiefe": 0.92,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 9a",
+   "art": "CPT",
+   "seite": 57,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 212.46,
+   "endtiefe": 2.14,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 10a",
+   "art": "CPT",
+   "seite": 56,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 213.83,
+   "endtiefe": 13.17,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 11a",
+   "art": "CPT",
+   "seite": 58,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 210.4,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 12",
+   "art": "CPT",
+   "seite": 58,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 211.21,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "CPT 13",
+   "art": "CPT",
+   "seite": 59,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 209.99,
+   "endtiefe": 15.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 1",
+   "art": "DPH",
+   "seite": 62,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 214.8,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 2",
+   "art": "DPH",
+   "seite": 62,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 215.22,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 3",
+   "art": "DPH",
+   "seite": 62,
+   "auch_auf_seiten": [
+    63
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 215.15,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 4",
+   "art": "DPH",
+   "seite": 65,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 215.93,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 5",
+   "art": "DPH",
+   "seite": 66,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 213.94,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 6",
+   "art": "DPH",
+   "seite": 64,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 212.82,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 7",
+   "art": "DPH",
+   "seite": 66,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 212.56,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 8",
+   "art": "DPH",
+   "seite": 66,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 210.54,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 9",
+   "art": "DPH",
+   "seite": 64,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 212.99,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 10",
+   "art": "DPH",
+   "seite": 68,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 208.8,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 11",
+   "art": "DPH",
+   "seite": 68,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 209.52,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  }
+ ]
+}

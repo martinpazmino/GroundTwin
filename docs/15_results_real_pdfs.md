@@ -312,11 +312,53 @@ Gutachten; Berlin in EPSG:25833 with correct distances; Swiss LV03 transformed t
 [IFC 4.3](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen) (0 schema errors) → That Open (69 strata with geometry,
 7 Bohrungen from Berlin). The Schichten with confidence < 0.6 (9 of 383) stay marked for review.
 
+### 8.8 Blind round 5: four German reports with Sondierungen (2026-11-25)
+
+Predictions of v4 (Bohrungen) and of the Sondierungen stage frozen and pushed before the PDFs were opened
+(`15961d6`, `d47ae9c`, code `bb0bdb1`, stage sha256 `d7af6c5f…`). The PDFs were provided by the user in the chat; only
+name, sha256 and the transcribed facts are in the repo (`benchmark/groundtruth/`, `benchmark/groundtruth_sondierungen/`).
+Ground truth transcribed by the agent from the text layer with positions and colours, cross-checked against an
+independent source of the same report (coordinate tables, Kopfblätter of the Schichtenverzeichnisse), with visual
+samples at low resolution; DPH values not transcribed (`werte_nicht_transkribiert`, they count neither right nor
+wrong). Score: `python benchmark/blind_test.py score benchmark/frozen/runde5`.
+
+| PDF | Pages | Bohrungen | Boundaries | Bodenart | GOK | GW | False |
+|---|---|---|---|---|---|---|---|
+| BER Baugrund 1 (rail line, 8 B + 72 SB) | 828 | 0/80 | 0/575 | – | 0/80 | 0/64 | **1 Bohrung** |
+| Planfeststellung Unterlage 23.1 (GGU sections) | 129 | 41/115 | 188/440 | 111/188 | 0/115 | 0/69 | 16 boundaries |
+| Geotechnisches Gutachten (text only) | 101 | 0/0 | – | – | – | – | 0 |
+| U09 Ramm-/Sondierungsprofile (1 sheet) | 1 | 5/5 | 21/21 exact | 1/20 | 0/5 | 0/1 | 0 |
+
+| Sondierungen | Found (code) | Found (page) | Endtiefe ±5 cm | Ansatzhöhe | False |
+|---|---|---|---|---|---|
+| BER (80 DPH, one diagram per page) | 0/80 | 80/80 | 80/80 | 79/80 | 12 (Längsschnitt duplicates, code wrong) |
+| Planfeststellung (11 DPH + 13 CPT) | 11/24 | 11/24 | 7/24 | – | 1 (DPH 3 twice) |
+| U09 (5 DPH) | 0/5 | 0/5 | 0/5 | – | 0 |
+
+*Found (page)* gives a prediction on the main page of a truth of the same Art that truth's code: it separates "read
+the curve" from "read the code".
+
+What failed (general features, not exceptions per office):
+- **False Bohrung** (BER): the project number `Projekt-Nr.: B 231411` in a Längsschnitt title block was read as a
+  Bohrung code with a profile. A false Bohrung is worse than a missing one: highest priority.
+- **Codes with a station** (`B-5+365-G`, `SB-0+550-N3`, `DPH-0+550-G`): Bohrungen not recognised at all (0/80), DPH
+  codes cut at the first `-` (`DPH 0`), so 80 correct curves carry a wrong code.
+- **GOK** 0 of 200 although printed: `Ansatzpunkt: 476.76 m NHN (OK-Schiene)` and `216.31 m` under the code.
+- **Water** 0 of 134: blue labels `3.10 (213.21)` + date left of the column; the triangle is drawn away from the
+  label (KRB 7: at 2.26 m, label 3.10 m) and v4 took the triangle as a boundary (most of the 16 false boundaries).
+- **Planfeststellung**: KRB 41/47, BK with CPT 0/33, Schürfe 0/35 (scale 1:50, other column layout); CPT 0/13.
+- **Bodenart** U09: Schichten found but the soil left empty (1/20).
+- **DPH** U09: five DPH beside the Bohrsondierungen not found.
+- Right: the text-only Gutachten (101 pages, no Anlagen) gave 0 false; U09 boundaries 21/21 exact; BER Endtiefen and
+  Ansatzhöhen of all 80 DPH from the diagrams.
+
+These figures are **blind** and stay apart from the training figures; fixes from here on count as training.
+
 ## 9. Next steps
 
-1. **Fifth blind round with new German Gutachten** (the 4 blocked in round 3: Wolfsburg/GGU, NLWKN,
-   Böblingen, Königslutter), with v4 frozen and pushed before looking. It is the only figure that
-   will tell whether v4 generalises.
+1. Fifth blind round done (§8.8). Fix in this order: no project number as a Bohrung code, codes with a station
+   (`B-5+365-G`, `DPH-0+550-G`), GOK from `Ansatzpunkt`, blue water labels (and never the triangle as a boundary),
+   then sections at 1:50 (Schürfe) and CPT in sections.
 2. Raster: Schichtenverzeichnis by OCR, edges of colour fills (E7), water symbol by template from
    the legend (W4).
 3. DPH from **tables** (Triefenstein: N10 every 10 cm as text) and CPT (Berlin) in the data model

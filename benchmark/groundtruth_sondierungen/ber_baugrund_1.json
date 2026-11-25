@@ -1,0 +1,1130 @@
+{
+ "file": "16010000_GA_CG_BER_Baugrund_1_250610.pdf",
+ "source": "vom Nutzer bereitgestellt am 2026-11-25 (Blindtest Runde 5; oeffentliche URL nicht bekannt)",
+ "sha256": "ccbc750fd7889a74d726e77c375f37c4d72d72ca7ec1f1ddb285f02d4e77e6c3",
+ "transkribiert_von": "agent",
+ "notes": "Blindtest Runde 5. 80 schwere Rammsondierungen DPH (Anlage 5, S. 194-273, je Seite ein Diagramm N10, M 1:100). Code und Ansatzhoehe aus dem Kopf (DPH-8+420-N7: Ansatzpunkt nur 'GOK', ohne Hoehe), Endtiefe = Unterkante der Kurve an der Tiefenachse (0,1 m). Auch in den Baugrundlaengsschnitten S. 93-109 (auch_auf_seiten, aus der Textschicht). Werte nicht transkribiert.",
+ "sondierungen": [
+  {
+   "code": "DPH-0+550-G",
+   "art": "DPH",
+   "seite": 194,
+   "auch_auf_seiten": [
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 476.76,
+   "endtiefe": 5.3,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-0+650-N6",
+   "art": "DPH",
+   "seite": 195,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 476.22,
+   "endtiefe": 4.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-0+830-G",
+   "art": "DPH",
+   "seite": 196,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 476.77,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-0+933-W6",
+   "art": "DPH",
+   "seite": 197,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 476.1,
+   "endtiefe": 4.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-1+075-G",
+   "art": "DPH",
+   "seite": 198,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 476.77,
+   "endtiefe": 5.2,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-1+400-G",
+   "art": "DPH",
+   "seite": 199,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 477.8,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-1+700-G",
+   "art": "DPH",
+   "seite": 200,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 478.14,
+   "endtiefe": 4.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-1+865-G",
+   "art": "DPH",
+   "seite": 201,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 478.93,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-2+050-G",
+   "art": "DPH",
+   "seite": 202,
+   "auch_auf_seiten": [
+    93,
+    104
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 479.78,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-2+500-G",
+   "art": "DPH",
+   "seite": 203,
+   "auch_auf_seiten": [
+    93,
+    104,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 481.73,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-2+650-G",
+   "art": "DPH",
+   "seite": 204,
+   "auch_auf_seiten": [
+    93,
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 483.24,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-2+960-SO6",
+   "art": "DPH",
+   "seite": 205,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 485.19,
+   "endtiefe": 6.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-3+035-G",
+   "art": "DPH",
+   "seite": 206,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 485.05,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-3+217-G",
+   "art": "DPH",
+   "seite": 207,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 485.05,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-3+595-G",
+   "art": "DPH",
+   "seite": 208,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 486.97,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-3+710-G",
+   "art": "DPH",
+   "seite": 209,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 487.34,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+150-G",
+   "art": "DPH",
+   "seite": 210,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 487.8,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+330-G",
+   "art": "DPH",
+   "seite": 211,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 487.77,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+630-G",
+   "art": "DPH",
+   "seite": 212,
+   "auch_auf_seiten": [
+    94,
+    105
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 488.06,
+   "endtiefe": 9.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+770-G",
+   "art": "DPH",
+   "seite": 213,
+   "auch_auf_seiten": [
+    95,
+    105,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 488.76,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+770-N6",
+   "art": "DPH",
+   "seite": 214,
+   "auch_auf_seiten": [
+    94
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 487.6,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+770-S6",
+   "art": "DPH",
+   "seite": 215,
+   "auch_auf_seiten": [
+    95
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 487.71,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-4+915-G",
+   "art": "DPH",
+   "seite": 216,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.5,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+100-G",
+   "art": "DPH",
+   "seite": 217,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.75,
+   "endtiefe": 6.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+100-G2",
+   "art": "DPH",
+   "seite": 218,
+   "auch_auf_seiten": [
+    95
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.45,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+100-Weg",
+   "art": "DPH",
+   "seite": 219,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 490.36,
+   "endtiefe": 6.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+265-G",
+   "art": "DPH",
+   "seite": 220,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.77,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+365-G",
+   "art": "DPH",
+   "seite": 221,
+   "auch_auf_seiten": [
+    95,
+    100,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.79,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+376-G",
+   "art": "DPH",
+   "seite": 222,
+   "auch_auf_seiten": [
+    95,
+    100
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.79,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+565-G",
+   "art": "DPH",
+   "seite": 223,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.24,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-5+960-G",
+   "art": "DPH",
+   "seite": 224,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 491.16,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-6+110-G",
+   "art": "DPH",
+   "seite": 225,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 491.18,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-6+550-G",
+   "art": "DPH",
+   "seite": 226,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 491.21,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-6+740-G",
+   "art": "DPH",
+   "seite": 227,
+   "auch_auf_seiten": [
+    95,
+    106
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 491.21,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+250-G",
+   "art": "DPH",
+   "seite": 228,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.78,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+445-G",
+   "art": "DPH",
+   "seite": 229,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.6,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+530-G",
+   "art": "DPH",
+   "seite": 230,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.64,
+   "endtiefe": 6.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+660-G",
+   "art": "DPH",
+   "seite": 231,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.66,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+700-N11,5",
+   "art": "DPH",
+   "seite": 232,
+   "auch_auf_seiten": [
+    96
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.06,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+755-S15",
+   "art": "DPH",
+   "seite": 233,
+   "auch_auf_seiten": [
+    96
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.56,
+   "endtiefe": 6.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+830-G",
+   "art": "DPH",
+   "seite": 234,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.55,
+   "endtiefe": 7.3,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+880-N11",
+   "art": "DPH",
+   "seite": 235,
+   "auch_auf_seiten": [
+    96
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.72,
+   "endtiefe": 5.4,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-7+920-G",
+   "art": "DPH",
+   "seite": 236,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 490.63,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+135-N3",
+   "art": "DPH",
+   "seite": 237,
+   "auch_auf_seiten": [
+    96,
+    101
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 491.31,
+   "endtiefe": 8.9,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+180-S3",
+   "art": "DPH",
+   "seite": 238,
+   "auch_auf_seiten": [
+    101,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 489.5,
+   "endtiefe": 10.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+330-G",
+   "art": "DPH",
+   "seite": 239,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 493.16,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+420-N7",
+   "art": "DPH",
+   "seite": 240,
+   "auch_auf_seiten": [
+    96
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": null,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+715-G",
+   "art": "DPH",
+   "seite": 241,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 496.11,
+   "endtiefe": 6.8,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-8+860-G",
+   "art": "DPH",
+   "seite": 242,
+   "auch_auf_seiten": [
+    96,
+    107
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 496.62,
+   "endtiefe": 7.8,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-9+250-G",
+   "art": "DPH",
+   "seite": 243,
+   "auch_auf_seiten": [
+    96,
+    97,
+    107,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.38,
+   "endtiefe": 7.3,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-9+440-G",
+   "art": "DPH",
+   "seite": 244,
+   "auch_auf_seiten": [
+    97,
+    107,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.32,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-9+760-G",
+   "art": "DPH",
+   "seite": 245,
+   "auch_auf_seiten": [
+    97,
+    102,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.37,
+   "endtiefe": 10.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-9+780-G",
+   "art": "DPH",
+   "seite": 246,
+   "auch_auf_seiten": [
+    97,
+    102
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.33,
+   "endtiefe": 10.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-9+865-G",
+   "art": "DPH",
+   "seite": 247,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.24,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+010-G",
+   "art": "DPH",
+   "seite": 248,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.68,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+350-G",
+   "art": "DPH",
+   "seite": 249,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 499.09,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+460-N22",
+   "art": "DPH",
+   "seite": 250,
+   "auch_auf_seiten": [
+    97
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 498.74,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+480-G",
+   "art": "DPH",
+   "seite": 251,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 499.09,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+640-G",
+   "art": "DPH",
+   "seite": 252,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 499.07,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+640-W35",
+   "art": "DPH",
+   "seite": 253,
+   "auch_auf_seiten": [
+    97,
+    103
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.89,
+   "endtiefe": 10.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+640-W55",
+   "art": "DPH",
+   "seite": 254,
+   "auch_auf_seiten": [
+    97,
+    103
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 497.97,
+   "endtiefe": 9.7,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-10+790-G",
+   "art": "DPH",
+   "seite": 255,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 498.95,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-11+000-G",
+   "art": "DPH",
+   "seite": 256,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 499.88,
+   "endtiefe": 4.2,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-11+215-G",
+   "art": "DPH",
+   "seite": 257,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 501.19,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-11+350-G",
+   "art": "DPH",
+   "seite": 258,
+   "auch_auf_seiten": [
+    97,
+    108
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 501.49,
+   "endtiefe": 6.2,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-11+750-G",
+   "art": "DPH",
+   "seite": 259,
+   "auch_auf_seiten": [
+    97,
+    98,
+    108,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 502.59,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-11+900-G",
+   "art": "DPH",
+   "seite": 260,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 503.14,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+150-G",
+   "art": "DPH",
+   "seite": 261,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 504.26,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+300-G",
+   "art": "DPH",
+   "seite": 262,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 504.82,
+   "endtiefe": 6.3,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+300-W25",
+   "art": "DPH",
+   "seite": 263,
+   "auch_auf_seiten": [
+    98
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 503.14,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+380-G",
+   "art": "DPH",
+   "seite": 264,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 505.15,
+   "endtiefe": 7.6,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+400-W20",
+   "art": "DPH",
+   "seite": 265,
+   "auch_auf_seiten": [
+    98
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 503.71,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-12+640-G",
+   "art": "DPH",
+   "seite": 266,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 506.19,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+000-G",
+   "art": "DPH",
+   "seite": 267,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 507.61,
+   "endtiefe": 7.9,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+115-G",
+   "art": "DPH",
+   "seite": 268,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 507.93,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+250-G",
+   "art": "DPH",
+   "seite": 269,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 508.18,
+   "endtiefe": 6.4,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+340-G",
+   "art": "DPH",
+   "seite": 270,
+   "auch_auf_seiten": [
+    98
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 508.37,
+   "endtiefe": 7.5,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+415-G",
+   "art": "DPH",
+   "seite": 271,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 508.54,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+660-G",
+   "art": "DPH",
+   "seite": 272,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 510.07,
+   "endtiefe": 7.4,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH-13+820-G",
+   "art": "DPH",
+   "seite": 273,
+   "auch_auf_seiten": [
+    98,
+    109
+   ],
+   "form": "diagramm",
+   "ansatzhoehe": 511.01,
+   "endtiefe": 8.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  }
+ ]
+}

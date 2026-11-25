@@ -1,0 +1,64 @@
+{
+ "file": "U09.3.2_Anlage_1__Ramm-__Sonderungsprofile_und_Lageplan.pdf",
+ "source": "vom Nutzer bereitgestellt am 2026-11-25 (Blindtest Runde 5; oeffentliche URL nicht bekannt)",
+ "sha256": "ca947671c2e11562ede5b9575a8997a9a336f13cc9dd0c5149053df7af93f0c7",
+ "transkribiert_von": "agent",
+ "notes": "Blindtest Runde 5. 5 DPH (Schlagzahlen je 10 cm, Achse 0-40) als vektorielle Balkendiagramme neben den BS-Profilen; Endtiefe = Ende der Tiefenachse und der Balken (DPH 1, 2: 7,0 m; DPH 3-5: 5,0 m). Werte nicht transkribiert (werte_nicht_transkribiert).",
+ "sondierungen": [
+  {
+   "code": "DPH 1",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 193.01,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 2",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 191.18,
+   "endtiefe": 7.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 3",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 189.79,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 4",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 196.98,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  },
+  {
+   "code": "DPH 5",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "diagramm",
+   "ansatzhoehe": 197.03,
+   "endtiefe": 5.0,
+   "werte_nicht_transkribiert": true,
+   "werte": []
+  }
+ ]
+}

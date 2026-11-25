@@ -1,0 +1,164 @@
+{
+ "file": "U09.3.2_Anlage_1__Ramm-__Sonderungsprofile_und_Lageplan.pdf",
+ "sha256": "ca947671c2e11562ede5b9575a8997a9a336f13cc9dd0c5149053df7af93f0c7",
+ "source": "vom Nutzer bereitgestellt am 2026-11-25 (Blindtest Runde 5; oeffentliche URL nicht bekannt)",
+ "notes": "Blindtest Runde 5 (nach dem Einfrieren transkribiert). 1 Seite (2976x1162 pt, vektoriell): 5 Bohrsondierungen BS 1-5 (M 1:100, Labels = Schicht-UNTERKANTE) neben 5 Rammsondierungen DPH 1-5 (DIN EN ISO 22476-2) und Lageplan. A = Auffuellung; BS 5 unterste Schicht 'Ll, U, t' - t, fs'' (Loesslehm) ohne Bodenart erfasst. BS 2: Wasser 5,00 m am 05.04.13 (blaues Dreieck).",
+ "boreholes": [
+  {
+   "code": "BS 1",
+   "kind": "bohrung",
+   "page": 1,
+   "gok": 193.01,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.9,
+     "bottom": 2.2,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.2,
+     "bottom": 3.4,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 3.4,
+     "bottom": 3.9,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 3.9,
+     "bottom": 4.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 4.5,
+     "bottom": 4.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 4.8,
+     "bottom": 6.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 6.6,
+     "bottom": 7.0,
+     "soil": "Schluff"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 2",
+   "kind": "bohrung",
+   "page": 1,
+   "gok": 191.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.8,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.8,
+     "bottom": 3.4,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 3.4,
+     "bottom": 4.8,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 4.8,
+     "bottom": 5.0,
+     "soil": "Schluff"
+    },
+    {
+     "top": 5.0,
+     "bottom": 6.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 6.6,
+     "bottom": 7.0,
+     "soil": "Schluff"
+    }
+   ],
+   "gw_depths": [
+    5.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 3",
+   "kind": "bohrung",
+   "page": 1,
+   "gok": 189.79,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.2,
+     "bottom": 5.0,
+     "soil": "Auffuellung"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 4",
+   "kind": "bohrung",
+   "page": 1,
+   "gok": 196.98,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 4.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Schluff"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 5",
+   "kind": "bohrung",
+   "page": 1,
+   "gok": 197.03,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 3.8,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 3.8,
+     "bottom": 5.0
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  }
+ ]
+}

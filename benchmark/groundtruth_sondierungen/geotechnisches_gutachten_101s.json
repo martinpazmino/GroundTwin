@@ -1,0 +1,8 @@
+{
+ "file": "Geotechnisches_Gutachten.pdf",
+ "source": "vom Nutzer bereitgestellt am 2026-11-25 (Blindtest Runde 5; oeffentliche URL nicht bekannt)",
+ "sha256": "24ec07c80a39682dd4b9b1f9a77d75a31d144f323769bbd6a08e4ca1504ac219",
+ "transkribiert_von": "agent",
+ "notes": "Blindtest Runde 5 (nach dem Einfrieren transkribiert). Nur der Berichtstext (101 Seiten, G u D Geotechnik und Dynamik GmbH). Schichtenverzeichnisse (Anlage 3.1.1), Bohrprofile (3.2.1), Drucksondierungen (3.2.2) und Rammsondierungen (3.2.3) sind Anlagen und nicht in dieser Datei (Anlagenverzeichnis S. 100). Erwartet: 0 Bohrungen, 0 Sondierungen; Pruefung auf falsche Treffer aus dem Text.",
+ "sondierungen": []
+}
