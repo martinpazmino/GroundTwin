@@ -208,11 +208,11 @@ Trasse: R 565,000.00 / H 5,932,985.00 / GOK 45.00, as in the synthetic case).
 
 | File | What it does |
 |---|---|
-| [`apps/web/src/main.ts`](../apps/web/src/viewer/viewer.ts) | World, postproduction, Highlighter/Hider/Clipper, bottom bar, gear, ViewCube, HUD, side panel, Streamlit |
-| [`apps/web/src/kamera.ts`](../apps/web/src/viewer/kamera.ts) | Dynamic near/far, grid, views, framing next to the panel |
-| [`apps/web/src/lage.ts`](../apps/web/src/viewer/lage.ts) | Pins, plan, calibration, dragging, list without a position, Lage panel |
-| [`apps/web/src/rahmen.ts`](../apps/web/src/viewer/rahmen.ts) | Coordinate frame and exaggeration |
-| [`apps/web/src/streamlit.ts`](../apps/web/src/viewer/kanal.ts) | Protocol with Streamlit and numbered events |
+| [`apps/web/src/viewer/viewer.ts`](../apps/web/src/viewer/viewer.ts) | World, postproduction, Highlighter/Hider/Clipper, bottom bar, gear, ViewCube, HUD, side panel, Streamlit |
+| [`apps/web/src/viewer/kamera.ts`](../apps/web/src/viewer/kamera.ts) | Dynamic near/far, grid, views, framing next to the panel |
+| [`apps/web/src/viewer/lage.ts`](../apps/web/src/viewer/lage.ts) | Pins, plan, calibration, dragging, list without a position, Lage panel |
+| [`apps/web/src/viewer/rahmen.ts`](../apps/web/src/viewer/rahmen.ts) | Coordinate frame and exaggeration |
+| [`apps/web/src/viewer/kanal.ts`](../apps/web/src/viewer/kanal.ts) | Protocol with Streamlit and numbered events |
 | [`ui/projekt.py`](../ui/projekt.py) | Project state: corrections, Reihe, Lage, events, Prüfstand, einchecken, save/load |
 | `ui/baugrundmodell.py` (removed, see [21](21_app_schritte_normen.md)) | Page: tables → Lage → erzeugen → viewer → results |
 | [`ui/pipeline.py`](../ui/pipeline.py) | Extraction, `modell_bauen`/`ifc_bytes`, image of the plan |

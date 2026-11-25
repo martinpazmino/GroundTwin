@@ -817,7 +817,7 @@ npm install && npm run spike
 ### 8.3 Frontend integration (sketch, API v3.6)
 
 > [!NOTE]
-> Real implementation: [`apps/web/src/main.ts`](../apps/web/src/viewer/viewer.ts) (local WASM and
+> Real implementation: [`apps/web/src/viewer/viewer.ts`](../apps/web/src/viewer/viewer.ts) (local WASM and
 > worker, web-ifc 0.0.77, see [18 §5](18_layer_modeler.md#5-viewer-appsweb)).
 
 ```ts

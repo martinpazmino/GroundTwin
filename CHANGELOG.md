@@ -59,6 +59,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 - Homogenbereiche proposal (Issue #21, user decision): Hangschutt and Wiesenkalk always get a Bereich of their own,
   never *bindig*.
 
+### Fixed
+- Bodenkennwerte assignment (`op: "bodenkennwerte"`): a non-dict `zuordnung` payload now raises `ValueError` and
+  returns HTTP 400 instead of 500 (`services/modeler/baugrundmodell/bodenkennwerte.py`,
+  `tests/test_bodenkennwerte_app.py`).
+
 ### Added (earlier)
 - Water levels in scans (Issue #40, by Antigravity, checked by Claude): depth scale from an OCR depth/elevation ruler
   or `M 1:n` + GOK when interior lines vanish (rule `raster_massstab_ocr`, E8; a ruler contradicting the labels is

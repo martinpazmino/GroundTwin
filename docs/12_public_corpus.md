@@ -25,9 +25,9 @@ and one with a coordinate table.
 ## 1. How to unblock it (pick one)
 
 1. **Allow the domains** in the environment settings (Network access → Allowed domains): the hosts
-   in the `url` column of the manifest. Then: `python screen_corpus.py --download <dir>`.
+   in the `url` column of the manifest. Then: `python benchmark/screen_corpus.py --download <dir>`.
 2. **Download by hand** (browser) the PDFs of interest, put them in a folder outside the repo and
-   run `python screen_corpus.py --screen <dir> <output>`.
+   run `python benchmark/screen_corpus.py --screen <dir> <output>`.
 3. Upload them to the Claude session so that it evaluates them (they are not committed).
 
 ## 2. What to look for (5–10 well chosen > 50 at random)
@@ -46,7 +46,7 @@ and the labelled scale (`M 1:…`).
 
 ## 3. Evaluation without ground truth (first pass)
 
-Without ground truth only **self-consistency** can be measured (`screen_corpus.py`):
+Without ground truth only **self-consistency** can be measured (`benchmark/screen_corpus.py`):
 
 | Indicator | Sign of a problem |
 |---|---|
