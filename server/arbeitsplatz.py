@@ -45,6 +45,33 @@ if _ANALYSE not in sys.path:
     sys.path.insert(0, _ANALYSE)
 import baugrundanalyse as ga  # noqa: E402
 
+_WISSEN = str(Path(__file__).resolve().parents[1] / "services" / "wissen")
+if _WISSEN not in sys.path:
+    sys.path.insert(0, _WISSEN)
+import wissen  # noqa: E402
+
+def bereitschaft_lesbar(plan: dict) -> dict:
+    """Plan des Wissenskatalogs fuer App und Bericht: Namen statt ids, je fehlender Groesse was sie liefert."""
+    g, k = wissen.groessen(), wissen.katalog()
+    name = lambda x: {"id": x, "name": g.get(x, {}).get("name", x)}            # noqa: E731
+    eintraege = []
+    for eid, st in sorted(plan["eintraege"].items(), key=lambda kv: (["moeglich", "hinweisend", "blockiert"]
+                                                                      .index(kv[1]["status"]), kv[0])):
+        e = k[eid]
+        eintraege.append({"id": eid, "titel": e.get("title", eid), "art": e["kind"], "autoritaet": e["authority"],
+                          "quelle": e["source"]["citation"], "quelle_gelesen": bool(e["source"].get("verified")),
+                          "status": st["status"], "abdeckung": st.get("abdeckung"),
+                          "fehlt": [name(x) for x in st.get("fehlt", [])],
+                          "angenommen": [name(x) for x in st.get("angenommen", [])],
+                          "ohne": [name(x) for x in st.get("ohne", [])],
+                          "vorbehalte": list(e.get("preconditions") or [])})
+    fehlend = [{**name(x), **v} for x, v in sorted(plan["fehlende_grundgroessen"].items(),
+                                                    key=lambda kv: (-len(kv[1]["benoetigt_fuer"]), kv[0]))]
+    zaehl = {s: sum(e["status"] == s for e in eintraege) for s in ("moeglich", "hinweisend", "blockiert")}
+    return {"verfuegbar": [name(x) for x in plan["verfuegbar"]], "eintraege": eintraege, "fehlend": fehlend,
+            "ungenutzt": [name(x) for x in plan["ungenutzt"]], "zusammenfassung": zaehl}
+
+
 BEISPIELE = {
     "berlin": ("Berlin V-67b-VE – echte Daten, georeferenziert (7 Bohrungen)", "berlin_v67b.json"),
     "talheim": ("Talheim – echte Daten ohne Koordinaten (Reihe)", "talheim.json"),
@@ -452,6 +479,7 @@ class Arbeitsplatz:
                 "gebaeude": self._gebaeude_kopf(p, epsgs.most_common(1)[0][0] if epsgs else None),   # LoD2 (Kopf)
                 "sgd": self._sgd(sig, docs),
                 "geoldg": self._geoldg(docs, p, vorb, standort),
+                "bereitschaft": self._bereitschaft(docs, p, vorb),
                 "viewer": {"bohrungen": pj.viewer_bohrungen(docs, p, vorb, bericht), "ursprung": list(ursprung),
                            "epsg": epsgs.most_common(1)[0][0] if epsgs else kal_epsg or (standort or {}).get("epsg"),
                            "modus": p.lage_modus,
@@ -639,6 +667,11 @@ class Arbeitsplatz:
                     "vorschlaege": ga.vorschlaege(m, u, anzahl=3),
                     "sigma_max_m": round(float(np.nanmax(sig_knoten)), 2) if np.isfinite(sig_knoten).any() else None}
 
+    def bereitschaft(self, sig: str) -> dict:
+        with self.sperre(sig):
+            docs, p = self.laden(sig)
+            return self._bereitschaft(docs, p, self.vorbereitung(docs, p)[0])
+
     def grundwasser(self, sig: str) -> dict:
         """Grundwasserflaeche aus den Wasserstaenden (docs/27 G5): Staende, Pruefungen, Flaeche fuer den Viewer."""
         with self.sperre(sig):
@@ -766,6 +799,21 @@ class Arbeitsplatz:
         inhalt, _ = tiles3d.exportieren(ifc, int(m.epsg), geoid, info)
         return inhalt, f"{stamm}_3dtiles.zip", "application/zip"
 
+    # ------------------------------------------------------------ Bewertbarkeit (A3, Issue #35, docs/29 §8.3)
+    @staticmethod
+    def _bereitschaft(docs: list[dict], p: pj.Projekt, vorb: pj.Vorbereitung) -> dict:
+        """Was dieses Projekt bewerten kann und was fehlt: der Planer des Wissenskatalogs (A2) auf den Grundgroessen
+        des Projekts. Lage in der Reihe gilt als fehlend (schematisch, angenommen); Sondierungen zaehlen nur mit Lage,
+        GOK und Werten (wie im IFC)."""
+        da = {g for g in wissen.verfuegbar_aus_dokumenten(vorb.docs, p.homogenbereiche or None)
+              if not g.startswith("sondierung.")}
+        if p.lage_modus == pj.LAGE_REIHE:
+            da.discard("bohrung.lage")
+        for s in sd.fuer_ifc(docs, p)[0]:
+            if s.get("werte"):
+                da.add("sondierung.cpt_qc" if str(s.get("art", "")).upper().startswith("CPT") else "sondierung.dph_n10")
+        return bereitschaft_lesbar(wissen.planen(da))
+
     @staticmethod
     def _geoldg(docs: list[dict], p: pj.Projekt, vorb: pj.Vorbereitung, standort: dict | None) -> dict:
         """Pruefliste nach GeolDG (docs/21 §5.3): eigene Bohrungen im Modell mit ihren wirksamen Werten, Fristen."""
@@ -844,7 +892,8 @@ class Arbeitsplatz:
             g, manifest = agsi.bauen(m, bericht, vorb.docs, projekt=p.name or "Baugrundmodell",
                                      ifc_uri=quote(f"geometrie/{stamm}.ifc"),
                                      boreholeml_uri=quote(f"fachdaten/{stamm}_boreholeml.xml") if bml else None,
-                                     homogenbereiche=p.homogenbereiche or None, analyse=analyse, version=VERSION)
+                                     homogenbereiche=p.homogenbereiche or None, analyse=analyse, version=VERSION,
+                                     bereitschaft=self._bereitschaft(docs, p, vorb))
         fehler = agsi.pruefen(g) + agsi.manifest_pruefen(g, manifest)
         if fehler:                                         # Fehler des Exporters, nicht der Eingabe
             raise RuntimeError("AGSi-Paket inkonsistent: " + "; ".join(fehler[:5]))

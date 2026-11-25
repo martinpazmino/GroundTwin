@@ -140,7 +140,7 @@ existing rule *the LLM proposes, the geometry decides* (architecture §6.9).
 | A0 | decisions and vocabulary (D108): scope, value kinds, package parts, catalogue schema (**done** 2026-11-22: `services/wissen/schemas`) | — |
 | A1 | package v0: AGSi export + manifest + report from existing data (**built** 2026-11-22, §8.1) | A0 |
 | A2 | catalogue v0 + planner; migrate `normen.json`, `homogenbereiche.json`, Homogenbereich proposal (**built** 2026-11-24, §8.2) | A0 |
-| A3 | readiness view per project (§6 generated) in the app and the report | A2 |
+| A3 | readiness view per project (§6 generated) in the app and the report (**built** 2026-11-25, §8.3; expert review open) | A2 |
 | B | data extension: groundwater kind/date (#26), Sondierungen (#27), report tables and lab values (#18) | parallel; critical path |
 | A4 | first correlations with uncertainty (CPT SBT, DPH density; #28, #29) | A2, B |
 | A5 | exports: AGS4, PLAXIS-oriented boreholes/CPT, LLM tools (#30) | A1 |
@@ -196,6 +196,38 @@ Homogenbereiche and normen tests are untouched. A test checks that every pointer
 - **CPT:** shows up as *ungenutzt* until A4 adds correlations.
 
 The readiness view (A3, #35) renders this per project.
+
+### 8.3 A3 built: readiness view per project (Issue #35, 2026-11-25)
+
+The planner of §8.2 runs on the base quantities of each project. In the server this is `_bereitschaft`; it is in the
+project state, at `GET /api/projekt/{sig}/bereitschaft`, and in the app under *Modell → Erweitert → Bewertbarkeit*.
+
+Project rules:
+- a Lage in the Reihe counts as **assumed** (schematic);
+- Sondierungen count only with Lage, GOK and values, as in the IFC;
+- a Homogenbereich mapping set by the planner counts as the input `hb.zuordnung`.
+
+Each entry shows ✓ *möglich*, ◐ *hinweisend* (with what was assumed or how much was covered) or ✗ *blockiert* (with
+what is missing). A list then names each missing quantity, the test or document that provides it, and how many
+assessments need it.
+
+The information package (A1) carries the same in `manifest.json` (`bereitschaft`) and as the section *Bewertbarkeit*
+of `bericht.md`.
+
+**Hand check:**
+
+| Project | Base quantities | Result |
+|---|---|---|
+| Berlin | Schichten, Lage (UTM), GOK, description, Wasserstände with their kind; the 6 scanned Sondierungen have no Lage and do not count | 8 möglich, 1 hinweisend (DAUB 2/8), 5 blockiert (all Labor rules, Homogenbereich Kennwerte until a mapping exists) |
+| Talheim | Reihe, so the Lage is assumed and the layer model is *hinweisend*; Labor has only Wassergehalt (and CBR, Trockendichte, not used) | I<sub>c</sub> blocked for w_L and w_P; after a DIN 18300 mapping, Homogenbereich Kennwerte become *möglich* |
+
+The DAUB pre-selection reaches 2 of 8 inputs from descriptions alone, consistent with the experiment of docs/30 §4.
+
+**Still open in #35:**
+- the review with the geotechnical expert;
+- showing "no fines named" as an *assumed* value, which needs a catalogue entry for fines from the description.
+
+Tests: `tests/test_bereitschaft_app.py` and one end-to-end check.
 
 ## 9. Alternatives considered
 

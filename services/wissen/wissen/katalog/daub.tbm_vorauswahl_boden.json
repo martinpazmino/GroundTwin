@@ -29,7 +29,7 @@
  ],
  "preconditions": [
   "Eingaben sind charakteristische Werte des Gutachtens (DAUB 7.1.1); GroundTwin setzt sie nicht",
-  "ersetzt keine Stuetzdruckberechnung; Ergebnis ist eine Einstufung je Parameter, nie eine Maschinenwahl"
+  "ersetzt keine Stützdruckberechnung; Ergebnis ist eine Einstufung je Parameter, nie eine Maschinenwahl"
  ],
  "validity": {},
  "uncertainty": {

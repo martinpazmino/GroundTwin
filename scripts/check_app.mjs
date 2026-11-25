@@ -679,6 +679,12 @@ try {
     /bis 30\.12\.2026/.test(frist) && rohGeoldg.startsWith("PK") && /_geoldg\.zip$/.test(paketGeoldg.suggestedFilename()) &&
     ["LIESMICH.txt", "pruefliste.csv", "bewertungsdaten_GeolDG_10/modelldokumentation.txt"].every((d) => rohGeoldg.includes(d)),
     `${frist} · ${paketGeoldg.suggestedFilename()} · ${Math.round(rohGeoldg.length / 1024)} KB`);
+  // Bewertbarkeit (A3, docs/29 §8.3): aus dem Wissenskatalog, gezaehlt und je Eintrag mit Stand
+  const bewertbar = (await page.locator(".bereitschaft").innerText().catch(() => "")).replace(/\s+/g, " ");
+  const bwZahl = await page.evaluate(() => window.app?.z?.bereitschaft?.zusammenfassung);
+  pruefe("Bewertbarkeit: möglich / hinweisend / blockiert aus dem Wissenskatalog",
+    !!bwZahl && bwZahl.moeglich > 0 && /möglich/.test(bewertbar) && /Schichtenmodell/.test(bewertbar),
+    bewertbar.slice(0, 120));
   await page.screenshot({ path: `${aus}/D3_modell.png` });
 
   // ---------------------------------------------------------------- E: PDF mit Extraktion
