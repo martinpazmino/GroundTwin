@@ -1,6 +1,6 @@
 """Stufe Sondierungen (services/extractor/sondierungen.py, Issue #27, docs/05 §5): ohne Netz und ohne echte Gutachten.
 
-Die Faelle werden im Test erzeugt: die acht Stressfaelle (stress_sondierungen.py, mit Wahrheit) und eigene Proben in
+Die Faelle werden im Test erzeugt: die neun Stressfaelle (stress_sondierungen.py, mit Wahrheit) und eigene Proben in
 einem anderen Layout (Achse 0-40, Kurve als Polylinie oder als Einzelstriche). Bewertet wird mit demselben Werkzeug
 wie die Messung (benchmark/sondierungen_eval.py). Jede Pruefung zeigt auch, dass sie greift ("Regel aus -> Fall faellt").
 """
@@ -52,7 +52,8 @@ def anteil(bruch: str) -> tuple[int, int]:
 
 
 FAELLE = ["s01_dph_diagramm", "s02_dph_tabelle", "s03_dph_laengsschnitt", "s04_cpt_linear_log",
-          "s05_zensiert", "s06_zweiseitig", "s07_falle_bohrprofil_lineal", "s08_falle_labortabelle"]
+          "s05_zensiert", "s06_zweiseitig", "s07_falle_bohrprofil_lineal", "s08_falle_labortabelle",
+          "s09_stationscode_achse"]
 
 
 @pytest.mark.parametrize("fall", FAELLE)
@@ -72,6 +73,7 @@ SCHUTZ = [
     ("achse_arithmetisch_und_rahmen", "s06_zweiseitig", "dph_schritt_1"),
     ("mehrseitig_verbinden", "s06_zweiseitig", "falsche_werte"),               # Fortsetzung als eigene Sondierung
     ("laengsschnitt_hoehenmassstab", "s03_dph_laengsschnitt", "gefunden"),        # Achse je Seite neu
+    ("stationscode", "s09_stationscode_achse", "falsche_sondierungen"),           # 'DPH-0+550-G' nicht kuerzen (#54)
 ]
 
 

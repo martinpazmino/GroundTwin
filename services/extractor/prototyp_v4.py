@@ -38,6 +38,11 @@ from prototyp_v2 import (DATE_RE, GOK_RE, PT_TO_M_AT_1_1, classify_hatch, coordi
 
 ID_RE = re.compile(r"^(B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*(\d+[a-z]?)(/\d{2})?$")
 HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d+[a-z]?(?:/\d{2})?)(?:\s*[-–:]\s*[A-Za-zÄÖÜäöü0-9].*)?$")
+# Code mit Station (Strecken): 'B-5+365-G', 'SB-0+550-N3', 'SB-7+700-N11,5' (#54)
+STATION_HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|SB|GWM|SCH)-\d{1,3}\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)$")
+GOK_UE_NN_RE = re.compile(r"([+-]?\d{1,4}[.,]\d{1,2})\s*m\s*(?:ü|ue)\.?\s*(?:NN|NHN)\b", re.I)
+GOK_ALLEIN_RE = re.compile(r"^([+-]?\d{1,4}[.,]\d{2})\s*m$")
+SCHRIFTFELD_RE = re.compile(r"(?:Projekt|Auftrag|Akten|Bericht|Zeichnungs|Plan|Anlagen?)\s*-?\s*(?:Nr|Nummer)\.?\s*:?\s*$", re.I)
 DEPTH_RE = re.compile(r"^\d{1,3}[.,]\d{1,2}\s?m?$")              # DC-Software: '0.20m'
 GW_TEXT_RE = re.compile(r"(?<![A-Za-z])GW(?![A-Za-z]).*?(\d{1,3}[.,]\d{1,2})\s?m(?![A-Za-z])|(\d{1,3}[.,]\d{1,2})\s?m\s*u\.?\s*GOK", re.I)
 SCALE_RE = re.compile(r"(?:M(?:a(?:ss|ß)stab)?\.?|H(?:ö|oe)hen-?Ma(?:ss|ß)stab)?\s*1\s*:\s*(\d{2,4})\b")
@@ -92,6 +97,12 @@ RULES = {
     "sv_wasser": True,           # W5   Wasserstaende im Schichtenverzeichnis spaltenweise mit Art, Datum und Beleg lesen
     "line_reading_order": True,  # E9   Woerter einer Zeile in Leserichtung (word_no/Achse), nicht nach y0 (#49)
     "ls_wasserlinien": True,     # W6   Wasserlinien (HGW/MGW/Bemessungswasserstand/GW <Datum>) im Laengsschnitt (#26 2b)
+    "kein_schriftfeld_code": True,  # T6 Nummer im Schriftfeld ('Projekt-Nr.: B 231411', > 4 Ziffern) ist kein Code (#54)
+    "station_heads": True,       # T7   Code mit Station 'B-5+365-G', 'SB-0+550-N3' (#54)
+    "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
+    "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
+    "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "gw_blaue_labels": True,     # W7   blaues Wasserlabel '3.10 (213.21)' + Datum gilt, nicht das Dreieck (#54)
 }
 
 CODE_TOKEN = r"[A-Z0-9][A-Za-z0-9]*(?:[-/.][A-Za-z0-9]+)*"
@@ -1888,12 +1899,25 @@ def schichtenverzeichnis(doc, prims: dict | None = None) -> dict[str, dict]:
     return {k: v for k, v in out.items() if v["bottoms"]}
 
 
+def _schriftfeld_nummer(r: pymupdf.Rect, code: str, lines) -> bool:
+    """T6: 'Projekt-Nr.: B 231411' - mehr als 4 Ziffern oder ein Nummernfeld links in derselben Zeile."""
+    if (m := re.search(r"\d+", code)) and len(m.group(0)) > 4:
+        return True
+    return any(abs(q.y0 - r.y0) < 3 and q.x1 <= r.x0 + 2 and r.x0 - q.x1 < 80 and SCHRIFTFELD_RE.search(u.strip())
+               for q, u in lines)
+
+
 def find_heads(lines) -> list[tuple[pymupdf.Rect, str]]:
     """E2: Koepfe. Kuerzel (mit Zusatz), 'Bohrung <Code>' (auch zweizeilig), Archivcodes."""
     heads = []
     for r, t in lines:
         t = re.sub(r"\s+", " ", t.strip())
+        if RULES["station_heads"] and (m := STATION_HEAD_RE.match(t)):
+            heads.append((r, m.group(1)))
+            continue
         m = HEAD_RE.match(t) if RULES["head_suffix"] else ID_RE.match(t)
+        if m and RULES["kein_schriftfeld_code"] and _schriftfeld_nummer(r, m.group(1) if RULES["head_suffix"] else m.group(0), lines):
+            continue
         if m:
             heads.append((r, re.sub(r"\s+", " ", m.group(1) if RULES["head_suffix"] else m.group(0))))
             continue
@@ -2072,6 +2096,15 @@ def extract(pdf: Path):
             for r, t in lines:
                 if hr.y0 - 2 <= r.y0 <= col.rect.y0 + 4 and abs((r.x0 + r.x1) / 2 - hx) < 90 and (m := GOK_RE.search(t)):
                     gok = float((m.group(1) or m.group(2)).replace(",", "."))
+                elif RULES["gok_unter_kopf"] and hr.y0 - 2 <= r.y0 <= col.rect.y0 + 4 \
+                        and abs((r.x0 + r.x1) / 2 - hx) < 90 and (m := GOK_UE_NN_RE.search(t)):
+                    gok = float(m.group(1).replace(",", "."))   # '193,01 m ü. NN', 'Ansatzpunkt: 476.76 m NHN'
+
+            if gok is None and RULES["gok_unter_kopf"]:     # T8: '216.31 m' allein zwischen Kopf und Saeule (#54)
+                unter = [r_t for r_t in lines if hr.y1 - 2 <= r_t[0].y0 and r_t[0].y1 <= col.rect.y0 + 1
+                         and abs((r_t[0].x0 + r_t[0].x1) / 2 - hx) < 60 and GOK_ALLEIN_RE.match(r_t[1].strip())]
+                if len(unter) == 1:
+                    gok = float(GOK_ALLEIN_RE.match(unter[0][1].strip()).group(1).replace(",", "."))
             if gok is None and sheet_anchor:                  # Einzelblatt: Kopfdaten irgendwo ueber dem Profil
                 gok = page_gok(lines, col.rect.y0)
             ruler_fit = raster_ruler_scale(words, col, [col] if sheet_anchor else acols, gok) \
@@ -2304,9 +2337,127 @@ def extract(pdf: Path):
             prev = d
         bh.cross_check = "nur SV"
         out.append(bh)
+    if RULES["gw_blaue_labels"]:
+        _blaue_wasserlabels(doc, out)
+    if RULES["doppel_labels"]:
+        _doppel_labels(doc, out)
     for bh in out:
         _confidence(bh)
     return out, dph
+
+
+WL_RE = re.compile(r"^(\d{1,2}[.,]\d{2})\s*m?\s*(?:\(\s*([+-]?\d{1,4}[.,]\d{2})\s*\))?$")
+
+
+DOPPEL_RE = re.compile(r"^(\d{1,2}[.,]\d{2})\s*\(\s*([+-]?\d{1,4}[.,]\d{2})\s*\)$")
+
+
+def _doppel_labels(doc, boreholes) -> None:
+    """T9 (#54): traegt jede Grenze ein Label 'Tiefe (Hoehe)' mit Tiefe + Hoehe = GOK, ist eine Linie ohne Label keine
+    Grenze (Schraffur, Probe, Fuehrungslinie). Nur wenn alle Doppellabels der Saeule eine bestaetigte Grenze sind."""
+    zeilen: dict[int, list] = {}
+    for bh in boreholes:
+        if not (bh.bbox and bh.gok is not None and bh.mode != "schichtenverzeichnis" and len(bh.layers) > 1):
+            continue
+        if bh.page - 1 not in zeilen:
+            zeilen[bh.page - 1] = [(pymupdf.Rect(ln["bbox"]), " ".join(sp["text"] for sp in ln["spans"]).strip())
+                                   for blk in doc[bh.page - 1].get_text("dict")["blocks"] for ln in blk.get("lines", [])]
+        x0, y0, x1, y1 = bh.bbox
+        werte = []
+        for r, t in zeilen[bh.page - 1]:
+            if (m := DOPPEL_RE.match(t)) and x1 - 5 <= r.x0 <= x1 + 120 and y0 - 5 <= r.y0 <= y1 + 40:
+                d, h = float(m.group(1).replace(",", ".")), float(m.group(2).replace(",", "."))
+                if abs(d + h - bh.gok) <= 0.05:
+                    werte.append(d)
+        bestaetigt = [ly.bottom for ly in bh.layers if ly.label_confirmed]
+        if len(werte) < 2 or not all(any(abs(w - g) <= 0.02 for g in bestaetigt) for w in werte):
+            continue
+        k = 0
+        while k < len(bh.layers) - 1:
+            ly = bh.layers[k]
+            if not ly.label_confirmed and not any(abs(ly.bottom - w) <= 0.02 for w in werte):
+                nx = bh.layers.pop(k + 1)
+                bh.issues.append(f"Grenze {ly.bottom} m ohne Label 'Tiefe (Hoehe)' verworfen")
+                ly.bottom, ly.soil, ly.text = nx.bottom, ly.soil or nx.soil, (ly.text + " " + nx.text).strip()
+                ly.label_confirmed = nx.label_confirmed
+                continue
+            k += 1
+
+
+def _ist_blau(farbe: int) -> bool:
+    r, g, b = (farbe >> 16) & 255, (farbe >> 8) & 255, farbe & 255
+    return b >= 128 and b > r + 60 and b > g + 30
+
+
+def _blaue_wasserlabels(doc, boreholes) -> None:
+    """W7 (#54): blaues Label '3.10 (213.21)' mit Datum links/rechts der Saeule. Das Label ist der Wert; das Dreieck
+    steht in Schnitten oft verschoben. Mit Hoehe in Klammern muss Tiefe + Hoehe = GOK (+-5 cm) sein."""
+    je_seite: dict[int, list] = defaultdict(list)
+    for bh in boreholes:
+        if bh.bbox and bh.mode != "schichtenverzeichnis":
+            je_seite[bh.page - 1].append(bh)
+    for pno, bhs in je_seite.items():
+        spans = []
+        for blk in doc[pno].get_text("dict")["blocks"]:
+            for ln in blk.get("lines", []):
+                for sp in ln["spans"]:
+                    if sp["text"].strip() and _ist_blau(sp.get("color", 0)):
+                        spans.append((pymupdf.Rect(sp["bbox"]), sp["text"].strip()))
+        if not spans:
+            continue
+        blaue_linien = [dr for dr in doc[pno].get_drawings() if dr.get("color") and len(dr["color"]) == 3
+                        and dr["color"][2] >= 0.5 and dr["color"][2] > dr["color"][0] + 0.2]
+        labels: dict[int, list] = defaultdict(list)
+        for r, t in spans:
+            if not (m := WL_RE.match(t)):
+                continue
+            def abstand(bh):
+                x0, y0, x1, y1 = bh.bbox
+                if not (y0 - 5 <= (r.y0 + r.y1) / 2 <= y1 + 5):
+                    return None
+                dx = x0 - r.x1 if r.x1 <= x0 + 2 else (r.x0 - x1 if r.x0 >= x1 - 2 else None)
+                return dx if dx is not None and dx < 160 else None
+            nah = [(abstand(bh), i) for i, bh in enumerate(bhs) if abstand(bh) is not None]
+            if not nah:
+                continue
+            i = min(nah)[1]
+            d = float(m.group(1).replace(",", "."))
+            h = float(m.group(2).replace(",", ".")) if m.group(2) else None
+            datum = " ".join(u for q, u in spans if 0 <= q.y0 - r.y1 < 14 and abs(q.x0 - r.x0) < 40)
+            labels[i].append((d, h, f"{t} {datum}".strip()))
+        for i, ls in labels.items():
+            bh = bhs[i]
+            ok = []
+            for d, h, beleg in ls:
+                if h is not None and bh.gok is not None and abs(d + h - bh.gok) > 0.05:
+                    bh.issues.append(f"Wasserlabel {beleg}: Tiefe + Hoehe passt nicht zur GOK {bh.gok}, nicht uebernommen")
+                    continue
+                ok.append((d, beleg))
+            if not ok:
+                continue
+            alt = [x for x in bh.gw_depths if not any(abs(x - d) <= 0.03 for d, _ in ok)]
+            if alt:
+                bh.issues.append(f"Wassersymbol bei {alt} m ohne Label verworfen: das blaue Label gilt")
+            bh.gw_depths = sorted({d for d, _ in ok})
+            if bh.fit:                                       # Wasserlinie/Symbol an der Saeule ist keine Schichtgrenze
+                a, b = bh.fit
+                x0, _, x1, _ = bh.bbox
+                blau_y = [dr["rect"].y0 for dr in blaue_linien if dr["rect"].height < 0.5
+                          and dr["rect"].x1 >= x0 - 15 and dr["rect"].x0 <= x1 + 15]
+                k = 0
+                while k < len(bh.layers) - 1:
+                    ly = bh.layers[k]
+                    if not ly.label_confirmed and any(abs((ly.bottom - b) / a - y) < 1.5 for y in blau_y):
+                        nx = bh.layers.pop(k + 1)
+                        bh.issues.append(f"Grenze {ly.bottom} m an der blauen Wasserlinie verworfen")
+                        ly.bottom, ly.soil, ly.text = nx.bottom, ly.soil or nx.soil, (ly.text + " " + nx.text).strip()
+                        ly.label_confirmed = nx.label_confirmed
+                        continue
+                    k += 1
+            for d, beleg in ok:
+                gi = gw_info(beleg)
+                if d not in bh.gw_info or bh.gw_info[d].get("kind") == "unbestimmt":
+                    bh.gw_info[d] = {**gi, "evidence": gi.get("evidence") or beleg}
 
 
 def _confidence(bh: "Borehole") -> None:
@@ -2373,6 +2524,15 @@ def _assign_text(bh: Borehole, col: Column, lines, words, fit, mode, pairs, righ
     if RULES["top_convention"] and not mode.startswith("direkt") and tops and tops[0] == 0.0:
         lab = sorted([(r, float(t.rstrip("m ").replace(",", "."))) for r, t, *_ in words if DEPTH_RE.match(t)
                       and r.x0 > col.rect.x1 and float(t.rstrip("m ").replace(",", ".")) in tops], key=lambda e: e[0].y0)
+        if RULES["top_null_gedruckt"]:                    # nur Labels an dieser Saeule, nicht die Achse daneben
+            lab = [(r, v) for r, v in lab if r.x0 - col.rect.x1 < 60]
+        if RULES["top_null_gedruckt"] and lab and not any(v == 0.0 for _, v in lab):
+            # T10 (#54): ohne gedrucktes 0,00 entscheidet die Lage der Texte - beginnt er unter dem Label (Oberkante)
+            # oder sitzt er direkt darueber (Unterkante, Beschreibung ueber dem Label)?
+            unter = sum(1 for lr, _ in lab if any(-2 <= r.y0 - lr.y0 <= 12 and r.x0 >= lr.x1 - 1 for r, _t in right))
+            ueber = sum(1 for lr, _ in lab if any(-1 <= lr.y0 - r.y1 <= 10 and abs(r.x0 - lr.x0) <= 8 for r, _t in right))
+            if ueber > unter:
+                lab = []
         for i, (lr, v) in enumerate(lab):
             nxt = lab[i + 1][0].y0 if i + 1 < len(lab) else lr.y0 + 200
             txt = " ".join(t for r, t in right if lr.y0 - 3 <= r.y0 < nxt - 3 and r.x0 >= lr.x1 - 1)
@@ -2382,7 +2542,29 @@ def _assign_text(bh: Borehole, col: Column, lines, words, fit, mode, pairs, righ
                     ly.text = txt
         if lab:                                           # sonst: Labels links -> Lage im Intervall
             return
-    for ly in bh.layers:
+    schon: set[int] = set()
+    if RULES["top_null_gedruckt"]:                        # T10: Beschreibung steht ueber ihrem Unterkanten-Label
+        bottoms = {ly.bottom for ly in bh.layers}
+        unten = sorted([(r, v) for r, t, *_ in words if DEPTH_RE.match(t) and 0 < r.x0 - col.rect.x1 < 60
+                        and (v := float(t.rstrip("m ").replace(",", "."))) in bottoms], key=lambda e: e[0].y0)
+        # Konvention nur, wenn die Beschreibungszeile direkt ueber ihrem Label sitzt (gleiches x), bei >= 80 % der Labels
+        direkt = {}
+        for lr, v in unten:                               # die naechste Zeile direkt ueber dem Label (<= 10 pt)
+            ueber = [(lr.y0 - r.y1, t) for r, t in right if -1 <= lr.y0 - r.y1 <= 10 and abs(r.x0 - lr.x0) <= 8]
+            direkt[v] = [min(ueber)[1]] if ueber else []
+        if len(unten) >= 2 and len(unten) >= 0.8 * len(bh.layers) and sum(1 for v in direkt.values() if v) >= 0.8 * len(unten):
+            texte: dict[float, list] = defaultdict(list)
+            for v, ts in direkt.items():
+                if ts:
+                    texte[v].extend(ts)
+            for k, ly in enumerate(bh.layers):
+                if ly.bottom in texte:
+                    ly.text = " ".join(texte[ly.bottom])
+                    ly.soil = classify_v3(texte[ly.bottom][0].split(",")[0]) or classify_v3(ly.text)
+                    schon.add(k)
+    for k, ly in enumerate(bh.layers):
+        if k in schon:
+            continue
         y0, y1 = (ly.top - b) / a, (ly.bottom - b) / a
         txt = " ".join(t for r, t in right if y0 - 2 <= (r.y0 + r.y1) / 2 < y1 + 2)
         if txt:

@@ -134,6 +134,8 @@ Each rule switched off on the three vector PDFs, the stress and the synthetic ca
 | `einzelstriche_verketten` | none here; the single-stroke probe gives no values (§5.3) |
 | `scan_konservativ` | none without OCR; it withholds the Berlin CPT values |
 | `tabelle_luecken_melden`, `cpt_log_achse`, `endpruefung_monoton_und_achse` | none on these cases (they mark or check; kept, measured again with the next real case) |
+| `stationscode` (#54) | s09: code `DPH-0+550-G` cut to `DPH 0` → 0/1 found, 1 false Sondierung, 40 false values; blind round 5 BER: 80 DPH with a cut code |
+| `achse_zeile_ausgerichtet` (#54) | none on the synthetic cases; on the U09 sheet (round 5, training) the `0.0` of the depth axis joins the row of the value ticks and no DPH is found (3/5 with the rule) |
 
 The tests hold the strongest ones: rule off → case fails (`tests/test_sondierungen_extraktion.py`).
 

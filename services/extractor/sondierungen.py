@@ -46,6 +46,8 @@ REGELN: dict[str, bool] = {
     "scan_konservativ": True,
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
+    "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
+    "stationscode": True,                 # #54: DPH-0+550-G (Code mit Station und Zusatz) ungekuerzt
 }
 
 DPH_ARTEN = {"DPH", "DPL", "DPM", "DPSH", "SRS"}
@@ -56,15 +58,22 @@ SOND_KOPF_RE = re.compile(
     r"^(?:Sondierung(?:\s*Nr\.?)?\s*:?\s*|"
     r"(?:Schwere|Leichte|Mittelschwere)\s+Rammsondierung\s+|"
     r"Drucksondierung\s+)?"
-    r"(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?)"
+    r"(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?(?:\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)?)"
     r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\)|\s*[-–:]\s*.*)?$",
     re.I,
 )
 SOND_SUCH_RE = re.compile(
-    r"\b(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?)"
-    r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\))?\b",
+    r"\b(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?(?:\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)?)"
+    r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\))?(?![\w+])",
     re.I,
 )
+def _code(art: str, nr: str) -> str:
+    """'DPH 1'; mit Station wie gedruckt 'DPH-0+550-G' (#54). Ohne Regel: Station abschneiden (altes Verhalten)."""
+    if "+" in nr:
+        return f"{art}-{nr}" if REGELN["stationscode"] else f"{art} {nr.split('+')[0]}"
+    return f"{art} {nr}"
+
+
 ARCHIV_SOND_RE = re.compile(r"^(DS\s*\d+[a-z]?/\d{2}|D\s*\d+[a-z]?/\d{2}|R\s*\d+[a-z]?)$")
 BOHR_CODE_RE = re.compile(r"^(?:B|BK|KB|KRB|RKS|BS|GWM|SCH|RB|SST)\s*\d+[a-z]?(?:/\d{2}|/[IVX]+)?$")
 
@@ -541,7 +550,7 @@ def _finde_koepfe(sd: _SeitenDaten) -> list[_Kopf]:
         if m:
             art_raw, nr, fts = m.group(1), m.group(2), m.group(3)
             art = _art_norm(art_raw)
-            code = f"{art} {nr}"
+            code = _code(art, nr)
             if fts and not REGELN["mehrseitig_verbinden"]:
                 code = f"{code} ({fts})"
             key = (_norm_code(code), round(r.x0 / (25 * sf)), round(r.y0 / (25 * sf)))
@@ -554,7 +563,7 @@ def _finde_koepfe(sd: _SeitenDaten) -> list[_Kopf]:
         if len(tf.split()) <= 8 and not NEGATIV_KONTEXT_RE.search(tf):
             for sm in SOND_SUCH_RE.finditer(tf):
                 art = _art_norm(sm.group(1))
-                code = f"{art} {sm.group(2)}"
+                code = _code(art, sm.group(2))
                 fts = sm.group(3)
                 if fts and not REGELN["mehrseitig_verbinden"]:
                     code = f"{code} ({fts})"
@@ -1257,6 +1266,10 @@ def _kalibriere_x_achsen(sd: _SeitenDaten, rahmen: pymupdf.Rect) -> list[_AchseX
 
         kand_achsen: list[_AchseX] = []
         for grp in zeilen_grp:
+            if REGELN["achse_zeile_ausgerichtet"] and len(grp) >= 3:
+                # eine Achse ist eine ausgerichtete Zeile: '0.0' der Tiefenachse daneben gehoert nicht dazu (#54)
+                med = float(np.median([(e[0].y0 + e[0].y1) / 2.0 for e in grp]))
+                grp = [e for e in grp if abs((e[0].y0 + e[0].y1) / 2.0 - med) <= 3.0 * sf]
             grp.sort(key=lambda e: (e[0].x0 + e[0].x1) / 2.0)
             # Duplikate bei gleichem x/Wert entfernen
             clean: list[tuple[pymupdf.Rect, float]] = []

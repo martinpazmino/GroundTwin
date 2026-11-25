@@ -105,17 +105,6 @@
   "falsches GW": 0,
   "GW-Status": "4/4"
  },
- "real/talheim": {
-  "Bohrungen": "10/10",
-  "Grenzen": "65/65",
-  "Grenzen exakt": "65/65",
-  "Bodenart": "8/8",
-  "GOK": "8/8",
-  "GW": "4/4",
-  "falsche Bohrungen": 0,
-  "falsche Grenzen": 0,
-  "falsches GW": 0
- },
  "real/triefenstein_bp41": {
   "Bohrungen": "5/5",
   "Grenzen": "24/24",
@@ -486,6 +475,50 @@
   "falsche Grenzen": 0,
   "falsches GW": 0
  },
+ "stress/s31_projektnummer": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s32_stationscode": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s33_schnitt_doppellabel": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "1/1",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s34_unterkante_text_darueber": {
+  "Bohrungen": "1/1",
+  "Grenzen": "6/6",
+  "Grenzen exakt": "6/6",
+  "Bodenart": "6/6",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
  "synth/synth_A": {
   "Bohrungen": "3/3",
   "Grenzen": "18/18",
@@ -557,5 +590,16 @@
   "falsche Grenzen": 0,
   "falsches GW": 0,
   "XY": "2/2"
+ },
+ "real/talheim": {
+  "Bohrungen": "10/10",
+  "Grenzen": "65/65",
+  "Grenzen exakt": "65/65",
+  "Bodenart": "8/8",
+  "GOK": "8/8",
+  "GW": "4/4",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
  }
 }
