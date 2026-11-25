@@ -237,6 +237,31 @@ def test_im_netz_anmeldung_lebenszeichen_und_upload_grenze(tmp_path, monkeypatch
         assert r.status_code == 413 and "höchstens" in r.json()["detail"]
 
 
+def test_anmeldung_benutzer_fehlerhafte_koepfe_und_umgebung(tmp_path, monkeypatch):
+    """Online (docs/22): GEO_AGENT_BENUTZER/-PASSWORT/-MAX_MB/-QUELLCODE aus Umgebung; fehlerhafte Koepfe -> 401."""
+    import base64
+    monkeypatch.setattr(pl, "ARBEIT", tmp_path)
+    monkeypatch.setenv("GEO_AGENT_BENUTZER", "ing")
+    monkeypatch.setenv("GEO_AGENT_PASSWORT", "geheim")
+    monkeypatch.setenv("GEO_AGENT_MAX_MB", "0.001")
+    monkeypatch.setenv("GEO_AGENT_QUELLCODE", "https://example.org/src")
+    with TestClient(app_erstellen(tmp_path)) as c:
+        assert c.get("/gesund").json()["ok"]
+        assert c.get("/api/info", auth=("falsch", "geheim")).status_code == 401
+        assert c.get("/api/info", auth=("ing", "falsch")).status_code == 401
+        for kopf in ("Bearer geheim", "Basic !!!", "Basic " + base64.b64encode(b"\xff:").decode(),
+                     "Basic " + base64.b64encode(b"geheim").decode()):
+            assert c.get("/api/info", headers={"Authorization": kopf}).status_code == 401
+        r = c.get("/api/info", auth=("ing", "geheim"))
+        assert r.status_code == 200 and r.json()["quellcode"] == "https://example.org/src"
+        zu_gross = c.post("/api/gutachten", auth=("ing", "geheim"),
+                          files={"dateien": ("a.pdf", b"%PDF-" + b"0" * 5000, "application/pdf")})
+        assert zu_gross.status_code == 413
+        kaputt = c.post("/api/gutachten", auth=("ing", "geheim"),
+                        files={"dateien": ("a.pdf", b"nein", "application/pdf")})
+        assert kaputt.status_code == 400
+
+
 def test_unbekanntes(client):
     assert client.get("/api/projekt/abc123/").status_code in (404, 405)
     assert client.get("/api/projekt/000000000000").status_code == 404

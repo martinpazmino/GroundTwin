@@ -134,7 +134,9 @@
    "doku": "docs/22_deployment.md",
    "routen": ["GET /gesund"],
    "ops": [],
-   "beweis": {"tests": ["tests/test_server.py::test_im_netz_anmeldung_lebenszeichen_und_upload_grenze", "tests/test_online.py::test_ganzer_ablauf_mit_nachgebautem_cloudflared"],
+   "beweis": {"tests": ["tests/test_server.py::test_im_netz_anmeldung_lebenszeichen_und_upload_grenze",
+                        "tests/test_server.py::test_anmeldung_benutzer_fehlerhafte_koepfe_und_umgebung",
+                        "tests/test_online.py::test_ganzer_ablauf_mit_nachgebautem_cloudflared"],
               "e2e": []}}
  ]
 }
