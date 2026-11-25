@@ -1,0 +1,41 @@
+{
+ "id": "modell.schichtenmodell",
+ "version": "1.0.0",
+ "title": "Schichtenmodell (Layer-Cake) aus den Bohrungen",
+ "kind": "analysis",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin-Modellierer, docs/18 (exakte Kontakte, geschlossene Koerper, IFC 4.3)",
+  "verified": true
+ },
+ "inputs": {
+  "required": [
+   "bohrung.schichten",
+   "bohrung.lage",
+   "bohrung.gok"
+  ]
+ },
+ "outputs": [
+  "modell.einheiten",
+  "modell.flaechen"
+ ],
+ "preconditions": [
+  "Lage fehlt: Reihe mit eigenen Abstaenden (schematisch, markiert)",
+  "GOK fehlt bei allen: 0 m relativ (markiert)"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "absolute",
+  "note": "exakt an den Bohrungen, dazwischen interpoliert; Groesse aus der Kreuzprobe"
+ },
+ "when_missing": {
+  "bohrung.schichten": "block",
+  "bohrung.lage": "assume",
+  "bohrung.gok": "assume"
+ },
+ "value_kind_of_outputs": "modelled",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.modell:bauen"
+}

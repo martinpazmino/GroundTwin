@@ -1,0 +1,34 @@
+{
+ "id": "ansprache.konsistenz_lagerung",
+ "version": "1.0.0",
+ "title": "Konsistenz und Lagerungsdichte aus der Ansprache",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN EN ISO 14688-1 (Konsistenzbegriffe), DIN 4023; Woerter in normen.json",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "boden.beschreibung"
+  ]
+ },
+ "outputs": [
+  "boden.konsistenz_klasse",
+  "boden.lagerungsdichte_klasse"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "Feldansprache, keine Messung; nur wenn genannt"
+ },
+ "when_missing": {
+  "boden.beschreibung": "block"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.homogenbereiche:kennwerte_aus_beschreibung"
+}

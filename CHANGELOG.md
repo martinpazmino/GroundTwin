@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Knowledge catalogue v0 and planner (Issue #34, A2 of GroundTwin Analysis): package `wissen` with a vocabulary of
+  quantities (what provides each), 14 entries (existing rules and analyses as entries pointing to their code, plus the
+  DAUB TBM pre-selection SLS/EPB as data), planner (möglich / hinweisend / blockiert, missing inputs, what each would
+  unlock), computed dependency graph, PROV-style record in the manifest format. `tests/test_wissen.py`, docs/29 §8.2.
 - Water lines in the Längsschnitt (Issue #26 part 2b, rule `ls_wasserlinien`, W6): reads HGW, MGW, MHGW, HHGW, zeHGW,
   MNGW, Bemessungswasserstand, Bauwasserstand and `GW <Datum>` polylines from calibrated vector Längsschnitte
   (NHN margin axis or borehole GOKs + `H 1:n`, optional station axis `0+100`, legend abbreviations, GOK and

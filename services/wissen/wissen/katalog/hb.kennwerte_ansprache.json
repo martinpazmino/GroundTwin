@@ -1,0 +1,36 @@
+{
+ "id": "hb.kennwerte_ansprache",
+ "version": "1.0.0",
+ "title": "Kennwerte je Homogenbereich aus der Ansprache",
+ "kind": "rule",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin docs/28 §6; VOB/C-Matrix homogenbereiche.json",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "hb.zuordnung",
+   "boden.beschreibung"
+  ]
+ },
+ "outputs": [
+  "hb.kennwerte_ansprache"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "Ansprache; Laborwerte bleiben offen"
+ },
+ "when_missing": {
+  "hb.zuordnung": "block",
+  "boden.beschreibung": "block"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.homogenbereiche:kennwerte_bereich",
+ "daten_datei": "services/modeler/baugrundmodell/homogenbereiche.json"
+}

@@ -1,0 +1,34 @@
+{
+ "id": "ansprache.din18196_bodengruppe",
+ "version": "1.0.0",
+ "title": "Bodengruppe nach DIN 18196 aus der Beschreibung",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN 18196 (Gruppensymbole), Beleg je Wert in normen.json",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "boden.beschreibung"
+  ]
+ },
+ "outputs": [
+  "boden.bodengruppe_din18196"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "nur wenn die Beschreibung die Gruppe nennt oder eindeutig ableiten laesst"
+ },
+ "when_missing": {
+  "boden.beschreibung": "block"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.normen:deuten",
+ "daten_datei": "services/modeler/baugrundmodell/normen.json"
+}

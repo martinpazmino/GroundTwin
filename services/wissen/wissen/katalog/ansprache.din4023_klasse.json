@@ -1,0 +1,34 @@
+{
+ "id": "ansprache.din4023_klasse",
+ "version": "1.0.0",
+ "title": "Bodenart und Klasse aus der Beschreibung (DIN 4023, DIN EN ISO 14688-1)",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN 4023 Tab. 2/3 und DIN EN ISO 14688-1, Beleg je Wert in normen.json (Vorlagen des Nutzers)",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "boden.beschreibung"
+  ]
+ },
+ "outputs": [
+  "boden.klasse_din4023"
+ ],
+ "preconditions": [],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "nicht klassifizierte Beschreibungen bleiben 'unklassifiziert' (nie geraten)"
+ },
+ "when_missing": {
+  "boden.beschreibung": "block"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.normen:deuten",
+ "daten_datei": "services/modeler/baugrundmodell/normen.json"
+}

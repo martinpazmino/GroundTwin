@@ -1,0 +1,41 @@
+{
+ "id": "analyse.grundwasserflaeche",
+ "version": "1.0.0",
+ "title": "Grundwasserflaeche aus den Wasserstaenden",
+ "kind": "analysis",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin Ground Analysis G5, docs/27 §6.6",
+  "verified": true
+ },
+ "inputs": {
+  "required": [
+   "grundwasser.staende",
+   "modell.flaechen"
+  ],
+  "optional": [
+   "grundwasser.art"
+  ]
+ },
+ "outputs": [
+  "analyse.grundwasserflaeche"
+ ],
+ "preconditions": [
+  "kein Bemessungswasserstand; Schichtenwasser bleibt draussen"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "absolute",
+  "note": "Arten und Tage gemischt -> Hinweis"
+ },
+ "when_missing": {
+  "grundwasser.staende": "block",
+  "modell.flaechen": "block",
+  "grundwasser.art": "skip"
+ },
+ "value_kind_of_outputs": "modelled",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundanalyse.grundwasser:grundwasser"
+}

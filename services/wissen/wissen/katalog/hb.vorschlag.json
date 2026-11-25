@@ -1,0 +1,41 @@
+{
+ "id": "hb.vorschlag",
+ "version": "1.0.0",
+ "title": "Vorschlag Homogenbereiche je ATV (Verhalten, Bodengruppe, Steine)",
+ "kind": "rule",
+ "authority": "expert",
+ "source": {
+  "citation": "GroundTwin docs/28 §5; Kennwerte-Matrix VOB/C (DIN 18301/18304/18311/18324 gegen den Volltext geprueft)",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "modell.einheiten",
+   "boden.klasse_din4023"
+  ],
+  "optional": [
+   "boden.bodengruppe_din18196"
+  ]
+ },
+ "outputs": [
+  "hb.vorschlag"
+ ],
+ "preconditions": [
+  "ein Vorschlag; uebernommen nur mit einem Klick des Planers"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical"
+ },
+ "when_missing": {
+  "modell.einheiten": "block",
+  "boden.klasse_din4023": "block",
+  "boden.bodengruppe_din18196": "skip"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "implementierung": "baugrundmodell.homogenbereiche:vorschlag_fuer",
+ "daten_datei": "services/modeler/baugrundmodell/homogenbereiche.json"
+}

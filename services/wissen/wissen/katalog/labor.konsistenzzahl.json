@@ -1,0 +1,44 @@
+{
+ "id": "labor.konsistenzzahl",
+ "version": "1.0.0",
+ "title": "Konsistenzzahl I_c = (w_L − w) / (w_L − w_P)",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN EN ISO 17892-12 (Zustandsgrenzen), Definition der Konsistenzzahl",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "labor.wassergehalt",
+   "labor.fliessgrenze",
+   "labor.ausrollgrenze"
+  ]
+ },
+ "outputs": [
+  "boden.konsistenzzahl"
+ ],
+ "preconditions": [],
+ "validity": {
+  "boden.konsistenzzahl": [
+   -1.0,
+   2.5
+  ]
+ },
+ "uncertainty": {
+  "model": "none",
+  "note": "Formel; Unsicherheit aus den drei Messungen"
+ },
+ "when_missing": {
+  "labor.wassergehalt": "block",
+  "labor.fliessgrenze": "block",
+  "labor.ausrollgrenze": "block"
+ },
+ "value_kind_of_outputs": "derived",
+ "tests": [
+  "tests/test_wissen.py"
+ ],
+ "daten": {
+  "formel": "(w_L - w) / (w_L - w_P)"
+ }
+}
