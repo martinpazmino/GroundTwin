@@ -122,6 +122,35 @@ function geoldgTeil() {
     </section>`;
 }
 
+const STAND: Record<string, [string, string]> = {
+  moeglich: ["✓", "möglich"], hinweisend: ["◐", "hinweisend"], blockiert: ["✗", "blockiert"],
+};
+
+function bereitschaftTeil() {
+  const b = S.z!.bereitschaft;
+  if (!b) return nothing;
+  const zs = b.zusammenfassung;
+  const namen = (l: { name: string }[]) => l.map((x) => x.name).join(", ");
+  return html`
+    <section class="abschnitt-flach bereitschaft">
+      <h3>Bewertbarkeit ${hilfe("bereitschaft")}</h3>
+      <p class="klein bereitschaft-stand"><b>${zs.moeglich}</b> möglich · <b>${zs.hinweisend}</b> hinweisend ·
+        <b>${zs.blockiert}</b> blockiert, aus ${b.verfuegbar.length} Grundgrößen dieses Projekts.</p>
+      <ul class="bereitschaft-liste">${b.eintraege.map((e) => html`
+        <li class=${`stand-${e.status}`} data-eintrag=${e.id} title=${`${e.quelle}${e.quelle_gelesen ? "" : " (Quelle nicht gelesen)"}`}>
+          <span aria-label=${STAND[e.status][1]}>${STAND[e.status][0]}</span> ${e.titel}${e.abdeckung ? html` <span class="leise">(${e.abdeckung})</span>` : nothing}
+          ${e.fehlt.length ? html`<div class="klein leise">fehlt: ${namen(e.fehlt)}</div>` : nothing}
+          ${e.angenommen.length ? html`<div class="klein leise">angenommen: ${namen(e.angenommen)}</div>` : nothing}
+        </li>`)}</ul>
+      ${b.fehlend.length ? html`<details class="protokoll"><summary>Was fehlt und wer es liefert (${b.fehlend.length})</summary>
+        <ul>${b.fehlend.map((f) => html`<li><b>${f.name}</b>${f.eingabe ? " (Eingabe)" : ""}: ${f.liefert || "–"}
+          <span class="leise klein">– gebraucht für ${f.benoetigt_fuer.length}${f.schaltet_frei.length
+            ? `, schaltet allein frei: ${f.schaltet_frei.length}` : ""}</span></li>`)}</ul></details>` : nothing}
+      ${b.ungenutzt.length ? html`<p class="klein leise">Vorhanden, aber noch ohne Bewertung: ${namen(b.ungenutzt)}.</p>` : nothing}
+      <p class="leise klein">GroundTwin leitet ab; charakteristische Werte legt der Ingenieur fest.</p>
+    </section>`;
+}
+
 let erweitertAuf = false;                       // vom Nutzer geöffnet (bleibt beim Neuzeichnen)
 
 export function schrittModell() {
@@ -196,7 +225,7 @@ export function schrittModell() {
 
       <details class="erweitert" ?open=${erweitert}
         @toggle=${(e: Event) => { erweitertAuf = (e.target as HTMLDetailsElement).open; }}>
-        <summary>Erweitert <span class="leise klein">Exporte · Cesium · BoreholeML · GeolDG · Ground Analysis · Darstellung</span></summary>
+        <summary>Erweitert <span class="leise klein">Exporte · Cesium · BoreholeML · GeolDG · Bewertbarkeit · Ground Analysis · Darstellung</span></summary>
         <section class="abschnitt-flach">
           <h3>Weitere Exporte</h3>
           <div class="export-liste">
@@ -206,6 +235,7 @@ export function schrittModell() {
           </div>
         </section>
         ${geoldgTeil()}
+        ${bereitschaftTeil()}
         ${analyseViewerTeil()}
         <section class="abschnitt-flach">
           <h3>Darstellung</h3>

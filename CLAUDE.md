@@ -48,7 +48,8 @@ license **AGPL-3.0-or-later** (D79).
   model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked); proposal per ATV
   (`hb.vorschlag_fuer`, `/homogenbereiche/vorschlag`: Verhalten, then Bodengruppe/Steine by the ATV's Kennwerte; a click); Kennwerte from the
   descriptions per Bereich (`hb.kennwerte_bereich`, `/homogenbereiche/kennwerte`, IFC `Kennwert_…`, `Kennwerte_offen`;
-  Ansprache only, laboratory values stay open). DIN 4023 Tab. 2/3
+  Ansprache only, laboratory values stay open; Sondierungen N10/q_c per Bereich as measured values next to Kennwert 13/11a/11b,
+  never classified, `baugrundanalyse/sondierung_einheiten.py`, §6.1, #29). DIN 4023 Tab. 2/3
   colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
   `tests/test_homogenbereiche_app.py`. §9 Bodenkennwerte from the report tables (#18): extraction stage
   `services/extractor/kennwerte.py` (table or list, not prototyp_v4), `baugrundmodell/bodenkennwerte.py` (proposal per
@@ -71,7 +72,7 @@ license **AGPL-3.0-or-later** (D79).
   model (`sd.fuer_ifc`, `ifc_schreiben(sondierungen=)`). Part 4 (docs/05 §8): BoreholeML has no sounding codes →
   `bml:Borehole` + `bml:investigation` (SM, parameter SON + free text, CSV `valueMatrix`), DPU for CPT, nil for DPH;
   only reviewed with values, UTM and GOK; import reads them back as Sondierungen; valid against the official XSD.
-- `docs/29_groundtwin_analysis.md` (D108, accepted; schemas in `services/wissen/schemas`, tests `tests/test_wissen_schemas.py`; **A1 built**: information package `geodaten/agsi.py`, export `agsi` = AGSi 1.0.1 + manifest + report + IFC/BoreholeML, valid against the official schema, properties only, tests `tests/test_agsi.py`, docs/29 §8.1; **A2 built**: knowledge catalogue `services/wissen/wissen` (vocabulary `groessen.json`, entries `katalog/*.json` pointing to existing code, planner `wissen.planen`, no imports of other parts), tests `tests/test_wissen.py`, docs/29 §8.2) and `docs/30_groundtwin_analysis_research.md`:
+- `docs/29_groundtwin_analysis.md` (D108, accepted; schemas in `services/wissen/schemas`, tests `tests/test_wissen_schemas.py`; **A1 built**: information package `geodaten/agsi.py`, export `agsi` = AGSi 1.0.1 + manifest + report + IFC/BoreholeML, valid against the official schema, properties only, tests `tests/test_agsi.py`, docs/29 §8.1; **A2 built**: knowledge catalogue `services/wissen/wissen` (vocabulary `groessen.json`, entries `katalog/*.json` pointing to existing code, planner `wissen.planen`, no imports of other parts), tests `tests/test_wissen.py`, docs/29 §8.2; **A3 built**: readiness view `bereitschaft` (state, `GET /api/projekt/{sig}/bereitschaft`, Modell → Erweitert, section of the AGSi report), tests `tests/test_bereitschaft_app.py`, docs/29 §8.3) and `docs/30_groundtwin_analysis_research.md`:
   GroundTwin Analysis = umbrella over Ground Analysis: package (AGSi 1.0.1 interpreted + BoreholeML/AGS4 factual +
   IFC + manifest; AGSi forbids own attributes, so value kind/provenance go into the manifest), declarative knowledge
   catalogue with computed dependencies, readiness planner. GroundTwin derives, the engineer sets characteristic
@@ -172,7 +173,7 @@ license **AGPL-3.0-or-later** (D79).
   `npm run build` and **commit `apps/web/dist`** (the server uses it without Node); web-ifc 0.0.77 (X9). Test:
   `python scripts/testplan.py <plans>` and in `apps/web` `node scripts/check.mjs <model.ifc> <plans> <screenshots>` (19).
 - End to end: `python -m server --port <p> --kein-browser --arbeit <empty>` and `node scripts/check_app.mjs
-  http://localhost:<p> <plans> <screenshots>` (59 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
+  http://localhost:<p> <plans> <screenshots>` (60 checks, also when run twice on the same server; B3, B4, B5 (with 3D Tiles) and F need the network and are left out when the service cannot be reached; with a password: `GEO_AGENT_PASSWORT=…`). `pkill`/`pgrep -f`
   in a separate command (X3, X19).
 - Online (docs/22, D80): `Dockerfile` (python:3.13-slim, OCR off with `--build-arg OCR=0`, data in `/data`, user
   1000) and the `render.yaml` blueprint. Variables: `PORT`, `GEO_AGENT_HOST`, `GEO_AGENT_PASSWORT` (HTTP Basic except

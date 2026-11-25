@@ -1,7 +1,7 @@
 {
  "id": "labor.durchlaessigkeit",
  "version": "1.0.0",
- "title": "Durchlaessigkeit k aus dem Laborversuch",
+ "title": "Durchlässigkeit k aus dem Laborversuch",
  "kind": "rule",
  "authority": "standard",
  "source": {

@@ -2,41 +2,153 @@
  "format": 1,
  "beschreibung": "Groessen des Wissenskatalogs (D108, docs/29 §3): jede Eingabe und Ausgabe eines Eintrags ist hier genannt. 'liefert' sagt, welcher Versuch oder welches Dokument eine Eingangsgroesse bringt (Planer, A3). 'eingabe' = setzt ein Mensch (nie abgeleitet).",
  "groessen": {
-  "bohrung.schichten":            {"name": "Schichtenverzeichnis / Bohrprofil", "liefert": "Bohrprofil oder Schichtenverzeichnis des Gutachtens (DIN 4023 / DIN EN ISO 14688-1)"},
-  "bohrung.lage":                 {"name": "Lage der Bohrung", "liefert": "Koordinaten im Gutachten, kalibrierter Lageplan oder Eingabe"},
-  "bohrung.gok":                  {"name": "Ansatzhoehe (GOK)", "einheit": "m NHN", "liefert": "Bohrprofil, Vermessung oder DGM"},
-  "boden.beschreibung":           {"name": "Bodenansprache (Beschreibung je Schicht)", "liefert": "Schichtenverzeichnis des Gutachtens"},
-  "labor.messwerte":              {"name": "Laborwerte je Probe", "liefert": "Laborblaetter in den Anlagen des Gutachtens"},
-  "labor.wassergehalt":           {"name": "Wassergehalt w", "einheit": "%", "liefert": "Wassergehalt (DIN EN ISO 17892-1)"},
-  "labor.fliessgrenze":           {"name": "Fliessgrenze w_L", "einheit": "%", "liefert": "Zustandsgrenzen (DIN EN ISO 17892-12)"},
-  "labor.ausrollgrenze":          {"name": "Ausrollgrenze w_P", "einheit": "%", "liefert": "Zustandsgrenzen (DIN EN ISO 17892-12)"},
-  "labor.korngroesse":            {"name": "Korngroessenverteilung (Ton, Schluff, Sand, Kies)", "einheit": "%", "liefert": "Korngroessenverteilung (DIN EN ISO 17892-4)"},
-  "labor.kf":                     {"name": "Durchlaessigkeitsbeiwert k aus dem Versuch", "einheit": "m/s", "liefert": "Durchlaessigkeitsversuch (DIN EN ISO 17892-11)"},
-  "sondierung.dph_n10":           {"name": "Rammsondierung N10 (DPH)", "liefert": "Rammsondierung (DIN EN ISO 22476-2) mit Lage und GOK"},
-  "sondierung.cpt_qc":            {"name": "Drucksondierung q_c (CPT)", "einheit": "MN/m²", "liefert": "Drucksondierung (DIN EN ISO 22476-1) mit Lage und GOK"},
-  "grundwasser.staende":          {"name": "Wasserstaende je Bohrung", "einheit": "m NHN", "liefert": "Bohrprofil/Schichtenverzeichnis oder Wasserstandstabelle des Gutachtens"},
-  "grundwasser.art":              {"name": "Art und Datum der Wasserstaende", "liefert": "Angabe im Gutachten (angetroffen, Ruhewasser, nach Bohrende …)"},
-  "hb.zuordnung":                 {"name": "Homogenbereiche je ATV (Zuordnung Einheit → Bereich)", "eingabe": true, "liefert": "Festlegung durch den Planer (VOB/C)"},
-  "tunnel.stuetzdruck":           {"name": "Stuetzdruck an der Ortsbrust", "einheit": "bar", "eingabe": true, "liefert": "Stuetzdruckberechnung des Tunnelplaners (DAUB 7.1.1)"},
-  "boden.quellpotential":         {"name": "Quellpotential", "liefert": "Quellversuch bzw. Angabe des Gutachters"},
-  "boden.abrasivitaet_aequ":      {"name": "Abrasivitaet als aequivalenter Quarzgehalt", "einheit": "%", "liefert": "Mineralogische Analyse (aequivalenter Quarzgehalt)"},
-
-  "boden.klasse_din4023":         {"name": "Bodenart und Klasse nach DIN 4023 / DIN EN ISO 14688-1"},
-  "boden.bodengruppe_din18196":   {"name": "Bodengruppe nach DIN 18196"},
-  "boden.konsistenz_klasse":      {"name": "Konsistenz (breiig … fest) aus der Ansprache"},
-  "boden.lagerungsdichte_klasse": {"name": "Lagerungsdichte (locker … dicht) aus der Ansprache"},
-  "boden.konsistenzzahl":         {"name": "Konsistenzzahl I_c", "einheit": "-"},
-  "boden.feinkornanteil":         {"name": "Feinkornanteil < 0,063 mm", "einheit": "%"},
-  "boden.durchlaessigkeit_k":     {"name": "Durchlaessigkeit k", "einheit": "m/s"},
-  "modell.einheiten":             {"name": "Einheiten des Baugrundmodells"},
-  "modell.flaechen":              {"name": "Grenzflaechen und Koerper des Schichtenmodells"},
-  "analyse.kreuzprobe":           {"name": "Kreuzprobe (Fehler der Unterkanten, eine Bohrung weggelassen)", "einheit": "m"},
-  "analyse.sigma_grenzen":        {"name": "Unsicherheit der Grenzen (σ)", "einheit": "m"},
-  "analyse.grundwasserflaeche":   {"name": "Grundwasserflaeche aus den Wasserstaenden", "einheit": "m NHN"},
-  "labor.statistik_einheit":      {"name": "Laborwerte je Einheit (n, min, max, Mittel)"},
-  "hb.vorschlag":                 {"name": "Vorschlag Homogenbereiche je ATV"},
-  "hb.kennwerte_ansprache":       {"name": "Kennwerte je Homogenbereich aus der Ansprache"},
-  "daub.eignung_sls":             {"name": "DAUB-Einstufung Flüssigkeitsschild (+/o/–) je Parameter"},
-  "daub.eignung_epb":             {"name": "DAUB-Einstufung Erddruckschild (+/o/–) je Parameter"}
+  "bohrung.schichten": {
+   "name": "Schichtenverzeichnis / Bohrprofil",
+   "liefert": "Bohrprofil oder Schichtenverzeichnis des Gutachtens (DIN 4023 / DIN EN ISO 14688-1)"
+  },
+  "bohrung.lage": {
+   "name": "Lage der Bohrung",
+   "liefert": "Koordinaten im Gutachten, kalibrierter Lageplan oder Eingabe"
+  },
+  "bohrung.gok": {
+   "name": "Ansatzhöhe (GOK)",
+   "einheit": "m NHN",
+   "liefert": "Bohrprofil, Vermessung oder DGM"
+  },
+  "boden.beschreibung": {
+   "name": "Bodenansprache (Beschreibung je Schicht)",
+   "liefert": "Schichtenverzeichnis des Gutachtens"
+  },
+  "labor.messwerte": {
+   "name": "Laborwerte je Probe",
+   "liefert": "Laborblätter in den Anlagen des Gutachtens"
+  },
+  "labor.wassergehalt": {
+   "name": "Wassergehalt w",
+   "einheit": "%",
+   "liefert": "Wassergehalt (DIN EN ISO 17892-1)"
+  },
+  "labor.fliessgrenze": {
+   "name": "Fließgrenze w_L",
+   "einheit": "%",
+   "liefert": "Zustandsgrenzen (DIN EN ISO 17892-12)"
+  },
+  "labor.ausrollgrenze": {
+   "name": "Ausrollgrenze w_P",
+   "einheit": "%",
+   "liefert": "Zustandsgrenzen (DIN EN ISO 17892-12)"
+  },
+  "labor.korngroesse": {
+   "name": "Korngrößenverteilung (Ton, Schluff, Sand, Kies)",
+   "einheit": "%",
+   "liefert": "Korngrößenverteilung (DIN EN ISO 17892-4)"
+  },
+  "labor.kf": {
+   "name": "Durchlässigkeitsbeiwert k aus dem Versuch",
+   "einheit": "m/s",
+   "liefert": "Durchlässigkeitsversuch (DIN EN ISO 17892-11)"
+  },
+  "sondierung.dph_n10": {
+   "name": "Rammsondierung N10 (DPH)",
+   "liefert": "Rammsondierung (DIN EN ISO 22476-2) mit Lage und GOK"
+  },
+  "sondierung.cpt_qc": {
+   "name": "Drucksondierung q_c (CPT)",
+   "einheit": "MN/m²",
+   "liefert": "Drucksondierung (DIN EN ISO 22476-1) mit Lage und GOK"
+  },
+  "grundwasser.staende": {
+   "name": "Wasserstände je Bohrung",
+   "einheit": "m NHN",
+   "liefert": "Bohrprofil/Schichtenverzeichnis oder Wasserstandstabelle des Gutachtens"
+  },
+  "grundwasser.art": {
+   "name": "Art und Datum der Wasserstände",
+   "liefert": "Angabe im Gutachten (angetroffen, Ruhewasser, nach Bohrende …)"
+  },
+  "hb.zuordnung": {
+   "name": "Homogenbereiche je ATV (Zuordnung Einheit → Bereich)",
+   "eingabe": true,
+   "liefert": "Festlegung durch den Planer (VOB/C)"
+  },
+  "tunnel.stuetzdruck": {
+   "name": "Stützdruck an der Ortsbrust",
+   "einheit": "bar",
+   "eingabe": true,
+   "liefert": "Stützdruckberechnung des Tunnelplaners (DAUB 7.1.1)"
+  },
+  "boden.quellpotential": {
+   "name": "Quellpotential",
+   "liefert": "Quellversuch bzw. Angabe des Gutachters"
+  },
+  "boden.abrasivitaet_aequ": {
+   "name": "Abrasivität als äquivalenter Quarzgehalt",
+   "einheit": "%",
+   "liefert": "Mineralogische Analyse (äquivalenter Quarzgehalt)"
+  },
+  "boden.klasse_din4023": {
+   "name": "Bodenart und Klasse nach DIN 4023 / DIN EN ISO 14688-1"
+  },
+  "boden.bodengruppe_din18196": {
+   "name": "Bodengruppe nach DIN 18196"
+  },
+  "boden.konsistenz_klasse": {
+   "name": "Konsistenz (breiig … fest) aus der Ansprache"
+  },
+  "boden.lagerungsdichte_klasse": {
+   "name": "Lagerungsdichte (locker … dicht) aus der Ansprache"
+  },
+  "boden.konsistenzzahl": {
+   "name": "Konsistenzzahl I_c",
+   "einheit": "-"
+  },
+  "boden.feinkornanteil": {
+   "name": "Feinkornanteil < 0,063 mm",
+   "einheit": "%"
+  },
+  "boden.durchlaessigkeit_k": {
+   "name": "Durchlässigkeit k",
+   "einheit": "m/s"
+  },
+  "modell.einheiten": {
+   "name": "Einheiten des Baugrundmodells"
+  },
+  "modell.flaechen": {
+   "name": "Grenzflächen und Körper des Schichtenmodells"
+  },
+  "analyse.kreuzprobe": {
+   "name": "Kreuzprobe (Fehler der Unterkanten, eine Bohrung weggelassen)",
+   "einheit": "m"
+  },
+  "analyse.sigma_grenzen": {
+   "name": "Unsicherheit der Grenzen (σ)",
+   "einheit": "m"
+  },
+  "analyse.grundwasserflaeche": {
+   "name": "Grundwasserfläche aus den Wasserständen",
+   "einheit": "m NHN"
+  },
+  "labor.statistik_einheit": {
+   "name": "Laborwerte je Einheit (n, min, max, Mittel)"
+  },
+  "hb.vorschlag": {
+   "name": "Vorschlag Homogenbereiche je ATV"
+  },
+  "hb.kennwerte_ansprache": {
+   "name": "Kennwerte je Homogenbereich aus der Ansprache"
+  },
+  "daub.eignung_sls": {
+   "name": "DAUB-Einstufung Flüssigkeitsschild (+/o/–) je Parameter"
+  },
+  "daub.eignung_epb": {
+   "name": "DAUB-Einstufung Erddruckschild (+/o/–) je Parameter"
+  },
+  "sondierung.n10_je_einheit": {
+   "name": "N10 je Einheit (gemessen, nicht eingestuft)"
+  },
+  "sondierung.qc_je_einheit": {
+   "name": "q_c je Einheit (gemessen, nicht eingestuft)",
+   "einheit": "MN/m²"
+  }
  }
 }

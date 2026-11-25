@@ -52,7 +52,7 @@ def _crs(m, bericht: dict) -> dict:
 
 def bauen(m, bericht: dict, docs: list[dict], *, projekt: str, ifc_uri: str, boreholeml_uri: str | None = None,
           homogenbereiche: dict[str, dict[str, str]] | None = None, analyse: dict | None = None,
-          datum: str | None = None, version: str = "") -> tuple[dict, dict]:
+          datum: str | None = None, version: str = "", bereitschaft: dict | None = None) -> tuple[dict, dict]:
     """(AGSi, Manifest). m: baugrundmodell.Modell, bericht: dessen Bericht, docs: Modell-Eingabe (mit Korrekturen).
 
     analyse: Zusammenfassung der Ground Analysis (Kreuzprobe, Unsicherheit) oder None. Nichts wird geraten: was fehlt,
@@ -271,6 +271,15 @@ def bauen(m, bericht: dict, docs: list[dict], *, projekt: str, ifc_uri: str, bor
                 "offen": offen, "vollstaendigkeit": vollst}
     if analyse is not None:
         manifest["analyse"] = analyse
+    if bereitschaft is not None:                       # Bewertbarkeit (A3): vom Server aus dem Wissenskatalog
+        manifest["bereitschaft"] = {
+            "zusammenfassung": bereitschaft["zusammenfassung"],
+            "eintraege": [{"id": e["id"], "titel": e["titel"], "status": e["status"],
+                           **({"abdeckung": e["abdeckung"]} if e.get("abdeckung") else {}),
+                           "fehlt": [f["id"] for f in e["fehlt"]], "angenommen": [f["id"] for f in e["angenommen"]]}
+                          for e in bereitschaft["eintraege"]],
+            "fehlend": [{"groesse": f["id"], "name": f["name"], "liefert": f["liefert"],
+                         "benoetigt_fuer": f["benoetigt_fuer"]} for f in bereitschaft["fehlend"]]}
     return agsi, manifest
 
 
@@ -408,7 +417,19 @@ def bericht_md(agsi: dict, manifest: dict) -> str:
         for el in mo["agsiModelElement"]:
             kw = "; ".join(f"{s['codeID']}: {s['valueSummaryText']}" for s in el.get("agsiDataPropertySummary") or [])
             z.append(f"- **{el['elementName']}** – {el['description']}" + (f". {kw}" if kw else ""))
-    z += ["", "## Unsicherheit", "", m1["uncertainty"], "", "## Offen", ""]
+    z += ["", "## Unsicherheit", "", m1["uncertainty"]]
+    b = manifest.get("bereitschaft")
+    if b:
+        zs = b["zusammenfassung"]
+        z += ["", "## Bewertbarkeit", "", f"Möglich {zs['moeglich']}, hinweisend {zs['hinweisend']}, "
+              f"blockiert {zs['blockiert']} (Wissenskatalog, docs/29 §8.2–8.3).", "",
+              "| Bewertung | Stand | fehlt / angenommen |", "|---|---|---|"]
+        z += [f"| {e['titel']} | {e['status']}{' ' + e['abdeckung'] if e.get('abdeckung') else ''} | "
+              f"{', '.join(e['fehlt'] + [a + ' (angenommen)' for a in e['angenommen']]) or '–'} |" for e in b["eintraege"]]
+        if b["fehlend"]:
+            z += ["", "Was fehlt und wer es liefert:", ""]
+            z += [f"- {f['name']}: {f['liefert'] or '–'} (für {len(f['benoetigt_fuer'])} Bewertungen)" for f in b["fehlend"]]
+    z += ["", "## Offen", ""]
     z += [f"- {o['was']}: {o['warum']}" for o in manifest["offen"]]
     kinds: dict[str, int] = {}
     for w in manifest["werte"]:

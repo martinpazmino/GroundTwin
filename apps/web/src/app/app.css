@@ -458,3 +458,8 @@ ul.dienste a { color: #8fc6ff; }
 .sondierung-kurve text.fs { fill: #c0392b; }
 .sondierung-kurve .zensiert { fill: #c0392b; font-weight: bold; }
 .sondierung-detail .felder { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+
+/* Bewertbarkeit (A3): Stand als Zeichen, ohne Aufzaehlungspunkt */
+.bereitschaft-liste { list-style: none; padding-left: 0; }
+.bereitschaft-liste li { margin: 2px 0; }
+.bereitschaft-liste li.stand-blockiert { opacity: 0.8; }

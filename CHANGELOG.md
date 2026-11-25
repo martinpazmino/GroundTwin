@@ -6,6 +6,14 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen in the Homogenbereich Kennwerte (Issue #29): N10 (DPH) and q_c (CPT) assigned per Einheit by height
+  at the Sondierung's Lage (`baugrundanalyse/sondierung_einheiten.py`); range, median, n and censored values shown
+  next to the Ansprache at Kennwert 13 (Lagerungsdichte) or 11a/11b (bindig), as measured values, never classified;
+  hints for values outside the model; two catalogue entries. `tests/test_sondierung_kennwerte.py`, docs/28 §6.1.
+- Readiness view per project (Issue #35, A3): *Modell → Erweitert → Bewertbarkeit* shows what the project can assess
+  (möglich / hinweisend / blockiert from the knowledge catalogue), what is missing and which test or document provides
+  it; in the project state, `GET /api/projekt/{sig}/bereitschaft`, the AGSi manifest and report.
+  `tests/test_bereitschaft_app.py`, one end-to-end check, docs/29 §8.3.
 - Knowledge catalogue v0 and planner (Issue #34, A2 of GroundTwin Analysis): package `wissen` with a vocabulary of
   quantities (what provides each), 14 entries (existing rules and analyses as entries pointing to their code, plus the
   DAUB TBM pre-selection SLS/EPB as data), planner (möglich / hinweisend / blockiert, missing inputs, what each would

@@ -18,7 +18,8 @@
     "offen": {"type": "array", "items": {"type": "object", "required": ["was", "warum"],
               "properties": {"was": {"type": "string"}, "warum": {"type": "string"}, "fuer": {"type": "array", "items": {"type": "string"}}}}},
     "vollstaendigkeit": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
-    "analyse": {"type": "object", "description": "Zusammenfassung der Ground Analysis (Kreuzprobe, Unsicherheit), wenn gerechnet"}
+    "analyse": {"type": "object", "description": "Zusammenfassung der Ground Analysis (Kreuzprobe, Unsicherheit), wenn gerechnet"},
+    "bereitschaft": {"type": "object", "description": "Bewertbarkeit (A3): je Eintrag des Wissenskatalogs moeglich/hinweisend/blockiert, fehlende Groessen und wer sie liefert"}
   },
   "$defs": {
     "datei": {"type": "object", "required": ["pfad", "sha256"],

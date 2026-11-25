@@ -167,6 +167,34 @@ laboratory or table value and stays **offen**; nothing is estimated.
   1 or 2 of 13. The descriptions cover the Ansprache, never the numbers a tender needs; those need the text of the
   Gutachten.
 
+### 6.1 Sondierungen as measured values next to the Ansprache (Issue #29, 2026-11-25)
+
+**Assignment:** `baugrundanalyse/sondierung_einheiten.py` assigns every N10 (DPH) and q_c (CPT) value of a Sondierung
+to the Einheit the layer model shows at the Sondierung's Lage. The value's depth is converted to m NHN with the
+Sondierung's own GOK, and DPH values use the mid-depth of each step.
+
+**Which Sondierungen and values count:**
+- Only Sondierungen in the project with Lage, GOK and values count; the same rule applies in the IFC.
+- Values above the model or below its base stay out, and so does a Sondierung outside the model; each case is
+  reported in `sondierung_hinweise`.
+- A GOK more than 1 m from the model is flagged.
+
+**Where the statistic appears:** per Homogenbereich, as the range, median, n and the number of censored N10 values
+(`> Grenze`):
+- **Kennwert 13 (Lagerungsdichte);**
+- in a *bindig* Bereich: **11a**, otherwise **11b (Konsistenz)**, whichever the ATV asks for;
+- next to the Ansprache, as *Messwerte, nicht eingestuft*.
+
+**No correlation (N10 → Lagerungsdichte, q_c → Konsistenz):** none is applied. No source text for such a correlation
+has been read here, and the classification is the engineer's call (docs/05, docs/29 §2). This waits for the expert
+(#29) and a catalogue entry with a read source.
+
+**Catalogue:** `sondierung.n10_je_einheit` and `sondierung.qc_je_einheit` (docs/29 §8.2). CPT and DPH are no longer
+*ungenutzt* in the readiness view.
+
+Tests: `tests/test_sondierung_kennwerte.py`. On the demo with located Sondierungen, Sand 1 shows N10 11–50 (median 31,
+n = 68, 4 censored) and q_c 1.2–16.4 MN/m²; without a Lage nothing appears.
+
 ## 7. The real examples through Ground Analysis and Homogenbereiche (2026-11-11, not blind)
 
 The two real examples in `data/beispiele` are training data (their PDFs were open during development), so this is a

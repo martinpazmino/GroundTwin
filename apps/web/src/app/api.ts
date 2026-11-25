@@ -120,6 +120,16 @@ export interface GeoldgFrist {
   id: "anzeige" | "fachdaten" | "bewertungsdaten"; titel: string; regel: string; beleg: string; url: string;
   bezug: "beginn" | "abschluss"; bis: string | null; tage: number | null;
 }
+export interface GroesseName { id: string; name: string }
+export interface Bereitschaft {                      // Bewertbarkeit (A3, docs/29 §8.3) aus dem Wissenskatalog
+  verfuegbar: GroesseName[];
+  eintraege: { id: string; titel: string; art: string; autoritaet: string; quelle: string; quelle_gelesen: boolean;
+               status: "moeglich" | "hinweisend" | "blockiert"; abdeckung: string | null;
+               fehlt: GroesseName[]; angenommen: GroesseName[]; ohne: GroesseName[]; vorbehalte: string[] }[];
+  fehlend: (GroesseName & { liefert: string; eingabe: boolean; schaltet_frei: string[]; benoetigt_fuer: string[] })[];
+  ungenutzt: GroesseName[];
+  zusammenfassung: { moeglich: number; hinweisend: number; blockiert: number };
+}
 export interface Geoldg {
   quelle: { titel: string; url: string; gelesen: string; hinweis: string };
   angaben: { beginn: string; abschluss: string; behoerde: boolean };
@@ -163,6 +173,7 @@ export interface Zustand {
   standort: { x: number; y: number; epsg: number; dienste: DienstAmOrt[] } | null;   // Projekt an einem Punkt, ohne Gutachten
   reifegrad: Reifegrad;
   geoldg: Geoldg;                                     // Übermittlung an den Geologischen Dienst (GeolDG)
+  bereitschaft?: Bereitschaft;                        // was das Projekt bewerten kann (A3)
   viewer: { bohrungen: Nadel[]; ursprung: [number, number]; epsg: number | null; modus: "koordinaten" | "reihe";
             punkte: Punkt[];
             sondierungen?: { id: string; code: string; art: string; x: number | null; y: number | null;
@@ -366,6 +377,7 @@ export type HbVorschlag = {
 /** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */
 export type HbKennwerte = {
   fehler: string; atv?: string; zugeordnet?: boolean;
+  sondierung_hinweise?: string[];                   // Sondierungen, die nicht ganz zugeordnet wurden (Issue #29)
   bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
     kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
 };

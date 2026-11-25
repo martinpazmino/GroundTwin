@@ -1,7 +1,7 @@
 {
  "id": "hb.kennwerte_ansprache",
  "version": "1.0.0",
- "title": "Kennwerte je Homogenbereich aus der Ansprache",
+ "title": "Kennwerte je Homogenbereich aus der Ansprache (mit Sondierungs-Statistik)",
  "kind": "rule",
  "authority": "expert",
  "source": {
@@ -12,6 +12,10 @@
   "required": [
    "hb.zuordnung",
    "boden.beschreibung"
+  ],
+  "optional": [
+   "sondierung.n10_je_einheit",
+   "sondierung.qc_je_einheit"
   ]
  },
  "outputs": [
@@ -25,7 +29,9 @@
  },
  "when_missing": {
   "hb.zuordnung": "block",
-  "boden.beschreibung": "block"
+  "boden.beschreibung": "block",
+  "sondierung.n10_je_einheit": "skip",
+  "sondierung.qc_je_einheit": "skip"
  },
  "value_kind_of_outputs": "interpreted",
  "tests": [

@@ -36,7 +36,7 @@ ERLAUBT = {
     "baugrundanalyse": {"baugrundmodell"},                # Analyse liest das Modell, aendert die Bohrungen nie
     "wissen": set(),                                      # Wissenskatalog: Daten und Planer; Code nur als Verweis (A2)
     "ui": {"extractor", "baugrundmodell", "baugrundanalyse", "geodaten"},
-    "server": {"ui", "baugrundmodell", "geodaten", "baugrundanalyse"},
+    "server": {"ui", "baugrundmodell", "geodaten", "baugrundanalyse", "wissen"},
     "agenten": set(),
     "geo_agent": set(),                                   # v1, eingefroren
 }

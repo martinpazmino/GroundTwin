@@ -1,7 +1,7 @@
 {
  "id": "analyse.grundwasserflaeche",
  "version": "1.0.0",
- "title": "Grundwasserflaeche aus den Wasserstaenden",
+ "title": "Grundwasserfläche aus den Wasserständen",
  "kind": "analysis",
  "authority": "expert",
  "source": {
