@@ -54,7 +54,7 @@ def test_berlin_von_hand(client):
     assert e["hb.kennwerte_ansprache"]["status"] == "blockiert"
     fehlend = {f["id"]: f for f in b["fehlend"]}
     assert fehlend["hb.zuordnung"]["eingabe"] is True and "VOB/C" in fehlend["hb.zuordnung"]["liefert"]
-    assert b["zusammenfassung"] == {"moeglich": 8, "hinweisend": 1, "blockiert": 5}
+    assert b["zusammenfassung"] == {"moeglich": 8, "hinweisend": 1, "blockiert": 7}
 
 
 def test_talheim_von_hand_und_mit_homogenbereichen(client):

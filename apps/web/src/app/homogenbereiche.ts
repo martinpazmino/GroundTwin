@@ -156,8 +156,11 @@ export function homogenbereicheTeil() {
                 <td class=${k.wert ? "" : "leise"}>${k.wert ?? "offen – nicht im Extrakt"}</td></tr>`)}</tbody>
             </table>
           </details>`)}
-        <p class="leise klein">Ansprache aus den Schichtbeschreibungen mit dem Anteil der Schichten; keine Laborwerte.
-          Offene Kennwerte stehen im Text oder in den Anlagen des Gutachtens. Das IFC trägt beides je Bereich.</p>` : nothing}
+        ${kwerte.sondierung_hinweise?.length ? html`<ul class="klein warnung hb-sondierung">${kwerte.sondierung_hinweise.map(
+          (h) => html`<li>${h}</li>`)}</ul>` : nothing}
+        <p class="leise klein">Ansprache aus den Schichtbeschreibungen mit dem Anteil der Schichten; Laborwerte und
+          Sondierungen (N10, q_c je Bereich, nur mit Lage und GOK) als Messwerte, nicht eingestuft. Offene Kennwerte
+          stehen im Text oder in den Anlagen des Gutachtens. Das IFC trägt beides je Bereich.</p>` : nothing}
       <div class="einstellung">
         <span>IFC-Modell</span>
         <label class="inline"><input type="radio" name="hb-modell" .checked=${!S.z?.hb_modell}

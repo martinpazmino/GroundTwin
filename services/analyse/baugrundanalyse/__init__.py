@@ -6,13 +6,15 @@ Liest das Modell, aendert nie die Bohrungen. Der Modellierer liegt in services/m
 from .grundwasser import grundwasser
 from .kreuzprobe import kreuzprobe
 from .sondierung import kreuzprobe_sondierungen, schichtwechsel_erkennen, stuetzpunkte_zuordnen
+from .sondierung_einheiten import werte_je_einheit as sondierung_je_einheit
+from .sondierung_einheiten import zusammenfassen as sondierung_zusammenfassen
 from .unsicherheit import unsicherheit
 from .unsicherheit import zusammenfassung as unsicherheit_zusammenfassung
 from .virtuell import virtuelle_bohrung
 from .vorschlag import vorschlaege
 
 __all__ = ["grundwasser", "kreuzprobe", "kreuzprobe_sondierungen", "schichtwechsel_erkennen",
-           "stuetzpunkte_zuordnen", "unsicherheit", "unsicherheit_zusammenfassung",
+           "stuetzpunkte_zuordnen", "sondierung_je_einheit", "sondierung_zusammenfassen", "unsicherheit", "unsicherheit_zusammenfassung",
            "virtuelle_bohrung", "vorschlaege", "analyse"]
 
 

@@ -142,6 +142,13 @@
   },
   "daub.eignung_epb": {
    "name": "DAUB-Einstufung Erddruckschild (+/o/–) je Parameter"
+  },
+  "sondierung.n10_je_einheit": {
+   "name": "N10 je Einheit (gemessen, nicht eingestuft)"
+  },
+  "sondierung.qc_je_einheit": {
+   "name": "q_c je Einheit (gemessen, nicht eingestuft)",
+   "einheit": "MN/m²"
   }
  }
 }

@@ -377,6 +377,7 @@ export type HbVorschlag = {
 /** Je Homogenbereich: was die Schichtbeschreibungen zu den Kennwerten der ATV hergeben (docs/28 §6). */
 export type HbKennwerte = {
   fehler: string; atv?: string; zugeordnet?: boolean;
+  sondierung_hinweise?: string[];                   // Sondierungen, die nicht ganz zugeordnet wurden (Issue #29)
   bereiche?: { name: string; ohne_bereich: boolean; einheiten: string[]; schichten: number; belegt: number; verlangt: number;
     kennwerte: { nr: string; name: string; art: string; wert: string | null }[] }[];
 };

@@ -533,16 +533,21 @@ class Arbeitsplatz:
             erg = self.modell(sig)
             if erg["fehler"]:
                 return {"fehler": erg["fehler"]}
-            _, p = self.laden(sig)
+            docs, p = self.laden(sig)
             einheiten = erg["bericht"]["einheiten"]
+            m = self._modelle[erg["schluessel"]][0]
+            son_je, son_hinweise = ga.sondierung_je_einheit(m, sd.fuer_ifc(docs, p)[0])   # Issue #29: Messwerte
             try:
                 je = (p.homogenbereiche or {}).get(atv) or {}
                 gruppen, _ = hb.bereiche(je, [e["name"] for e in einheiten])
                 schichten = {e["name"]: e["schichten"] for e in einheiten}
-                return {"fehler": "", "atv": atv, "zugeordnet": bool(je), "bereiche": [
+                return {"fehler": "", "atv": atv, "zugeordnet": bool(je), "sondierung_hinweise": son_hinweise,
+                        "bereiche": [
                     {"name": g["bereich"] or g["einheiten"][0], "ohne_bereich": g["bereich"] is None,
                      "einheiten": g["einheiten"],
-                     **hb.kennwerte_bereich(atv, [s for e in g["einheiten"] for s in schichten[e]])} for g in gruppen]}
+                     **hb.kennwerte_bereich(atv, [s for e in g["einheiten"] for s in schichten[e]],
+                                            ga.sondierung_zusammenfassen([son_je[e] for e in g["einheiten"] if e in son_je]))}
+                    for g in gruppen]}
             except ValueError as err:
                 return {"fehler": str(err)}
 

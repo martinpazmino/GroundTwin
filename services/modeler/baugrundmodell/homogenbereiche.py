@@ -307,9 +307,36 @@ def kennwerte_aus_beschreibung(schichten: list[dict]) -> dict[str, str]:
     return out
 
 
-def kennwerte_bereich(code: str, schichten: list[dict]) -> dict:
-    """Fuer eine ATV: je verlangtem Kennwert die Angabe aus den Beschreibungen oder offen."""
+def sondierung_text(st: dict) -> str | None:
+    """'Sondierung DPH: N10 3–25, Median 9 (n = 120, 2 Sondierungen)'; gemessen, nicht klassifiziert (Issue #29)."""
+    import statistics
+    teile = []
+    for groesse, art, f in (("N10", "DPH", lambda x: f"{x:.0f}"), ("q_c", "CPT", lambda x: f"{x:.1f}".replace(".", ","))):
+        w = st.get(groesse) or []
+        if w:
+            zen = f", {st['zensiert']} zensiert (> Grenze)" if groesse == "N10" and st.get("zensiert") else ""
+            einheit = " MN/m²" if groesse == "q_c" else ""
+            teile.append(f"Sondierung {art}: {groesse} {f(min(w))}–{f(max(w))}{einheit}, Median {f(statistics.median(w))} "
+                         f"(n = {len(w)}{zen})")
+    if not teile:
+        return None
+    n = len(st.get("sondierungen") or [])
+    return "; ".join(teile) + f" aus {n} Sondierung{'en' if n != 1 else ''} – Messwerte, nicht eingestuft"
+
+
+def kennwerte_bereich(code: str, schichten: list[dict], sondierung: dict | None = None) -> dict:
+    """Fuer eine ATV: je verlangtem Kennwert die Angabe aus den Beschreibungen oder offen.
+
+    sondierung: Messwerte der Sondierungen im Bereich (baugrundanalyse.sondierung_zusammenfassen) oder None; ihre
+    Statistik steht bei der Lagerungsdichte (13), in bindigen Bereichen bei der Konsistenz (11a, sonst 11b), neben der
+    Ansprache, und nur, wenn die ATV diesen Kennwert verlangt."""
     aus = kennwerte_aus_beschreibung(schichten)
+    if sondierung and (t := sondierung_text(sondierung)):
+        verlangt = {k["nr"] for k in kennwerte(code)}
+        bindig = _verhalten([s.get("bodenart") or "" for s in schichten]) == "bindig"
+        nr = next((n for n in (("11a", "11b", "13") if bindig else ("13",)) if n in verlangt), None)
+        if nr:                                         # nur bei einem Kennwert, den die ATV verlangt
+            aus[nr] = f"{aus[nr]}; {t}" if aus.get(nr) else t
     zeilen = [{"nr": k["nr"], "name": k["name"], "art": k["art"], "wert": aus.get(k["nr"])} for k in kennwerte(code)]
     return {"schichten": len(schichten), "kennwerte": zeilen,
             "belegt": sum(z["wert"] is not None for z in zeilen), "verlangt": len(zeilen)}

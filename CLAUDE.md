@@ -48,7 +48,8 @@ license **AGPL-3.0-or-later** (D79).
   model of Homogenbereiche only (same bodies grouped, Einheiten without a Bereich stay marked); proposal per ATV
   (`hb.vorschlag_fuer`, `/homogenbereiche/vorschlag`: Verhalten, then Bodengruppe/Steine by the ATV's Kennwerte; a click); Kennwerte from the
   descriptions per Bereich (`hb.kennwerte_bereich`, `/homogenbereiche/kennwerte`, IFC `Kennwert_…`, `Kennwerte_offen`;
-  Ansprache only, laboratory values stay open). DIN 4023 Tab. 2/3
+  Ansprache only, laboratory values stay open; Sondierungen N10/q_c per Bereich as measured values next to Kennwert 13/11a/11b,
+  never classified, `baugrundanalyse/sondierung_einheiten.py`, §6.1, #29). DIN 4023 Tab. 2/3
   colours in `normen.json` (`geologische_benennungen`). Tests `services/modeler/tests/test_homogenbereiche.py`,
   `tests/test_homogenbereiche_app.py`. §9 Bodenkennwerte from the report tables (#18): extraction stage
   `services/extractor/kennwerte.py` (table or list, not prototyp_v4), `baugrundmodell/bodenkennwerte.py` (proposal per

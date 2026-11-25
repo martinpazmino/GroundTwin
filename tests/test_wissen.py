@@ -30,8 +30,7 @@ def test_katalog_ist_in_ordnung_und_belegt():
     assert k["labor.konsistenzzahl"]["source"]["verified"] is False
     benutzt = {g for e in k.values() for g in e["inputs"].get("required", []) + e["inputs"].get("optional", [])
                + e["outputs"]}
-    assert set(wissen.groessen()) - benutzt == set() or set(wissen.groessen()) - benutzt <= {
-        "sondierung.dph_n10", "sondierung.cpt_qc"}                        # Sondierungen: noch kein Eintrag (A4)
+    assert set(wissen.groessen()) - benutzt == set()                          # jede Groesse hat einen Eintrag
 
 
 def test_eintraege_gueltig_nach_schema():
@@ -91,9 +90,11 @@ def test_planer_mit_labor():
     assert set(p["fehlende_grundgroessen"]) >= {"tunnel.stuetzdruck", "boden.abrasivitaet_aequ"}
 
 
-def test_planer_mit_cpt_zeigt_ungenutzte_groesse():
+def test_planer_mit_cpt_statistik_je_einheit():
     p = wissen.planen(BOHRPROFILE | {"sondierung.cpt_qc"})
-    assert p["ungenutzt"] == ["sondierung.cpt_qc"]                          # Korrelationen kommen mit A4 (#29)
+    assert p["ungenutzt"] == []                                             # Statistik je Einheit (#29), keine Korrelation
+    assert status(p, "sondierung.qc_je_einheit") == "moeglich" and status(p, "sondierung.n10_je_einheit") == "blockiert"
+    assert "sondierung.qc_je_einheit" not in p["eintraege"]["hb.kennwerte_ansprache"].get("ohne", [])
 
 
 def test_planer_ohne_lage_und_gok_nimmt_an_und_ohne_schichten_blockiert():

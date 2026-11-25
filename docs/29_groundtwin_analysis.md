@@ -218,7 +218,7 @@ of `bericht.md`.
 
 | Project | Base quantities | Result |
 |---|---|---|
-| Berlin | Schichten, Lage (UTM), GOK, description, Wasserstände with their kind; the 6 scanned Sondierungen have no Lage and do not count | 8 möglich, 1 hinweisend (DAUB 2/8), 5 blockiert (all Labor rules, Homogenbereich Kennwerte until a mapping exists) |
+| Berlin | Schichten, Lage (UTM), GOK, description, Wasserstände with their kind; the 6 scanned Sondierungen have no Lage and do not count | 8 möglich, 1 hinweisend (DAUB 2/8), 7 blockiert (all Labor rules, Homogenbereich Kennwerte until a mapping exists, the two Sondierung statistics without a located Sondierung) |
 | Talheim | Reihe, so the Lage is assumed and the layer model is *hinweisend*; Labor has only Wassergehalt (and CBR, Trockendichte, not used) | I<sub>c</sub> blocked for w_L and w_P; after a DIN 18300 mapping, Homogenbereich Kennwerte become *möglich* |
 
 The DAUB pre-selection reaches 2 of 8 inputs from descriptions alone, consistent with the experiment of docs/30 §4.
