@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Blind round 7 (docs/15 §8.11): two reports without Bohrprofile, 0 false. Talheim training PDF back in the regression:
+  T12 no longer reads `Anschüttung` as a well installation (10/10 again); all 13 real PDFs without regression.
 - Prefixes from the legend of the page (#54 item 5, docs/16 T14): `BK = Rammkernbohrung`, `S = Baggerschurf` make
   `BK A/1`, `S A1` codes; double labels `Tiefe (Höhe)` are the data (T9: confirm the nearest line within 10 cm, a label
   without a line is a boundary). Planfeststellung (training): 41 → 95/115 Bohrungen, water 5 → 67/69, 0 false

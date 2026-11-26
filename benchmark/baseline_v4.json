@@ -105,6 +105,17 @@
   "falsches GW": 0,
   "GW-Status": "4/4"
  },
+ "real/talheim": {
+  "Bohrungen": "10/10",
+  "Grenzen": "65/65",
+  "Grenzen exakt": "65/65",
+  "Bodenart": "8/8",
+  "GOK": "8/8",
+  "GW": "4/4",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
  "real/triefenstein_bp41": {
   "Bohrungen": "5/5",
   "Grenzen": "24/24",
@@ -542,11 +553,11 @@
   "falsches GW": 0
  },
  "stress/s37_ausbauplan": {
-  "Bohrungen": "1/1",
-  "Grenzen": "5/5",
-  "Grenzen exakt": "5/5",
-  "Bodenart": "5/5",
-  "GOK": "1/1",
+  "Bohrungen": "2/2",
+  "Grenzen": "8/8",
+  "Grenzen exakt": "8/8",
+  "Bodenart": "8/8",
+  "GOK": "2/2",
   "GW": "0/0",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,
@@ -679,16 +690,5 @@
   "falsche Grenzen": 0,
   "falsches GW": 0,
   "XY": "2/2"
- },
- "real/talheim": {
-  "Bohrungen": "10/10",
-  "Grenzen": "65/65",
-  "Grenzen exakt": "65/65",
-  "Bodenart": "8/8",
-  "GOK": "8/8",
-  "GW": "4/4",
-  "falsche Bohrungen": 0,
-  "falsche Grenzen": 0,
-  "falsches GW": 0
  }
 }
