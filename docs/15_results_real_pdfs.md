@@ -354,6 +354,33 @@ What failed (general features, not exceptions per office):
 
 These figures are **blind** and stay apart from the training figures; fixes from here on count as training.
 
+### 8.9 After #54: round 5 as training, round 6 frozen (2026-11-26)
+
+Rules from round 5 (docs/16 T6–T11, W7, W7b; Sondierungen `stationscode`, `achse_zeile_ausgerichtet`), each with a
+stress case that fails without it (`tests/test_blindrunde5_regeln.py`, `tests/test_sondierungen_extraktion.py`).
+Regression on 12 real PDFs (Talheim not reachable: uvp-verbund.de answered 429; its baseline entry is kept), the stress
+and synthetic cases: no case worse, 0 false. These figures are **training**, not blind:
+
+| PDF | Bohrungen | Boundaries | Bodenart | GOK | GW | False |
+|---|---|---|---|---|---|---|
+| BER Baugrund 1 | 0/80 → **79/80** | 0/575 → **570/575** | – → 334/484 | 0/80 → **79/80** | 0/64 → **64/64** | 1 Bohrung → **0** |
+| Planfeststellung 23.1 | 41/115 | 188/440 | 111/188 → **150/188** | 0/115 → 40/115 | 0/69 → 5/69 | 16 boundaries → **0** (2 GW at KRB 15, truth not transcribed) |
+| U09 | 5/5 | 21/21 | 1/20 → **19/20** | 0/5 → **5/5** | 0/1 → **1/1** | 0 |
+
+| Sondierungen | Found (code) | Endtiefe ±5 cm |
+|---|---|---|
+| BER | 0/80 → **80/80** | 80/80 (19 extra entries are the same DPH in the Längsschnitte, counted as false by the 1:1 matching) |
+| Planfeststellung | 11/24 → 15/24 | 7/24 → 8/24 |
+| U09 | 0/5 → 3/5 | 0/5 (4.8/5.1 instead of 5.0) |
+
+Still open (#54 item 5): BK with CPT and Schürfe at 1:50 in the Planfeststellung sections (0/33, 0/35), CPT in the
+sections, water there (5/69), DPH 1–2 of U09.
+
+**Round 6** (A20 Unterlage 20.1, public, strassenbau.niedersachsen.de, 47 MB): frozen twice before opening,
+`benchmark/frozen/runde6_vorher` (code `1e25a60`, before #54) and `runde6_nachher` (code `77f3bd2`); 195 and 194
+Bohrungen, 0 Sondierungen. Ground truth still to be transcribed. Two further PDFs from uvp-verbund.de (Deponie
+Augsburg Nord, IGI Westheim) could not be fetched (429).
+
 ## 9. Next steps
 
 1. Fifth blind round done (§8.8). Fix in this order: no project number as a Bohrung code, codes with a station

@@ -6,6 +6,13 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Rules from blind round 5 (#54, docs/16 T6–T11, W7, W7b, docs/15 §8.9): a title-block number is no Bohrung code,
+  codes with a station (`B-5+365-G`, `DPH-0+550-G`), GOK from `Ansatzpunkt …`/`… m ü. NN`/a lone height under the
+  header, boundaries need the `Tiefe (Höhe)` label where the drawing uses it, the label convention from the position of
+  the text, the water label (blue `3.10 (213.21)` or `GW 0.94m`, with date) wins over the symbol, the same Bohrung
+  under two codes is one Bohrung; Sondierungen: codes with a station uncut, value axis as one aligned row. Stress cases
+  `s31`–`s36`, Sondierungen `s09`. BER (training): 0 → 79/80 Bohrungen, water 64/64, 0 false.
+- Blind round 6 frozen (A20 Unterlage 20.1, before and after #54).
 - Blind round 5 (docs/15 §8.8): four German reports with Sondierungen, predictions frozen before opening, ground truth
   for 200 Bohrungen and 109 Sondierungen (values not transcribed), `blind_test.py score` also scores frozen
   Sondierungen (strict by code and by page). Main findings: one false Bohrung from a project number, codes with a
