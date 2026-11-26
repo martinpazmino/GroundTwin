@@ -1,5 +1,5 @@
 {
- "code_rev": "560a9e6",
+ "code_rev": "77f3bd2",
  "pdf_sha256": "90fd7be1a02e7e227898e74f4a45a09a6201311175516fe2bc09be962a20466c",
  "v1": {},
  "v4": {
@@ -3945,35 +3945,6 @@
    "gw": [
     1.6,
     1.81
-   ]
-  },
-  "BS85": {
-   "gok": 14.65,
-   "bottoms": [
-    0.4,
-    1.6,
-    5.0
-   ],
-   "soils": [
-    [
-     0.0,
-     0.4,
-     "Mutterboden"
-    ],
-    [
-     0.4,
-     1.6,
-     "Mutterboden"
-    ],
-    [
-     1.6,
-     5.0,
-     "Sand"
-    ]
-   ],
-   "gw": [
-    1.6,
-    1.7
    ]
   },
   "BS86": {
@@ -10364,7 +10335,9 @@
     1.6
    ],
    "gw_status": null,
-   "dups": []
+   "dups": [
+    "S.70 als BS 85"
+   ]
   },
   {
    "code": "B 5",
@@ -10557,30 +10530,6 @@
    "gw": [
     1.6,
     1.81
-   ],
-   "gw_status": null,
-   "dups": []
-  },
-  {
-   "code": "BS 85",
-   "page": 70,
-   "scale": 100,
-   "mode": "direkt (3/3 Labels)",
-   "gok": 14.65,
-   "bottoms": [
-    0.4,
-    1.6,
-    5.0
-   ],
-   "soils": [
-    "Mutterboden",
-    "Mutterboden",
-    "Sand"
-   ],
-   "unconfirmed": 0,
-   "gw": [
-    1.6,
-    1.7
    ],
    "gw_status": null,
    "dups": []
@@ -13344,7 +13293,5 @@
    "gw_status": "kein Grundwasser",
    "dups": []
   }
- ],
- "modul_sha256": "d6ebfcf4e1e90c403e002e7ca0b4d960473f333844d889dcdcd354f0fd14fe50",
- "hinweis": "eingefroren mit dem Arbeitsstand vor dem Commit; prototyp_v4.py zuletzt 15:26 geaendert, Einfrieren ab 15:29 (UTC)"
+ ]
 }
