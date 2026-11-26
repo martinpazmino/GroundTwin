@@ -619,6 +619,17 @@
   "falsche Grenzen": 0,
   "falsches GW": 0
  },
+ "stress/s43_pfeil_ansatzpunkt": {
+  "Bohrungen": "1/1",
+  "Grenzen": "5/5",
+  "Grenzen exakt": "5/5",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
  "synth/synth_A": {
   "Bohrungen": "3/3",
   "Grenzen": "18/18",

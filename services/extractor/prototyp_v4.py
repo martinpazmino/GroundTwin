@@ -108,6 +108,7 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "gw_dreieck_nach_unten": True,  # W9 Wassersymbol zeigt nach unten; Achsenpfeil 'N10 >' ist kein Wasser (#55)
     "legende_kuerzel": True,     # T14  Kuerzel aus der Legende der Seite: 'BK A/1', 'S A1' (#54)
     "code_zusatz": True,         # T13  Code mit Zusatz 'BS 105A', 'BS 22.1' (#55)
     "ausbau_kein_profil": True,  # T12  Ausbauplan (Rohr, Filter, Tonsperre ...) ist kein Bohrprofil (#55)
@@ -1758,11 +1759,23 @@ def _groundwater(drawings, segs, col: Column, cols: list[Column], fit, words=(),
                                              and 0 < wr.x0 - r.x1 < 70 and re.fullmatch(rx_kote, t)
                                              for wr, t, *_ in words):
             continue
+        def _nah(wr):
+            return abs((wr.y0 + wr.y1) / 2 - (r.y0 + r.y1) / 2) < 12 and (-70 < wr.x0 - r.x1 < 70 or -70 < r.x0 - wr.x1 < 70)
+        if RULES["gw_dreieck_nach_unten"] and any(      # W9: Ansatzpunkt 'NN+8,42m' neben dem Dreieck ist kein Wasser,
+                re.fullmatch(r"(?:NN|NHN)\s*[+-]\s*\d{1,4}[.,]\d{2}\s*m?", t) and _nah(wr) for wr, t, *_ in words) \
+                and not any(t == "GW" and _nah(wr) for wr, t, *_ in words):   # ausser es ist ein Wasserlabel ('0,80 GW')
+            continue
         pts = [x[1] for x in it]
         apex = v_spitze or max(pts, key=lambda p: p.y)
         if (v_spitze is None and sum(abs(p.y - apex.y) < 0.5 for p in pts) != 1) or \
                 not (col.rect.y0 <= apex.y <= col.rect.y1 + 2):
             continue
+        if RULES["gw_dreieck_nach_unten"] and v_spitze is None and not d.get("raster"):
+            oben = [q for q in pts if abs(q.y - apex.y) >= 0.5]
+            # W9 (#55): Wasser zeigt nach unten - Oberkante waagrecht, Spitze dazwischen (Achsenpfeil 'N10 >' nicht)
+            if len(oben) != 2 or abs(oben[0].y - oben[1].y) > 0.6 or \
+                    not (min(q.x for q in oben) - 0.5 <= apex.x <= max(q.x for q in oben) + 0.5):
+                continue
         if d.get("raster") and any(c.rect.contains((r.tl + r.br) / 2) for c in cols):
             continue                                        # Bild-Dreieck in einer Saeule = Schraffur
         target = None

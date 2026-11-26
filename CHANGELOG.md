@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Water symbol points down (#55, docs/16 W9): the arrowhead of an axis and the Ansatzpunkt marker `NN+…` of a
+  neighbouring diagram are no water. A20 (training): false levels 6 → 1, GW-Status 25/25. Stress `s43`.
 - Sondierungen (#55): shorter diagram frames on long sheets, depth and NHN labels snapped to their lines (the hatching
   of a neighbouring profile is no tick). A20 RS 24 → 29/30 found, Endtiefe 20 → 28/30; U09 and Planfeststellung
   Endtiefen better. Stress `s11`.
