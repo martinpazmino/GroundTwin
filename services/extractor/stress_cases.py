@@ -670,6 +670,31 @@ def build(out: Path) -> list[str]:
         p.insert_text((ax, s34.top_y + i * ppm + 2), f"{i}.0", fontsize=6)
     save("s34_unterkante_text_darueber", doc, [_truth("BS 1", L_ABBR, 45.20, kind="rks")],
          "T10/#54: Unterkanten-Labels ohne 0,00, Beschreibung ueber dem Label, Achse 0.0 eines DPH daneben")
+
+    # s35 Wasserlabel 'GW 0.94m' (schwarz) mit Datum in der Labelspalte, Symbol daneben an falscher Hoehe (W7b, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s35 = Spec("B 3", L_STD, gok=45.20)
+    draw_profile(p, s35)
+    ppm = PT_PER_M_1_1 / s35.scale
+    y_lab = s35.top_y + 1.2 * ppm                         # Label gestapelt, nicht an der Wassertiefe 2,40
+    p.insert_text((s35.x0 - 110, y_lab), "GW", fontsize=6.5)
+    p.insert_text((s35.x0 - 90, y_lab), "2.40m", fontsize=6.5)
+    p.insert_text((s35.x0 - 95, y_lab + 9), "(21.10.2024)", fontsize=6)
+    y_sym = y_lab + 2
+    p.draw_polyline([(s35.x0 - 60, y_sym - 6), (s35.x0 - 53, y_sym - 6), (s35.x0 - 56.5, y_sym), (s35.x0 - 60, y_sym - 6)],
+                    color=(0, 0, 1), fill=(0, 0, 1), closePath=True, width=0.4)
+    _line(p, (s35.x0 - 60, y_sym), (s35.x0, y_sym), 0.4)
+    save("s35_gw_label_text", doc, [_truth("B 3", L_STD, 45.20, [2.4])],
+         "W7b/#54: Label 'GW 2.40m' mit Datum gilt, das Symbol daneben steht an anderer Hoehe")
+
+    # s36 dieselbe Bohrung zweimal unter anderem Code (Einzelblatt 'B 4', im Schnitt 'B 4a') (T11, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("B 4", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("B 4a", L_STD, gok=45.20, x0=500, scale_text=None))
+    save("s36_doppel_anderer_code", doc, [_truth("B 4", L_STD, 45.20)],
+         "T11/#54: gleiche GOK und Grenzen unter zweitem Code -> eine Bohrung mit Hinweis")
     return made
 
 

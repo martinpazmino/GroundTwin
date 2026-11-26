@@ -102,6 +102,8 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "doppel_anderer_code": True, # T11  gleiche GOK + Grenzen unter anderem Code = dieselbe Bohrung (#54)
+    "gw_label_text": True,       # W7b  Label 'GW 0.94m' (auch schwarz) mit Datum gilt, nicht das Symbol (#54)
     "gw_blaue_labels": True,     # W7   blaues Wasserlabel '3.10 (213.21)' + Datum gilt, nicht das Dreieck (#54)
 }
 
@@ -2337,6 +2339,8 @@ def extract(pdf: Path):
             prev = d
         bh.cross_check = "nur SV"
         out.append(bh)
+    if RULES["doppel_anderer_code"]:                  # T11: dieselbe Bohrung unter zwei Codes (Schnitt vs. Blatt)
+        out = _doppel_anderer_code(out)
     if RULES["gw_blaue_labels"]:
         _blaue_wasserlabels(doc, out)
     if RULES["doppel_labels"]:
@@ -2344,6 +2348,26 @@ def extract(pdf: Path):
     for bh in out:
         _confidence(bh)
     return out, dph
+
+
+def _doppel_anderer_code(bhs: list) -> list:
+    """T11 (#54): gleiche GOK (+-1 cm) und dieselben Grenzen (gleiche Anzahl, je +-3 cm, >= 3) unter anderem Code =
+    dieselbe Bohrung (Schnitt beschriftet anders als das Einzelblatt). Das Einzelblatt bleibt, der Code des anderen
+    steht als Hinweis daneben; eine zweite Bohrung waere falsch."""
+    raus: set[int] = set()
+    for i, a in enumerate(bhs):
+        for j in range(i + 1, len(bhs)):
+            b = bhs[j]
+            if i in raus or j in raus or a.gok is None or b.gok is None or abs(a.gok - b.gok) > 0.01:
+                continue
+            ga, gb = [ly.bottom for ly in a.layers], [ly.bottom for ly in b.layers]
+            if len(ga) < 3 or len(ga) != len(gb) or any(abs(x - y) > 0.03 for x, y in zip(ga, gb)):
+                continue
+            halten, weg = (a, b) if (a.single_sheet, a.titled) >= (b.single_sheet, b.titled) else (b, a)
+            halten.issues.append(f"Dieselbe Bohrung als '{weg.code}' auf S.{weg.page} (gleiche GOK und Grenzen)")
+            halten.duplicates.append(f"S.{weg.page} als {weg.code}")
+            raus.add(j if weg is b else i)
+    return [b for k, b in enumerate(bhs) if k not in raus]
 
 
 WL_RE = re.compile(r"^(\d{1,2}[.,]\d{2})\s*m?\s*(?:\(\s*([+-]?\d{1,4}[.,]\d{2})\s*\))?$")
@@ -2397,12 +2421,20 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
         if bh.bbox and bh.mode != "schichtenverzeichnis":
             je_seite[bh.page - 1].append(bh)
     for pno, bhs in je_seite.items():
-        spans = []
+        spans, alle = [], []
         for blk in doc[pno].get_text("dict")["blocks"]:
             for ln in blk.get("lines", []):
                 for sp in ln["spans"]:
-                    if sp["text"].strip() and _ist_blau(sp.get("color", 0)):
-                        spans.append((pymupdf.Rect(sp["bbox"]), sp["text"].strip()))
+                    if sp["text"].strip():
+                        alle.append((pymupdf.Rect(sp["bbox"]), sp["text"].strip()))
+                        if _ist_blau(sp.get("color", 0)):
+                            spans.append((pymupdf.Rect(sp["bbox"]), sp["text"].strip()))
+        if RULES["gw_label_text"]:                         # W7b: 'GW' + '0.94m' in einer Zeile, Datum darunter
+            gw_t = [q for q, u in alle if u == "GW"]
+            for q, u in alle:
+                if WL_RE.match(u) and any(abs((g.y0 + g.y1) / 2 - (q.y0 + q.y1) / 2) < 4 and 0 <= q.x0 - g.x1 < 50
+                                          for g in gw_t):
+                    spans.append((q, u))
         if not spans:
             continue
         blaue_linien = [dr for dr in doc[pno].get_drawings() if dr.get("color") and len(dr["color"]) == 3
@@ -2423,7 +2455,8 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
             i = min(nah)[1]
             d = float(m.group(1).replace(",", "."))
             h = float(m.group(2).replace(",", ".")) if m.group(2) else None
-            datum = " ".join(u for q, u in spans if 0 <= q.y0 - r.y1 < 14 and abs(q.x0 - r.x0) < 40)
+            datum = " ".join(u for q, u in alle if 0 <= q.y0 - r.y1 < 14 and abs(q.x0 - r.x0) < 40
+                             and GW_DATUM_RE.search(u))
             labels[i].append((d, h, f"{t} {datum}".strip()))
         for i, ls in labels.items():
             bh = bhs[i]
@@ -2439,6 +2472,7 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
             if alt:
                 bh.issues.append(f"Wassersymbol bei {alt} m ohne Label verworfen: das blaue Label gilt")
             bh.gw_depths = sorted({d for d, _ in ok})
+            bh.gw_info = {k: v for k, v in bh.gw_info.items() if k in bh.gw_depths}
             if bh.fit:                                       # Wasserlinie/Symbol an der Saeule ist keine Schichtgrenze
                 a, b = bh.fit
                 x0, _, x1, _ = bh.bbox

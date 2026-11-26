@@ -1,6 +1,6 @@
-"""Regeln aus der Blindrunde 5 (Issue #54, docs/16 T6-T10, W7): ohne Netz und ohne echte Gutachten.
+"""Regeln aus der Blindrunde 5 (Issue #54, docs/16 T6-T11, W7): ohne Netz und ohne echte Gutachten.
 
-Die Stressfaelle s31-s34 werden im Test erzeugt (stress_cases.py, mit Wahrheit) und mit demselben Werkzeug bewertet
+Die Stressfaelle s31-s36 werden im Test erzeugt (stress_cases.py, mit Wahrheit) und mit demselben Werkzeug bewertet
 wie die Regression (benchmark/eval_real.score). Jede Regel zeigt, dass sie greift: Regel aus -> Fall faellt.
 """
 from __future__ import annotations
@@ -21,7 +21,8 @@ import prototyp_v4 as v4  # noqa: E402
 import stress_cases as sc  # noqa: E402
 from eval_real import norm, score  # noqa: E402
 
-FAELLE = ["s31_projektnummer", "s32_stationscode", "s33_schnitt_doppellabel", "s34_unterkante_text_darueber"]
+FAELLE = ["s31_projektnummer", "s32_stationscode", "s33_schnitt_doppellabel", "s34_unterkante_text_darueber",
+          "s35_gw_label_text", "s36_doppel_anderer_code"]
 
 
 @pytest.fixture(scope="module")
@@ -67,6 +68,8 @@ SCHUTZ = [
     ("doppel_labels", "s33_schnitt_doppellabel", "falsche Grenzen"),       # Linie ohne 'Tiefe (Hoehe)'
     ("gw_blaue_labels", "s33_schnitt_doppellabel", "GW"),                  # blaues Label, Dreieck aus Einzelstrichen
     ("top_null_gedruckt", "s34_unterkante_text_darueber", "Bodenart"),     # Beschreibung ueber dem Label
+    ("gw_label_text", "s35_gw_label_text", "falsches GW"),                  # 'GW 2.40m' gilt, nicht das Symbol
+    ("doppel_anderer_code", "s36_doppel_anderer_code", "falsche Bohrungen"),  # 'B 4' und 'B 4a' = eine Bohrung
 ]
 
 
