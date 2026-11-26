@@ -1,0 +1,292 @@
+{
+ "code_rev": "bb0bdb1",
+ "pdf_sha256": "ca947671c2e11562ede5b9575a8997a9a336f13cc9dd0c5149053df7af93f0c7",
+ "v1": {},
+ "v4": {
+  "BS1": {
+   "gok": null,
+   "bottoms": [
+    0.9,
+    2.2,
+    3.4,
+    3.9,
+    4.5,
+    4.8,
+    6.6,
+    7.0
+   ],
+   "soils": [
+    [
+     0.0,
+     0.9,
+     ""
+    ],
+    [
+     0.9,
+     2.2,
+     ""
+    ],
+    [
+     2.2,
+     3.4,
+     ""
+    ],
+    [
+     3.4,
+     3.9,
+     ""
+    ],
+    [
+     3.9,
+     4.5,
+     ""
+    ],
+    [
+     4.5,
+     4.8,
+     ""
+    ],
+    [
+     4.8,
+     6.6,
+     ""
+    ],
+    [
+     6.6,
+     7.0,
+     ""
+    ]
+   ],
+   "gw": []
+  },
+  "BS2": {
+   "gok": null,
+   "bottoms": [
+    1.1,
+    2.8,
+    3.4,
+    4.8,
+    5.0,
+    6.6,
+    7.0
+   ],
+   "soils": [
+    [
+     0.0,
+     1.1,
+     ""
+    ],
+    [
+     1.1,
+     2.8,
+     ""
+    ],
+    [
+     2.8,
+     3.4,
+     ""
+    ],
+    [
+     3.4,
+     4.8,
+     ""
+    ],
+    [
+     4.8,
+     5.0,
+     ""
+    ],
+    [
+     5.0,
+     6.6,
+     ""
+    ],
+    [
+     6.6,
+     7.0,
+     ""
+    ]
+   ],
+   "gw": []
+  },
+  "BS3": {
+   "gok": null,
+   "bottoms": [
+    0.2,
+    5.0
+   ],
+   "soils": [
+    [
+     0.0,
+     0.2,
+     ""
+    ],
+    [
+     0.2,
+     5.0,
+     ""
+    ]
+   ],
+   "gw": []
+  },
+  "BS4": {
+   "gok": null,
+   "bottoms": [
+    4.5,
+    5.0
+   ],
+   "soils": [
+    [
+     0.0,
+     4.5,
+     ""
+    ],
+    [
+     4.5,
+     5.0,
+     ""
+    ]
+   ],
+   "gw": []
+  },
+  "BS5": {
+   "gok": null,
+   "bottoms": [
+    3.8,
+    5.0
+   ],
+   "soils": [
+    [
+     0.0,
+     3.8,
+     "Auffuellung"
+    ],
+    [
+     3.8,
+     5.0,
+     ""
+    ]
+   ],
+   "gw": []
+  }
+ },
+ "v4_detail": [
+  {
+   "code": "BS 1",
+   "page": 1,
+   "scale": 100,
+   "mode": "reihenfolge (8/8 Labels)",
+   "gok": null,
+   "bottoms": [
+    0.9,
+    2.2,
+    3.4,
+    3.9,
+    4.5,
+    4.8,
+    6.6,
+    7.0
+   ],
+   "soils": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "unconfirmed": 0,
+   "gw": [],
+   "gw_status": null,
+   "dups": []
+  },
+  {
+   "code": "BS 2",
+   "page": 1,
+   "scale": 100,
+   "mode": "reihenfolge (7/7 Labels)",
+   "gok": null,
+   "bottoms": [
+    1.1,
+    2.8,
+    3.4,
+    4.8,
+    5.0,
+    6.6,
+    7.0
+   ],
+   "soils": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "unconfirmed": 0,
+   "gw": [],
+   "gw_status": null,
+   "dups": []
+  },
+  {
+   "code": "BS 3",
+   "page": 1,
+   "scale": 100,
+   "mode": "reihenfolge (2/2 Labels)",
+   "gok": null,
+   "bottoms": [
+    0.2,
+    5.0
+   ],
+   "soils": [
+    "",
+    ""
+   ],
+   "unconfirmed": 0,
+   "gw": [],
+   "gw_status": null,
+   "dups": []
+  },
+  {
+   "code": "BS 4",
+   "page": 1,
+   "scale": 100,
+   "mode": "reihenfolge (2/2 Labels)",
+   "gok": null,
+   "bottoms": [
+    4.5,
+    5.0
+   ],
+   "soils": [
+    "",
+    ""
+   ],
+   "unconfirmed": 0,
+   "gw": [],
+   "gw_status": null,
+   "dups": []
+  },
+  {
+   "code": "BS 5",
+   "page": 1,
+   "scale": 100,
+   "mode": "direkt (2/2 Labels)",
+   "gok": null,
+   "bottoms": [
+    3.8,
+    5.0
+   ],
+   "soils": [
+    "Auffuellung",
+    ""
+   ],
+   "unconfirmed": 0,
+   "gw": [],
+   "gw_status": null,
+   "dups": []
+  }
+ ]
+}

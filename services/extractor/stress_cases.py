@@ -613,6 +613,162 @@ def build(out: Path) -> list[str]:
         "wasserlinien": [],
     }, indent=1, ensure_ascii=False))
     made.append("s30_ls_wasserlinien_fallen")
+
+    # s31 Projekt-Nr. im Schriftfeld ('B 231411') ist keine Bohrung (T6, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    draw_profile(p, Spec("B 1", L_STD, gok=45.20, gw=("symbol", 2.4)))
+    # Schriftfeld ueber einer zweiten Saeule (Schnitt ohne eigenen Kopf): die Nummer steht wie ein Kopf darueber
+    draw_profile(p, Spec("B 231411", L_STD, title="", x0=400, scale_text=None))
+    p.insert_text((330, 110), "Projekt-Nr.:", fontsize=8)
+    p.insert_text((380, 110), "B 231411", fontsize=8)
+    save("s31_projektnummer", doc, [_truth("B 1", L_STD, 45.20, [2.4])],
+         "T6/#54: Projekt-Nr. 'B 231411' im Schriftfeld -> keine Bohrung")
+
+    # s32 Code mit Station 'SB-0+550-N3', Ansatzpunkt mit Bezug (T7, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    draw_profile(p, Spec("SB-0+550-N3", L_STD, unit="m", decimal=".", gw=("symbol", 2.4)))
+    p.insert_text((180, 128), "Ansatzpunkt: 476.76 m NHN (OK-Schiene)", fontsize=7)
+    save("s32_stationscode", doc, [_truth("SB-0+550-N3", L_STD, 476.76, [2.4])],
+         "T7/#54: Code mit Station, GOK 'Ansatzpunkt: ... m NHN (OK-Schiene)'")
+
+    # s33 Schnitt-Stil: Labels 'Tiefe (Hoehe)', Linie ohne Label in der Schicht, blaues Wasserlabel mit Datum,
+    #     GOK allein unter dem Kopf (T8, T9, W7, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s33 = Spec("KRB 7", L_STD, label_side="right", extra={"label_skip": range(len(L_STD))})
+    draw_profile(p, s33)
+    ppm = PT_PER_M_1_1 / s33.scale
+    p.insert_text((s33.x0 - 10, s33.top_y - 22), "45.20 m", fontsize=8)
+    for bot, _, _ in L_STD:
+        p.insert_text((s33.x0 + s33.col_w + 4, s33.top_y + bot * ppm + 2.5),
+                      f"{bot:.2f} ({45.20 - bot:.2f})", fontsize=6)
+    y_fremd = s33.top_y + 2.6 * ppm                       # Linie ohne Label (Probe/Schraffur) in 1.80-3.40
+    _line(p, (s33.x0, y_fremd), (s33.x0 + s33.col_w, y_fremd), 0.6)
+    y_w = s33.top_y + 2.8 * ppm
+    for a_, b_ in (((s33.x0 - 12, y_w - 6), (s33.x0 - 5, y_w - 6)), ((s33.x0 - 12, y_w - 6), (s33.x0 - 8.5, y_w)),
+                   ((s33.x0 - 5, y_w - 6), (s33.x0 - 8.5, y_w))):   # Dreieck aus Einzelstrichen (Schnitt-Software)
+        p.draw_line(a_, b_, color=(0, 0, 1), width=0.6)
+    p.draw_line((s33.x0 - 80, y_w), (s33.x0, y_w), color=(0, 0, 1), width=0.6)
+    p.insert_text((s33.x0 - 80, y_w - 2), "2.80 (42.40)", fontsize=6, color=(0, 0, 1))
+    p.insert_text((s33.x0 - 72, y_w + 7), "02.03.22", fontsize=6, color=(0, 0, 1))
+    save("s33_schnitt_doppellabel", doc, [_truth("KRB 7", L_STD, 45.20, [2.8], kind="rks")],
+         "T8/T9/W7/#54: 'Tiefe (Hoehe)', Linie ohne Label keine Grenze, blaues Wasserlabel, GOK unter dem Kopf")
+
+    # s34 Unterkanten-Labels ohne 0,00, Beschreibung ueber ihrem Label, duenne Schichten, DPH-Achse daneben (T10, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s34 = Spec("BS 1", [(b, so, "") for b, so, _ in L_ABBR], gok=45.20, scale=100, scale_text="M 1:100",
+               label_side="right", decimal=".")
+    draw_profile(p, s34)
+    ppm = PT_PER_M_1_1 / s34.scale
+    for bot, _, desc in L_ABBR:
+        p.insert_text((s34.x0 + s34.col_w + 6, s34.top_y + bot * ppm - 6), desc, fontsize=6)
+    ax = s34.x0 + s34.col_w + 110                         # Tiefenachse eines Rammdiagramms: 0.0, 1.0, ...
+    for i in range(5):
+        p.insert_text((ax, s34.top_y + i * ppm + 2), f"{i}.0", fontsize=6)
+    save("s34_unterkante_text_darueber", doc, [_truth("BS 1", L_ABBR, 45.20, kind="rks")],
+         "T10/#54: Unterkanten-Labels ohne 0,00, Beschreibung ueber dem Label, Achse 0.0 eines DPH daneben")
+
+    # s35 Wasserlabel 'GW 0.94m' (schwarz) mit Datum in der Labelspalte, Symbol daneben an falscher Hoehe (W7b, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s35 = Spec("B 3", L_STD, gok=45.20)
+    draw_profile(p, s35)
+    ppm = PT_PER_M_1_1 / s35.scale
+    y_lab = s35.top_y + 1.2 * ppm                         # Label gestapelt, nicht an der Wassertiefe 2,40
+    p.insert_text((s35.x0 - 110, y_lab), "GW", fontsize=6.5)
+    p.insert_text((s35.x0 - 90, y_lab), "2.40m", fontsize=6.5)
+    p.insert_text((s35.x0 - 95, y_lab + 9), "(21.10.2024)", fontsize=6)
+    y_sym = y_lab + 2
+    p.draw_polyline([(s35.x0 - 60, y_sym - 6), (s35.x0 - 53, y_sym - 6), (s35.x0 - 56.5, y_sym), (s35.x0 - 60, y_sym - 6)],
+                    color=(0, 0, 1), fill=(0, 0, 1), closePath=True, width=0.4)
+    _line(p, (s35.x0 - 60, y_sym), (s35.x0, y_sym), 0.4)
+    save("s35_gw_label_text", doc, [_truth("B 3", L_STD, 45.20, [2.4])],
+         "W7b/#54: Label 'GW 2.40m' mit Datum gilt, das Symbol daneben steht an anderer Hoehe")
+
+    # s36 dieselbe Bohrung zweimal unter anderem Code (Einzelblatt 'B 4', im Schnitt 'B 4a') (T11, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("B 4", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("B 4a", L_STD, gok=45.20, x0=500, scale_text=None))
+    draw_profile(p, Spec("B 7", L_STD, gok=45.20, x0=330, scale_text=None))   # gleiche GOK + Grenzen, andere Nummer
+    save("s36_doppel_anderer_code", doc, [_truth("B 4", L_STD, 45.20), _truth("B 7", L_STD, 45.20)],
+         "T11/#54: gleiche GOK und Grenzen unter zweitem Code -> eine Bohrung mit Hinweis; B 7 (andere Nummer) bleibt")
+
+    # s37 Ausbauplan einer Messstelle neben dem Profil: eigener Kopf, Tiefenlabels, Ausbau-Begriffe (T12, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    L_KERN = [(b, so, f"{t}, Einfachkernrohr") for b, so, t in L_STD]   # Bohrgeraet im Text ist kein Ausbau (Wesel)
+    draw_profile(p, Spec("B 5", L_KERN, gok=45.20, x0=150))
+    L_AUSBAU = [(0.3, "Beton", "Beton"), (1.5, "Ton", "Tonsperre"), (2.0, "Sand", "Bohrgut"),
+                (4.5, "Kies", "PVC-Aufsatzrohr DN 100"), (6.5, "Kies", "PVC-Filterrohr DN 100, Filterkies")]
+    draw_profile(p, Spec("GWM 5", L_AUSBAU, x0=380, scale_text=None, unit="m"))
+    save("s37_ausbauplan", doc, [_truth("B 5", L_STD, 45.20)],
+         "T12/#55: Ausbauplan 'GWM 5' (Rohr, Filter, Tonsperre) ist kein Bohrprofil")
+
+    # s38 Codes mit Zusatz: Grossbuchstabe und Teilnummer (T13, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("BS 105A", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("BS 22.1", L_STD, gok=44.80, x0=480, scale_text=None))
+    save("s38_code_zusatz", doc, [_truth("BS 105A", L_STD, 45.20, kind="rks"), _truth("BS 22.1", L_STD, 44.80, kind="rks")],
+         "T13/#55: Codes 'BS 105A' und 'BS 22.1'")
+
+    # s39 'kein Wasser angetroffen' mittig unter der Saeule, Labels rechts (#55; das Lesen gab es schon)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s39 = Spec("BS 23", L_STD, gok=45.20, label_side="right")
+    draw_profile(p, s39)
+    ppm = PT_PER_M_1_1 / s39.scale
+    p.insert_text((s39.x0 - 20, s39.top_y + L_STD[-1][0] * ppm + 40), "kein Wasser angetroffen", fontsize=6.5)
+    save("s39_kein_wasser", doc, [_truth("BS 23", L_STD, 45.20, status="kein Grundwasser", kind="rks")],
+         "#55: 'kein Wasser angetroffen' unter der Saeule (bestehender Lesepfad)")
+
+    # s40 Wasserlabel '2,40 GW' mit 'NN+42,80m' darunter, Symbol daneben weiter oben (W7b, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s40 = Spec("BS 30", L_STD, gok=45.20)
+    draw_profile(p, s40)
+    ppm = PT_PER_M_1_1 / s40.scale
+    y_l = s40.top_y + 0.8 * ppm
+    p.insert_text((s40.x0 - 100, y_l), "2,40 GW", fontsize=6.5)
+    p.insert_text((s40.x0 - 100, y_l + 9), "NN+42,80m", fontsize=6)
+    p.draw_polyline([(s40.x0 - 120, y_l - 6), (s40.x0 - 113, y_l - 6), (s40.x0 - 116.5, y_l), (s40.x0 - 120, y_l - 6)],
+                    color=(0, 0, 0), fill=(0, 0, 0), closePath=True, width=0.4)
+    _line(p, (s40.x0 - 120, y_l), (s40.x0, y_l), 0.4)
+    save("s40_gw_label_nn", doc, [_truth("BS 30", L_STD, 45.20, [2.4], kind="rks")],
+         "W7b/#55: '2,40 GW' + 'NN+42,80m' gilt, das Symbol steht hoeher")
+
+    # s41 Kuerzel aus der Legende der Seite: 'BK = Rammkernbohrung', 'S = Baggerschurf'; Codes 'BK A/1', 'S B2' (T14, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("BK A/1", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("S B2", [(0.3, "Mutterboden", "Mutterboden"), (1.2, "Schluff", "Schluff, tonig"),
+                                  (2.0, "Sand", "Sand, kiesig")], gok=44.60, x0=480, scale_text=None))
+    p.insert_text((640, 520), "BK = Rammkernbohrung", fontsize=7)
+    p.insert_text((640, 532), "S = Baggerschurf", fontsize=7)
+    p.insert_text((640, 544), "CPT = Drucksondierung", fontsize=7)
+    save("s41_legende_kuerzel", doc,
+         [_truth("BK A/1", L_STD, 45.20), _truth("S B2", [(0.3, "Mutterboden", ""), (1.2, "Schluff", ""), (2.0, "Sand", "")],
+                                                44.60, kind="schurf")],
+         "T14/#54: Kuerzel aus der Legende ('BK = Rammkernbohrung', 'S = Baggerschurf'), Codes mit Achse 'A/1', 'B2'")
+
+    # s42 Schnitt-Stil: Doppellabel '2.60 (42.60)' ohne gezeichnete Linie -> Grenze aus dem Label (T9, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s42 = Spec("KRB 9", L_STD, label_side="right", extra={"label_skip": range(len(L_STD))})
+    draw_profile(p, s42)
+    ppm = PT_PER_M_1_1 / s42.scale
+    p.insert_text((s42.x0 - 10, s42.top_y - 22), "45.20 m", fontsize=8)
+    for bot in [b for b, _, _ in L_STD] + [2.6]:
+        p.insert_text((s42.x0 + s42.col_w + 4, s42.top_y + bot * ppm + 2.5), f"{bot:.2f} ({45.20 - bot:.2f})", fontsize=6)
+    w42 = _truth("KRB 9", L_STD, 45.20, kind="rks")
+    k = next(i for i, ly in enumerate(w42["layers"]) if ly["top"] < 2.6 < ly["bottom"])
+    w42["layers"][k:k + 1] = [{"top": w42["layers"][k]["top"], "bottom": 2.6},
+                              {"top": 2.6, "bottom": w42["layers"][k]["bottom"], "soil": w42["layers"][k]["soil"]}]
+    save("s42_doppellabel_ohne_linie", doc, [w42], "T9/#54: Doppellabel ohne Linie ist eine Grenze (Hoehe passt zur GOK)")
     return made
 
 

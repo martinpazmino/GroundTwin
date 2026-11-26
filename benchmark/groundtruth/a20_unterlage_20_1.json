@@ -1,0 +1,7413 @@
+{
+ "file": "Unterlage_20.1_Bodenuntersuchung_geotechnisches_Streckengutachten.pdf",
+ "sha256": "90fd7be1a02e7e227898e74f4a45a09a6201311175516fe2bc09be962a20466c",
+ "source": "https://www.strassenbau.niedersachsen.de/download/96897/Unterlage_20.1_Bodenuntersuchung_geotechnisches_Streckengutachten.pdf",
+ "notes": "Blindtest Runde 6 (nach dem Einfrieren transkribiert: runde6_vorher Code 1e25a60, runde6_nachher Code 77f3bd2). A20 Kuestenautobahn Abschnitt 1, Bodenuntersuchung/Streckengutachten, 197 Seiten: Berichtstext S. 1-46 gescannt (ohne Textebene), Blatt 3 'Bohrprofile, Pegel, Rammsondierungen' S. 60-82 vektoriell (IDAT, hoehenmaessig M 1:100). 200 Bohrungen (BS ..., B 1-6, BS 22.1-22.6, BS ...A) aus Blatt 3, transkribiert aus der Textebene mit Pruefungen je Profil: GOK (NN oben) - letzte Tiefe = NN unten (+-1 cm), Hoehe+Tiefe = GOK bei Labels '( h ) t', Anzahl Beschreibungsbloecke = Anzahl Schichten (200/200); Stichproben am Bild (BS 4, BS 7, BS 22.2, BS 502, BS 62). Labels = Schicht-UNTERKANTE. Bodenart = Hauptwort der Beschreibung, Vokabular des Projekts (Geschiebelehm und Geschiebemergel -> Geschiebemergel, Fein-/Mittel-/Grobsand und Beckensand -> Sand, Grasnarbe -> Mutterboden). Wasser = Labels 'x,xx GW' (voll/offen) links der Saeule mit NN darunter; Zuordnung ueber Tiefe + NN = GOK, sonst nach Lage (Saeule rechts des Labels, am Bild geprueft): B 1 17,40 (S.61), BS 502 0,80 (S.61), BS 5 1,10 (S.62), BS 27 0,90 (S.64), BS 30 0,50 (S.64), BS 62 1,30 (S.68), BS 62 1,40 (S.68), BS 69 2,60 (S.68), BS 79 1,45 (S.69), BS 88 1,40 (S.70), BS 138 0,80 (S.76) - dort passt die NN-Hoehe des Labels 5-10 cm nicht zur GOK (Zeichnung). 'kein Wasser angetroffen' -> gw_status. GWM 1-7 (Ausbauplaene ohne Schichten) nicht als Bohrung. Profile auch im Bewertungsband S. 168-171 und Blatt 9 (S. 175-197).",
+ "boreholes": [
+  {
+   "code": "BS 4",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 7.09,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 1",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 7.52,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.4,
+     "bottom": 3.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.3,
+     "bottom": 13.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 13.0,
+     "bottom": 13.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 13.5,
+     "bottom": 17.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 17.4,
+     "bottom": 20.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 20.0,
+     "bottom": 21.0,
+     "soil": "Schluff"
+    }
+   ],
+   "gw_depths": [
+    17.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 7",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 7.5,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 3.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.9,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.5,
+    3.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 9",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 10.42,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.2,
+     "bottom": 2.1,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 4.0,
+     "bottom": 4.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.7,
+     "bottom": 6.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    2.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 3",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 7.45,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.4,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.7,
+     "bottom": 3.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.2,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 8",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 10.05,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.2,
+     "bottom": 1.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.8,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.8,
+     "bottom": 3.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 2",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 7.8,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 501",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 9.57,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.0,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.4,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 1",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 8.83,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.7,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 502",
+   "kind": "bohrung",
+   "page": 61,
+   "gok": 9.07,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.7,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.1,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.1,
+     "bottom": 6.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.75,
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 601",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 9.61,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.0,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 2.5,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.8,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 5.8,
+     "bottom": 7.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 12",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.72,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.9,
+     "bottom": 2.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.6,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 13",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.72,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.8,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 5",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.15,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.6,
+     "bottom": 4.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 1A",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.72,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 11.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 6",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.63,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.3,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 602",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 8.69,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.0,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.6,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 10",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.83,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.35
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 11",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 7.99,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 14",
+   "kind": "bohrung",
+   "page": 62,
+   "gok": 8.04,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 15",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.53,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.8,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 16",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.64,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 2.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.9,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.4,
+    3.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 17",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.26,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.9,
+     "bottom": 2.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.8,
+     "bottom": 4.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    3.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 18",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.3,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 19",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.61,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 20",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.61,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 21",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.7,
+     "soil": "Mudde"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.6,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    2.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.42,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.7,
+     "soil": "Mudde"
+    },
+    {
+     "top": 3.7,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 23",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 8.95,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.2,
+     "bottom": 0.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 24",
+   "kind": "bohrung",
+   "page": 63,
+   "gok": 9.16,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 25",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.43,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "B 2",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.47,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.0,
+     "bottom": 6.8,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 6.8,
+     "bottom": 12.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 12.1,
+     "bottom": 15.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    12.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 26",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.47,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.8,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 27",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.42,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.9,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 28",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.68,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 2.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.2,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 29",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.49,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    2.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 30",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.74,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 4.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.5,
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 31",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 9.82,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 4.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 32",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 10.07,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.5,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 33",
+   "kind": "bohrung",
+   "page": 64,
+   "gok": 10.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.1,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.1,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.7,
+     "bottom": 4.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    1.4,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 34",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.62,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.2,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 35",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.51,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.6,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 36",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.44,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.3,
+     "soil": "Mudde"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.8,
+    2.5,
+    3.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 37",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.44,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 38",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.51,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 39",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.46,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 40",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.67,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 41",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.42,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 42",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 10.94,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 43",
+   "kind": "bohrung",
+   "page": 65,
+   "gok": 11.39,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.7,
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 44",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 11.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 45",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 11.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.8,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.8,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 3",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.06,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 2.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.4,
+     "bottom": 5.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 5.5,
+     "bottom": 10.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 10.7,
+     "bottom": 15.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    10.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 46",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.0,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.6,
+    2.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 47",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 11.62,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.2,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 48",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 11.92,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 4.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 49",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.87,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.9,
+     "bottom": 3.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 50",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.7,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 51",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.71,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.7,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 52",
+   "kind": "bohrung",
+   "page": 66,
+   "gok": 12.82,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 53",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 13.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.4,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 54",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 13.91,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.4,
+     "bottom": 4.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.3,
+     "bottom": 6.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 55",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 14.04,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.15,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 56",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 13.84,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.8,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.25,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 57",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 14.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 5.7,
+     "bottom": 6.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 6.3,
+     "bottom": 7.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    2.85
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 58",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 12.76,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.6,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.4,
+    2.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 59",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 13.78,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.9,
+     "bottom": 3.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.2,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 60",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 14.28,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 61",
+   "kind": "bohrung",
+   "page": 67,
+   "gok": 14.17,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.8,
+     "bottom": 3.8,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.8,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 62",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.14,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 4",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 13.99,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 6.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 6.1,
+     "bottom": 7.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 7.5,
+     "bottom": 12.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 12.5,
+     "bottom": 15.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 63",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.26,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    4.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 64",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 13.92,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.8,
+     "bottom": 4.5,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 65",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.28,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 66",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.48,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.9,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 4.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.3,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    4.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 67",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 13.94,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.0,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.1,
+    3.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 68",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.24,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.2,
+    3.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 69",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.94,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.1,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 70",
+   "kind": "bohrung",
+   "page": 68,
+   "gok": 14.61,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 71",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 13.9,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 72",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.41,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 4.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.0,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 73",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 5",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 5.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 5.1,
+     "bottom": 6.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 6.3,
+     "bottom": 7.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 7.5,
+     "bottom": 10.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 10.0,
+     "bottom": 15.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 76",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.52,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.35,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 77",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.28,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 78",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.24,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.55
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 79",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.32,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 4.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.3,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.45
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 80",
+   "kind": "bohrung",
+   "page": 69,
+   "gok": 14.46,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.7,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 84",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.81,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.6,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 85",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.6,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 86",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.3,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 88",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.58,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.5,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 87",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 13.61,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 4.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 74",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 75",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.45,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 89",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 13.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.2,
+     "bottom": 1.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 4.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 83",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.21,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 2.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.8,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 81",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 15.02,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.4,
+    2.45
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 82",
+   "kind": "bohrung",
+   "page": 70,
+   "gok": 14.53,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.9,
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 90",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 4.3,
+     "soil": "Kies"
+    },
+    {
+     "top": 4.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 91",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.54,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.2,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 92",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 13.29,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.8,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 93",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 13.07,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 94",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.71,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 3.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.7,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 95",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.67,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.8,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 96",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.3,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 97",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 98",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 12.22,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 2.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.4,
+     "bottom": 4.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    2.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 99",
+   "kind": "bohrung",
+   "page": 71,
+   "gok": 11.75,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 6",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 11.51,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.2,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.9,
+     "bottom": 5.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 5.2,
+     "bottom": 6.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 6.0,
+     "bottom": 15.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  },
+  {
+   "code": "BS 100",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 11.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 3.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 3.1,
+     "bottom": 5.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.8,
+    3.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 101",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 10.41,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.5,
+     "bottom": 3.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.2,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 102",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 10.26,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 103",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 10.19,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.25,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 104",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.45,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.5,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 3.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.8,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 105",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.06,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.9,
+     "bottom": 2.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.2,
+     "bottom": 3.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    3.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 105A",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.27,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 106",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 8.82,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.2,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 107",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.37,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 106A",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 108",
+   "kind": "bohrung",
+   "page": 72,
+   "gok": 9.49,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 109",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 9.51,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.1,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 1.1,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.9,
+    3.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 110A",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 7.99,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.3,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.1,
+     "bottom": 3.4,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.4,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 110",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 9.39,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.8,
+    1.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 107A",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 9.38,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 2.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.9,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 111",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 9.09,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 111A",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 9.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 114",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 7.54,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 115",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 7.05,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.2,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.2,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.25
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 116",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 7.39,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.6,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.7,
+     "soil": "Kies"
+    },
+    {
+     "top": 1.7,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.5,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.45
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 117",
+   "kind": "bohrung",
+   "page": 73,
+   "gok": 6.95,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.3,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.3,
+     "bottom": 3.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.25
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 118",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 7.72,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 3.5,
+     "soil": "Kies"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.45
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 119",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 8.3,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 120",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 8.15,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.9,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 121",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 7.84,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 122",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 8.57,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 112A",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 9.81,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 123",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 8.93,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.7,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.7,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 7",
+   "kind": "bohrung",
+   "page": 74,
+   "gok": 9.42,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.0,
+     "soil": "Schluff"
+    },
+    {
+     "top": 2.0,
+     "bottom": 2.2,
+     "soil": "Schluff"
+    },
+    {
+     "top": 2.2,
+     "bottom": 3.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 4.1,
+     "bottom": 5.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 5.8,
+     "bottom": 9.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 9.5,
+     "bottom": 15.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 124",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 7.29,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 125",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 6.74,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 126",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 7.19,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 3.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 127",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 6.66,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 1.1,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.0,
+    2.15
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 128",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 6.67,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.9,
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 129",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 5.88,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 130",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 5.58,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.25,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 131",
+   "kind": "bohrung",
+   "page": 75,
+   "gok": 5.6,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.2,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.2,
+     "bottom": 2.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 132",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.29,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8,
+    1.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 133",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.23,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8,
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 134",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.13,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 135",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.25,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 3.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 136",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.27,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.0,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 137",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 5.38,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 138",
+   "kind": "bohrung",
+   "page": 76,
+   "gok": 4.7,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 139",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 5.04,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8,
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 161",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 6.74,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 140",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 6.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.7,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.7,
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 162",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 7.81,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.4,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.6,
+     "bottom": 3.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 141",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 5.65,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 167",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 7.57,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 163",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 8.44,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 168",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 7.87,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 4.0,
+     "soil": "Ton"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 142",
+   "kind": "bohrung",
+   "page": 77,
+   "gok": 5.49,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 146",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 5.95,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 149",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 4.66,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 155",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 3.77,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.8,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.6,
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 147",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 5.83,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.9,
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 148",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 5.01,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 156",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 4.23,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.2,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.2,
+     "bottom": 1.1,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.4,
+     "bottom": 3.5,
+     "soil": "Ton"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.9,
+    1.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 150",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 5.21,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.2,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 151",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 5.04,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 157",
+   "kind": "bohrung",
+   "page": 78,
+   "gok": 4.67,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.3,
+     "soil": "Torf"
+    },
+    {
+     "top": 1.3,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 152",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 4.8,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 2.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.6,
+    2.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 158",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 4.74,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.7,
+     "bottom": 0.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "B 8",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 5.94,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.5,
+     "soil": "Ton"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.5,
+     "soil": "Ton"
+    },
+    {
+     "top": 2.5,
+     "bottom": 6.2,
+     "soil": "Ton"
+    },
+    {
+     "top": 6.2,
+     "bottom": 7.0,
+     "soil": "Schluff"
+    },
+    {
+     "top": 7.0,
+     "bottom": 8.3,
+     "soil": "Ton"
+    },
+    {
+     "top": 8.3,
+     "bottom": 9.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 9.0,
+     "bottom": 10.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 10.0,
+     "bottom": 12.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 12.8,
+     "bottom": 13.1,
+     "soil": "Schluff"
+    },
+    {
+     "top": 13.1,
+     "bottom": 15.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    8.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 153",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 5.2,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 159",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 5.19,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 2.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.5,
+     "bottom": 3.5,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 154",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 5.04,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.4,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.4,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.6,
+     "soil": "Ton"
+    },
+    {
+     "top": 2.6,
+     "bottom": 2.8,
+     "soil": "Ton"
+    },
+    {
+     "top": 2.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    0.8
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 160",
+   "kind": "bohrung",
+   "page": 79,
+   "gok": 5.85,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.1,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 164",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 7.47,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.1,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.1,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 2.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 2.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.0,
+    2.1
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 169",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 8.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.2,
+     "bottom": 2.9,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.9,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 165",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 8.31,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 3.5,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 170",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 8.18,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 166",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 10.37,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.7,
+     "soil": "Auffuellung"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 1.7,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 2.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.6,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 173",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 9.01,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.0,
+     "soil": "Schluff"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 3.7,
+     "soil": "Ton"
+    },
+    {
+     "top": 3.7,
+     "bottom": 5.0
+    }
+   ],
+   "gw_depths": [
+    3.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 172",
+   "kind": "bohrung",
+   "page": 80,
+   "gok": 9.64,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.0,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.0,
+     "bottom": 2.7,
+     "soil": "Ton"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 143",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 6.45,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.1,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.1,
+     "bottom": 3.2,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.2,
+     "bottom": 3.6,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.5,
+    1.6
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 171",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 6.41,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 3.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.0,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.4,
+    1.5
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 144",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 5.68,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.9,
+     "soil": "Torf"
+    },
+    {
+     "top": 0.9,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 2.7,
+     "soil": "Schluff"
+    },
+    {
+     "top": 2.7,
+     "bottom": 3.1,
+     "soil": "Ton"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Schluff"
+    }
+   ],
+   "gw_depths": [
+    1.3,
+    1.4
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 174",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 6.95,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    1.9
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 145",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 6.98,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.0,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 3.3,
+     "soil": "Schluff"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    3.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 175",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 6.7,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.8,
+     "soil": "Schluff"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [
+    2.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 176",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 7.44,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 0.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 3.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.5,
+     "bottom": 4.0,
+     "soil": "Ton"
+    }
+   ],
+   "gw_depths": [
+    2.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 177",
+   "kind": "bohrung",
+   "page": 81,
+   "gok": 10.31,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 4.0,
+     "soil": "Sand"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": "kein Grundwasser"
+  },
+  {
+   "code": "BS 22.2",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.54,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.6,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.6,
+     "bottom": 2.0,
+     "soil": "Sand"
+    },
+    {
+     "top": 2.0,
+     "bottom": 3.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.6,
+     "bottom": 3.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.7,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.85,
+    3.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22.5",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.53,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.7,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.7,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 1.7,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.7,
+     "bottom": 3.1,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 3.1,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.8,
+    3.0
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22.4",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.51,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 0.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.8,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.5,
+     "soil": "Torf"
+    },
+    {
+     "top": 4.5,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.25,
+    1.3
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22.3",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.55,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.3,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.3,
+     "bottom": 1.5,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.5,
+     "bottom": 3.0,
+     "soil": "Torf"
+    },
+    {
+     "top": 3.0,
+     "bottom": 3.3,
+     "soil": "Sand"
+    },
+    {
+     "top": 3.3,
+     "bottom": 4.4,
+     "soil": "Torf"
+    },
+    {
+     "top": 4.4,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.1,
+    1.2
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22.6",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.53,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.4,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.4,
+     "bottom": 1.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.6,
+     "bottom": 1.7,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.7,
+     "bottom": 1.8,
+     "soil": "Sand"
+    },
+    {
+     "top": 1.8,
+     "bottom": 4.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [
+    1.45,
+    1.7
+   ],
+   "gw_status": null
+  },
+  {
+   "code": "BS 22.1",
+   "kind": "bohrung",
+   "page": 82,
+   "gok": 8.52,
+   "layers": [
+    {
+     "top": 0.0,
+     "bottom": 0.5,
+     "soil": "Mutterboden"
+    },
+    {
+     "top": 0.5,
+     "bottom": 0.6,
+     "soil": "Sand"
+    },
+    {
+     "top": 0.6,
+     "bottom": 1.6,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 1.6,
+     "bottom": 2.0,
+     "soil": "Geschiebemergel"
+    },
+    {
+     "top": 2.0,
+     "bottom": 5.0,
+     "soil": "Geschiebemergel"
+    }
+   ],
+   "gw_depths": [],
+   "gw_status": null
+  }
+ ]
+}

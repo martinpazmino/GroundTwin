@@ -312,11 +312,134 @@ Gutachten; Berlin in EPSG:25833 with correct distances; Swiss LV03 transformed t
 [IFC 4.3](https://github.com/martinpazmino/GroundTwin/tree/03be932/spikes/ifc_thatopen) (0 schema errors) → That Open (69 strata with geometry,
 7 Bohrungen from Berlin). The Schichten with confidence < 0.6 (9 of 383) stay marked for review.
 
+### 8.8 Blind round 5: four German reports with Sondierungen (2026-11-25)
+
+Predictions of v4 (Bohrungen) and of the Sondierungen stage frozen and pushed before the PDFs were opened
+(`15961d6`, `d47ae9c`, code `bb0bdb1`, stage sha256 `d7af6c5f…`). The PDFs were provided by the user in the chat; only
+name, sha256 and the transcribed facts are in the repo (`benchmark/groundtruth/`, `benchmark/groundtruth_sondierungen/`).
+Ground truth transcribed by the agent from the text layer with positions and colours, cross-checked against an
+independent source of the same report (coordinate tables, Kopfblätter of the Schichtenverzeichnisse), with visual
+samples at low resolution; DPH values not transcribed (`werte_nicht_transkribiert`, they count neither right nor
+wrong). Score: `python benchmark/blind_test.py score benchmark/frozen/runde5`.
+
+| PDF | Pages | Bohrungen | Boundaries | Bodenart | GOK | GW | False |
+|---|---|---|---|---|---|---|---|
+| BER Baugrund 1 (rail line, 8 B + 72 SB) | 828 | 0/80 | 0/575 | – | 0/80 | 0/64 | **1 Bohrung** |
+| Planfeststellung Unterlage 23.1 (GGU sections) | 129 | 41/115 | 188/440 | 111/188 | 0/115 | 0/69 | 16 boundaries |
+| Geotechnisches Gutachten (text only) | 101 | 0/0 | – | – | – | – | 0 |
+| U09 Ramm-/Sondierungsprofile (1 sheet) | 1 | 5/5 | 21/21 exact | 1/20 | 0/5 | 0/1 | 0 |
+
+| Sondierungen | Found (code) | Found (page) | Endtiefe ±5 cm | Ansatzhöhe | False |
+|---|---|---|---|---|---|
+| BER (80 DPH, one diagram per page) | 0/80 | 80/80 | 80/80 | 79/80 | 12 (Längsschnitt duplicates, code wrong) |
+| Planfeststellung (11 DPH + 13 CPT) | 11/24 | 11/24 | 7/24 | – | 1 (DPH 3 twice) |
+| U09 (5 DPH) | 0/5 | 0/5 | 0/5 | – | 0 |
+
+*Found (page)* gives a prediction on the main page of a truth of the same Art that truth's code: it separates "read
+the curve" from "read the code".
+
+What failed (general features, not exceptions per office):
+- **False Bohrung** (BER): the project number `Projekt-Nr.: B 231411` in a Längsschnitt title block was read as a
+  Bohrung code with a profile. A false Bohrung is worse than a missing one: highest priority.
+- **Codes with a station** (`B-5+365-G`, `SB-0+550-N3`, `DPH-0+550-G`): Bohrungen not recognised at all (0/80), DPH
+  codes cut at the first `-` (`DPH 0`), so 80 correct curves carry a wrong code.
+- **GOK** 0 of 200 although printed: `Ansatzpunkt: 476.76 m NHN (OK-Schiene)` and `216.31 m` under the code.
+- **Water** 0 of 134: blue labels `3.10 (213.21)` + date left of the column; the triangle is drawn away from the
+  label (KRB 7: at 2.26 m, label 3.10 m) and v4 took the triangle as a boundary (most of the 16 false boundaries).
+- **Planfeststellung**: KRB 41/47, BK with CPT 0/33, Schürfe 0/35 (scale 1:50, other column layout); CPT 0/13.
+- **Bodenart** U09: Schichten found but the soil left empty (1/20).
+- **DPH** U09: five DPH beside the Bohrsondierungen not found.
+- Right: the text-only Gutachten (101 pages, no Anlagen) gave 0 false; U09 boundaries 21/21 exact; BER Endtiefen and
+  Ansatzhöhen of all 80 DPH from the diagrams.
+
+These figures are **blind** and stay apart from the training figures; fixes from here on count as training.
+
+### 8.9 After #54: round 5 as training, round 6 frozen (2026-11-26)
+
+Rules from round 5 (docs/16 T6–T11, W7, W7b; Sondierungen `stationscode`, `achse_zeile_ausgerichtet`), each with a
+stress case that fails without it (`tests/test_blindrunde5_regeln.py`, `tests/test_sondierungen_extraktion.py`).
+Regression on 12 real PDFs (Talheim not reachable: uvp-verbund.de answered 429; its baseline entry is kept), the stress
+and synthetic cases: no case worse, 0 false. These figures are **training**, not blind:
+
+| PDF | Bohrungen | Boundaries | Bodenart | GOK | GW | False |
+|---|---|---|---|---|---|---|
+| BER Baugrund 1 | 0/80 → **79/80** | 0/575 → **570/575** | – → 334/484 | 0/80 → **79/80** | 0/64 → **64/64** | 1 Bohrung → **0** |
+| Planfeststellung 23.1 | 41/115 | 188/440 | 111/188 → **150/188** | 0/115 → 40/115 | 0/69 → 5/69 | 16 boundaries → **0** (2 GW at KRB 15, truth not transcribed) |
+| U09 | 5/5 | 21/21 | 1/20 → **19/20** | 0/5 → **5/5** | 0/1 → **1/1** | 0 |
+
+| Sondierungen | Found (code) | Endtiefe ±5 cm |
+|---|---|---|
+| BER | 0/80 → **80/80** | 80/80 (19 extra entries are the same DPH in the Längsschnitte, counted as false by the 1:1 matching) |
+| Planfeststellung | 11/24 → 15/24 | 7/24 → 8/24 |
+| U09 | 0/5 → 3/5 | 0/5 (4.8/5.1 instead of 5.0) |
+
+#54 item 5 (2026-11-26, rules T14 prefixes from the legend of the page, T9 double labels as data): Planfeststellung
+(training) Bohrungen 41 → **95/115** (BK 32/33, Schürfe 23/35), boundaries 188 → **405/440 exact**, Bodenart 305/405,
+GOK 94/115, GW 5 → **67/69**, false boundaries **0**. Still missing: Schürfe with one or two layers (a column needs more
+labels to be anchored; relaxing that risks false Bohrungen), `V G1–G3` (prefix `V` not in the legend of the page), BK D/3,
+KRB 4 and the header-only KRB of the ground truth; CPT 2 of the sections; DPH 1–2 of U09.
+
+**Round 6** (A20 Unterlage 20.1, public, strassenbau.niedersachsen.de, 47 MB): frozen twice before opening,
+`benchmark/frozen/runde6_vorher` (code `1e25a60`, before #54) and `runde6_nachher` (code `77f3bd2`); 195 and 194
+Bohrungen, 0 Sondierungen. Ground truth still to be transcribed. Two further PDFs from uvp-verbund.de (Deponie
+Augsburg Nord, IGI Westheim) could not be fetched (429).
+
+### 8.10 Blind round 6: A20 Unterlage 20.1 (2026-11-26)
+
+Public report ([source](https://www.strassenbau.niedersachsen.de/download/96897/Unterlage_20.1_Bodenuntersuchung_geotechnisches_Streckengutachten.pdf),
+sha256 in the ground truth), 197 pages: report text scanned, Blatt 3 with 200 height-scaled IDAT profiles (M 1:100) and
+30 Rammsondierungen RS 1–30. Predictions frozen twice before opening: before #54 (`1e25a60`) and after (`77f3bd2`).
+Ground truth from the text layer with checks per profile (GOK − Endtiefe = bottom NN, height + depth = GOK, one
+description block per layer, 200/200), samples on the image. **Blind figures:**
+
+| | before #54 | after #54 |
+|---|---|---|
+| Bohrungen | 187/200 | 186/200 |
+| Boundaries (exact) | 928/994 (924) | 925/994 (921) |
+| Bodenart | 668/929 | 666/926 |
+| GOK | 187/200 | 186/200 |
+| GW | 249/266 | 247/266 |
+| GW-Status (*kein Wasser angetroffen*) | 21/25 | 21/25 |
+| **False Bohrungen** | **8** | **8** |
+| False boundaries | 0 | 0 |
+| False GW | 37 | 37 |
+| Sondierungen RS (DPL) | 0/30 | 0/30 |
+
+What failed:
+- **False Bohrungen = GWM 1–8**: the installation drawings of the wells (Vollrohr, Filter, Tonsperre with depth
+  labels) were read as soil profiles. A well installation is never a Bohrprofil.
+- **Codes** with an uppercase suffix (`BS 105A`) or a decimal (`BS 22.1`) not recognised (13 missing).
+- **False GW**: extra levels a few decimetres from the labelled ones (e.g. BS 502: 0.23/0.34 besides 0.75/0.80), from the
+  triangles next to the labels; 25 profiles.
+- **RS** (Rammsondierung) is not a known Sondierung prefix: 0/30.
+- After #54 one Bohrung less (BS 85): T11 merged it with BS 73 (same GOK 14.65 and 5-m depths by chance).
+
+GW-Status was first reported as 0/25: `run_v4` did not pass `gw_status` on, so the frozen `v4` part never carried it
+(it is frozen in `v4_detail`); `blind_test.py score` now reads it from there, the figure above is the corrected blind one.
+
+**After #55 (training, not blind):** rules T11 (same number in the code), T12 (installation drawing), T13 (codes with a
+suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung` and `nn_vor_wert`:
+
+| | blind (before #54) | training after #55 |
+|---|---|---|
+| Bohrungen | 187/200 | **200/200** |
+| Boundaries (exact) | 928/994 (924) | 992/994 (986) |
+| GOK | 187/200 | **200/200** |
+| GW | 249/266 | 259/266 |
+| GW-Status | 21/25 | 23/25 |
+| False Bohrungen | 8 | **0** |
+| False GW | 37 | 6 |
+| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 24/30 / 20/30 |
+
+Still open: the six short RS (≤ 2.5 m) are not found (the minimum frame height of the stage scales with the large
+sheet), four Endtiefen 0.2 m too deep, four profiles with an extra level, Bodenart 711/993 (the vocabulary of the
+descriptions: `Feinsand, u` with a leading soil word works, the long A20 descriptions often not).
+
 ## 9. Next steps
 
-1. **Fifth blind round with new German Gutachten** (the 4 blocked in round 3: Wolfsburg/GGU, NLWKN,
-   Böblingen, Königslutter), with v4 frozen and pushed before looking. It is the only figure that
-   will tell whether v4 generalises.
+1. Fifth blind round done (§8.8). Fix in this order: no project number as a Bohrung code, codes with a station
+   (`B-5+365-G`, `DPH-0+550-G`), GOK from `Ansatzpunkt`, blue water labels (and never the triangle as a boundary),
+   then sections at 1:50 (Schürfe) and CPT in sections.
 2. Raster: Schichtenverzeichnis by OCR, edges of colour fills (E7), water symbol by template from
    the legend (W4).
 3. DPH from **tables** (Triefenstein: N10 every 10 cm as text) and CPT (Berlin) in the data model

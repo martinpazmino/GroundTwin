@@ -6,6 +6,26 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Prefixes from the legend of the page (#54 item 5, docs/16 T14): `BK = Rammkernbohrung`, `S = Baggerschurf` make
+  `BK A/1`, `S A1` codes; double labels `Tiefe (Höhe)` are the data (T9: confirm the nearest line within 10 cm, a label
+  without a line is a boundary). Planfeststellung (training): 41 → 95/115 Bohrungen, water 5 → 67/69, 0 false
+  boundaries. Stress `s41`, `s42`.
+- Blind round 6 (A20 Unterlage 20.1, docs/15 §8.10): ground truth 200 Bohrungen and 30 RS; rules from it (#55): an
+  installation drawing of a well is no Bohrprofil (T12), codes `BS 105A`/`BS 22.1` (T13), water label `0,75 GW` with
+  `NN+…` under it (W7b), T11 only with the same number in the code; Sondierungen `RS n` with the Art of the page and the
+  Ansatzhöhe `NN+8,83m`. A20 (training): 200/200 Bohrungen, 0 false. `blind_test.py score` reads `gw_status` from the
+  frozen detail (it was always 0).
+- Rules from blind round 5 (#54, docs/16 T6–T11, W7, W7b, docs/15 §8.9): a title-block number is no Bohrung code,
+  codes with a station (`B-5+365-G`, `DPH-0+550-G`), GOK from `Ansatzpunkt …`/`… m ü. NN`/a lone height under the
+  header, boundaries need the `Tiefe (Höhe)` label where the drawing uses it, the label convention from the position of
+  the text, the water label (blue `3.10 (213.21)` or `GW 0.94m`, with date) wins over the symbol, the same Bohrung
+  under two codes is one Bohrung; Sondierungen: codes with a station uncut, value axis as one aligned row. Stress cases
+  `s31`–`s36`, Sondierungen `s09`. BER (training): 0 → 79/80 Bohrungen, water 64/64, 0 false.
+- Blind round 6 frozen (A20 Unterlage 20.1, before and after #54).
+- Blind round 5 (docs/15 §8.8): four German reports with Sondierungen, predictions frozen before opening, ground truth
+  for 200 Bohrungen and 109 Sondierungen (values not transcribed), `blind_test.py score` also scores frozen
+  Sondierungen (strict by code and by page). Main findings: one false Bohrung from a project number, codes with a
+  station not read, GOK and water 0.
 - Sondierungen in the Homogenbereich Kennwerte (Issue #29): N10 (DPH) and q_c (CPT) assigned per Einheit by height
   at the Sondierung's Lage (`baugrundanalyse/sondierung_einheiten.py`); range, median, n and censored values shown
   next to the Ansprache at Kennwert 13 (Lagerungsdichte) or 11a/11b (bindig), as measured values, never classified;

@@ -46,6 +46,10 @@ REGELN: dict[str, bool] = {
     "scan_konservativ": True,
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
+    "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
+    "nn_vor_wert": True,                  # #55: Ansatzhoehe 'NN+8,83m'
+    "rs_rammsondierung": True,            # #55: 'RS 1' = Rammsondierung, Art aus der Seite ('DPL-5')
+    "stationscode": True,                 # #54: DPH-0+550-G (Code mit Station und Zusatz) ungekuerzt
 }
 
 DPH_ARTEN = {"DPH", "DPL", "DPM", "DPSH", "SRS"}
@@ -56,15 +60,22 @@ SOND_KOPF_RE = re.compile(
     r"^(?:Sondierung(?:\s*Nr\.?)?\s*:?\s*|"
     r"(?:Schwere|Leichte|Mittelschwere)\s+Rammsondierung\s+|"
     r"Drucksondierung\s+)?"
-    r"(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?)"
+    r"(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS|RS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?(?:\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)?)"
     r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\)|\s*[-–:]\s*.*)?$",
     re.I,
 )
 SOND_SUCH_RE = re.compile(
-    r"\b(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?)"
-    r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\))?\b",
+    r"\b(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS|RS)\s*[-]?\s*(\d+[a-z]?(?:/\d{2})?(?:\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)?)"
+    r"(?:\s*\((Fortsetzung|Forts\.?|Fts\.?)\))?(?![\w+])",
     re.I,
 )
+def _code(art: str, nr: str) -> str:
+    """'DPH 1'; mit Station wie gedruckt 'DPH-0+550-G' (#54). Ohne Regel: Station abschneiden (altes Verhalten)."""
+    if "+" in nr:
+        return f"{art}-{nr}" if REGELN["stationscode"] else f"{art} {nr.split('+')[0]}"
+    return f"{art} {nr}"
+
+
 ARCHIV_SOND_RE = re.compile(r"^(DS\s*\d+[a-z]?/\d{2}|D\s*\d+[a-z]?/\d{2}|R\s*\d+[a-z]?)$")
 BOHR_CODE_RE = re.compile(r"^(?:B|BK|KB|KRB|RKS|BS|GWM|SCH|RB|SST)\s*\d+[a-z]?(?:/\d{2}|/[IVX]+)?$")
 
@@ -100,7 +111,8 @@ LABOR_SPALTE_RE = re.compile(
 ANSATZ_RE = re.compile(
     r"(?:Ansatz(?:punkt|h[oö]e?he)|GOK)\s*:?\s*([+-]?\s*\d{1,4}[.,]\d{1,3})\b|"
     r"([+-]\s*\d{2,4}[.,]\d{2,3})\s*m(?:\s*(?:ue?\.?)?\s*(?:NHN|NN))?\b|"
-    r"(?:^|\s)(\d{2,4}[.,]\d{2,3})\s*m(?:\s*ue?\.?)?\s*(?:NHN|NN)\b",
+    r"(?:^|\s)(\d{2,4}[.,]\d{2,3})\s*m(?:\s*ue?\.?)?\s*(?:NHN|NN)\b|"
+    r"\bNN\s*([+-]\s*\d{1,4}[.,]\d{1,3})\s*m\b",     # 'NN+8,83m' (Wert nach NN, #55)
     re.I,
 )
 ENDTIEFE_RE = re.compile(r"Endtiefe\s*:?\s*(\d{1,3}[.,]\d{1,2})\s*m\b", re.I)
@@ -126,6 +138,12 @@ def _norm_code(code: str | None) -> str:
 
 def _f(text: str) -> float:
     return float(text.replace(" ", "").replace(",", ".").rstrip("m"))
+
+
+def _rs_art(sd) -> str | None:
+    """#55: 'RS 1' (Rammsondierung) nennt die Sonde nicht; die Seite sagt sie ('leichte Rammsonde (DPL-5)')."""
+    arten = {m.group(1).upper() for _, t in sd.zeilen for m in re.finditer(r"\b(DPSH|DPH|DPM|DPL)(?=\b|-)", t)}
+    return arten.pop() if len(arten) == 1 else None
 
 
 def _art_norm(art: str) -> str:
@@ -437,7 +455,7 @@ def _suche_ansatzhoehe(
                 continue
         tf = _falten_norm(t)
         for m in ANSATZ_RE.finditer(tf):
-            roh = m.group(1) or m.group(2) or m.group(3)
+            roh = m.group(1) or m.group(2) or m.group(3) or (m.group(4) if REGELN["nn_vor_wert"] else None)
             if not roh:
                 continue
             try:
@@ -540,8 +558,10 @@ def _finde_koepfe(sd: _SeitenDaten) -> list[_Kopf]:
         m = SOND_KOPF_RE.match(tf)
         if m:
             art_raw, nr, fts = m.group(1), m.group(2), m.group(3)
-            art = _art_norm(art_raw)
-            code = f"{art} {nr}"
+            if art_raw.upper() == "RS" and not REGELN["rs_rammsondierung"]:
+                continue
+            art = (_rs_art(sd) or "DPH") if art_raw.upper() == "RS" else _art_norm(art_raw)
+            code = f"RS {nr}" if art_raw.upper() == "RS" else _code(art, nr)
             if fts and not REGELN["mehrseitig_verbinden"]:
                 code = f"{code} ({fts})"
             key = (_norm_code(code), round(r.x0 / (25 * sf)), round(r.y0 / (25 * sf)))
@@ -553,8 +573,10 @@ def _finde_koepfe(sd: _SeitenDaten) -> list[_Kopf]:
         # Teil-Treffer in laengeren Kopfzeilen (z. B. 'Anlage 4.1 Schwere Rammsondierung DPH 1')
         if len(tf.split()) <= 8 and not NEGATIV_KONTEXT_RE.search(tf):
             for sm in SOND_SUCH_RE.finditer(tf):
-                art = _art_norm(sm.group(1))
-                code = f"{art} {sm.group(2)}"
+                if sm.group(1).upper() == "RS" and not REGELN["rs_rammsondierung"]:
+                    continue
+                art = (_rs_art(sd) or "DPH") if sm.group(1).upper() == "RS" else _art_norm(sm.group(1))
+                code = f"RS {sm.group(2)}" if sm.group(1).upper() == "RS" else _code(art, sm.group(2))
                 fts = sm.group(3)
                 if fts and not REGELN["mehrseitig_verbinden"]:
                     code = f"{code} ({fts})"
@@ -1257,6 +1279,10 @@ def _kalibriere_x_achsen(sd: _SeitenDaten, rahmen: pymupdf.Rect) -> list[_AchseX
 
         kand_achsen: list[_AchseX] = []
         for grp in zeilen_grp:
+            if REGELN["achse_zeile_ausgerichtet"] and len(grp) >= 3:
+                # eine Achse ist eine ausgerichtete Zeile: '0.0' der Tiefenachse daneben gehoert nicht dazu (#54)
+                med = float(np.median([(e[0].y0 + e[0].y1) / 2.0 for e in grp]))
+                grp = [e for e in grp if abs((e[0].y0 + e[0].y1) / 2.0 - med) <= 3.0 * sf]
             grp.sort(key=lambda e: (e[0].x0 + e[0].x1) / 2.0)
             # Duplikate bei gleichem x/Wert entfernen
             clean: list[tuple[pymupdf.Rect, float]] = []

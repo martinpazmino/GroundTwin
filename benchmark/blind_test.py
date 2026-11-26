@@ -4,6 +4,10 @@
     # ... groundtruth/<name>.json anlegen ...
     python blind_test.py score <ausgabe> [<ordner_swissgeol>]           # bewertet die eingefrorenen Dateien
 
+Sondierungen (ab Runde 5): <ausgabe>/<name>.sondierungen.json wird gegen groundtruth_sondierungen/<name>.json
+bewertet, einmal streng (Code + Seite) und einmal nach Seite (Code nicht verglichen). Werte einer Wahrheit mit
+werte_nicht_transkribiert zaehlen nicht (weder richtig noch falsch).
+
 Die eingefrorenen JSON-Dateien enthalten den Code-Stand (git rev) und koennen per sha256 belegt werden.
 """
 from __future__ import annotations
@@ -36,7 +40,45 @@ def freeze(src: Path, out: Path) -> None:
         print(pdf.stem, "v4 Bohrungen:", len(v4))
 
 
+def score_sondierungen(gt: dict, preds: list[dict]) -> dict:
+    """Bewertet eingefrorene Sondierungen; streng (Code) und nach Seite, Werte nur wo transkribiert."""
+    from sondierungen_eval import _abgeleitete_endtiefe, _bewerte_fall
+
+    ohne_werte = {s for g in gt.get("sondierungen") or [] if g.get("werte_nicht_transkribiert")
+                  for s in [g.get("seite"), *(g.get("auch_auf_seiten") or [])]}     # Seiten ohne transkribierte Werte
+    seiten = {}
+    for g in gt.get("sondierungen") or []:
+        seiten.setdefault(g.get("seite"), []).append(g)
+
+    def ohne(p: dict, code: str) -> dict:
+        if p.get("seite") in ohne_werte or p.get("seite") is None:
+            return {**p, "endtiefe": _abgeleitete_endtiefe(p, str(p.get("art") or "").upper()), "werte": []}
+        return p
+
+    streng = [ohne(p, p.get("code")) for p in preds]
+    # nach Seite: eine Vorhersage auf der Hauptseite einer Wahrheit derselben Art traegt deren Code
+    nach_seite = []
+    for p in preds:
+        kand = [g for g in seiten.get(p.get("seite"), []) if str(g.get("art")).upper() == str(p.get("art")).upper()]
+        code = kand[0]["code"] if len(kand) == 1 else p.get("code")
+        nach_seite.append(ohne({**p, "code": code}, code))
+    a, _ = _bewerte_fall(gt, streng, 0, 0.0)
+    b, _ = _bewerte_fall(gt, nach_seite, 0, 0.0)
+    gok = sum(1 for g in gt.get("sondierungen") or [] for p in nach_seite
+              if p.get("seite") == g.get("seite") and p["code"] == g["code"] and g.get("ansatzhoehe") is not None
+              and p.get("ansatzhoehe") is not None and abs(p["ansatzhoehe"] - g["ansatzhoehe"]) < 0.01)
+    felder = ("gefunden", "falsche_sondierungen", "endtiefe_5cm", "dph_schritt_1", "cpt_punkte", "falsche_werte")
+    return {"streng": {k: a[k] for k in felder}, "nach_seite": {**{k: b[k] for k in felder}, "ansatzhoehe": gok}}
+
+
 def score_frozen(out: Path, sg_dir: Path | None) -> None:
+    for sd_file in sorted(out.glob("*.sondierungen.json")):
+        gt_file = HERE / "groundtruth_sondierungen" / sd_file.name.replace(".sondierungen", "")
+        if gt_file.exists():
+            gt, pred = json.loads(gt_file.read_text()), json.loads(sd_file.read_text())
+            print(f"== {sd_file.stem} (Stufe sha256 {str(pred.get('modul_sha256'))[:12]})")
+            for art, r in score_sondierungen(gt, pred["sondierungen"]).items():
+                print(f"   {art:10}", r)
     for pred_file in sorted(out.glob("*.json")):
         gt_file = HERE / "groundtruth" / pred_file.name
         if not gt_file.exists():
@@ -44,6 +86,9 @@ def score_frozen(out: Path, sg_dir: Path | None) -> None:
         gt, pred = json.loads(gt_file.read_text()), json.loads(pred_file.read_text())
         print(f"== {pred_file.stem} (Code-Stand {pred.get('code_rev')})")
         print("   v1 ", score(gt, pred["v1"]))
+        for d in pred.get("v4_detail") or []:            # gw_status steht eingefroren nur im Detail (bis Runde 6)
+            if (k := d["code"].replace(" ", "").upper()) in pred.get("v4", {}) and d.get("gw_status"):
+                pred["v4"][k].setdefault("gw_status", d["gw_status"])
         for version in ("v4", "v3"):                     # v3: eingefrorene Dateien bis Runde 4
             if version in pred:
                 print(f"   {version} ", score(gt, pred[version]))
