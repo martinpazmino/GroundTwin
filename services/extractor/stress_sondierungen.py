@@ -1124,8 +1124,54 @@ def _fall_s10_rs_nn(ordner: Path) -> str:
     return _speichere(ordner, "s10_rs_nn", dok, sond,
                       "#55: Kopf 'RS 3' (Rammsondierung), Art aus der Seite (DPL-5), Ansatzhoehe 'NN+9,74m'")
 
+def _fall_s11_kurz_langes_blatt(ordner: Path) -> str:
+    """#55: kurze Rammsondierung (2,5 m) auf einem langen Blatt (Hoehe 1105 pt -> Seitenfaktor 1,86), Tiefenlabels
+    stehen auf ihrer Gitterlinie (Text darueber), links daneben kurze Schraffurstriche eines Nachbarprofils."""
+    dok = pymupdf.open()
+    seite = dok.new_page(width=3000, height=1105)
+    ppm = PT_PER_M_1_1 / 100.0
+    x0, y0, rahmen_b, rahmen_tiefe = 1500.0, 400.0, 141.5, 2.5
+    x1 = x0 + rahmen_b
+    y1 = y0 + rahmen_tiefe * ppm
+    x_max = 50.0
+    seite.insert_text((x0 + 40, y0 - 60), "RS 5", fontsize=14)
+    seite.insert_text((x0 - 40, y0 - 3), "NN+11,92m", fontsize=9)
+    seite.insert_text((60, 1000), "Rammsondierung ausgeführt mit der leichten Rammsonde (DPL-5)", fontsize=9)
+    for n in (10, 20, 30, 40, 50):
+        xt = x0 + (n / x_max) * rahmen_b
+        _linie(seite, (xt, y0 - 3.0), (xt, y0), 0.5)
+        _text_zentriert_x(seite, xt, y0 - 8.0, str(n), 9.0)
+        _linie(seite, (xt, y0), (xt, y1), 0.25)
+    for dm in (1, 2):
+        yt = y0 + dm * ppm
+        _linie(seite, (x0 - 28.0, yt), (x1, yt), 0.4)                    # Gitterlinie mit Label-Unterstrich
+        seite.insert_text((x0 - 26.0, yt - 1.0), _fmt(float(dm)), fontsize=9)   # Label steht AUF der Linie
+    for k in range(40):                                                 # Schraffur des Nachbarprofils links
+        yy = y0 - 20 + k * 2.3
+        _linie(seite, (x0 - 140.0, yy), (x0 - 132.0, yy), 0.3)
+    seite.insert_text((1400, 1060), "Bohrprofile und Rammsondierungen, Station 1+250 bis 1+600", fontsize=9)
+    seite.insert_text((100, 300), "NN+m", fontsize=9)
+    for nhn in (14.0, 12.0, 10.0, 8.0, 6.0):                             # Hoehenleiste: Label auf seinem Strich
+        yy = y0 + (11.92 - nhn) * ppm
+        _linie(seite, (100.0, yy), (132.0, yy), 0.4)
+        seite.insert_text((104.0, yy - 1.0), _fmt(nhn), fontsize=9)
+    seite.draw_rect(pymupdf.Rect(x0, y0, x1, y1), color=(0.0, 0.0, 0.0), fill=None, width=0.8)
+    n10_liste = [2, 3, 5, 6, 8, 9, 10, 9, 8, 7, 8, 10, 12, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 25, 26]
+    schritte = [(round(i * 0.1, 1), round((i + 1) * 0.1, 1), n) for i, n in enumerate(n10_liste)]
+    _zeichne_dph_treppenkurve(seite, x0, y0, rahmen_b, x_max, ppm, schritte, strichbreite=1.4)
+    stichprobe = []
+    for idx in (0, 2, 4, 6, 8, 10, 12, 14, 16, 24):
+        t_o, t_u, n = schritte[idx]
+        stichprobe.append({"tiefe": t_u, "wert": n, "seite": 1,
+                           "lage": f"Diagramm x={x0 + (n / x_max) * rahmen_b:.1f}, y={y0 + (t_o + t_u) / 2.0 * ppm:.1f} pt"})
+    sond = [{"code": "RS 5", "art": "DPL", "seite": 1, "auch_auf_seiten": [], "form": "diagramm", "ansatzhoehe": 11.92,
+             "endtiefe": 2.5, "werte": [list(z) for z in schritte], "stichprobe": stichprobe, "unsicher": []}]
+    return _speichere(ordner, "s11_kurz_langes_blatt", dok, sond,
+                      "#55: 2,5-m-Rammsondierung auf langem Blatt, Labels auf der Linie, Schraffur links (kurze Rahmen, Tickstriche)")
+
+
 def build(ordner: Path | str) -> list[str]:
-    """Erzeugt alle zehn synthetischen Sondierungs-Stressfaelle im Zielordner."""
+    """Erzeugt alle elf synthetischen Sondierungs-Stressfaelle im Zielordner."""
     ziel = Path(ordner)
     ziel.mkdir(parents=True, exist_ok=True)
     erzeugt = [
@@ -1139,6 +1185,7 @@ def build(ordner: Path | str) -> list[str]:
         _fall_s08_falle_labortabelle(ziel),
         _fall_s09_stationscode_achse(ziel),
         _fall_s10_rs_nn(ziel),
+        _fall_s11_kurz_langes_blatt(ziel),
     ]
     codes: list[str] = []
     for name in erzeugt:

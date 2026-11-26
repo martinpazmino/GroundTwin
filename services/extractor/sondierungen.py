@@ -47,6 +47,8 @@ REGELN: dict[str, bool] = {
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
     "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
+    "tickstriche_am_rahmen": True,        # #55: linke Tickstriche nur am Rahmen (nicht Schraffur des Nachbarprofils)
+    "kurze_rahmen": True,                 # #55: Mindesthoehe des Diagrammrahmens 36 statt 52 pt (x Seitenfaktor)
     "nn_vor_wert": True,                  # #55: Ansatzhoehe 'NN+8,83m'
     "rs_rammsondierung": True,            # #55: 'RS 1' = Rammsondierung, Art aus der Seite ('DPL-5')
     "stationscode": True,                 # #54: DPH-0+550-G (Code mit Station und Zusatz) ungekuerzt
@@ -1066,6 +1068,14 @@ def _laengsschnitt_nhn_regression(
         vs = np.array([v for _, v in grp], dtype=float)
         if not np.all(np.diff(vs) < -1e-6):
             continue
+        if REGELN["tickstriche_am_rahmen"]:               # #55: Label steht ueber/unter seinem Tickstrich -> Strich gilt
+            striche = []
+            for r, _ in grp:
+                h = [g.y0 for g in sd.segs if g.horizontal and g.x0 <= r.x1 + 15 * sf and g.x1 >= r.x0 - 15 * sf
+                     and r.y0 - 3 * sf <= g.y0 <= r.y1 + 3 * sf and g.x1 - g.x0 <= 40 * sf]
+                striche.append(min(h, key=lambda y: abs(y - (r.y0 + r.y1) / 2.0)) if h else None)
+            if sum(y is not None for y in striche) >= 0.8 * len(grp):
+                ys = np.array([y if y is not None else m for y, m in zip(striche, ys)], dtype=float)
         diffs = -np.diff(vs)
         med = float(np.median(diffs))
         if med <= 1e-6 or float(np.max(diffs) - np.min(diffs)) > 0.08 * med + 1e-4:
@@ -1082,6 +1092,7 @@ def _laengsschnitt_nhn_regression(
 def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
     """Findet Plotrahmen aus Rechtecken, zusammengesetzten H/V-Linien und L-Achsen."""
     sf = sd.scale_f
+    min_h = 36.0 if REGELN["kurze_rahmen"] else 52.0      # #55: Rammdiagramm einer 2-m-Sondierung auf langem Blatt
     kands: list[tuple[pymupdf.Rect, str]] = []
     seite_flaeche = max(sd.breite * sd.hoehe, 1.0)
 
@@ -1089,7 +1100,7 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
     for d in sd.drawings:
         it = d["items"]
         r = pymupdf.Rect(d["rect"])
-        if r.width < 32 * sf or r.height < 52 * sf:
+        if r.width < 32 * sf or r.height < min_h * sf:
             continue
         if r.get_area() > 0.85 * seite_flaeche:
             continue
@@ -1106,9 +1117,9 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
             a1, b1 = it[0][1], it[0][2]
             a2, b2 = it[1][1], it[1][2]
             ist_h1 = abs(a1.y - b1.y) < 0.8 * sf and abs(a1.x - b1.x) >= 28 * sf
-            ist_v1 = abs(a1.x - b1.x) < 0.8 * sf and abs(a1.y - b1.y) >= 50 * sf
+            ist_v1 = abs(a1.x - b1.x) < 0.8 * sf and abs(a1.y - b1.y) >= (min_h - 2) * sf
             ist_h2 = abs(a2.y - b2.y) < 0.8 * sf and abs(a2.x - b2.x) >= 28 * sf
-            ist_v2 = abs(a2.x - b2.x) < 0.8 * sf and abs(a2.y - b2.y) >= 50 * sf
+            ist_v2 = abs(a2.x - b2.x) < 0.8 * sf and abs(a2.y - b2.y) >= (min_h - 2) * sf
             if (ist_h1 and ist_v2) or (ist_v1 and ist_h2):
                 kands.append((r, "l_achse"))
 
@@ -1119,7 +1130,7 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
         H = [s for s in _merge([s for s in sd.segs if s.horizontal and s.x1 - s.x0 >= 8 * sf], "h", gap=gap)
              if s.x1 - s.x0 >= 30 * sf]
         V = [s for s in _merge([s for s in sd.segs if s.vertical and s.y1 - s.y0 >= 12 * sf], "v", gap=gap)
-             if s.y1 - s.y0 >= 52 * sf]
+             if s.y1 - s.y0 >= min_h * sf]
         # Ausserste Seitenrahmen verwerfen
         V = [v for v in V if v.y1 - v.y0 < 0.88 * sd.hoehe]
         H = [h for h in H if h.x1 - h.x0 < 0.88 * sd.breite]
@@ -1167,7 +1178,7 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
             ]
             y0_f = min((h.y0 for h in h_pass), default=y0_v)
             y1_f = max((h.y0 for h in h_pass), default=y1_v)
-            if len(h_pass) >= 1 and y1_f - y0_f >= 52 * sf:
+            if len(h_pass) >= 1 and y1_f - y0_f >= min_h * sf:
                 r = pymupdf.Rect(x0_f, y0_f, x1_f, y1_f)
                 if r.get_area() <= 0.85 * seite_flaeche:
                     kands.append((r, "seg_box"))
@@ -1194,7 +1205,7 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
                         y0_o = min(y0_o, h.y0)
                         y1_o = max(y1_o, h.y0)
             r_ohne = pymupdf.Rect(x0_o, y0_o, x1_o, y1_o)
-            if r_ohne.width >= 32 * sf and r_ohne.height >= 52 * sf:
+            if r_ohne.width >= 32 * sf and r_ohne.height >= min_h * sf:
                 kands.append((r_ohne, "ohne_rahmen"))
 
     # Deduplizierung ueber IoU (> 0.85), dabei 're' vor 'seg_box' vor 'l_achse' bevorzugen
@@ -1469,7 +1480,9 @@ def _kalibriere_y_achse(
                 s for s in sd.segs
                 if s.horizontal and (
                     (s.x0 <= rahmen.x0 + 6 * sf and s.x1 >= rahmen.x0 + 0.65 * rahmen.width)
-                    or (s.x0 <= rahmen.x0 - 1.5 * sf and s.x1 <= rahmen.x0 + 4 * sf)
+                    or (s.x0 <= rahmen.x0 - 1.5 * sf and s.x1 <= rahmen.x0 + 4 * sf
+                        and (not REGELN["tickstriche_am_rahmen"]       # #55: Schraffur links (Nachbarprofil) ist kein Tick
+                             or (s.x1 >= rahmen.x0 - 12 * sf and rahmen.y0 - 10 * sf <= s.y0 <= rahmen.y1 + 10 * sf)))
                 )
             ],
             "h",
@@ -1485,6 +1498,8 @@ def _kalibriere_y_achse(
         best_ys = ys_mid
         best_score: tuple[int, float] = (0, -1e9)
         min_treffer = max(3, int(0.70 * len(sauber_list)))
+        if REGELN["tickstriche_am_rahmen"] and len(sauber_list) == 2:
+            min_treffer = 2                                   # #55: kurze Sondierung (1,00 / 2,00): beide muessen einrasten
 
         for anker in ("mid", "bot", "top"):
             snapped: list[float] = []

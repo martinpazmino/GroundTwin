@@ -138,6 +138,8 @@ Each rule switched off on the three vector PDFs, the stress and the synthetic ca
 | `achse_zeile_ausgerichtet` (#54) | none on the synthetic cases; on the U09 sheet (round 5, training) the `0.0` of the depth axis joins the row of the value ticks and no DPH is found (3/5 with the rule) |
 | `rs_rammsondierung` (#55) | s10: header `RS 3` not a Sondierung → 0/1; A20 (round 6): RS 1–30. `RS` names no probe, the Art comes from the page when exactly one is named (`leichte Rammsonde (DPL-5)`), else DPH; the code stays `RS n` |
 | `nn_vor_wert` (#55) | Ansatzhöhe written `NN+8,83m` (value after NN) not read; test `test_rs_art_aus_der_seite_und_ansatzhoehe_nn` |
+| `kurze_rahmen` (#55) | s11: a 2.5-m diagram on a long sheet (page factor 1.86) is below the old minimum frame height (52 × factor) → 0/1; A20: RS 2, 4, 5, 7, 9 (2.0–2.5 m) |
+| `tickstriche_am_rahmen` (#55) | s11: depth labels standing on their grid line are snapped to the line; left tick strokes must touch the frame (the hatching of a neighbouring Bohrprofil snapped them to the label middle, +0.2 m) and the ticks of the NHN ruler may run under the label → 7/25 values, 2 false; A20: Endtiefe 20 → 28/29 |
 
 The tests hold the strongest ones: rule off → case fails (`tests/test_sondierungen_extraktion.py`).
 

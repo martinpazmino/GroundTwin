@@ -429,11 +429,22 @@ suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung
 | GW-Status | 21/25 | 23/25 |
 | False Bohrungen | 8 | **0** |
 | False GW | 37 | 6 |
-| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 24/30 / 20/30 |
+| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 29/30 / 28/30 |
 
-Still open: the six short RS (≤ 2.5 m) are not found (the minimum frame height of the stage scales with the large
-sheet), four Endtiefen 0.2 m too deep, four profiles with an extra level, Bodenart 711/993 (the vocabulary of the
+Still open: RS 1 (1.7 m, below the minimum frame height even after `kurze_rahmen`), RS 9 Endtiefe 2.2 instead of 2.3,
+four profiles with an extra level, Bodenart 711/993 (the vocabulary of the
 descriptions: `Feinsand, u` with a leading soil word works, the long A20 descriptions often not).
+
+### 8.11 Blind round 7: two reports without Bohrprofile (2026-11-26)
+
+Provided by the user, frozen before opening (code `7c37aae`): IFB *Textteil Standsicherheit* (15 pages, slope stability of
+a landfill capping) and *Planfeststellungsantrag Deponieerweiterung Talheim* (103 pages, report text, the Anlagen only
+as cover sheets). Neither contains a Bohrprofil, Schichtenverzeichnis or Sondierung (`S11–S16` are Sickerwasserschächte).
+**Blind: 0 Bohrungen, 0 Sondierungen predicted, 0 false** in both, as in the text-only Gutachten of round 5.
+
+The same day the Talheim training PDF (*Sickerwasserleitung*, until then unreachable) was provided: the regression on all
+13 real PDFs showed that T12 had cut Talheim from 10 to 7 Bohrungen (`Anschüttung` read as `…schüttung` of a well); fixed
+(only Kies-/Filter-/Sandschüttung) with a trap in `s37`; all 13 real PDFs without regression, 0 false.
 
 ## 9. Next steps
 

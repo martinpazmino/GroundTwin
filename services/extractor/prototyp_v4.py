@@ -2373,7 +2373,7 @@ def extract(pdf: Path):
     return out, dph
 
 
-AUSBAU_RE = re.compile(r"rohr|filter|tonsperre|sperre|sch(?:ü|ue)ttung|kappe|peil|\bDN\s*\d|Ø|bohrgut|bentonit|"
+AUSBAU_RE = re.compile(r"rohr|filter|tonsperre|sperre|(?:kies|filter|sand)sch(?:ü|ue)ttung|kappe|peil|\bDN\s*\d|Ø|bohrgut|bentonit|"
                        r"verf(?:ü|ue)ll|zementation|abdichtung|sumpf", re.I)
 
 
@@ -2382,7 +2382,8 @@ def _ist_ausbau(bh) -> bool:
     Hauptbegriff (vor dem ersten Komma) der Schichttexte = Ausbauplan einer Grundwassermessstelle, nicht der Boden. Der Code allein entscheidet nicht
     (in anderen Gutachten ist 'GWM 1' das Bohrprofil)."""
     haupt = [ly.text.split(",")[0] for ly in bh.layers if ly.text]   # Hauptbegriff; 'Einfachkernrohr' am Ende ist das Geraet
-    return len(haupt) >= 2 and sum(1 for t in haupt if AUSBAU_RE.search(t)) >= 0.5 * len(haupt)
+    ausbau = [t for t in haupt if AUSBAU_RE.search(t)]          # 'Anschuettung' trifft nicht ('kies/filter/sand' davor)
+    return len(haupt) >= 2 and len(ausbau) >= 0.5 * len(haupt)
 
 
 def _doppel_anderer_code(bhs: list) -> list:

@@ -702,10 +702,13 @@ def build(out: Path) -> list[str]:
     p = doc.new_page(width=595, height=842)
     L_KERN = [(b, so, f"{t}, Einfachkernrohr") for b, so, t in L_STD]   # Bohrgeraet im Text ist kein Ausbau (Wesel)
     draw_profile(p, Spec("B 5", L_KERN, gok=45.20, x0=150))
+    L_ANSCH = [(0.3, "Auffuellung", "Anschüttung, Schotter"), (1.2, "Auffuellung", "Anschüttung, Lehm"),
+               (2.5, "Schluff", "Schluff, tonig")]                       # 'Anschuettung' ist Boden (Talheim)
+    draw_profile(p, Spec("B 6", L_ANSCH, gok=44.90, x0=265, scale_text=None))
     L_AUSBAU = [(0.3, "Beton", "Beton"), (1.5, "Ton", "Tonsperre"), (2.0, "Sand", "Bohrgut"),
                 (4.5, "Kies", "PVC-Aufsatzrohr DN 100"), (6.5, "Kies", "PVC-Filterrohr DN 100, Filterkies")]
     draw_profile(p, Spec("GWM 5", L_AUSBAU, x0=380, scale_text=None, unit="m"))
-    save("s37_ausbauplan", doc, [_truth("B 5", L_STD, 45.20)],
+    save("s37_ausbauplan", doc, [_truth("B 5", L_STD, 45.20), _truth("B 6", L_ANSCH, 44.90)],
          "T12/#55: Ausbauplan 'GWM 5' (Rohr, Filter, Tonsperre) ist kein Bohrprofil")
 
     # s38 Codes mit Zusatz: Grossbuchstabe und Teilnummer (T13, #55)
