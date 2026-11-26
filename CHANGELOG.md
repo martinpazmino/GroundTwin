@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Prefixes from the legend of the page (#54 item 5, docs/16 T14): `BK = Rammkernbohrung`, `S = Baggerschurf` make
+  `BK A/1`, `S A1` codes; double labels `Tiefe (Höhe)` are the data (T9: confirm the nearest line within 10 cm, a label
+  without a line is a boundary). Planfeststellung (training): 41 → 95/115 Bohrungen, water 5 → 67/69, 0 false
+  boundaries. Stress `s41`, `s42`.
 - Blind round 6 (A20 Unterlage 20.1, docs/15 §8.10): ground truth 200 Bohrungen and 30 RS; rules from it (#55): an
   installation drawing of a well is no Bohrprofil (T12), codes `BS 105A`/`BS 22.1` (T13), water label `0,75 GW` with
   `NN+…` under it (W7b), T11 only with the same number in the code; Sondierungen `RS n` with the Art of the page and the

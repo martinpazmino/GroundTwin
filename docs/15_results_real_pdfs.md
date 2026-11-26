@@ -373,8 +373,11 @@ and synthetic cases: no case worse, 0 false. These figures are **training**, not
 | Planfeststellung | 11/24 → 15/24 | 7/24 → 8/24 |
 | U09 | 0/5 → 3/5 | 0/5 (4.8/5.1 instead of 5.0) |
 
-Still open (#54 item 5): BK with CPT and Schürfe at 1:50 in the Planfeststellung sections (0/33, 0/35), CPT in the
-sections, water there (5/69), DPH 1–2 of U09.
+#54 item 5 (2026-11-26, rules T14 prefixes from the legend of the page, T9 double labels as data): Planfeststellung
+(training) Bohrungen 41 → **95/115** (BK 32/33, Schürfe 23/35), boundaries 188 → **405/440 exact**, Bodenart 305/405,
+GOK 94/115, GW 5 → **67/69**, false boundaries **0**. Still missing: Schürfe with one or two layers (a column needs more
+labels to be anchored; relaxing that risks false Bohrungen), `V G1–G3` (prefix `V` not in the legend of the page), BK D/3,
+KRB 4 and the header-only KRB of the ground truth; CPT 2 of the sections; DPH 1–2 of U09.
 
 **Round 6** (A20 Unterlage 20.1, public, strassenbau.niedersachsen.de, 47 MB): frozen twice before opening,
 `benchmark/frozen/runde6_vorher` (code `1e25a60`, before #54) and `runde6_nachher` (code `77f3bd2`); 195 and 194
