@@ -740,6 +740,35 @@ def build(out: Path) -> list[str]:
     _line(p, (s40.x0 - 120, y_l), (s40.x0, y_l), 0.4)
     save("s40_gw_label_nn", doc, [_truth("BS 30", L_STD, 45.20, [2.4], kind="rks")],
          "W7b/#55: '2,40 GW' + 'NN+42,80m' gilt, das Symbol steht hoeher")
+
+    # s41 Kuerzel aus der Legende der Seite: 'BK = Rammkernbohrung', 'S = Baggerschurf'; Codes 'BK A/1', 'S B2' (T14, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("BK A/1", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("S B2", [(0.3, "Mutterboden", "Mutterboden"), (1.2, "Schluff", "Schluff, tonig"),
+                                  (2.0, "Sand", "Sand, kiesig")], gok=44.60, x0=480, scale_text=None))
+    p.insert_text((640, 520), "BK = Rammkernbohrung", fontsize=7)
+    p.insert_text((640, 532), "S = Baggerschurf", fontsize=7)
+    p.insert_text((640, 544), "CPT = Drucksondierung", fontsize=7)
+    save("s41_legende_kuerzel", doc,
+         [_truth("BK A/1", L_STD, 45.20), _truth("S B2", [(0.3, "Mutterboden", ""), (1.2, "Schluff", ""), (2.0, "Sand", "")],
+                                                44.60, kind="schurf")],
+         "T14/#54: Kuerzel aus der Legende ('BK = Rammkernbohrung', 'S = Baggerschurf'), Codes mit Achse 'A/1', 'B2'")
+
+    # s42 Schnitt-Stil: Doppellabel '2.60 (42.60)' ohne gezeichnete Linie -> Grenze aus dem Label (T9, #54)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s42 = Spec("KRB 9", L_STD, label_side="right", extra={"label_skip": range(len(L_STD))})
+    draw_profile(p, s42)
+    ppm = PT_PER_M_1_1 / s42.scale
+    p.insert_text((s42.x0 - 10, s42.top_y - 22), "45.20 m", fontsize=8)
+    for bot in [b for b, _, _ in L_STD] + [2.6]:
+        p.insert_text((s42.x0 + s42.col_w + 4, s42.top_y + bot * ppm + 2.5), f"{bot:.2f} ({45.20 - bot:.2f})", fontsize=6)
+    w42 = _truth("KRB 9", L_STD, 45.20, kind="rks")
+    k = next(i for i, ly in enumerate(w42["layers"]) if ly["top"] < 2.6 < ly["bottom"])
+    w42["layers"][k:k + 1] = [{"top": w42["layers"][k]["top"], "bottom": 2.6},
+                              {"top": 2.6, "bottom": w42["layers"][k]["bottom"], "soil": w42["layers"][k]["soil"]}]
+    save("s42_doppellabel_ohne_linie", doc, [w42], "T9/#54: Doppellabel ohne Linie ist eine Grenze (Hoehe passt zur GOK)")
     return made
 
 

@@ -44,6 +44,10 @@ GOK_UE_NN_RE = re.compile(r"([+-]?\d{1,4}[.,]\d{1,2})\s*m\s*(?:ü|ue)\.?\s*(?:NN
 GOK_ALLEIN_RE = re.compile(r"^([+-]?\d{1,4}[.,]\d{2})\s*m$")
 # Code mit Zusatz: 'BS 105A' (Grossbuchstabe), 'BS 22.1' (Teilnummer) (#55); Tiefen wie '1.20' haben kein Kuerzel davor
 ZUSATZ_HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d{1,4}(?:[A-Z]|\.\d{1,2}))$")
+# T14: Kuerzel aus der Legende der Seite ('BK = Rammkernbohrung', 'S = Baggerschurf'), Codes 'BK A/1', 'S A1' (#54)
+LEGENDE_KUERZEL_RE = re.compile(r"^([A-Z]{1,4})\s*=\s*(.{3,60})$")
+LEGENDE_AUFSCHLUSS_RE = re.compile(r"bohrung|schurf|sch(?:ü|ue)rfe", re.I)
+LEGENDE_CODE = r"(?:[A-Z]{1,2}\s*/\s*\d{1,3}|[A-Z]{1,2}\d{1,3}|\d{1,4})[a-z]?"
 SCHRIFTFELD_RE = re.compile(r"(?:Projekt|Auftrag|Akten|Bericht|Zeichnungs|Plan|Anlagen?)\s*-?\s*(?:Nr|Nummer)\.?\s*:?\s*$", re.I)
 DEPTH_RE = re.compile(r"^\d{1,3}[.,]\d{1,2}\s?m?$")              # DC-Software: '0.20m'
 GW_TEXT_RE = re.compile(r"(?<![A-Za-z])GW(?![A-Za-z]).*?(\d{1,3}[.,]\d{1,2})\s?m(?![A-Za-z])|(\d{1,3}[.,]\d{1,2})\s?m\s*u\.?\s*GOK", re.I)
@@ -104,6 +108,7 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "legende_kuerzel": True,     # T14  Kuerzel aus der Legende der Seite: 'BK A/1', 'S A1' (#54)
     "code_zusatz": True,         # T13  Code mit Zusatz 'BS 105A', 'BS 22.1' (#55)
     "ausbau_kein_profil": True,  # T12  Ausbauplan (Rohr, Filter, Tonsperre ...) ist kein Bohrprofil (#55)
     "doppel_anderer_code": True, # T11  gleiche GOK + Grenzen unter anderem Code = dieselbe Bohrung (#54)
@@ -1916,8 +1921,17 @@ def _schriftfeld_nummer(r: pymupdf.Rect, code: str, lines) -> bool:
 def find_heads(lines) -> list[tuple[pymupdf.Rect, str]]:
     """E2: Koepfe. Kuerzel (mit Zusatz), 'Bohrung <Code>' (auch zweizeilig), Archivcodes."""
     heads = []
+    leg_re = None
+    if RULES["legende_kuerzel"]:
+        kz = {m.group(1) for _, t in lines if (m := LEGENDE_KUERZEL_RE.match(re.sub(r"\s+", " ", t.strip())))
+              and LEGENDE_AUFSCHLUSS_RE.search(m.group(2)) and not re.search(r"sondier", m.group(2), re.I)}
+        if kz:
+            leg_re = re.compile(r"^((?:" + "|".join(sorted(kz, key=len, reverse=True)) + r")\s" + LEGENDE_CODE + r")$")
     for r, t in lines:
         t = re.sub(r"\s+", " ", t.strip())
+        if leg_re is not None and (m := leg_re.match(t)) and not ID_RE.match(t):
+            heads.append((r, re.sub(r"\s*/\s*", "/", m.group(1))))
+            continue
         if RULES["station_heads"] and (m := STATION_HEAD_RE.match(t)):
             heads.append((r, m.group(1)))
             continue
@@ -2417,8 +2431,29 @@ def _doppel_labels(doc, boreholes) -> None:
                 d, h = float(m.group(1).replace(",", ".")), float(m.group(2).replace(",", "."))
                 if abs(d + h - bh.gok) <= 0.05:
                     werte.append(d)
+        for w in werte:                                    # Doppellabel bestaetigt die naechste offene Linie (<= 10 cm, T2)
+            if any(ly.label_confirmed and abs(ly.bottom - w) <= 0.02 for ly in bh.layers):
+                continue
+            offen = [ly for ly in bh.layers if not ly.label_confirmed and abs(ly.bottom - w) <= 0.10]
+            if offen:
+                ly = min(offen, key=lambda e: abs(e.bottom - w))
+                ly.bottom, ly.label_confirmed = w, True
+        for k in range(1, len(bh.layers)):
+            bh.layers[k].top = bh.layers[k - 1].bottom
+        if len(werte) < 2:
+            continue
         bestaetigt = [ly.bottom for ly in bh.layers if ly.label_confirmed]
-        if len(werte) < 2 or not all(any(abs(w - g) <= 0.02 for g in bestaetigt) for w in werte):
+        fehlend = [w for w in werte if not any(abs(w - g) <= 0.02 for g in bestaetigt)]
+        if fehlend and len(fehlend) <= 0.5 * len(werte) and max(fehlend) < bh.layers[-1].bottom:
+            for w in sorted(fehlend):                      # Doppellabel ohne Linie: Grenze aus dem Label (GOK-geprueft)
+                k = next(i for i, ly in enumerate(bh.layers) if ly.top < w < ly.bottom)
+                alt = bh.layers[k]
+                neu = Layer(alt.top, w, label_confirmed=True)
+                neu.issues.append("Grenze aus dem Label 'Tiefe (Hoehe)', keine Linie gezeichnet")
+                alt.top = w
+                bh.layers.insert(k, neu)
+            bestaetigt = [ly.bottom for ly in bh.layers if ly.label_confirmed]
+        if not all(any(abs(w - g) <= 0.02 for g in bestaetigt) for w in werte):
             continue
         k = 0
         while k < len(bh.layers) - 1:

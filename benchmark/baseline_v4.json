@@ -586,6 +586,28 @@
   "falsche Grenzen": 0,
   "falsches GW": 0
  },
+ "stress/s41_legende_kuerzel": {
+  "Bohrungen": "2/2",
+  "Grenzen": "8/8",
+  "Grenzen exakt": "8/8",
+  "Bodenart": "8/8",
+  "GOK": "2/2",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
+ "stress/s42_doppellabel_ohne_linie": {
+  "Bohrungen": "1/1",
+  "Grenzen": "6/6",
+  "Grenzen exakt": "6/6",
+  "Bodenart": "5/5",
+  "GOK": "1/1",
+  "GW": "0/0",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
  "synth/synth_A": {
   "Bohrungen": "3/3",
   "Grenzen": "18/18",
