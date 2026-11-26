@@ -6,6 +6,11 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Blind round 6 (A20 Unterlage 20.1, docs/15 §8.10): ground truth 200 Bohrungen and 30 RS; rules from it (#55): an
+  installation drawing of a well is no Bohrprofil (T12), codes `BS 105A`/`BS 22.1` (T13), water label `0,75 GW` with
+  `NN+…` under it (W7b), T11 only with the same number in the code; Sondierungen `RS n` with the Art of the page and the
+  Ansatzhöhe `NN+8,83m`. A20 (training): 200/200 Bohrungen, 0 false. `blind_test.py score` reads `gw_status` from the
+  frozen detail (it was always 0).
 - Rules from blind round 5 (#54, docs/16 T6–T11, W7, W7b, docs/15 §8.9): a title-block number is no Bohrung code,
   codes with a station (`B-5+365-G`, `DPH-0+550-G`), GOK from `Ansatzpunkt …`/`… m ü. NN`/a lone height under the
   header, boundaries need the `Tiefe (Höhe)` label where the drawing uses it, the label convention from the position of

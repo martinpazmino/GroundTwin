@@ -396,7 +396,7 @@ description block per layer, 200/200), samples on the image. **Blind figures:**
 | Bodenart | 668/929 | 666/926 |
 | GOK | 187/200 | 186/200 |
 | GW | 249/266 | 247/266 |
-| GW-Status (*kein Wasser angetroffen*) | 0/25 | 0/25 |
+| GW-Status (*kein Wasser angetroffen*) | 21/25 | 21/25 |
 | **False Bohrungen** | **8** | **8** |
 | False boundaries | 0 | 0 |
 | False GW | 37 | 37 |
@@ -408,9 +408,29 @@ What failed:
 - **Codes** with an uppercase suffix (`BS 105A`) or a decimal (`BS 22.1`) not recognised (13 missing).
 - **False GW**: extra levels a few decimetres from the labelled ones (e.g. BS 502: 0.23/0.34 besides 0.75/0.80), from the
   triangles next to the labels; 25 profiles.
-- **GW-Status**: *kein Wasser angetroffen* under the column not read.
 - **RS** (Rammsondierung) is not a known Sondierung prefix: 0/30.
-- After #54 one Bohrung less (BS 85): T11 merged it with a profile of another code (under investigation).
+- After #54 one Bohrung less (BS 85): T11 merged it with BS 73 (same GOK 14.65 and 5-m depths by chance).
+
+GW-Status was first reported as 0/25: `run_v4` did not pass `gw_status` on, so the frozen `v4` part never carried it
+(it is frozen in `v4_detail`); `blind_test.py score` now reads it from there, the figure above is the corrected blind one.
+
+**After #55 (training, not blind):** rules T11 (same number in the code), T12 (installation drawing), T13 (codes with a
+suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung` and `nn_vor_wert`:
+
+| | blind (before #54) | training after #55 |
+|---|---|---|
+| Bohrungen | 187/200 | **200/200** |
+| Boundaries (exact) | 928/994 (924) | 992/994 (986) |
+| GOK | 187/200 | **200/200** |
+| GW | 249/266 | 259/266 |
+| GW-Status | 21/25 | 23/25 |
+| False Bohrungen | 8 | **0** |
+| False GW | 37 | 6 |
+| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 24/30 / 20/30 |
+
+Still open: the six short RS (≤ 2.5 m) are not found (the minimum frame height of the stage scales with the large
+sheet), four Endtiefen 0.2 m too deep, four profiles with an extra level, Bodenart 711/993 (the vocabulary of the
+descriptions: `Feinsand, u` with a leading soil word works, the long A20 descriptions often not).
 
 ## 9. Next steps
 

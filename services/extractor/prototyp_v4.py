@@ -105,7 +105,6 @@ RULES = {
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
     "code_zusatz": True,         # T13  Code mit Zusatz 'BS 105A', 'BS 22.1' (#55)
-    "kein_wasser_unter_saeule": True,  # W8 'kein Wasser angetroffen' unter der Saeule (#55)
     "ausbau_kein_profil": True,  # T12  Ausbauplan (Rohr, Filter, Tonsperre ...) ist kein Bohrprofil (#55)
     "doppel_anderer_code": True, # T11  gleiche GOK + Grenzen unter anderem Code = dieselbe Bohrung (#54)
     "gw_label_text": True,       # W7b  Label 'GW 0.94m' (auch schwarz) mit Datum gilt, nicht das Symbol (#54)
@@ -2355,27 +2354,9 @@ def extract(pdf: Path):
         _blaue_wasserlabels(doc, out)
     if RULES["doppel_labels"]:
         _doppel_labels(doc, out)
-    if RULES["kein_wasser_unter_saeule"]:             # W8: 'kein Wasser angetroffen' unter der Saeule (#55)
-        _kein_wasser(doc, out)
     for bh in out:
         _confidence(bh)
     return out, dph
-
-
-def _kein_wasser(doc, bhs) -> None:
-    """W8 (#55): 'kein Wasser angetroffen' direkt unter der Saeule (bis 80 pt, Mitte +-120 pt) -> Status, auch wenn der
-    Lesepfad des Profils ihn nicht prueft. Nur ohne Wasserstand."""
-    zeilen: dict[int, list] = {}
-    for bh in bhs:
-        if bh.gw_depths or bh.gw_status or not bh.bbox or bh.mode == "schichtenverzeichnis":
-            continue
-        if bh.page - 1 not in zeilen:
-            zeilen[bh.page - 1] = [(pymupdf.Rect(ln["bbox"]), " ".join(sp["text"] for sp in ln["spans"]))
-                                   for blk in doc[bh.page - 1].get_text("dict")["blocks"] for ln in blk.get("lines", [])]
-        x0, _, x1, y1 = bh.bbox
-        if any(NO_GW_RE.search(t) and 0 <= r.y0 - y1 <= 80 and abs((r.x0 + r.x1) / 2 - (x0 + x1) / 2) < 120
-               for r, t in zeilen[bh.page - 1]):
-            bh.gw_status = "kein Grundwasser"
 
 
 AUSBAU_RE = re.compile(r"rohr|filter|tonsperre|sperre|sch(?:ü|ue)ttung|kappe|peil|\bDN\s*\d|Ø|bohrgut|bentonit|"

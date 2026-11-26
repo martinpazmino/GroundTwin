@@ -86,6 +86,9 @@ def score_frozen(out: Path, sg_dir: Path | None) -> None:
         gt, pred = json.loads(gt_file.read_text()), json.loads(pred_file.read_text())
         print(f"== {pred_file.stem} (Code-Stand {pred.get('code_rev')})")
         print("   v1 ", score(gt, pred["v1"]))
+        for d in pred.get("v4_detail") or []:            # gw_status steht eingefroren nur im Detail (bis Runde 6)
+            if (k := d["code"].replace(" ", "").upper()) in pred.get("v4", {}) and d.get("gw_status"):
+                pred["v4"][k].setdefault("gw_status", d["gw_status"])
         for version in ("v4", "v3"):                     # v3: eingefrorene Dateien bis Runde 4
             if version in pred:
                 print(f"   {version} ", score(gt, pred[version]))

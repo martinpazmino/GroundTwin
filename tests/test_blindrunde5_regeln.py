@@ -1,4 +1,4 @@
-"""Regeln aus den Blindrunden 5 und 6 (Issues #54, #55, docs/16 T6-T13, W7, W8): ohne Netz und ohne echte Gutachten.
+"""Regeln aus den Blindrunden 5 und 6 (Issues #54, #55, docs/16 T6-T13, W7): ohne Netz und ohne echte Gutachten.
 
 Die Stressfaelle s31-s40 werden im Test erzeugt (stress_cases.py, mit Wahrheit) und mit demselben Werkzeug bewertet
 wie die Regression (benchmark/eval_real.score). Jede Regel zeigt, dass sie greift: Regel aus -> Fall faellt.

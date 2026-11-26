@@ -716,7 +716,7 @@ def build(out: Path) -> list[str]:
     save("s38_code_zusatz", doc, [_truth("BS 105A", L_STD, 45.20, kind="rks"), _truth("BS 22.1", L_STD, 44.80, kind="rks")],
          "T13/#55: Codes 'BS 105A' und 'BS 22.1'")
 
-    # s39 'kein Wasser angetroffen' mittig unter der Saeule, Labels rechts (W8, #55)
+    # s39 'kein Wasser angetroffen' mittig unter der Saeule, Labels rechts (#55; das Lesen gab es schon)
     doc = pymupdf.open()
     p = doc.new_page(width=595, height=842)
     s39 = Spec("BS 23", L_STD, gok=45.20, label_side="right")
@@ -724,7 +724,7 @@ def build(out: Path) -> list[str]:
     ppm = PT_PER_M_1_1 / s39.scale
     p.insert_text((s39.x0 - 20, s39.top_y + L_STD[-1][0] * ppm + 40), "kein Wasser angetroffen", fontsize=6.5)
     save("s39_kein_wasser", doc, [_truth("BS 23", L_STD, 45.20, status="kein Grundwasser", kind="rks")],
-         "W8/#55: 'kein Wasser angetroffen' unter der Saeule")
+         "#55: 'kein Wasser angetroffen' unter der Saeule (bestehender Lesepfad)")
 
     # s40 Wasserlabel '2,40 GW' mit 'NN+42,80m' darunter, Symbol daneben weiter oben (W7b, #55)
     doc = pymupdf.open()

@@ -93,7 +93,8 @@ def run_v1(pdf: Path) -> dict:
 def run_v4(pdf: Path) -> tuple[dict, list]:
     bhs, _ = extract(pdf)
     out = {norm(b.code): {"gok": b.gok, "bottoms": [ly.bottom for ly in b.layers],
-                          "soils": [(ly.top, ly.bottom, ly.soil) for ly in b.layers], "gw": b.gw_depths}
+                          "soils": [(ly.top, ly.bottom, ly.soil) for ly in b.layers], "gw": b.gw_depths,
+                          "gw_status": b.gw_status}
            for b in bhs}
     return out, bhs
 
