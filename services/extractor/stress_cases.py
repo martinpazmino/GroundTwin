@@ -693,8 +693,9 @@ def build(out: Path) -> list[str]:
     p = doc.new_page(width=842, height=595)
     draw_profile(p, Spec("B 4", L_STD, gok=45.20, x0=150))
     draw_profile(p, Spec("B 4a", L_STD, gok=45.20, x0=500, scale_text=None))
-    save("s36_doppel_anderer_code", doc, [_truth("B 4", L_STD, 45.20)],
-         "T11/#54: gleiche GOK und Grenzen unter zweitem Code -> eine Bohrung mit Hinweis")
+    draw_profile(p, Spec("B 7", L_STD, gok=45.20, x0=330, scale_text=None))   # gleiche GOK + Grenzen, andere Nummer
+    save("s36_doppel_anderer_code", doc, [_truth("B 4", L_STD, 45.20), _truth("B 7", L_STD, 45.20)],
+         "T11/#54: gleiche GOK und Grenzen unter zweitem Code -> eine Bohrung mit Hinweis; B 7 (andere Nummer) bleibt")
     return made
 
 

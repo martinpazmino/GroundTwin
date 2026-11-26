@@ -531,11 +531,11 @@
   "falsches GW": 0
  },
  "stress/s36_doppel_anderer_code": {
-  "Bohrungen": "1/1",
-  "Grenzen": "5/5",
-  "Grenzen exakt": "5/5",
-  "Bodenart": "5/5",
-  "GOK": "1/1",
+  "Bohrungen": "2/2",
+  "Grenzen": "10/10",
+  "Grenzen exakt": "10/10",
+  "Bodenart": "10/10",
+  "GOK": "2/2",
   "GW": "0/0",
   "falsche Bohrungen": 0,
   "falsche Grenzen": 0,

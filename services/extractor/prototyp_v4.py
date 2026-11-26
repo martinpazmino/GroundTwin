@@ -2351,8 +2351,8 @@ def extract(pdf: Path):
 
 
 def _doppel_anderer_code(bhs: list) -> list:
-    """T11 (#54): gleiche GOK (+-1 cm) und dieselben Grenzen (gleiche Anzahl, je +-3 cm, >= 3) unter anderem Code =
-    dieselbe Bohrung (Schnitt beschriftet anders als das Einzelblatt). Das Einzelblatt bleibt, der Code des anderen
+    """T11 (#54): gleiche GOK (+-1 cm), dieselben Grenzen (gleiche Anzahl, je +-3 cm, >= 3) und dieselbe Nummer bzw.
+    Station im Code ('B-8+180-G' / 'B-8+180-S3', 'B 4' / 'B 4a') = dieselbe Bohrung (Schnitt beschriftet anders als das Einzelblatt). Das Einzelblatt bleibt, der Code des anderen
     steht als Hinweis daneben; eine zweite Bohrung waere falsch."""
     raus: set[int] = set()
     for i, a in enumerate(bhs):
@@ -2360,6 +2360,9 @@ def _doppel_anderer_code(bhs: list) -> list:
             b = bhs[j]
             if i in raus or j in raus or a.gok is None or b.gok is None or abs(a.gok - b.gok) > 0.01:
                 continue
+            kern = [re.search(r"\d+(?:\+\d{3})?", c) for c in (a.code, b.code)]
+            if not all(kern) or kern[0].group(0) != kern[1].group(0):
+                continue                                  # BS 73 / BS 85: gleiche GOK und 5-m-Raster sind Zufall (Runde 6)
             ga, gb = [ly.bottom for ly in a.layers], [ly.bottom for ly in b.layers]
             if len(ga) < 3 or len(ga) != len(gb) or any(abs(x - y) > 0.03 for x, y in zip(ga, gb)):
                 continue
