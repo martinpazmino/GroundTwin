@@ -381,6 +381,37 @@ sections, water there (5/69), DPH 1–2 of U09.
 Bohrungen, 0 Sondierungen. Ground truth still to be transcribed. Two further PDFs from uvp-verbund.de (Deponie
 Augsburg Nord, IGI Westheim) could not be fetched (429).
 
+### 8.10 Blind round 6: A20 Unterlage 20.1 (2026-11-26)
+
+Public report ([source](https://www.strassenbau.niedersachsen.de/download/96897/Unterlage_20.1_Bodenuntersuchung_geotechnisches_Streckengutachten.pdf),
+sha256 in the ground truth), 197 pages: report text scanned, Blatt 3 with 200 height-scaled IDAT profiles (M 1:100) and
+30 Rammsondierungen RS 1–30. Predictions frozen twice before opening: before #54 (`1e25a60`) and after (`77f3bd2`).
+Ground truth from the text layer with checks per profile (GOK − Endtiefe = bottom NN, height + depth = GOK, one
+description block per layer, 200/200), samples on the image. **Blind figures:**
+
+| | before #54 | after #54 |
+|---|---|---|
+| Bohrungen | 187/200 | 186/200 |
+| Boundaries (exact) | 928/994 (924) | 925/994 (921) |
+| Bodenart | 668/929 | 666/926 |
+| GOK | 187/200 | 186/200 |
+| GW | 249/266 | 247/266 |
+| GW-Status (*kein Wasser angetroffen*) | 0/25 | 0/25 |
+| **False Bohrungen** | **8** | **8** |
+| False boundaries | 0 | 0 |
+| False GW | 37 | 37 |
+| Sondierungen RS (DPL) | 0/30 | 0/30 |
+
+What failed:
+- **False Bohrungen = GWM 1–8**: the installation drawings of the wells (Vollrohr, Filter, Tonsperre with depth
+  labels) were read as soil profiles. A well installation is never a Bohrprofil.
+- **Codes** with an uppercase suffix (`BS 105A`) or a decimal (`BS 22.1`) not recognised (13 missing).
+- **False GW**: extra levels a few decimetres from the labelled ones (e.g. BS 502: 0.23/0.34 besides 0.75/0.80), from the
+  triangles next to the labels; 25 profiles.
+- **GW-Status**: *kein Wasser angetroffen* under the column not read.
+- **RS** (Rammsondierung) is not a known Sondierung prefix: 0/30.
+- After #54 one Bohrung less (BS 85): T11 merged it with a profile of another code (under investigation).
+
 ## 9. Next steps
 
 1. Fifth blind round done (§8.8). Fix in this order: no project number as a Bohrung code, codes with a station
