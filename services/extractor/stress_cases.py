@@ -696,6 +696,50 @@ def build(out: Path) -> list[str]:
     draw_profile(p, Spec("B 7", L_STD, gok=45.20, x0=330, scale_text=None))   # gleiche GOK + Grenzen, andere Nummer
     save("s36_doppel_anderer_code", doc, [_truth("B 4", L_STD, 45.20), _truth("B 7", L_STD, 45.20)],
          "T11/#54: gleiche GOK und Grenzen unter zweitem Code -> eine Bohrung mit Hinweis; B 7 (andere Nummer) bleibt")
+
+    # s37 Ausbauplan einer Messstelle neben dem Profil: eigener Kopf, Tiefenlabels, Ausbau-Begriffe (T12, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    L_KERN = [(b, so, f"{t}, Einfachkernrohr") for b, so, t in L_STD]   # Bohrgeraet im Text ist kein Ausbau (Wesel)
+    draw_profile(p, Spec("B 5", L_KERN, gok=45.20, x0=150))
+    L_AUSBAU = [(0.3, "Beton", "Beton"), (1.5, "Ton", "Tonsperre"), (2.0, "Sand", "Bohrgut"),
+                (4.5, "Kies", "PVC-Aufsatzrohr DN 100"), (6.5, "Kies", "PVC-Filterrohr DN 100, Filterkies")]
+    draw_profile(p, Spec("GWM 5", L_AUSBAU, x0=380, scale_text=None, unit="m"))
+    save("s37_ausbauplan", doc, [_truth("B 5", L_STD, 45.20)],
+         "T12/#55: Ausbauplan 'GWM 5' (Rohr, Filter, Tonsperre) ist kein Bohrprofil")
+
+    # s38 Codes mit Zusatz: Grossbuchstabe und Teilnummer (T13, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=842, height=595)
+    draw_profile(p, Spec("BS 105A", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("BS 22.1", L_STD, gok=44.80, x0=480, scale_text=None))
+    save("s38_code_zusatz", doc, [_truth("BS 105A", L_STD, 45.20, kind="rks"), _truth("BS 22.1", L_STD, 44.80, kind="rks")],
+         "T13/#55: Codes 'BS 105A' und 'BS 22.1'")
+
+    # s39 'kein Wasser angetroffen' mittig unter der Saeule, Labels rechts (W8, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s39 = Spec("BS 23", L_STD, gok=45.20, label_side="right")
+    draw_profile(p, s39)
+    ppm = PT_PER_M_1_1 / s39.scale
+    p.insert_text((s39.x0 - 20, s39.top_y + L_STD[-1][0] * ppm + 40), "kein Wasser angetroffen", fontsize=6.5)
+    save("s39_kein_wasser", doc, [_truth("BS 23", L_STD, 45.20, status="kein Grundwasser", kind="rks")],
+         "W8/#55: 'kein Wasser angetroffen' unter der Saeule")
+
+    # s40 Wasserlabel '2,40 GW' mit 'NN+42,80m' darunter, Symbol daneben weiter oben (W7b, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s40 = Spec("BS 30", L_STD, gok=45.20)
+    draw_profile(p, s40)
+    ppm = PT_PER_M_1_1 / s40.scale
+    y_l = s40.top_y + 0.8 * ppm
+    p.insert_text((s40.x0 - 100, y_l), "2,40 GW", fontsize=6.5)
+    p.insert_text((s40.x0 - 100, y_l + 9), "NN+42,80m", fontsize=6)
+    p.draw_polyline([(s40.x0 - 120, y_l - 6), (s40.x0 - 113, y_l - 6), (s40.x0 - 116.5, y_l), (s40.x0 - 120, y_l - 6)],
+                    color=(0, 0, 0), fill=(0, 0, 0), closePath=True, width=0.4)
+    _line(p, (s40.x0 - 120, y_l), (s40.x0, y_l), 0.4)
+    save("s40_gw_label_nn", doc, [_truth("BS 30", L_STD, 45.20, [2.4], kind="rks")],
+         "W7b/#55: '2,40 GW' + 'NN+42,80m' gilt, das Symbol steht hoeher")
     return made
 
 

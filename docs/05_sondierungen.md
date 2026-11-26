@@ -136,6 +136,8 @@ Each rule switched off on the three vector PDFs, the stress and the synthetic ca
 | `tabelle_luecken_melden`, `cpt_log_achse`, `endpruefung_monoton_und_achse` | none on these cases (they mark or check; kept, measured again with the next real case) |
 | `stationscode` (#54) | s09: code `DPH-0+550-G` cut to `DPH 0` → 0/1 found, 1 false Sondierung, 40 false values; blind round 5 BER: 80 DPH with a cut code |
 | `achse_zeile_ausgerichtet` (#54) | none on the synthetic cases; on the U09 sheet (round 5, training) the `0.0` of the depth axis joins the row of the value ticks and no DPH is found (3/5 with the rule) |
+| `rs_rammsondierung` (#55) | s10: header `RS 3` not a Sondierung → 0/1; A20 (round 6): RS 1–30. `RS` names no probe, the Art comes from the page when exactly one is named (`leichte Rammsonde (DPL-5)`), else DPH; the code stays `RS n` |
+| `nn_vor_wert` (#55) | Ansatzhöhe written `NN+8,83m` (value after NN) not read; test `test_rs_art_aus_der_seite_und_ansatzhoehe_nn` |
 
 The tests hold the strongest ones: rule off → case fails (`tests/test_sondierungen_extraktion.py`).
 

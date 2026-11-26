@@ -1082,8 +1082,50 @@ def _fall_s09_stationscode_achse(ordner: Path) -> str:
                       "#54: Code mit Station und Wertachse dicht ueber der Tiefenachse (Doppel-0)")
 
 
+
+def _fall_s10_rs_nn(ordner: Path) -> str:
+    """#55: Kopf RS (Rammsondierung) und Ansatzhoehe NN+..m. Vorlage s09: Code mit Station 'DPH-0+550-G' (ungekuerzt) und Wertachse dicht ueber der Tiefenachse (U09: '0,00'
+    der Tiefenachse liegt fast in der Zeile der Ticks 0, 10, 20 ...)."""
+    dok = pymupdf.open()
+    seite = dok.new_page(width=595, height=842)
+    ppm = PT_PER_M_1_1 / 100.0
+    x0, y0, rahmen_b, rahmen_tiefe = 150.0, 150.0, 200.0, 5.0
+    x1 = x0 + rahmen_b
+    y1 = y0 + rahmen_tiefe * ppm
+    x_max = 40.0
+    seite.insert_text((x0, 80), "RS 3", fontsize=12)
+    seite.insert_text((x0 - 40, y0 - 14), "NN+9,74m", fontsize=8)
+    seite.insert_text((330, 80), "Maßstab 1:100", fontsize=8)
+    seite.insert_text((60, 800), "Rammsondierung ausgeführt mit der leichten Rammsonde (DPL-5)", fontsize=8)
+    _text_zentriert_x(seite, (x0 + x1) / 2.0, 120.0, "Anzahl Schläge N10", 8.0)
+    for n in (0, 10, 20, 30, 40):
+        xt = x0 + (n / x_max) * rahmen_b
+        _linie(seite, (xt, y0 - 2.0), (xt, y0), 0.5)
+        _text_zentriert_x(seite, xt, y0 - 2.5, str(n), 7.0)      # Ticks dicht am Rahmen
+    for d in range(6):
+        yt = y0 + d * ppm
+        _linie(seite, (x0 - 4.0, yt), (x0, yt), 0.5)
+        _text_rechts_y(seite, x0 - 7.0, yt, _fmt(float(d)), 7.0)
+    seite.draw_rect(pymupdf.Rect(x0, y0, x1, y1), color=(0.0, 0.0, 0.0), fill=None, width=0.8)
+    n10_liste = [1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15, 16,
+                 17, 18, 18, 19, 20, 21, 22, 22, 23, 24, 25, 26, 26, 27, 28, 29, 30, 31, 32, 33]
+    schritte = [(round(i * 0.1, 1), round((i + 1) * 0.1, 1), n) for i, n in enumerate(n10_liste)]
+    _zeichne_dph_treppenkurve(seite, x0, y0, rahmen_b, x_max, ppm, schritte, strichbreite=1.0)
+    stichprobe = []
+    for idx in (0, 4, 8, 12, 16, 20, 24, 28, 32, 39):
+        t_o, t_u, n = schritte[idx]
+        stichprobe.append({"tiefe": t_u, "wert": n, "seite": 1,
+                           "lage": f"Diagramm x={x0 + (n / x_max) * rahmen_b:.1f}, y={y0 + (t_o + t_u) / 2.0 * ppm:.1f} pt"})
+    sond = [{
+        "code": "RS 3", "art": "DPL", "seite": 1, "auch_auf_seiten": [], "form": "diagramm",
+        "ansatzhoehe": 9.74, "endtiefe": 4.0, "werte": [list(z) for z in schritte], "stichprobe": stichprobe,
+        "unsicher": [],
+    }]
+    return _speichere(ordner, "s10_rs_nn", dok, sond,
+                      "#55: Kopf 'RS 3' (Rammsondierung), Art aus der Seite (DPL-5), Ansatzhoehe 'NN+9,74m'")
+
 def build(ordner: Path | str) -> list[str]:
-    """Erzeugt alle neun synthetischen Sondierungs-Stressfaelle im Zielordner."""
+    """Erzeugt alle zehn synthetischen Sondierungs-Stressfaelle im Zielordner."""
     ziel = Path(ordner)
     ziel.mkdir(parents=True, exist_ok=True)
     erzeugt = [
@@ -1096,6 +1138,7 @@ def build(ordner: Path | str) -> list[str]:
         _fall_s07_falle_bohrprofil_lineal(ziel),
         _fall_s08_falle_labortabelle(ziel),
         _fall_s09_stationscode_achse(ziel),
+        _fall_s10_rs_nn(ziel),
     ]
     codes: list[str] = []
     for name in erzeugt:

@@ -42,6 +42,8 @@ HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d+[a-z]?(?:/\d{2})?)(
 STATION_HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|SB|GWM|SCH)-\d{1,3}\+\d{3}(?:-[A-Z][A-Za-z0-9,]{0,6})?)$")
 GOK_UE_NN_RE = re.compile(r"([+-]?\d{1,4}[.,]\d{1,2})\s*m\s*(?:ü|ue)\.?\s*(?:NN|NHN)\b", re.I)
 GOK_ALLEIN_RE = re.compile(r"^([+-]?\d{1,4}[.,]\d{2})\s*m$")
+# Code mit Zusatz: 'BS 105A' (Grossbuchstabe), 'BS 22.1' (Teilnummer) (#55); Tiefen wie '1.20' haben kein Kuerzel davor
+ZUSATZ_HEAD_RE = re.compile(r"^((?:B|BK|KB|KRB|RKS|BS|GWM|SCH)\s*\d{1,4}(?:[A-Z]|\.\d{1,2}))$")
 SCHRIFTFELD_RE = re.compile(r"(?:Projekt|Auftrag|Akten|Bericht|Zeichnungs|Plan|Anlagen?)\s*-?\s*(?:Nr|Nummer)\.?\s*:?\s*$", re.I)
 DEPTH_RE = re.compile(r"^\d{1,3}[.,]\d{1,2}\s?m?$")              # DC-Software: '0.20m'
 GW_TEXT_RE = re.compile(r"(?<![A-Za-z])GW(?![A-Za-z]).*?(\d{1,3}[.,]\d{1,2})\s?m(?![A-Za-z])|(\d{1,3}[.,]\d{1,2})\s?m\s*u\.?\s*GOK", re.I)
@@ -102,6 +104,9 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "code_zusatz": True,         # T13  Code mit Zusatz 'BS 105A', 'BS 22.1' (#55)
+    "kein_wasser_unter_saeule": True,  # W8 'kein Wasser angetroffen' unter der Saeule (#55)
+    "ausbau_kein_profil": True,  # T12  Ausbauplan (Rohr, Filter, Tonsperre ...) ist kein Bohrprofil (#55)
     "doppel_anderer_code": True, # T11  gleiche GOK + Grenzen unter anderem Code = dieselbe Bohrung (#54)
     "gw_label_text": True,       # W7b  Label 'GW 0.94m' (auch schwarz) mit Datum gilt, nicht das Symbol (#54)
     "gw_blaue_labels": True,     # W7   blaues Wasserlabel '3.10 (213.21)' + Datum gilt, nicht das Dreieck (#54)
@@ -1917,6 +1922,9 @@ def find_heads(lines) -> list[tuple[pymupdf.Rect, str]]:
         if RULES["station_heads"] and (m := STATION_HEAD_RE.match(t)):
             heads.append((r, m.group(1)))
             continue
+        if RULES["code_zusatz"] and (m := ZUSATZ_HEAD_RE.match(t)):
+            heads.append((r, re.sub(r"\s+", " ", m.group(1))))
+            continue
         m = HEAD_RE.match(t) if RULES["head_suffix"] else ID_RE.match(t)
         if m and RULES["kein_schriftfeld_code"] and _schriftfeld_nummer(r, m.group(1) if RULES["head_suffix"] else m.group(0), lines):
             continue
@@ -2339,15 +2347,47 @@ def extract(pdf: Path):
             prev = d
         bh.cross_check = "nur SV"
         out.append(bh)
+    if RULES["ausbau_kein_profil"]:                   # T12: Ausbauplan einer Messstelle ist kein Bohrprofil (#55)
+        out = [b for b in out if not _ist_ausbau(b)]
     if RULES["doppel_anderer_code"]:                  # T11: dieselbe Bohrung unter zwei Codes (Schnitt vs. Blatt)
         out = _doppel_anderer_code(out)
     if RULES["gw_blaue_labels"]:
         _blaue_wasserlabels(doc, out)
     if RULES["doppel_labels"]:
         _doppel_labels(doc, out)
+    if RULES["kein_wasser_unter_saeule"]:             # W8: 'kein Wasser angetroffen' unter der Saeule (#55)
+        _kein_wasser(doc, out)
     for bh in out:
         _confidence(bh)
     return out, dph
+
+
+def _kein_wasser(doc, bhs) -> None:
+    """W8 (#55): 'kein Wasser angetroffen' direkt unter der Saeule (bis 80 pt, Mitte +-120 pt) -> Status, auch wenn der
+    Lesepfad des Profils ihn nicht prueft. Nur ohne Wasserstand."""
+    zeilen: dict[int, list] = {}
+    for bh in bhs:
+        if bh.gw_depths or bh.gw_status or not bh.bbox or bh.mode == "schichtenverzeichnis":
+            continue
+        if bh.page - 1 not in zeilen:
+            zeilen[bh.page - 1] = [(pymupdf.Rect(ln["bbox"]), " ".join(sp["text"] for sp in ln["spans"]))
+                                   for blk in doc[bh.page - 1].get_text("dict")["blocks"] for ln in blk.get("lines", [])]
+        x0, _, x1, y1 = bh.bbox
+        if any(NO_GW_RE.search(t) and 0 <= r.y0 - y1 <= 80 and abs((r.x0 + r.x1) / 2 - (x0 + x1) / 2) < 120
+               for r, t in zeilen[bh.page - 1]):
+            bh.gw_status = "kein Grundwasser"
+
+
+AUSBAU_RE = re.compile(r"rohr|filter|tonsperre|sperre|sch(?:ü|ue)ttung|kappe|peil|\bDN\s*\d|Ø|bohrgut|bentonit|"
+                       r"verf(?:ü|ue)ll|zementation|abdichtung|sumpf", re.I)
+
+
+def _ist_ausbau(bh) -> bool:
+    """T12 (#55): ueberwiegend Ausbau-Begriffe (Rohr, Filter, Tonsperre, Schuettung, Kappe, DN, Bohrgut) als
+    Hauptbegriff (vor dem ersten Komma) der Schichttexte = Ausbauplan einer Grundwassermessstelle, nicht der Boden. Der Code allein entscheidet nicht
+    (in anderen Gutachten ist 'GWM 1' das Bohrprofil)."""
+    haupt = [ly.text.split(",")[0] for ly in bh.layers if ly.text]   # Hauptbegriff; 'Einfachkernrohr' am Ende ist das Geraet
+    return len(haupt) >= 2 and sum(1 for t in haupt if AUSBAU_RE.search(t)) >= 0.5 * len(haupt)
 
 
 def _doppel_anderer_code(bhs: list) -> list:
@@ -2438,6 +2478,12 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
                 if WL_RE.match(u) and any(abs((g.y0 + g.y1) / 2 - (q.y0 + q.y1) / 2) < 4 and 0 <= q.x0 - g.x1 < 50
                                           for g in gw_t):
                     spans.append((q, u))
+            for q, u in alle:                              # '0,75 GW' mit 'NN+8,32m' darunter -> '0,75 (8,32)'
+                if (m := re.match(r"^(\d{1,2}[.,]\d{2})\s*m?\s*GW\b", u)):
+                    nn = [re.match(r"^NN\s*([+-])\s*(\d+[.,]\d+)\s*m$", v) for q2, v in alle
+                          if abs(q2.x0 - q.x0) < 4 and 0 < q2.y0 - q.y0 < 16]
+                    nn = [x for x in nn if x]
+                    spans.append((q, m.group(1) + (f" ({nn[0].group(1).replace('+', '')}{nn[0].group(2)})" if nn else "")))
         if not spans:
             continue
         blaue_linien = [dr for dr in doc[pno].get_drawings() if dr.get("color") and len(dr["color"]) == 3
