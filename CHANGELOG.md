@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen (#55): shorter diagram frames on long sheets, depth and NHN labels snapped to their lines (the hatching
+  of a neighbouring profile is no tick). A20 RS 24 → 29/30 found, Endtiefe 20 → 28/30; U09 and Planfeststellung
+  Endtiefen better. Stress `s11`.
 - Blind round 7 (docs/15 §8.11): two reports without Bohrprofile, 0 false. Talheim training PDF back in the regression:
   T12 no longer reads `Anschüttung` as a well installation (10/10 again); all 13 real PDFs without regression.
 - Prefixes from the legend of the page (#54 item 5, docs/16 T14): `BK = Rammkernbohrung`, `S = Baggerschurf` make
