@@ -6,6 +6,10 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- #55 completed: water label between two columns goes to the matching GOK, then to the side of the page's labels (W7c);
+  T15 ignores a laboratory note beside the descriptions; `Grasnarbe` is Mutterboden; Sondierungen: frames down to
+  25 × page factor (RS of 1.7 m), Endtiefe from the end label below the curve end (values not invented). A20 (training):
+  200/200 Bohrungen, Bodenart 985/993, 0 false GW, RS 30/30 with Endtiefe 30/30. Stress `s45`, Sondierungen `s12`.
 - One text block per layer (#55, docs/16 T15): multi-line descriptions starting at the label of their lower edge are
   assigned block by block. A20 (training): Bodenart 711 → 891/993. Stress `s44`.
 - Water symbol points down (#55, docs/16 W9): the arrowhead of an axis and the Ansatzpunkt marker `NN+…` of a

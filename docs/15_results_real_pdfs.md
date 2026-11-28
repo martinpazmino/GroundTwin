@@ -417,23 +417,23 @@ What failed:
 GW-Status was first reported as 0/25: `run_v4` did not pass `gw_status` on, so the frozen `v4` part never carried it
 (it is frozen in `v4_detail`); `blind_test.py score` now reads it from there, the figure above is the corrected blind one.
 
-**After #55 (training, not blind):** rules T11 (same number in the code), T12 (installation drawing), T13 (codes with a
-suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung` and `nn_vor_wert`:
+**After #55 (training, not blind):** rules T11–T15, W7b, W7c, W9 and in the Sondierungen stage `rs_rammsondierung`,
+`nn_vor_wert`, `kurze_rahmen`, `tickstriche_am_rahmen`, `endlabel_nullschlaege`:
 
 | | blind (before #54) | training after #55 |
 |---|---|---|
 | Bohrungen | 187/200 | **200/200** |
 | Boundaries (exact) | 928/994 (924) | 992/994 (986) |
 | GOK | 187/200 | **200/200** |
-| Bodenart | 668/929 | 891/993 (T15) |
-| GW | 249/266 | 259/266 |
-| GW-Status | 21/25 | 25/25 |
+| Bodenart | 668/929 | **985/993** |
+| GW | 249/266 | **261/266** |
+| GW-Status | 21/25 | **25/25** |
 | False Bohrungen | 8 | **0** |
-| False GW | 37 | 1 |
-| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 29/30 / 28/30 |
+| False GW | 37 | **0** |
+| RS found / Endtiefe ±5 cm | 0/30 / 0/30 | **30/30 / 30/30** |
 
-Still open: RS 1 (1.7 m, below the minimum frame height even after `kurze_rahmen`), RS 9 Endtiefe 2.2 instead of 2.3,
-one profile with an extra level (BS 44; the axis arrow and Ansatzpunkt marker of the neighbouring RS are no water since W9), Bodenart 891/993 (T15, one text block per layer).
+Left as it is: the five water levels whose NN height in the label does not match the GOK (a drawing error, an issue
+names them), eight single Bodenart cases.
 
 ### 8.11 Blind round 7: two reports without Bohrprofile (2026-11-26)
 

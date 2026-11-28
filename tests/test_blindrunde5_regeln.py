@@ -1,6 +1,6 @@
 """Regeln aus den Blindrunden 5 und 6 (Issues #54, #55, docs/16 T6-T15, W7, W9): ohne Netz und ohne echte Gutachten.
 
-Die Stressfaelle s31-s44 werden im Test erzeugt (stress_cases.py, mit Wahrheit) und mit demselben Werkzeug bewertet
+Die Stressfaelle s31-s45 werden im Test erzeugt (stress_cases.py, mit Wahrheit) und mit demselben Werkzeug bewertet
 wie die Regression (benchmark/eval_real.score). Jede Regel zeigt, dass sie greift: Regel aus -> Fall faellt.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ FAELLE = ["s31_projektnummer", "s32_stationscode", "s33_schnitt_doppellabel", "s
           "s35_gw_label_text", "s36_doppel_anderer_code", "s37_ausbauplan", "s38_code_zusatz",
           "s39_kein_wasser", "s40_gw_label_nn", "s41_legende_kuerzel",
           "s42_doppellabel_ohne_linie", "s43_pfeil_ansatzpunkt",
-          "s44_beschreibungsbloecke"]
+          "s44_beschreibungsbloecke", "s45_wasserlabel_seite"]
 
 
 @pytest.fixture(scope="module")
@@ -81,6 +81,7 @@ SCHUTZ = [
     ("doppel_labels", "s42_doppellabel_ohne_linie", "Grenzen"),             # Doppellabel ohne Linie (#54)
     ("gw_dreieck_nach_unten", "s43_pfeil_ansatzpunkt", "falsches GW"),      # Achsenpfeil, Ansatzpunkt (#55)
     ("beschreibung_bloecke", "s44_beschreibungsbloecke", "Bodenart"),        # ein Textblock je Schicht (#55)
+    ("gw_label_gok_zuordnung", "s45_wasserlabel_seite", "falsches GW"),      # Label zwischen Saeulen gleicher GOK
 ]
 
 

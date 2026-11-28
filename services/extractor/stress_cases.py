@@ -807,6 +807,20 @@ def build(out: Path) -> list[str]:
                          fontsize=6.5)                                  # ein Block, beginnt am Label der Unterkante
     save("s44_beschreibungsbloecke", doc, [_truth("BS 7", L44, 45.20, kind="rks")],
          "T15/#55: je Schicht ein mehrzeiliger Textblock ab dem Label der Unterkante, reicht in die naechste Schicht")
+
+    # s45 zwei Saeulen mit gleicher GOK, Wasserlabel dazwischen naeher an der falschen; die Labels stehen links (W7c, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    draw_profile(p, Spec("BS 44", L_STD, gok=45.20, x0=150))
+    draw_profile(p, Spec("BS 45", L_STD, gok=45.20, x0=330, scale_text=None))
+    ppm = PT_PER_M_1_1 / 50
+    for x, d_ in ((150 - 110, 1.0), (230, 1.8)):                  # 1,80 GW: 58 pt rechts von BS 44, 68 pt links von BS 45
+        y = 150 + d_ * ppm
+        p.insert_text((x, y), f"{d_:.2f} GW".replace(".", ","), fontsize=6.5)
+        p.insert_text((x, y + 9), f"NN+{45.20 - d_:.2f}m".replace(".", ","), fontsize=6)
+    save("s45_wasserlabel_seite", doc, [_truth("BS 44", L_STD, 45.20, [1.0], kind="rks"),
+                                        _truth("BS 45", L_STD, 45.20, [1.8], kind="rks")],
+         "W7c/#55: Wasserlabel zwischen zwei Saeulen gleicher GOK gehoert zur Saeule auf der Seite der anderen Labels")
     return made
 
 
