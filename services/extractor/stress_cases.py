@@ -772,6 +772,23 @@ def build(out: Path) -> list[str]:
     w42["layers"][k:k + 1] = [{"top": w42["layers"][k]["top"], "bottom": 2.6},
                               {"top": 2.6, "bottom": w42["layers"][k]["bottom"], "soil": w42["layers"][k]["soil"]}]
     save("s42_doppellabel_ohne_linie", doc, [w42], "T9/#54: Doppellabel ohne Linie ist eine Grenze (Hoehe passt zur GOK)")
+
+    # s43 Achsenpfeil 'N10 >' und Ansatzpunkt-Dreieck 'NN+44,10m' neben einem Profil ohne Wasser (W9, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    s43 = Spec("BS 43", L_STD, gok=45.20)
+    draw_profile(p, s43)
+    ppm = PT_PER_M_1_1 / s43.scale
+    ya = s43.top_y + 0.6 * ppm
+    p.draw_polyline([(s43.x0 - 60, ya - 3), (s43.x0 - 60, ya + 3), (s43.x0 - 48, ya), (s43.x0 - 60, ya - 3)],
+                    color=(0, 0, 0), closePath=True, width=0.4)                      # Pfeilspitze nach rechts
+    p.insert_text((s43.x0 - 75, ya - 6), "N10", fontsize=7)
+    yg = s43.top_y + 1.4 * ppm
+    p.draw_polyline([(s43.x0 - 110, yg - 6), (s43.x0 - 104, yg - 6), (s43.x0 - 107, yg), (s43.x0 - 110, yg - 6)],
+                    color=(0, 0, 0), closePath=True, width=0.4)                      # Ansatzpunkt eines Nachbardiagramms
+    p.insert_text((s43.x0 - 150, yg - 1), "NN+44,10m", fontsize=7)
+    save("s43_pfeil_ansatzpunkt", doc, [_truth("BS 43", L_STD, 45.20, kind="rks")],
+         "W9/#55: Achsenpfeil nach rechts und Ansatzpunkt 'NN+44,10m' sind kein Wasser")
     return made
 
 
