@@ -1,0 +1,36 @@
+{
+ "id": "ansprache.feinkornanteil_klasse",
+ "version": "1.0.0",
+ "title": "Feinkornanteil als Klasse aus der Ansprache (ohne Siebanalyse)",
+ "kind": "rule",
+ "authority": "standard",
+ "source": {
+  "citation": "DIN 4023 (Richtwerte der Nebenanteile: schwach < 15 %, ohne Stufe 15–30 %, stark > 30 %), DIN 18196 (feinkörnige Böden > 40 %); Stufen in normen.json",
+  "verified": false
+ },
+ "inputs": {
+  "required": [
+   "boden.beschreibung"
+  ]
+ },
+ "outputs": [
+  "boden.feinkorn_klasse"
+ ],
+ "preconditions": [
+  "ohne genanntes Feinkorn ist die Klasse < 5 % angenommen (kurze Feldansprachen nennen Feinkorn oft nicht)"
+ ],
+ "validity": {},
+ "uncertainty": {
+  "model": "categorical",
+  "note": "Richtwerte der Ansprache, keine Messung; 'stark' kann ueber 40 % liegen (angenommen)"
+ },
+ "when_missing": {
+  "boden.beschreibung": "block"
+ },
+ "value_kind_of_outputs": "interpreted",
+ "tests": [
+  "tests/test_wissen.py",
+  "services/modeler/tests/test_normen.py"
+ ],
+ "implementierung": "baugrundmodell.normen:feinkorn_klasse"
+}

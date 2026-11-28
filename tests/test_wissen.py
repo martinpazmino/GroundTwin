@@ -52,7 +52,7 @@ def test_verweise_auf_den_bestehenden_code_loesen_sich_auf(eintrag):
 
 def test_daub_tabelle_vollstaendig():
     t = wissen.katalog()["daub.tbm_vorauswahl_boden"]["daten"]["tabellen"]
-    assert len(t) == 7
+    assert len(t) == 8                                       # Feinkorn aus Siebanalyse und aus der Ansprache
     for name, z in t.items():
         assert len(z["SLS"]) == len(z["EPB"]) == len(z["klassen"]), name
         if "grenzen" in z:
@@ -73,7 +73,8 @@ def test_planer_nur_bohrprofile():
                                                                "labor.wassergehalt"] or set(
         p["eintraege"]["labor.konsistenzzahl"]["fehlt"]) == {"labor.wassergehalt", "labor.fliessgrenze", "labor.ausrollgrenze"}
     d = p["eintraege"]["daub.tbm_vorauswahl_boden"]
-    assert d["status"] == "hinweisend" and d["abdeckung"] == "2/8"           # nur Konsistenz/Lagerung aus der Ansprache
+    assert d["status"] == "hinweisend" and d["abdeckung"] == "3/9"           # Konsistenz/Lagerung/Feinkorn aus der Ansprache
+    assert d["angenommen"] == []                                             # ohne Projektdaten nichts angenommen
     f = p["fehlende_grundgroessen"]
     assert "labor.konsistenzzahl" in f["labor.wassergehalt"]["benoetigt_fuer"]
     assert f["labor.wassergehalt"]["schaltet_frei"] == []                  # allein reicht es nicht (w_L, w_P fehlen)
@@ -86,7 +87,7 @@ def test_planer_mit_labor():
     p = wissen.planen(BOHRPROFILE | LABOR)
     for k in ("labor.konsistenzzahl", "labor.feinkornanteil", "labor.durchlaessigkeit", "labor.statistik_einheit"):
         assert status(p, k) == "moeglich", k
-    assert p["eintraege"]["daub.tbm_vorauswahl_boden"]["abdeckung"] == "5/8"
+    assert p["eintraege"]["daub.tbm_vorauswahl_boden"]["abdeckung"] == "6/9"
     assert set(p["fehlende_grundgroessen"]) >= {"tunnel.stuetzdruck", "boden.abrasivitaet_aequ"}
 
 
@@ -138,3 +139,12 @@ def test_verfuegbar_aus_den_beispielen(name, erwartet, nicht):
     d = json.loads((ROOT / f"data/beispiele/{name}.json").read_text(encoding="utf-8"))
     da = wissen.verfuegbar_aus_dokumenten(d if isinstance(d, list) else [d])
     assert erwartet <= da and not (nicht & da)
+
+
+def test_planer_nennt_annahmen_des_projekts():
+    """#35: Feinkorn nur angenommen (keines genannt) → DAUB hoechstens hinweisend und nennt die Annahme."""
+    p = wissen.planen(BOHRPROFILE, angenommen_im_projekt={"boden.feinkorn_klasse"})
+    d = p["eintraege"]["daub.tbm_vorauswahl_boden"]
+    assert d["status"] == "hinweisend" and d["angenommen"] == ["boden.feinkorn_klasse"]
+    assert p["eintraege"]["modell.schichtenmodell"]["angenommen"] == []    # benutzt die Groesse nicht
+    assert status(p, "ansprache.feinkornanteil_klasse") == "moeglich"

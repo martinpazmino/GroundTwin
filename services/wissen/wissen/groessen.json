@@ -102,6 +102,9 @@
    "name": "Konsistenzzahl I_c",
    "einheit": "-"
   },
+  "boden.feinkorn_klasse": {
+   "name": "Feinkornanteil (Klasse < 5 / 5–15 / 15–40 / > 40 %) aus der Ansprache"
+  },
   "boden.feinkornanteil": {
    "name": "Feinkornanteil < 0,063 mm",
    "einheit": "%"

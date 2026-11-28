@@ -817,7 +817,14 @@ class Arbeitsplatz:
         for s in sd.fuer_ifc(docs, p)[0]:
             if s.get("werte"):
                 da.add("sondierung.cpt_qc" if str(s.get("art", "")).upper().startswith("CPT") else "sondierung.dph_n10")
-        return bereitschaft_lesbar(wissen.planen(da))
+        from baugrundmodell import normen
+        angenommen = set()
+        if "labor.korngroesse" not in da:              # #35: Feinkorn nur aus der Ansprache, ohne Siebanalyse
+            klassen = [normen.feinkorn_klasse(ly.get("description_raw") or ly.get("description") or "")
+                       for d in vorb.docs for b in d.get("boreholes") or [] for ly in b.get("layers") or []]
+            if any(k and k["angenommen"] for k in klassen):
+                angenommen.add("boden.feinkorn_klasse")
+        return bereitschaft_lesbar(wissen.planen(da, angenommen_im_projekt=angenommen))
 
     @staticmethod
     def _geoldg(docs: list[dict], p: pj.Projekt, vorb: pj.Vorbereitung, standort: dict | None) -> dict:

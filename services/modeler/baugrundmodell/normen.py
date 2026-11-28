@@ -660,6 +660,37 @@ def _abschliessen(d: Deutung, soil_class: str | None) -> Deutung:
     return d
 
 
+FEINKORN_KLASSEN = ("< 5 %", "5–15 %", "15–40 %", "> 40 %")     # Klassen der DAUB-Tabelle Feinkornanteil
+
+
+def feinkorn_klasse(text: str | Deutung | None) -> dict | None:
+    """Klasse des Feinkornanteils (< 0,063 mm) aus der Ansprache, fuer Vorauswahlen ohne Siebanalyse (#35).
+
+    Feinkorn als Hauptanteil (Schluff, Ton) > 40 % (DIN 18196, feinkoernige Boeden); Kies oder Sand nach der Stufe des
+    staerksten feinkoernigen Nebenanteils mit den Richtwerten von DIN 4023 (schwach < 15 %, ohne Stufe 15–30 %,
+    stark > 30 %). Ohne genanntes Feinkorn ist die Klasse < 5 % nur **angenommen**: eine kurze Feldansprache nennt
+    Feinkorn oft nicht. Fels, organische und kuenstliche Schichten ohne Material: None."""
+    d = text if isinstance(text, Deutung) else deuten(text)
+    klasse = (d.material or {}).get("klasse") or d.klasse
+    if klasse in ("Schluff", "Ton"):
+        return {"klasse": "> 40 %", "angenommen": False, "beleg": f"Hauptanteil {klasse} (DIN 18196: > 40 %)"}
+    if klasse not in ("Kies", "Sand"):
+        return None
+    fein = [a for a in d.nebenanteile if a.klasse in ("Schluff", "Ton")]
+    if not fein:
+        return {"klasse": "< 5 %", "angenommen": True, "beleg": "kein Feinkorn genannt (Annahme, keine Siebanalyse)"}
+    a = max(fein, key=lambda x: _STUFEN.get(x.stufe, {}).get("rang", 0))
+    if a.stufe in ("schwach", "sehr schwach"):
+        return {"klasse": "5–15 %", "angenommen": a.stufe == "sehr schwach",
+                "beleg": f"{a.text}: DIN 4023 Richtwert < 15 %"}
+    if a.stufe == "":
+        return {"klasse": "15–40 %", "angenommen": False, "beleg": f"{a.text}: DIN 4023 Richtwert 15–30 %"}
+    if a.stufe in ("stark", "sehr stark"):
+        return {"klasse": "15–40 %", "angenommen": True,
+                "beleg": f"{a.text}: DIN 4023 Richtwert > 30 % (kann über 40 % liegen)"}
+    return None                                    # als Nomen genannt, ohne Stufe: kein Anteil
+
+
 def vorschlag(ly: dict) -> dict | None:
     """Vorschlag fuer eine unklassifizierte Schicht (nur anzeigen, der Nutzer uebernimmt ihn)."""
     if ly.get("soil_class") not in (None, "", UNKLASSIFIZIERT):
