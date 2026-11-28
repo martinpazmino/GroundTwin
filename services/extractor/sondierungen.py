@@ -47,7 +47,9 @@ REGELN: dict[str, bool] = {
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
     "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
-    "rahmen_kante_verbindet": True,       # #54: nur Ober-/Unterkanten verbinden Rahmen, keine Kurvenstufen
+    "kanten_oben_und_unten": True,        # #54: nur Ober- UND Unterkante verbinden Rahmen, keine Kurvenstufen/Querlinien
+    "tiefenachse_zwei_ticks": True,       # #54: abgebrochene CPT (0 / 1 m): zwei Ticks, 0 an der Oberkante
+    "kanal_der_achse": True,              # #54: Werte heissen wie die Achse, auf der sie gelesen werden
     "titel_lokal": True,                  # #54: Kopf eines Nachbardiagramms in derselben Zeile verdeckt keine Ticks
     "endlabel_nullschlaege": True,        # #55: Endlabel bis 0,25 m unter dem Kurvenende ist die Endtiefe (Hinweis)
     "tickstriche_am_rahmen": True,        # #55: linke Tickstriche nur am Rahmen (nicht Schraffur des Nachbarprofils)
@@ -1095,7 +1097,7 @@ def _laengsschnitt_nhn_regression(
 def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
     """Findet Plotrahmen aus Rechtecken, zusammengesetzten H/V-Linien und L-Achsen."""
     sf = sd.scale_f
-    min_h = 25.0 if REGELN["kurze_rahmen"] else 52.0      # #55: Rammdiagramm einer 1,7-m-Sondierung auf langem Blatt
+    min_h = 18.0 if REGELN["kurze_rahmen"] else 52.0      # #55: Rammdiagramm einer 1,7-m-Sondierung auf langem Blatt
     kands: list[tuple[pymupdf.Rect, str]] = []
     seite_flaeche = max(sd.breite * sd.hoehe, 1.0)
 
@@ -1157,15 +1159,22 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
                     x_min_g = min(s.x0 for s in grp)
                     x_max_g = max(s.x0 for s in grp)
                     nx0, nx1 = min(x_min_g, vj.x0), max(x_max_g, vj.x0)
-                    if nx1 - nx0 <= 450 * sf and any(
-                        h.x0 <= nx0 + 10 * sf and h.x1 >= nx1 - 10 * sf
+                    brueck = [
+                        h for h in H
+                        if h.x0 <= nx0 + 10 * sf and h.x1 >= nx1 - 10 * sf
                         and v0.y0 - 8 * sf <= h.y0 <= v0.y1 + 8 * sf
-                        # #54: nur Rahmenkanten verbinden; Kurvenstufen (q_c ueber dem Achsenende) laufen sonst
-                        # in das Nachbarfeld (R_f) und verschmelzen zwei Diagramme
-                        and (not REGELN["rahmen_kante_verbindet"]
-                             or abs(h.y0 - v0.y0) <= 8 * sf or abs(h.y0 - v0.y1) <= 8 * sf)
-                        for h in H
-                    ):
+                    ]
+                    if REGELN["kanten_oben_und_unten"]:
+                        # #54: nur Rahmenkanten verbinden, und zwar oben UND unten: eine Kurvenstufe (q_c ueber dem
+                        # Achsenende), eine Querlinie auf halber Tiefe oder eine einzelne Linie an der Unterkante
+                        # (Gruendungsebene) laufen sonst ins Nachbarfeld (R_f) und verschmelzen zwei Diagramme
+                        # Gitterlinien laufen oft durch die Ticks ueber/unter dem Rahmen (Planfeststellung CPT 3c:
+                        # 20 sf): die Kante liegt dann bis 25 sf innerhalb des Senkrechtenendes
+                        verbunden = (any(v0.y0 - 8 * sf <= h.y0 <= v0.y0 + 25 * sf for h in brueck)
+                                     and any(v0.y1 - 25 * sf <= h.y0 <= v0.y1 + 8 * sf for h in brueck))
+                    else:
+                        verbunden = bool(brueck)
+                    if nx1 - nx0 <= 450 * sf and verbunden:
                         grp.append(vj)
                         genutzt[j] = True
             if len(grp) >= 2:
@@ -1542,6 +1551,27 @@ def _kalibriere_y_achse(
         return best_ys
 
     for grp in gruppen:
+        # Die "0" der x-Achse steht ueber der Oberkante und faellt in dieselbe Spalte
+        im_rahmen = [e for e in grp if (e[0].y0 + e[0].y1) / 2.0 >= rahmen.y0 - 3 * sf]
+        if (REGELN["tiefenachse_zwei_ticks"] and streng_arith and len(im_rahmen) == 2 and len(grp) <= 3):
+            # #54: abgebrochene CPT mit Tiefenachse "0" / "1": zwei Beschriftungen genuegen nur, wenn die 0 an der
+            # Rahmenoberkante steht und beide auf einer Gitterlinie einrasten (sonst ist es eine beliebige Zahl)
+            paar = sorted(im_rahmen, key=lambda e: e[0].y0)
+            if paar[0][1] == 0.0 and paar[1][1] > 0.0:
+                ys2 = _snappe_y(paar)
+                eingerastet = all(min((abs(hy - y) for hy in h_line_ys), default=99.0) <= 0.01 for y in ys2)
+                if eingerastet and abs(ys2[0] - rahmen.y0) <= 3 * sf and ys2[1] - ys2[0] >= 8 * sf:
+                    a_y = paar[1][1] / float(ys2[1] - ys2[0])
+                    b_y = -a_y * float(ys2[0])
+                    dist_x = abs(rahmen.x0 - float(np.mean([r.x1 for r, _ in paar])))
+                    lokale_kands.append(
+                        (dist_x + 50.0 * sf, _AchseY(a_y, b_y, "lokal", 1.0, list(zip(ys2, [0.0, paar[1][1]]))))
+                    )
+                    if not any("zwei Beschriftungen" in h for h in hinweise):
+                        hinweise.append(
+                            f"Tiefenachse nur aus zwei Beschriftungen (0 und {paar[1][1]:g} m) kalibriert"
+                        )
+                    continue
         if len(grp) < min_ticks:
             continue
         # 1) Steigendes Tiefenlineal
@@ -1915,10 +1945,12 @@ def _extrahiere_cpt_vektor(
 
     # Achsen Kanälen zuordnen
     ax_nach_kanal: dict[str, _AchseX] = {}
+    kanal_von_achse: dict[int, str] = {}
     for ax in x_achsen:
         kn = _kanal_name(ax.label_txt)
         if kn:
             ax_nach_kanal[kn] = ax
+            kanal_von_achse[id(ax)] = kn
     if "q_c" not in ax_nach_kanal and x_achsen:
         # Primaerachse (bevorzugt oben)
         ax_nach_kanal["q_c"] = next((ax for ax in x_achsen if ax.band == "top"), x_achsen[0])
@@ -1964,6 +1996,11 @@ def _extrahiere_cpt_vektor(
         ax = ax_nach_kanal.get(kanal) or ax_nach_kanal.get("q_c")
         if ax is None:
             continue
+        if REGELN["kanal_der_achse"] and id(ax) in kanal_von_achse and kanal_von_achse[id(ax)] != kanal:
+            if ax_nach_kanal.get(kanal) is not ax:
+                # #54: ein Kanal ohne eigene Achse wird auf der Achse eines anderen gelesen (Feld R_f 0-5 %):
+                # die Werte sind dann Werte dieser Achse, nicht des vermuteten Kanals
+                kanal = kanal_von_achse[id(ax)]
 
         t_lo = max(0.0, round(min(y_ax.a_y * y + y_ax.b_y for y in alle_ys) * 5.0) / 5.0)
         t_hi = round(max(y_ax.a_y * y + y_ax.b_y for y in alle_ys) * 5.0) / 5.0

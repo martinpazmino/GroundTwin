@@ -380,6 +380,13 @@ labels to be anchored; relaxing that risks false Bohrungen), `V G1–G3` (prefix
 KRB 4 (labels on leader lines up to 50 pt below very thin layers) and the header-only KRB of the ground truth.
 Sondierungen (2026-11-28, `titel_lokal`, `rahmen_kante_verbindet`): U09 DPH 5/5 with Endtiefe, Planfeststellung 15 → 19/24
 (missing CPT 6, 7, 8, 9a, 10a; CPT 7–9a are only 0.9–2.1 m deep).
+Sondierungen (2026-11-28, `kanten_oben_und_unten`, `tiefenachse_zwei_ticks`, `kanal_der_achse`): Planfeststellung
+19 → **23/24** (CPT 6, 7, 9a, 10a added), Endtiefe ±5 cm 19/24, 0 false values (the one extra entry is DPH 3 drawn
+in two Baugrundschnitte, as before). U09 5/5, A20 RS 30/30 and BER 80/80 unchanged (BER: 25 entries are the same DPH
+again in the Längsschnitte, with the same Endtiefe; 21 before). Still missing: CPT 8 (0.92 m, the depth axis
+carries only `0`: no scale, nothing guessed). Endtiefen of the aborted CPT stay off by 0.07–0.3 m: the diagram is cut at
+its frame and the Endtiefe of the table is deeper. Each panel pair gives the q_c values; the R_f panel of the same
+CPT is not joined to it yet.
 
 **Round 6** (A20 Unterlage 20.1, public, strassenbau.niedersachsen.de, 47 MB): frozen twice before opening,
 `benchmark/frozen/runde6_vorher` (code `1e25a60`, before #54) and `runde6_nachher` (code `77f3bd2`); 195 and 194

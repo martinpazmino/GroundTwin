@@ -1300,8 +1300,84 @@ def _fall_s11_kurz_langes_blatt(ordner: Path) -> str:
                       "#55: 2,5-m-Rammsondierung auf langem Blatt, Labels auf der Linie, Schraffur links (kurze Rahmen, Tickstriche)")
 
 
+def _zeichne_cpt_felder(seite: pymupdf.Page, code: str, x0: float, y0: float, tiefe: float, ppm: float,
+                        qc: list[float], rf: list[float], tiefen_labels: list[int],
+                        tick_ueber: float = 2.0) -> tuple[list, list]:
+    """Zeichnet ein CPT-Feldpaar wie in Baugrundschnitten: q_c (0..20) links, R_f (0..5) rechts, Rahmen und Gitter
+    aus Einzelstrichen, beide Kurven schwarz (die Legende "Rf" passt im Stil auch zur q_c-Kurve), Achsentitel beider
+    Felder auf einer Grundlinie."""
+    breite, abstand = 150.0, 38.0
+    x1 = x0 + breite
+    fx0, fx1 = x1 + abstand, x1 + abstand + breite
+    y1 = y0 + tiefe * ppm
+    _text_zentriert_x(seite, (x0 + fx1) / 2.0, y0 - 52.0, code, 12.0)
+    _linie(seite, (fx0 + 40.0, y0 - 30.0), (fx0 + 60.0, y0 - 30.0), 0.8)      # Legende: Linienmuster der Kurven
+    seite.insert_text((fx0 + 64.0, y0 - 28.0), "Kurve Reibungsverhältnis Rf", fontsize=5.5)
+    seite.insert_text((x0, y0 - 16.0), "Spitzenwiderstand qc [MN/m²]", fontsize=5.5)
+    seite.insert_text((fx0, y0 - 16.0), "Reibungsverhältnis Rf [%]", fontsize=5.5)
+    for feld_x0, n_teile, maximum in ((x0, 4, 20), (fx0, 5, 5)):
+        for k in range(n_teile + 1):
+            xt = feld_x0 + k * breite / n_teile
+            _linie(seite, (xt, y0), (xt, y1), 0.3)                             # Gitter = Senkrechte voller Hoehe
+            _linie(seite, (xt, y0 - tick_ueber), (xt, y0), 0.8)                # Tick ueber dem Rahmen
+            _text_zentriert_x(seite, xt, y0 - 2.5, str(k * maximum // n_teile), 5.5)
+        _linie(seite, (feld_x0, y0), (feld_x0 + breite, y0), 0.6)
+        _linie(seite, (feld_x0, y1), (feld_x0 + breite, y1), 0.6)
+    for d in tiefen_labels:
+        _text_rechts_y(seite, x0 - 3.0, y0 + d * ppm, str(d), 5.5)
+        if 0 < d < tiefe:
+            _linie(seite, (x0, y0 + d * ppm), (x1, y0 + d * ppm), 0.3)
+            _linie(seite, (fx0, y0 + d * ppm), (fx1, y0 + d * ppm), 0.3)
+    pq, pr = [], []
+    for i, (q, r) in enumerate(zip(qc, rf)):
+        yt = y0 + i * 0.2 * ppm
+        pq.append((x0 + q / 20.0 * breite, yt))
+        pr.append((fx0 + r / 5.0 * breite, yt))
+    seite.draw_polyline(pq, color=(0, 0, 0), width=0.8, closePath=False)
+    seite.draw_polyline(pr, color=(0, 0, 0), width=0.8, closePath=False)
+    return pq, pr
+
+
+def _fall_s15_cpt_felder(ordner: Path) -> str:
+    """#54: CPT wie in der Planfeststellung: q_c- und R_f-Feld nebeneinander, eine Linie laeuft knapp ueber der
+    Unterkante durch beide Felder (Gruendungsebene), die Gitterlinien laufen 20 pt ueber den Rahmen (Ticks), die
+    Achsentitel stehen auf einer Zeile und eine Legende "Rf" passt im Stil zu beiden Kurven; dazu eine abgebrochene
+    CPT, deren Tiefenachse nur "0" und "1" traegt."""
+    dok = pymupdf.open()
+    seite = dok.new_page(width=842, height=595)
+    ppm = 40.0
+    qc15 = [0.4, 2.1, 4.8, 6.0, 5.2, 3.9, 3.1, 4.4, 7.5, 10.2, 12.8, 14.1, 13.0, 11.6, 9.8, 8.7,
+            9.9, 11.4, 12.9, 14.6, 15.8, 16.5, 15.1, 13.7, 12.2, 11.0, 10.4, 11.8, 13.3, 14.9, 16.0]
+    rf15 = [0.5, 1.2, 2.6, 3.4, 3.0, 2.2, 1.9, 1.6, 1.3, 1.1, 0.9, 0.8, 1.0, 1.4, 1.8, 2.3,
+            2.0, 1.7, 1.4, 1.2, 1.0, 0.9, 1.1, 1.3, 1.6, 1.9, 2.1, 1.8, 1.5, 1.2, 1.0]
+    x0, y0 = 80.0, 120.0
+    pq15, _ = _zeichne_cpt_felder(seite, "CPT 15", x0, y0, 6.0, ppm, qc15, rf15, list(range(7)),
+                                  tick_ueber=20.0)                         # Gitter laeuft 20 pt durch die Ticks
+    seite.insert_text((x0, 80.0), "Ansatzhöhe: +213,40 m NHN", fontsize=6.0)
+    y_quer = y0 + 6.0 * ppm - 3.0
+    _linie(seite, (x0, y_quer), (x0 + 150.0 + 38.0 + 150.0, y_quer), 0.4)    # Gruendungsebene quer durch beide Felder
+    qc16 = [0.3, 2.4, 11.8, 13.6, 6.1, 4.2]
+    rf16 = [0.6, 1.8, 0.9, 0.7, 2.9, 3.6]
+    x0b, ppm_b = 480.0, 22.0                                                # 1-m-Rahmen: 22 pt hoch
+    pq16, _ = _zeichne_cpt_felder(seite, "CPT 16", x0b, y0, 1.0, ppm_b, qc16, rf16, [0, 1])
+    seite.insert_text((x0b, 80.0), "Ansatzhöhe: +213,28 m NHN", fontsize=6.0)
+
+    sond = []
+    for code, qc, pq, gok in (("CPT 15", qc15, pq15, 213.4), ("CPT 16", qc16, pq16, 213.28)):
+        werte = [[round(i * 0.2, 1), q, None, None] for i, q in enumerate(qc)]
+        idx = sorted({round(k * (len(werte) - 1) / 9) for k in range(10)}) if len(werte) > 10 else range(len(werte))
+        stichprobe = [{"tiefe": werte[i][0], "wert": {"q_c": werte[i][1]}, "seite": 1,
+                       "lage": f"Diagramm qc=({pq[i][0]:.1f}, {pq[i][1]:.1f}) pt"} for i in idx]
+        sond.append({"code": code, "art": "CPT", "seite": 1, "auch_auf_seiten": [], "form": "diagramm",
+                     "ansatzhoehe": gok, "endtiefe": werte[-1][0], "werte": werte, "stichprobe": stichprobe,
+                     "unsicher": []})
+    return _speichere(ordner, "s15_cpt_felder", dok, sond,
+                      "#54: q_c | R_f nebeneinander, Linie quer ueber der Unterkante, Titel auf einer Zeile, "
+                      "abgebrochene CPT mit Tiefenachse 0/1")
+
+
 def build(ordner: Path | str) -> list[str]:
-    """Erzeugt alle vierzehn synthetischen Sondierungs-Stressfaelle im Zielordner."""
+    """Erzeugt alle fuenfzehn synthetischen Sondierungs-Stressfaelle im Zielordner."""
     ziel = Path(ordner)
     ziel.mkdir(parents=True, exist_ok=True)
     erzeugt = [
@@ -1319,6 +1395,7 @@ def build(ordner: Path | str) -> list[str]:
         _fall_s12_endlabel(ziel),
         _fall_s13_nachbarkopf(ziel),
         _fall_s14_zwei_felder(ziel),
+        _fall_s15_cpt_felder(ziel),
     ]
     codes: list[str] = []
     for name in erzeugt:
