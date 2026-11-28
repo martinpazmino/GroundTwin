@@ -141,6 +141,8 @@ Each rule switched off on the three vector PDFs, the stress and the synthetic ca
 | `kurze_rahmen` (#55) | minimum frame height 25 instead of 52 × page factor. s11: a 2.5-m diagram on a long sheet (page factor 1.86) → 0/1 without; A20: RS 1 (1.7 m), RS 2, 4, 5, 7, 9 (2.0–2.5 m) |
 | `tickstriche_am_rahmen` (#55) | s11: depth labels standing on their grid line are snapped to the line; left tick strokes must touch the frame (the hatching of a neighbouring Bohrprofil snapped them to the label middle, +0.2 m) and the ticks of the NHN ruler may run under the label → 7/25 values, 2 false; A20: Endtiefe 20 → 28/29 |
 | `endlabel_nullschlaege` (#55) | s12: the curve ends 0.2 m above the printed end label `2,30` (the last steps have no drawn bar): the Endtiefe is the label, the missing values are not invented (hint) → Endtiefe 0/1 without; A20: RS 9 |
+| `titel_lokal` (#54) | s13: the header of a neighbouring diagram (`DPH 14`) in the row of the value ticks hid the ticks (page-wide title rows) → 0/1; U09: DPH 1, 2 (3/5 → 5/5) |
+| `rahmen_kante_verbindet` (#54) | s14: a line across two panels (q_c and R_f, or the foundation level of a section) merged them into one frame that no edge covers → 0/1; Planfeststellung: CPT 1–5, 11a–13 found (15 → 19/24) |
 
 The tests hold the strongest ones: rule off → case fails (`tests/test_sondierungen_extraktion.py`).
 

@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Sondierungen (#54): the header of a neighbouring diagram no longer hides value ticks; only frame edges join panels
+  (curve steps or a section line across two panels no longer merge them). U09 DPH 5/5, Planfeststellung CPT/DPH
+  15 → 19/24. Stress `s13`, `s14`.
 - #55 completed: water label between two columns goes to the matching GOK, then to the side of the page's labels (W7c);
   T15 ignores a laboratory note beside the descriptions; `Grasnarbe` is Mutterboden; Sondierungen: frames down to
   25 × page factor (RS of 1.7 m), Endtiefe from the end label below the curve end (values not invented). A20 (training):

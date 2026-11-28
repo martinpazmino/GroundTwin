@@ -1084,6 +1084,95 @@ def _fall_s09_stationscode_achse(ordner: Path) -> str:
 
 
 
+
+
+def _fall_s14_zwei_felder(ordner: Path) -> str:
+    """#54: Rahmen aus Einzelstrichen mit einem Nachbarfeld (R_f) rechts; eine Linie quer durch beide Felder auf halber
+    Tiefe darf die Felder nicht zu einem Rahmen verbinden (Planfeststellung CPT 2)."""
+    dok = pymupdf.open()
+    seite = dok.new_page(width=595, height=842)
+    ppm = PT_PER_M_1_1 / 100.0
+    x0, y0, rahmen_b, rahmen_tiefe = 150.0, 150.0, 200.0, 5.0
+    x1 = x0 + rahmen_b
+    y1 = y0 + rahmen_tiefe * ppm
+    x_max = 40.0
+    seite.insert_text((x0, 80), "DPH 14", fontsize=12)
+    seite.insert_text((x0, 96), "Ansatzpunkt: 45,20 m NHN", fontsize=8)
+    seite.insert_text((330, 80), "Maßstab 1:100", fontsize=8)
+    _text_zentriert_x(seite, (x0 + x1) / 2.0, 120.0, "Anzahl Schläge N10", 8.0)
+    for n in (0, 10, 20, 30, 40):
+        xt = x0 + (n / x_max) * rahmen_b
+        _linie(seite, (xt, y0 - 2.0), (xt, y0), 0.5)
+        _text_zentriert_x(seite, xt, y0 - 2.5, str(n), 7.0)      # Ticks dicht am Rahmen
+    for d in range(6):
+        yt = y0 + d * ppm
+        _linie(seite, (x0 - 4.0, yt), (x0, yt), 0.5)
+        _text_rechts_y(seite, x0 - 7.0, yt, _fmt(float(d)), 7.0)
+    for a_, b_ in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+        _linie(seite, a_, b_, 0.8)                                       # Rahmen aus Einzelstrichen
+    fx0, fx1 = x1 + 30.0, x1 + 130.0                                      # Nachbarfeld (R_f) rechts
+    for a_, b_ in (((fx0, y0), (fx1, y0)), ((fx1, y0), (fx1, y1)), ((fx1, y1), (fx0, y1)), ((fx0, y1), (fx0, y0))):
+        _linie(seite, a_, b_, 0.8)
+    for k in range(1, 4):
+        _linie(seite, (fx0 + k * 25.0, y0), (fx0 + k * 25.0, y1), 0.25)
+    _linie(seite, (x0, y0 + 2.2 * ppm), (fx1 - 20.0, y0 + 2.2 * ppm), 0.3)   # Linie quer durch beide Felder
+    n10_liste = [1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15, 16,
+                 17, 18, 18, 19, 20, 21, 22, 22, 23, 24, 25, 26, 26, 27, 28, 29, 30, 31, 32, 33]
+    schritte = [(round(i * 0.1, 1), round((i + 1) * 0.1, 1), n) for i, n in enumerate(n10_liste)]
+    _zeichne_dph_treppenkurve(seite, x0, y0, rahmen_b, x_max, ppm, schritte, strichbreite=1.0)
+    stichprobe = []
+    for idx in (0, 4, 8, 12, 16, 20, 24, 28, 32, 39):
+        t_o, t_u, n = schritte[idx]
+        stichprobe.append({"tiefe": t_u, "wert": n, "seite": 1,
+                           "lage": f"Diagramm x={x0 + (n / x_max) * rahmen_b:.1f}, y={y0 + (t_o + t_u) / 2.0 * ppm:.1f} pt"})
+    sond = [{
+        "code": "DPH 14", "art": "DPH", "seite": 1, "auch_auf_seiten": [], "form": "diagramm",
+        "ansatzhoehe": 45.2, "endtiefe": 4.0, "werte": [list(z) for z in schritte], "stichprobe": stichprobe,
+        "unsicher": [],
+    }]
+    return _speichere(ordner, "s14_zwei_felder", dok, sond,
+                      "#54: Rahmen aus Einzelstrichen, Nachbarfeld rechts, Linie quer durch beide Felder")
+
+def _fall_s13_nachbarkopf(ordner: Path) -> str:
+    """#54: der Kopf eines Nachbardiagramms steht auf der Hoehe der Ticks 0..40 (U09)."""
+    dok = pymupdf.open()
+    seite = dok.new_page(width=595, height=842)
+    ppm = PT_PER_M_1_1 / 100.0
+    x0, y0, rahmen_b, rahmen_tiefe = 150.0, 150.0, 200.0, 5.0
+    x1 = x0 + rahmen_b
+    y1 = y0 + rahmen_tiefe * ppm
+    x_max = 40.0
+    seite.insert_text((x0, 80), "DPH 13", fontsize=12)
+    seite.insert_text((x0, 96), "Ansatzpunkt: 45,20 m NHN", fontsize=8)
+    seite.insert_text((330, 80), "Maßstab 1:100", fontsize=8)
+    seite.insert_text((x1 + 170, y0 - 2.5), "DPH 14", fontsize=12)         # Nachbarkopf in der Zeile der Ticks (U09)
+    _text_zentriert_x(seite, (x0 + x1) / 2.0, 120.0, "Anzahl Schläge N10", 8.0)
+    for n in (0, 10, 20, 30, 40):
+        xt = x0 + (n / x_max) * rahmen_b
+        _linie(seite, (xt, y0 - 2.0), (xt, y0), 0.5)
+        _text_zentriert_x(seite, xt, y0 - 2.5, str(n), 7.0)      # Ticks dicht am Rahmen
+    for d in range(6):
+        yt = y0 + d * ppm
+        _linie(seite, (x0 - 4.0, yt), (x0, yt), 0.5)
+        _text_rechts_y(seite, x0 - 7.0, yt, _fmt(float(d)), 7.0)
+    seite.draw_rect(pymupdf.Rect(x0, y0, x1, y1), color=(0.0, 0.0, 0.0), fill=None, width=0.8)
+    n10_liste = [1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15, 16,
+                 17, 18, 18, 19, 20, 21, 22, 22, 23, 24, 25, 26, 26, 27, 28, 29, 30, 31, 32, 33]
+    schritte = [(round(i * 0.1, 1), round((i + 1) * 0.1, 1), n) for i, n in enumerate(n10_liste)]
+    _zeichne_dph_treppenkurve(seite, x0, y0, rahmen_b, x_max, ppm, schritte, strichbreite=1.0)
+    stichprobe = []
+    for idx in (0, 4, 8, 12, 16, 20, 24, 28, 32, 39):
+        t_o, t_u, n = schritte[idx]
+        stichprobe.append({"tiefe": t_u, "wert": n, "seite": 1,
+                           "lage": f"Diagramm x={x0 + (n / x_max) * rahmen_b:.1f}, y={y0 + (t_o + t_u) / 2.0 * ppm:.1f} pt"})
+    sond = [{
+        "code": "DPH 13", "art": "DPH", "seite": 1, "auch_auf_seiten": [], "form": "diagramm",
+        "ansatzhoehe": 45.2, "endtiefe": 4.0, "werte": [list(z) for z in schritte], "stichprobe": stichprobe,
+        "unsicher": [],
+    }]
+    return _speichere(ordner, "s13_nachbarkopf", dok, sond,
+                      "#54: Kopf eines Nachbardiagramms (DPH 14) auf der Hoehe der Wertachse")
+
 def _fall_s12_endlabel(ordner: Path) -> str:
     """#55: die Kurve endet 0,2 m ueber dem gedruckten Endlabel '2,30'; die Endtiefe ist das Label, die letzten
     Schritte bleiben ohne Wert (nicht erfunden)."""
@@ -1212,7 +1301,7 @@ def _fall_s11_kurz_langes_blatt(ordner: Path) -> str:
 
 
 def build(ordner: Path | str) -> list[str]:
-    """Erzeugt alle zwoelf synthetischen Sondierungs-Stressfaelle im Zielordner."""
+    """Erzeugt alle vierzehn synthetischen Sondierungs-Stressfaelle im Zielordner."""
     ziel = Path(ordner)
     ziel.mkdir(parents=True, exist_ok=True)
     erzeugt = [
@@ -1228,6 +1317,8 @@ def build(ordner: Path | str) -> list[str]:
         _fall_s10_rs_nn(ziel),
         _fall_s11_kurz_langes_blatt(ziel),
         _fall_s12_endlabel(ziel),
+        _fall_s13_nachbarkopf(ziel),
+        _fall_s14_zwei_felder(ziel),
     ]
     codes: list[str] = []
     for name in erzeugt:

@@ -47,6 +47,8 @@ REGELN: dict[str, bool] = {
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
     "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
+    "rahmen_kante_verbindet": True,       # #54: nur Ober-/Unterkanten verbinden Rahmen, keine Kurvenstufen
+    "titel_lokal": True,                  # #54: Kopf eines Nachbardiagramms in derselben Zeile verdeckt keine Ticks
     "endlabel_nullschlaege": True,        # #55: Endlabel bis 0,25 m unter dem Kurvenende ist die Endtiefe (Hinweis)
     "tickstriche_am_rahmen": True,        # #55: linke Tickstriche nur am Rahmen (nicht Schraffur des Nachbarprofils)
     "kurze_rahmen": True,                 # #55: Mindesthoehe des Diagrammrahmens 36 statt 52 pt (x Seitenfaktor)
@@ -1158,6 +1160,10 @@ def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
                     if nx1 - nx0 <= 450 * sf and any(
                         h.x0 <= nx0 + 10 * sf and h.x1 >= nx1 - 10 * sf
                         and v0.y0 - 8 * sf <= h.y0 <= v0.y1 + 8 * sf
+                        # #54: nur Rahmenkanten verbinden; Kurvenstufen (q_c ueber dem Achsenende) laufen sonst
+                        # in das Nachbarfeld (R_f) und verschmelzen zwei Diagramme
+                        and (not REGELN["rahmen_kante_verbindet"]
+                             or abs(h.y0 - v0.y0) <= 8 * sf or abs(h.y0 - v0.y1) <= 8 * sf)
                         for h in H
                     ):
                         grp.append(vj)
@@ -1248,6 +1254,15 @@ def _kalibriere_x_achsen(sd: _SeitenDaten, rahmen: pymupdf.Rect) -> list[_AchseX
         for r, t in sd.zeilen
         if SOND_SUCH_RE.search(_falten_norm(t)) or ARCHIV_SOND_RE.match(_falten_norm(t))
     ]
+    if REGELN["titel_lokal"]:
+        # #54: nur Kopfzeilen ueber diesem Rahmen; der Kopf 'DPH 2' des Nachbardiagramms in derselben Zeile
+        # verdeckte sonst die Ticks 0..40 (U09)
+        titel_zeilen_y = [
+            (r.y0 + r.y1) / 2.0
+            for r, t, *_ in sd.words
+            if re.fullmatch(r"(DPSH|CPTu|CPT|DPH|DPL|DPM|SRS|RS|DS|D)", str(t), re.I)
+            and r.x1 >= rahmen.x0 - 20 * sf and r.x0 <= rahmen.x1 + 20 * sf
+        ]
 
     baender = [
         ("top", rahmen.y0 - 34 * sf, rahmen.y0 + 5 * sf),
