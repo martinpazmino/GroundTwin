@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- AGS4 export (#30, docs/21 §5.1a): reviewed Bohrungen and Sondierungen in AGS 4.1.1 for OpenGround, Leapfrog and the
+  route to PLAXIS. Ruhewasser is a depth remark, not a water strike; CPT values only with a read unit. Valid against the
+  checker of the AGS Data Format Working Group (`python-ags4`, tests). Also in the AGSi package.
 - Readiness (#35): fines class from the description (DIN 4023 guide values, DIN 18196); "no fines named" is shown as
   *assumed*, and the DAUB pre-selection names it (Berlin: DAUB 3/9, hinweisend). Catalogue entry
   `ansprache.feinkornanteil_klasse` (docs/29 §8.3).

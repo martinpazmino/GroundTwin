@@ -164,6 +164,13 @@ abrasivity tests).
 **Consequence:** the open route to PLAXIS is AGS4 (→ OpenGround/Leapfrog → PLAXIS). A direct PLAXIS Designer CSV needs
 a sample file exported from PLAXIS by someone with a licence.
 
+**Built (2026-11-28, #30):** the AGS4 export (AGS 4.1.1; [21 §5.1a](21_app_schritte_normen.md#51a-ags4-for-openground-leapfrog-and-plaxis)).
+It carries reviewed Bohrungen (`LOCA`, `GEOL`, `WSTG`/`DREM`) and Sondierungen (`DPRG`/`DPRB`, `SCPG`/`SCPT` with a read
+unit only), and it passes the checker of the AGS Data Format Working Group. Still open:
+- the PLAXIS Designer CSV, which needs a sample file;
+- the read-only LLM tool interface (docs/29 §7);
+- the import into OpenGround or Leapfrog, which needs a licence holder to check it.
+
 ## 6. Second round (2026-11-17): DAUB properties and AGSi cases
 
 ### 6.1 DAUB Teil 3, chapter 4.5: properties catalogue

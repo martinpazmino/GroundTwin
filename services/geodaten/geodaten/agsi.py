@@ -51,7 +51,7 @@ def _crs(m, bericht: dict) -> dict:
 
 
 def bauen(m, bericht: dict, docs: list[dict], *, projekt: str, ifc_uri: str, boreholeml_uri: str | None = None,
-          homogenbereiche: dict[str, dict[str, str]] | None = None, analyse: dict | None = None,
+          ags4_uri: str | None = None, homogenbereiche: dict[str, dict[str, str]] | None = None, analyse: dict | None = None,
           datum: str | None = None, version: str = "", bereitschaft: dict | None = None) -> tuple[dict, dict]:
     """(AGSi, Manifest). m: baugrundmodell.Modell, bericht: dessen Bericht, docs: Modell-Eingabe (mit Korrekturen).
 
@@ -86,6 +86,9 @@ def bauen(m, bericht: dict, docs: list[dict], *, projekt: str, ifc_uri: str, bor
     else:
         offen.append({"was": "BoreholeML (Fachdaten)", "warum": "keine exportierbare Bohrung (nur geprüfte mit "
                       "ETRS89/UTM und GOK); die Bohrungen stehen als Beobachtungen im AGSi-Modell"})
+    if ags4_uri:                                       # AGS4 fuer OpenGround / Leapfrog -> PLAXIS (docs/30 §5, #30)
+        dokumente.append({"documentID": "AGS", "title": "Fachdaten der Bohrungen und Sondierungen (AGS4 4.1.1)",
+                          "documentURI": ags4_uri, "description": "geprüfte Bohrungen und Sondierungen, Lage wenn bekannt"})
 
     # ---- Codes: Eigenschaften (Laborwerte, Kennwerte nach VOB/C), Fälle, Einheiten als geologyCode
     codes_eig: dict[str, dict] = {}
