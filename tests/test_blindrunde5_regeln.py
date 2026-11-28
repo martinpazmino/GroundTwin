@@ -70,7 +70,8 @@ SCHUTZ = [
     ("gok_unter_kopf", "s33_schnitt_doppellabel", "GOK"),                  # '45.20 m' unter dem Kopf
     ("doppel_labels", "s33_schnitt_doppellabel", "falsche Grenzen"),       # Linie ohne 'Tiefe (Hoehe)'
     ("gw_blaue_labels", "s33_schnitt_doppellabel", "GW"),                  # blaues Label, Dreieck aus Einzelstrichen
-    ("top_null_gedruckt", "s34_unterkante_text_darueber", "Bodenart"),     # Beschreibung ueber dem Label
+    # s34: T10 und T15 decken sich (beide genuegen); T10 allein schuetzt den echten U09-Bogen (docs/16 T10)
+    ("top_null_gedruckt+beschreibung_bloecke", "s34_unterkante_text_darueber", "Bodenart"),
     ("gw_label_text", "s35_gw_label_text", "falsches GW"),                  # 'GW 2.40m' gilt, nicht das Symbol
     ("doppel_anderer_code", "s36_doppel_anderer_code", "falsche Bohrungen"),  # 'B 4' und 'B 4a' = eine Bohrung
     ("ausbau_kein_profil", "s37_ausbauplan", "falsche Bohrungen"),          # Ausbauplan GWM (#55)
@@ -85,7 +86,8 @@ SCHUTZ = [
 
 @pytest.mark.parametrize("regel,fall,merkmal", SCHUTZ)
 def test_regel_aus_fall_faellt(stress, regeln, regel, fall, merkmal):
-    regeln[regel] = False
+    for r in regel.split("+"):
+        regeln[r] = False
     e = bewerten(stress, fall)
     if merkmal.startswith("falsch"):
         assert e[merkmal] > 0, (regel, e)
