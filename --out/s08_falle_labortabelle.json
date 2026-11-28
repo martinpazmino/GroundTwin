@@ -1,0 +1,8 @@
+{
+ "file": "s08_falle_labortabelle.pdf",
+ "source": "synthetisch",
+ "sha256": "e867edc8f7f36558d6275b0990aad3ade95b8613ee5350f2424a1727860422a3",
+ "transkribiert_von": "synthetisch",
+ "notes": "Falle Labortabelle (DIN EN ISO 17892): Tiefenspalte Tiefe [m] mit Laborwerten statt Schlagzahlen -> 0 Sondierungen",
+ "sondierungen": []
+}

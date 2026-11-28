@@ -54,7 +54,7 @@ def anteil(bruch: str) -> tuple[int, int]:
 FAELLE = ["s01_dph_diagramm", "s02_dph_tabelle", "s03_dph_laengsschnitt", "s04_cpt_linear_log",
           "s05_zensiert", "s06_zweiseitig", "s07_falle_bohrprofil_lineal", "s08_falle_labortabelle",
           "s09_stationscode_achse", "s10_rs_nn", "s11_kurz_langes_blatt",
-          "s12_endlabel", "s13_nachbarkopf", "s14_zwei_felder"]
+          "s12_endlabel", "s13_nachbarkopf", "s14_zwei_felder", "s15_cpt_felder"]
 
 
 @pytest.mark.parametrize("fall", FAELLE)
@@ -80,7 +80,10 @@ SCHUTZ = [
     ("tickstriche_am_rahmen", "s11_kurz_langes_blatt", "falsche_werte"),         # Label auf der Linie, Schraffur links
     ("endlabel_nullschlaege", "s12_endlabel", "endtiefe_5cm"),                   # Endlabel 2,30 unter dem Kurvenende
     ("titel_lokal", "s13_nachbarkopf", "gefunden"),                              # Nachbarkopf in der Tickzeile (#54)
-    ("rahmen_kante_verbindet", "s14_zwei_felder", "gefunden"),                   # Linie quer durch zwei Felder (#54)
+    ("kanten_oben_und_unten", "s14_zwei_felder", "gefunden"),                    # Linie quer durch zwei Felder (#54)
+    ("kanten_oben_und_unten", "s15_cpt_felder", "cpt_punkte"),                   # Linie an der Unterkante beider Felder
+    ("tiefenachse_zwei_ticks", "s15_cpt_felder", "gefunden"),                    # abgebrochene CPT, Achse 0 / 1 (#54)
+    ("kanal_der_achse", "s15_cpt_felder", "cpt_punkte"),                         # Legende "Rf", gelesen auf der q_c-Achse
 ]
 
 

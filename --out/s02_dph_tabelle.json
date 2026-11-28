@@ -1,0 +1,268 @@
+{
+ "file": "s02_dph_tabelle.pdf",
+ "source": "synthetisch",
+ "sha256": "c8957afb259480377a72154fba5b3d957eb4629c72b15cf772a7a5d2be70182b",
+ "transkribiert_von": "synthetisch",
+ "notes": "Linierte DPH-Tabelle (DPH 4, 37 Datenzeilen) mit absichtlicher Tiefenluecke 2,10-2,30 m (Sprung 2,00 -> 2,40 m)",
+ "sondierungen": [
+  {
+   "code": "DPH 4",
+   "art": "DPH",
+   "seite": 1,
+   "auch_auf_seiten": [],
+   "form": "tabelle",
+   "ansatzhoehe": 312.4,
+   "endtiefe": 4.0,
+   "werte": [
+    [
+     0.0,
+     0.1,
+     3
+    ],
+    [
+     0.1,
+     0.2,
+     4
+    ],
+    [
+     0.2,
+     0.3,
+     4
+    ],
+    [
+     0.3,
+     0.4,
+     5
+    ],
+    [
+     0.4,
+     0.5,
+     6
+    ],
+    [
+     0.5,
+     0.6,
+     7
+    ],
+    [
+     0.6,
+     0.7,
+     8
+    ],
+    [
+     0.7,
+     0.8,
+     9
+    ],
+    [
+     0.8,
+     0.9,
+     11
+    ],
+    [
+     0.9,
+     1.0,
+     10
+    ],
+    [
+     1.0,
+     1.1,
+     12
+    ],
+    [
+     1.1,
+     1.2,
+     13
+    ],
+    [
+     1.2,
+     1.3,
+     14
+    ],
+    [
+     1.3,
+     1.4,
+     15
+    ],
+    [
+     1.4,
+     1.5,
+     16
+    ],
+    [
+     1.5,
+     1.6,
+     15
+    ],
+    [
+     1.6,
+     1.7,
+     17
+    ],
+    [
+     1.7,
+     1.8,
+     18
+    ],
+    [
+     1.8,
+     1.9,
+     19
+    ],
+    [
+     1.9,
+     2.0,
+     20
+    ],
+    [
+     2.3,
+     2.4,
+     25
+    ],
+    [
+     2.4,
+     2.5,
+     26
+    ],
+    [
+     2.5,
+     2.6,
+     28
+    ],
+    [
+     2.6,
+     2.7,
+     27
+    ],
+    [
+     2.7,
+     2.8,
+     29
+    ],
+    [
+     2.8,
+     2.9,
+     30
+    ],
+    [
+     2.9,
+     3.0,
+     31
+    ],
+    [
+     3.0,
+     3.1,
+     33
+    ],
+    [
+     3.1,
+     3.2,
+     32
+    ],
+    [
+     3.2,
+     3.3,
+     34
+    ],
+    [
+     3.3,
+     3.4,
+     35
+    ],
+    [
+     3.4,
+     3.5,
+     36
+    ],
+    [
+     3.5,
+     3.6,
+     34
+    ],
+    [
+     3.6,
+     3.7,
+     35
+    ],
+    [
+     3.7,
+     3.8,
+     37
+    ],
+    [
+     3.8,
+     3.9,
+     36
+    ],
+    [
+     3.9,
+     4.0,
+     38
+    ]
+   ],
+   "stichprobe": [
+    {
+     "tiefe": 0.1,
+     "wert": 3,
+     "seite": 1,
+     "lage": "Tabelle Zeile 1 x=169.0, y=147.5 pt"
+    },
+    {
+     "tiefe": 0.6,
+     "wert": 7,
+     "seite": 1,
+     "lage": "Tabelle Zeile 6 x=169.0, y=222.5 pt"
+    },
+    {
+     "tiefe": 1.1,
+     "wert": 12,
+     "seite": 1,
+     "lage": "Tabelle Zeile 11 x=169.0, y=297.5 pt"
+    },
+    {
+     "tiefe": 1.6,
+     "wert": 15,
+     "seite": 1,
+     "lage": "Tabelle Zeile 16 x=169.0, y=372.5 pt"
+    },
+    {
+     "tiefe": 2.0,
+     "wert": 20,
+     "seite": 1,
+     "lage": "Tabelle Zeile 20 x=169.0, y=432.5 pt"
+    },
+    {
+     "tiefe": 2.4,
+     "wert": 25,
+     "seite": 1,
+     "lage": "Tabelle Zeile 21 x=169.0, y=447.5 pt"
+    },
+    {
+     "tiefe": 2.8,
+     "wert": 29,
+     "seite": 1,
+     "lage": "Tabelle Zeile 25 x=169.0, y=507.5 pt"
+    },
+    {
+     "tiefe": 3.2,
+     "wert": 32,
+     "seite": 1,
+     "lage": "Tabelle Zeile 29 x=169.0, y=567.5 pt"
+    },
+    {
+     "tiefe": 3.6,
+     "wert": 34,
+     "seite": 1,
+     "lage": "Tabelle Zeile 33 x=169.0, y=627.5 pt"
+    },
+    {
+     "tiefe": 4.0,
+     "wert": 38,
+     "seite": 1,
+     "lage": "Tabelle Zeile 37 x=169.0, y=687.5 pt"
+    }
+   ],
+   "unsicher": []
+  }
+ ]
+}
