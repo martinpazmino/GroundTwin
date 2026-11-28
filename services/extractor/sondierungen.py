@@ -47,6 +47,7 @@ REGELN: dict[str, bool] = {
     "endpruefung_monoton_und_achse": True,
     "einzelstriche_verketten": True,
     "achse_zeile_ausgerichtet": True,     # #54: Wertachse = ausgerichtete Zeile (U09: '0.0' der Tiefenachse)
+    "endlabel_nullschlaege": True,        # #55: Endlabel bis 0,25 m unter dem Kurvenende ist die Endtiefe (Hinweis)
     "tickstriche_am_rahmen": True,        # #55: linke Tickstriche nur am Rahmen (nicht Schraffur des Nachbarprofils)
     "kurze_rahmen": True,                 # #55: Mindesthoehe des Diagrammrahmens 36 statt 52 pt (x Seitenfaktor)
     "nn_vor_wert": True,                  # #55: Ansatzhoehe 'NN+8,83m'
@@ -1092,7 +1093,7 @@ def _laengsschnitt_nhn_regression(
 def _kandidaten_rahmen(sd: _SeitenDaten) -> list[tuple[pymupdf.Rect, str]]:
     """Findet Plotrahmen aus Rechtecken, zusammengesetzten H/V-Linien und L-Achsen."""
     sf = sd.scale_f
-    min_h = 36.0 if REGELN["kurze_rahmen"] else 52.0      # #55: Rammdiagramm einer 2-m-Sondierung auf langem Blatt
+    min_h = 25.0 if REGELN["kurze_rahmen"] else 52.0      # #55: Rammdiagramm einer 1,7-m-Sondierung auf langem Blatt
     kands: list[tuple[pymupdf.Rect, str]] = []
     seite_flaeche = max(sd.breite * sd.hoehe, 1.0)
 
@@ -2561,6 +2562,17 @@ def _extrahiere_diagramme(
             sd, rahmen, x_ax, y_ax, werte_dph
         )
         endtiefe = end_korr if end_korr is not None else werte_dph[-1][1]
+        if REGELN["endlabel_nullschlaege"] and end_korr is None:
+            # #55: gedrucktes Endlabel ('2,30') bis 0,25 m unter dem Kurvenende ist die Endtiefe; die Werte dazwischen
+            # sind nicht gezeichnet und werden nicht erfunden (Hinweis); nur Labels an der Tiefenachse links des Rahmens
+            end_lbl = [f for r, t, *_ in sd.words if re.fullmatch(r"\d{1,2}[.,]\d{2}", str(t))
+                       and rahmen.x0 - 45 * sf <= r.x1 <= rahmen.x0 + 2 * sf
+                       and rahmen.y0 <= (r.y0 + r.y1) / 2 <= rahmen.y1 + 15 * sf
+                       and endtiefe + 0.05 <= (f := _f(str(t))) <= endtiefe + 0.25 + 1e-6]
+            if end_lbl:
+                zen_hinw = list(zen_hinw) + [f"Endtiefe {max(end_lbl):.2f} m laut Label, Kurve endet bei {endtiefe:.2f} m "
+                                             "(letzte Schritte ohne gezeichneten Wert)"]
+                endtiefe = max(end_lbl)
 
         konf = 0.90 if not y_hinweise else 0.45
         if sd.quelle == "OCR":
@@ -2796,6 +2808,10 @@ def _endpruefung(
 
     # 3) Abgleich mit gedruckter Endtiefe-Angabe auf beitragenden Seiten (bbox-bezogen)
     letzte_tiefe = float(werte[-1][1] if art in DPH_ARTEN else werte[-1][0])
+    if REGELN["endlabel_nullschlaege"] and art in DPH_ARTEN and sond.get("endtiefe") is not None \
+            and letzte_tiefe < float(sond["endtiefe"]) <= letzte_tiefe + 0.25 + 1e-6 \
+            and any("laut Label" in h for h in sond.get("hinweise") or []):
+        letzte_tiefe = float(sond["endtiefe"])          # #55: Endlabel unter dem Kurvenende bleibt die Endtiefe
     sond["endtiefe"] = round(letzte_tiefe, 3)
     seiten = list(beleg.get("seiten") or [sond.get("seite")])
     seiten_bboxes = beleg.get("_seiten_bboxes") or {}

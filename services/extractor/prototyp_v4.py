@@ -58,7 +58,7 @@ ANTHROPOGEN = {"beton": "Beton", "asphalt": "Asphalt", "schwarzdecke": "Schwarzd
                "pflaster": "Pflaster", "anschuettung": "Auffuellung", "anschüttung": "Auffuellung",
                "auffuellung": "Auffuellung", "auffüllung": "Auffuellung", "schotter": "Auffuellung",
                "auffullung": "Auffuellung", "anschuttung": "Auffuellung"}     # OCR ohne Umlaut (E6)
-TOPSOIL = {"oberboden", "mutterboden", "humus"}
+TOPSOIL = {"oberboden", "mutterboden", "humus", "grasnarbe"}           # Grasnarbe: A20 (#55)
 # Hauptbodenart als Kuerzel am Anfang der Beschreibung (DIN 4023 bzw. EN ISO 14688)
 ABBR_RE = re.compile(r"^\s*(Mu|Mg|Gr|Sa|Si|Cl|Co|A|[fmg]?S|[fmg]?G|U|T|X|H|F)(?=[\s,(?´'*]|$)")
 ABBR = {"Mu": "Mutterboden", "Mg": "Auffuellung", "A": "Auffuellung", "Gr": "Kies", "G": "Kies",
@@ -108,6 +108,7 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "gw_label_gok_zuordnung": True,  # W7c Wasserlabel mit Hoehe gehoert zur Saeule, deren GOK passt (#55)
     "beschreibung_bloecke": True, # T15 ein Textblock je Schicht in Reihenfolge = Beschreibung der Schicht (#55)
     "gw_dreieck_nach_unten": True,  # W9 Wassersymbol zeigt nach unten; Achsenpfeil 'N10 >' ist kein Wasser (#55)
     "legende_kuerzel": True,     # T14  Kuerzel aus der Legende der Seite: 'BK A/1', 'S A1' (#54)
@@ -2520,6 +2521,7 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
         blaue_linien = [dr for dr in doc[pno].get_drawings() if dr.get("color") and len(dr["color"]) == 3
                         and dr["color"][2] >= 0.5 and dr["color"][2] > dr["color"][0] + 0.2]
         labels: dict[int, list] = defaultdict(list)
+        kand_liste = []
         for r, t in spans:
             if not (m := WL_RE.match(t)):
                 continue
@@ -2532,12 +2534,26 @@ def _blaue_wasserlabels(doc, boreholes) -> None:
             nah = [(abstand(bh), i) for i, bh in enumerate(bhs) if abstand(bh) is not None]
             if not nah:
                 continue
-            i = min(nah)[1]
             d = float(m.group(1).replace(",", "."))
             h = float(m.group(2).replace(",", ".")) if m.group(2) else None
+            if h is not None and RULES["gw_label_gok_zuordnung"]:   # W7c: Label zwischen zwei Saeulen -> die mit passender GOK
+                passend = [(a_, j) for a_, j in nah if bhs[j].gok is not None and abs(d + h - bhs[j].gok) <= 0.05]
+                if passend:
+                    nah = passend
             datum = " ".join(u for q, u in alle if 0 <= q.y0 - r.y1 < 14 and abs(q.x0 - r.x0) < 40
                              and GW_DATUM_RE.search(u))
-            labels[i].append((d, h, f"{t} {datum}".strip()))
+            kand_liste.append((r, nah, d, h, f"{t} {datum}".strip()))
+        # W7c: mehrdeutig (zwei Saeulen passen) -> die Seite, auf der die eindeutigen Labels der Seite stehen
+        seiten = [("links" if r.x1 <= bhs[nah[0][1]].bbox[0] + 2 else "rechts") for r, nah, *_ in kand_liste if len(nah) == 1]
+        seite = max(("links", "rechts"), key=seiten.count) if seiten and RULES["gw_label_gok_zuordnung"] else None
+        for r, nah, d, h, beleg in kand_liste:
+            i = min(nah)[1]
+            if len(nah) > 1 and seite is not None:
+                gleich = [(a_, j) for a_, j in nah
+                          if ("links" if r.x1 <= bhs[j].bbox[0] + 2 else "rechts") == seite]
+                if gleich:
+                    i = min(gleich)[1]
+            labels[i].append((d, h, beleg))
         for i, ls in labels.items():
             bh = bhs[i]
             ok = []
@@ -2642,6 +2658,10 @@ def _assign_text(bh: Borehole, col: Column, lines, words, fit, mode, pairs, righ
         for i in right_i:
             bloecke[blk_von[i]].append(lines[i])
         folge = sorted(bloecke.values(), key=lambda v: min(r.y0 for r, _ in v))
+        if folge:                                         # nur die Spalte der Beschreibungen (Laborwert 'Vgl = 1,1%' daneben)
+            xs = [min(v, key=lambda e: e[0].y0)[0].x0 for v in folge]
+            x_haupt = max(xs, key=lambda x: sum(abs(x - y) <= 3 for y in xs))
+            folge = [v for v, x in zip(folge, xs) if abs(x - x_haupt) <= 3]
         starts = [min(v, key=lambda e: e[0].y0) for v in folge]
         if len(folge) == len(bh.layers) and all(col.rect.y0 - 15 <= r.y0 <= col.rect.y1 + 15 for r, _ in starts) \
                 and max(r.x0 for r, _ in starts) - min(r.x0 for r, _ in starts) <= 3 \

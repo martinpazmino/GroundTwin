@@ -641,6 +641,17 @@
   "falsche Grenzen": 0,
   "falsches GW": 0
  },
+ "stress/s45_wasserlabel_seite": {
+  "Bohrungen": "2/2",
+  "Grenzen": "10/10",
+  "Grenzen exakt": "10/10",
+  "Bodenart": "10/10",
+  "GOK": "2/2",
+  "GW": "2/2",
+  "falsche Bohrungen": 0,
+  "falsche Grenzen": 0,
+  "falsches GW": 0
+ },
  "synth/synth_A": {
   "Bohrungen": "3/3",
   "Grenzen": "18/18",
