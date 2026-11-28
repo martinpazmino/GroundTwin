@@ -163,7 +163,7 @@ export function schrittModell() {
   const exporte: [string, string][] = [["ifc", "Baugrundmodell (IFC 4.3)"], ["bericht", "Prüfbericht (JSON)"]];
   const weitere: [string, string][] = [["einheiten", "Einheiten-Vorlage (JSON)"], ["extraktion", "Extraktion (JSON)"],
     ["eingabe", "Modell-Eingabe mit Korrekturen (JSON)"], ["projekt", "Projektstand (JSON)"],
-    ["agsi", "Informationspaket AGSi (ZIP)"]];
+    ["agsi", "Informationspaket AGSi (ZIP)"], ["ags4", "Bohrungen und Sondierungen AGS4 (für OpenGround, Leapfrog, PLAXIS)"]];
   const erweitert = erweitertAuf || !!(z.geoldg?.angaben.beginn || z.geoldg?.angaben.abschluss);   // GeolDG in Arbeit
   return html`
     <div class="app-panel rechts">
@@ -229,7 +229,8 @@ export function schrittModell() {
         <section class="abschnitt-flach">
           <h3>Weitere Exporte</h3>
           <div class="export-liste">
-            ${weitere.map(([art, titel]) => html`<a class="knopf" href=${api.exportUrl(S.sig, art)} download>${titel}</a>`)}
+            ${weitere.map(([art, titel]) => html`<a class="knopf" href=${api.exportUrl(S.sig, art)} download>${titel}</a>${
+              art === "ags4" ? hilfe("ags4") : nothing}`)}
             ${tilesTeil()}
             ${boreholemlTeil()}
           </div>

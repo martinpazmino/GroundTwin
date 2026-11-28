@@ -786,6 +786,36 @@ portal) can be uploaded like a PDF.
   hint *aus BoreholeML … – nicht aus dem Gutachten*.
 - A Schicht whose petrography has no Bodenart stays unklassifiziert, with the code named.
 
+### 5.1a AGS4 for OpenGround, Leapfrog and PLAXIS
+
+AGS4 (version 4.1.1) is the exchange format of the Association of Geotechnical and Geoenvironmental Specialists. It is
+the open route to PLAXIS: AGS4 → OpenGround / Leapfrog Works → PLAXIS, without Bentley libraries
+([30 §5](30_groundtwin_analysis_research.md#5-plaxis-interfaces), #30). The code is `services/geodaten/geodaten/ags4.py`.
+
+**Export:** *Modell → Erweitert → Weitere Exporte → Bohrungen und Sondierungen AGS4*. It is also part of the AGSi
+package (`fachdaten/<name>.ags`).
+
+What it holds, as with BoreholeML, is only what was reviewed. A row stays empty rather than guessed.
+
+- **Bohrungen** whose Schichten are all reviewed.
+  - `LOCA`: the Lage when known (`LOCA_NATE`/`LOCA_NATN`, with the EPSG code as an abbreviation of its own in
+    `LOCA_GREF`, explained in `ABBR`), the GOK in m NHN (`LOCA_GL`) and the Endtiefe. A Bohrung without coordinates
+    keeps an empty Lage and says so in `LOCA_REM`.
+  - `GEOL`: the description of the Gutachten in plain text, with the DIN 4023 Kurzzeichen in `GEOL_REM`.
+  - Water:
+    - Levels *angetroffen* and *Schichtenwasser* are water strikes (`WSTG`, with the date).
+    - *Ruhewasser*, *nach Bohrende* and levels without a kind are depth remarks (`DREM`). A Ruhewasserspiegel is no
+      strike.
+- **Sondierungen** that are reviewed and have values.
+  - Rammsondierungen as `DPRG`/`DPRB`: N10 per 10 cm, the probe type with hammer mass and drop, and `mindestens` for
+    a value beyond the axis.
+  - Drucksondierungen as `SCPG`/`SCPT`, only with a read unit (MPa or MN/m², kPa converted). A curve without its unit
+    is left out and named, never converted.
+- **ASCII** (AGS4 rule 1): umlauts are spelt out (ä → ae). The hints sit in `TRAN_REM`.
+
+The file passes the checker of the AGS Data Format Working Group (`python-ags4`, test dependency) without a rule
+error: `tests/test_ags4.py`.
+
 ### 5.2 3D Tiles for Cesium
 
 *Export → Baugrundmodell für Cesium (3D Tiles, ZIP)* writes the model as **3D Tiles 1.1** for

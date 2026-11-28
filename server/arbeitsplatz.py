@@ -37,7 +37,7 @@ from ui import sondierung as sd
 _GEODATEN = str(Path(__file__).resolve().parents[1] / "services" / "geodaten")
 if _GEODATEN not in sys.path:
     sys.path.insert(0, _GEODATEN)
-from geodaten import agsi, bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
+from geodaten import agsi, ags4, bohrdaten, boreholeml, dgm_dienst, gelaende, geoldg, quasigeoid, tiles3d, utm  # noqa: E402
 from geodaten import gebaeude as lod2  # noqa: E402
 
 _ANALYSE = str(Path(__file__).resolve().parents[1] / "services" / "analyse")
@@ -765,6 +765,12 @@ class Arbeitsplatz:
                     dgm_zelle=(p.dgm or {}).get("dx"), sondierungen=s_drin, sondierungen_draussen=s_raus,
                     epsg_projekt=epsgs.most_common(1)[0][0] if epsgs else None)
                 return _mit_bericht(inhalt, bericht), f"{stamm}_boreholeml.xml", "application/xml"
+            if art == "ags4":                           # AGS4 fuer OpenGround / Leapfrog -> PLAXIS (docs/30 §5, #30)
+                from server.api import VERSION as VERSION_APP      # spaet: api importiert dieses Modul
+                s_drin, s_raus = sd.fuer_ifc(docs, p)
+                inhalt, _ = ags4.exportieren(vorb.docs, projekt=p.name, organisation=organisation, sig=sig,
+                                             sondierungen=s_drin, sondierungen_draussen=s_raus, version=VERSION_APP)
+                return inhalt, f"{stamm}.ags", "text/plain"
         erg = self.modell(sig)
         if erg["fehler"]:
             raise ValueError(erg["fehler"])
@@ -869,7 +875,7 @@ class Arbeitsplatz:
         return geoldg.paket(u, name, dateien, fehlt), f"{p.name or 'baugrundmodell'}_geoldg.zip", "application/zip"
 
     def _export_agsi(self, sig: str, organisation: str = "") -> tuple[bytes, str, str]:
-        """Informationspaket v0 (Issue #33, docs/29): AGSi 1.0.1 + Manifest + Bericht, dazu IFC und BoreholeML.
+        """Informationspaket v0 (Issue #33, docs/29): AGSi 1.0.1 + Manifest + Bericht, dazu IFC, BoreholeML und AGS4.
         Die Ground Analysis geht mit, wenn sie schon gerechnet ist; sonst nur die Kreuzprobe (ab drei Bohrungen)."""
         from urllib.parse import quote
 
@@ -879,6 +885,10 @@ class Arbeitsplatz:
             bml = self.export(sig, "boreholeml", organisation)[0]
         except ValueError:
             bml = None                                     # keine exportierbare Bohrung: steht im Manifest unter offen
+        try:
+            ags = self.export(sig, "ags4", organisation)[0]
+        except ValueError:
+            ags = None                                     # nichts geprueft: wie BoreholeML nicht im Paket
         with self.sperre(sig):
             docs, p = self.laden(sig)
             vorb, _, schluessel = self.vorbereitung(docs, p)
@@ -901,9 +911,12 @@ class Arbeitsplatz:
             dateien = {f"geometrie/{stamm}.ifc": ifc}
             if bml:
                 dateien[f"fachdaten/{stamm}_boreholeml.xml"] = bml
+            if ags:
+                dateien[f"fachdaten/{stamm}.ags"] = ags
             g, manifest = agsi.bauen(m, bericht, vorb.docs, projekt=p.name or "Baugrundmodell",
                                      ifc_uri=quote(f"geometrie/{stamm}.ifc"),
                                      boreholeml_uri=quote(f"fachdaten/{stamm}_boreholeml.xml") if bml else None,
+                                     ags4_uri=quote(f"fachdaten/{stamm}.ags") if ags else None,
                                      homogenbereiche=p.homogenbereiche or None, analyse=analyse, version=VERSION,
                                      bereitschaft=self._bereitschaft(docs, p, vorb))
         fehler = agsi.pruefen(g) + agsi.manifest_pruefen(g, manifest)

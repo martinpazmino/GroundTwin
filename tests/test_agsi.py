@@ -78,6 +78,7 @@ def test_berlin_paket_inhalt_ids_und_verweise(berlin):
     assert {"manifest.json", "bericht.md", "LIESMICH.txt"} <= namen
     assert any(n.startswith("geometrie/") and n.endswith(".ifc") for n in namen)
     assert any(n.startswith("fachdaten/") and n.endswith("_boreholeml.xml") for n in namen)      # alle geprueft
+    assert any(n.startswith("fachdaten/") and n.endswith(".ags") for n in namen)                 # AGS4 (#30)
     assert a["agsSchema"] == {"name": "AGSi", "version": "1.0.1", "link": agsi.AGSI_LINK} and stamm
     assert agsi.pruefen(a) == [] and agsi.manifest_pruefen(a, man) == []
     m1 = a["agsiModel"][0]

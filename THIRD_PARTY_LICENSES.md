@@ -26,6 +26,7 @@ and the web-ifc WASM); everything else is installed with `pip` / `npm`.
 | Material Design Icons (`@iconify-json/mdi`) | icons | Apache-2.0 |
 | EOS Icons (`@iconify-json/eos-icons`) | icons | MIT |
 | xmlschema, elementpath (tests only) | checking the BoreholeML export against the official XSD | MIT |
+| [python-ags4](https://gitlab.com/ags-data-format-wg/ags-python-library) (tests only; with rich, defusedxml) | checking the AGS4 export with the checker of the AGS Data Format Working Group | LGPL-3.0 (rich: MIT, defusedxml: PSF) |
 | [cloudflared](https://github.com/cloudflare/cloudflared) (optional, installed separately for `start_online.bat`) | free tunnel to share the app from your own PC | Apache-2.0 |
 | [3d-tiles-validator](https://github.com/CesiumGS/3d-tiles-validator), [CesiumJS](https://github.com/CesiumGS/cesium) (checks only, installed outside the repository for `scripts/check_tiles3d.mjs`) | checking the 3D Tiles export | Apache-2.0 |
 
