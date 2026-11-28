@@ -108,6 +108,7 @@ RULES = {
     "gok_unter_kopf": True,      # T8   Ansatzhoehe '216.31 m' allein zwischen Kopf und Saeule (#54)
     "doppel_labels": True,       # T9   Grenzen mit Label 'Tiefe (Hoehe)': Linie ohne Label ist keine Grenze (#54)
     "top_null_gedruckt": True,   # T10  ohne gedrucktes 0,00: Text direkt ueber dem Label = Unterkanten-Konvention (#54)
+    "beschreibung_bloecke": True, # T15 ein Textblock je Schicht in Reihenfolge = Beschreibung der Schicht (#55)
     "gw_dreieck_nach_unten": True,  # W9 Wassersymbol zeigt nach unten; Achsenpfeil 'N10 >' ist kein Wasser (#55)
     "legende_kuerzel": True,     # T14  Kuerzel aus der Legende der Seite: 'BK A/1', 'S A1' (#54)
     "code_zusatz": True,         # T13  Code mit Zusatz 'BS 105A', 'BS 22.1' (#55)
@@ -2624,15 +2625,32 @@ def _assign_text(bh: Borehole, col: Column, lines, words, fit, mode, pairs, righ
     for r, t, blk, ln in words:
         if not DEPTH_RE.match(t):                         # Label und Text stehen oft in derselben Zeile
             by_line[(blk, ln)].append((r, t))
-    lines = []
-    for ws in by_line.values():
+    lines, blk_von = [], {}
+    for (blk, _ln), ws in by_line.items():
         ws.sort(key=lambda x: x[0].x0)
         r = pymupdf.Rect(ws[0][0])
         for q, _ in ws[1:]:
             r |= q
         lines.append((r, " ".join(t for _, t in ws)))
-    right = [(r, t) for r, t in lines if col.rect.x1 + 2 < r.x0 < min(col.rect.x1 + 220, right_limit - 5)
-             and (re.search(r"[A-Za-zÄÖÜäöü]{3}", t) or ABBR_RE.match(t)) and not DATE_RE.search(t)]
+        blk_von[len(lines) - 1] = blk
+    right_i = [i for i, (r, t) in enumerate(lines) if col.rect.x1 + 2 < r.x0 < min(col.rect.x1 + 220, right_limit - 5)
+               and (re.search(r"[A-Za-zÄÖÜäöü]{3}", t) or ABBR_RE.match(t)) and not DATE_RE.search(t)]
+    right = [lines[i] for i in right_i]
+    if RULES["beschreibung_bloecke"] and len(bh.layers) >= 2:
+        # T15 (#55): genau ein Textblock je Schicht, in Reihenfolge, am Profil ausgerichtet -> Block k = Schicht k
+        bloecke: dict[int, list] = defaultdict(list)
+        for i in right_i:
+            bloecke[blk_von[i]].append(lines[i])
+        folge = sorted(bloecke.values(), key=lambda v: min(r.y0 for r, _ in v))
+        starts = [min(v, key=lambda e: e[0].y0) for v in folge]
+        if len(folge) == len(bh.layers) and all(col.rect.y0 - 15 <= r.y0 <= col.rect.y1 + 15 for r, _ in starts) \
+                and max(r.x0 for r, _ in starts) - min(r.x0 for r, _ in starts) <= 3 \
+                and all(len(v) <= 6 for v in folge):
+            for ly, v in zip(bh.layers, folge):
+                v = sorted(v, key=lambda e: e[0].y0)
+                ly.text = " ".join(t for _, t in v)
+                ly.soil = classify_v3(v[0][1].split(",")[0]) or classify_v3(ly.text)
+            return
     tops = sorted(v for _, v in pairs)
     if RULES["top_convention"] and not mode.startswith("direkt") and tops and tops[0] == 0.0:
         lab = sorted([(r, float(t.rstrip("m ").replace(",", "."))) for r, t, *_ in words if DEPTH_RE.match(t)

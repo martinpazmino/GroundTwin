@@ -6,6 +6,8 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- One text block per layer (#55, docs/16 T15): multi-line descriptions starting at the label of their lower edge are
+  assigned block by block. A20 (training): Bodenart 711 → 891/993. Stress `s44`.
 - Water symbol points down (#55, docs/16 W9): the arrowhead of an axis and the Ansatzpunkt marker `NN+…` of a
   neighbouring diagram are no water. A20 (training): false levels 6 → 1, GW-Status 25/25. Stress `s43`.
 - Sondierungen (#55): shorter diagram frames on long sheets, depth and NHN labels snapped to their lines (the hatching
