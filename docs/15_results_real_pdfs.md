@@ -425,6 +425,7 @@ suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung
 | Bohrungen | 187/200 | **200/200** |
 | Boundaries (exact) | 928/994 (924) | 992/994 (986) |
 | GOK | 187/200 | **200/200** |
+| Bodenart | 668/929 | 891/993 (T15) |
 | GW | 249/266 | 259/266 |
 | GW-Status | 21/25 | 25/25 |
 | False Bohrungen | 8 | **0** |
@@ -432,8 +433,7 @@ suffix), W7b (`0,75 GW` with `NN+…` under it), Sondierungen `rs_rammsondierung
 | RS found / Endtiefe ±5 cm | 0/30 / 0/30 | 29/30 / 28/30 |
 
 Still open: RS 1 (1.7 m, below the minimum frame height even after `kurze_rahmen`), RS 9 Endtiefe 2.2 instead of 2.3,
-one profile with an extra level (BS 44; the axis arrow and Ansatzpunkt marker of the neighbouring RS are no water since W9), Bodenart 711/993 (the vocabulary of the
-descriptions: `Feinsand, u` with a leading soil word works, the long A20 descriptions often not).
+one profile with an extra level (BS 44; the axis arrow and Ansatzpunkt marker of the neighbouring RS are no water since W9), Bodenart 891/993 (T15, one text block per layer).
 
 ### 8.11 Blind round 7: two reports without Bohrprofile (2026-11-26)
 

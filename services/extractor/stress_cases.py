@@ -789,6 +789,24 @@ def build(out: Path) -> list[str]:
     p.insert_text((s43.x0 - 150, yg - 1), "NN+44,10m", fontsize=7)
     save("s43_pfeil_ansatzpunkt", doc, [_truth("BS 43", L_STD, 45.20, kind="rks")],
          "W9/#55: Achsenpfeil nach rechts und Ansatzpunkt 'NN+44,10m' sind kein Wasser")
+
+    # s44 mehrzeilige Beschreibungsbloecke ab dem Label der Unterkante (laufen in die naechste Schicht) (T15, #55)
+    doc = pymupdf.open()
+    p = doc.new_page(width=595, height=842)
+    L44 = [(1.1, "Mutterboden", "Mutterboden, Feinsand, schwach schluffig, durchwurzelt, dunkelbraun"),
+           (2.2, "Schluff", "Schluff, tonig, sandig, steif, braun, kalkhaltig"),
+           (3.3, "Sand", "Sand, schwach kiesig, mitteldicht, grau, feucht"),
+           (4.4, "Ton", "Ton, schluffig, weich, grau, mit Sandstreifen"),
+           (5.5, "Kies", "Kies, sandig, grau, nass, dicht gelagert")]
+    s44 = Spec("BS 7", [(b, so, "") for b, so, _ in L44], gok=45.20, scale=100, scale_text="M 1:100")
+    draw_profile(p, s44)
+    ppm = PT_PER_M_1_1 / s44.scale
+    for bot, _, desc in L44:
+        yb = s44.top_y + bot * ppm
+        p.insert_textbox(pymupdf.Rect(s44.x0 + s44.col_w + 40, yb - 7, s44.x0 + s44.col_w + 120, yb + 24), desc,
+                         fontsize=6.5)                                  # ein Block, beginnt am Label der Unterkante
+    save("s44_beschreibungsbloecke", doc, [_truth("BS 7", L44, 45.20, kind="rks")],
+         "T15/#55: je Schicht ein mehrzeiliger Textblock ab dem Label der Unterkante, reicht in die naechste Schicht")
     return made
 
 
