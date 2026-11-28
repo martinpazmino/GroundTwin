@@ -107,13 +107,18 @@ def abhaengigkeiten(eintraege: dict[str, dict] | None = None) -> dict[str, set[s
     return out
 
 
-def planen(verfuegbar: set[str] | list[str], eintraege: dict[str, dict] | None = None) -> dict:
+def planen(verfuegbar: set[str] | list[str], eintraege: dict[str, dict] | None = None,
+           angenommen_im_projekt: set[str] | None = None) -> dict:
     """Was ein Projekt mit diesen Groessen rechnen kann (A2-Planer, Grundlage der Readiness-Sicht A3).
 
     Je Eintrag: ``moeglich`` (alle Pflichteingaben da), ``hinweisend`` (laeuft mit angenommenen oder ohne optionale
     Eingaben) oder ``blockiert`` (mit den fehlenden Eingaben). Je fehlender Grundgroesse: was sie liefert und was sie
-    freischalten wuerde (direkt und ueber abgeleitete Groessen)."""
+    freischalten wuerde (direkt und ueber abgeleitete Groessen).
+
+    ``angenommen_im_projekt``: Groessen, die das Projekt hat, aber (zum Teil) nur als Annahme (#35: kein Feinkorn
+    genannt → Klasse < 5 %). Ein Eintrag, der sie benutzt, ist hoechstens ``hinweisend`` und nennt sie."""
     eintraege = katalog() if eintraege is None else eintraege
+    im_projekt = set(angenommen_im_projekt or ())
     unbekannt = sorted(g for g in set(verfuegbar) if g not in groessen())
     da = _abschluss(set(verfuegbar), eintraege)        # 1. alles Ableitbare (Fixpunkt)
     status: dict[str, dict] = {}
@@ -123,6 +128,7 @@ def planen(verfuegbar: set[str] | list[str], eintraege: dict[str, dict] | None =
         fehlt = [g for g in req if g not in da]
         angenommen = [g for g in fehlt if wm.get(g) == "assume"]
         blockiert = [g for g in fehlt if g not in angenommen]
+        angenommen += [g for g in req + opt if g in im_projekt and g in da and g not in angenommen]
         opt_da = [g for g in opt if g in da]
         if blockiert or (not req and not opt_da):
             status[k] = {"status": "blockiert", "fehlt": blockiert or [g for g in opt if g not in da]}

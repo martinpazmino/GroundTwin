@@ -218,14 +218,22 @@ of `bericht.md`.
 
 | Project | Base quantities | Result |
 |---|---|---|
-| Berlin | Schichten, Lage (UTM), GOK, description, Wasserstände with their kind; the 6 scanned Sondierungen have no Lage and do not count | 8 möglich, 1 hinweisend (DAUB 2/8), 7 blockiert (all Labor rules, Homogenbereich Kennwerte until a mapping exists, the two Sondierung statistics without a located Sondierung) |
+| Berlin | Schichten, Lage (UTM), GOK, description, Wasserstände with their kind; the 6 scanned Sondierungen have no Lage and do not count | 9 möglich, 1 hinweisend (DAUB 3/9, fines class *assumed*), 7 blockiert (all Labor rules, Homogenbereich Kennwerte until a mapping exists, the two Sondierung statistics without a located Sondierung) |
 | Talheim | Reihe, so the Lage is assumed and the layer model is *hinweisend*; Labor has only Wassergehalt (and CBR, Trockendichte, not used) | I<sub>c</sub> blocked for w_L and w_P; after a DIN 18300 mapping, Homogenbereich Kennwerte become *möglich* |
 
-The DAUB pre-selection reaches 2 of 8 inputs from descriptions alone, consistent with the experiment of docs/30 §4.
+The DAUB pre-selection reaches 3 of 9 inputs from descriptions alone (consistency, relative density, fines class),
+consistent with the experiment of docs/30 §4.
 
-**Still open in #35:**
-- the review with the geotechnical expert;
-- showing "no fines named" as an *assumed* value, which needs a catalogue entry for fines from the description.
+**Fines from the description** (entry `ansprache.feinkornanteil_klasse`, `normen.feinkorn_klasse`, 2026-11-28): the
+class of the DAUB fines row (< 5 / 5–15 / 15–40 / > 40 %) from the Ansprache. A fine main soil (Schluff, Ton) is
+> 40 % (DIN 18196). For Kies or Sand, the strongest fine secondary fraction sets the class by the DIN 4023 guide values:
+*schwach* < 15 % → 5–15 %, no qualifier 15–30 % → 15–40 %, *stark* > 30 % → 15–40 % *assumed*, because it can exceed
+40 %. With **no fines named** the class < 5 % is *assumed*: a short field description (Berlin: `Feinsand/grau/…`) may
+simply not mention fines. The planner takes the quantities a project has only as an assumption
+(`planen(…, angenommen_im_projekt=…)`). An entry that uses them is at most *hinweisend* and names them. The server sets
+this for the fines class when at least one Schicht is assumed and there is no grading.
+
+**Still open in #35:** the review with the geotechnical expert.
 
 Tests: `tests/test_bereitschaft_app.py` and one end-to-end check.
 

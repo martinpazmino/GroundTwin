@@ -49,12 +49,14 @@ def test_berlin_von_hand(client):
     for k in ("modell.schichtenmodell", "analyse.kreuzprobe", "analyse.unsicherheit", "analyse.grundwasserflaeche",
               "hb.vorschlag"):
         assert e[k]["status"] == "moeglich", k
-    assert e["daub.tbm_vorauswahl_boden"]["status"] == "hinweisend" and e["daub.tbm_vorauswahl_boden"]["abdeckung"] == "2/8"
+    daub = e["daub.tbm_vorauswahl_boden"]
+    assert daub["status"] == "hinweisend" and daub["abdeckung"] == "3/9"
+    assert ids(daub["angenommen"]) == {"boden.feinkorn_klasse"}            # "Feinsand/grau/…": kein Feinkorn genannt (#35)
     assert e["labor.statistik_einheit"]["status"] == "blockiert" and ids(e["labor.statistik_einheit"]["fehlt"]) == {"labor.messwerte"}
     assert e["hb.kennwerte_ansprache"]["status"] == "blockiert"
     fehlend = {f["id"]: f for f in b["fehlend"]}
     assert fehlend["hb.zuordnung"]["eingabe"] is True and "VOB/C" in fehlend["hb.zuordnung"]["liefert"]
-    assert b["zusammenfassung"] == {"moeglich": 8, "hinweisend": 1, "blockiert": 7}
+    assert b["zusammenfassung"] == {"moeglich": 9, "hinweisend": 1, "blockiert": 7}
 
 
 def test_talheim_von_hand_und_mit_homogenbereichen(client):

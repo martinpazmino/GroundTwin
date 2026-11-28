@@ -132,3 +132,21 @@ def test_farben_nach_din4023_tabelle_2_und_3():
         x = deuten(text)
         assert (x.klasse, x.hauptanteil) == (klasse, name), text
     assert deuten("Seekreide").farbname == "hellblau" and deuten("Bänderton").farbname == "violett"
+
+
+def test_feinkorn_klasse_aus_der_ansprache():
+    """#35: Klasse des Feinkornanteils fuer Vorauswahlen; ohne genanntes Feinkorn nur angenommen."""
+    from baugrundmodell.normen import feinkorn_klasse
+    fall = {"Feinsand/grau/Schichtwasser": ("< 5 %", True),          # kurze Feldansprache: Feinkorn nicht genannt
+            "Mittelsand, schwach schluffig": ("5–15 %", False),     # DIN 4023: schwach < 15 %
+            "Kies, sandig, schluffig": ("15–40 %", False),          # ohne Stufe 15–30 %
+            "Sand, stark schluffig, kiesig": ("15–40 %", True),     # stark > 30 %: kann ueber 40 % liegen
+            "Kies, sehr schwach tonig": ("5–15 %", True),           # sehr schwach: Praxis, kein Richtwert
+            "Schluff, tonig, steif": ("> 40 %", False),             # DIN 18196: feinkoernig
+            "Auffüllung (Sand, schwach kiesig)": ("< 5 %", True)}   # Material der Auffuellung
+    for text, (klasse, angenommen) in fall.items():
+        k = feinkorn_klasse(text)
+        assert (k["klasse"], k["angenommen"]) == (klasse, angenommen), text
+        assert k["beleg"]
+    for text in ("Torf", "Sandstein", "Beton", ""):                  # kein Feinkorn-Lockergestein: keine Klasse
+        assert feinkorn_klasse(text) is None, text

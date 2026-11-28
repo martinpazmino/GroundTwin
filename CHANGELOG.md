@@ -6,6 +6,9 @@ the version is the app version shown in the footer (`server/api.py`, `VERSION`).
 ## [Unreleased]
 
 ### Added
+- Readiness (#35): fines class from the description (DIN 4023 guide values, DIN 18196); "no fines named" is shown as
+  *assumed*, and the DAUB pre-selection names it (Berlin: DAUB 3/9, hinweisend). Catalogue entry
+  `ansprache.feinkornanteil_klasse` (docs/29 §8.3).
 - Sondierungen (#54): a frame must be closed at the top and the bottom (a line along the bottom of two panels no
   longer merges them), aborted CPT with a depth axis `0`/`1` are read (hint), values keep the channel of the axis they
   are read on. Planfeststellung (training) 19 → 23/24, 0 false values. Sondierungen stress `s15` (docs/16 G7).
