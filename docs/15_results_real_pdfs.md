@@ -377,7 +377,9 @@ and synthetic cases: no case worse, 0 false. These figures are **training**, not
 (training) Bohrungen 41 → **95/115** (BK 32/33, Schürfe 23/35), boundaries 188 → **405/440 exact**, Bodenart 305/405,
 GOK 94/115, GW 5 → **67/69**, false boundaries **0**. Still missing: Schürfe with one or two layers (a column needs more
 labels to be anchored; relaxing that risks false Bohrungen), `V G1–G3` (prefix `V` not in the legend of the page), BK D/3,
-KRB 4 and the header-only KRB of the ground truth; CPT 2 of the sections; DPH 1–2 of U09.
+KRB 4 (labels on leader lines up to 50 pt below very thin layers) and the header-only KRB of the ground truth.
+Sondierungen (2026-11-28, `titel_lokal`, `rahmen_kante_verbindet`): U09 DPH 5/5 with Endtiefe, Planfeststellung 15 → 19/24
+(missing CPT 6, 7, 8, 9a, 10a; CPT 7–9a are only 0.9–2.1 m deep).
 
 **Round 6** (A20 Unterlage 20.1, public, strassenbau.niedersachsen.de, 47 MB): frozen twice before opening,
 `benchmark/frozen/runde6_vorher` (code `1e25a60`, before #54) and `runde6_nachher` (code `77f3bd2`); 195 and 194

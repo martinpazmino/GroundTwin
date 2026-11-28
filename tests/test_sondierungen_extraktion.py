@@ -1,6 +1,6 @@
 """Stufe Sondierungen (services/extractor/sondierungen.py, Issue #27, docs/05 §5): ohne Netz und ohne echte Gutachten.
 
-Die Faelle werden im Test erzeugt: die zwoelf Stressfaelle (stress_sondierungen.py, mit Wahrheit) und eigene Proben in
+Die Faelle werden im Test erzeugt: die vierzehn Stressfaelle (stress_sondierungen.py, mit Wahrheit) und eigene Proben in
 einem anderen Layout (Achse 0-40, Kurve als Polylinie oder als Einzelstriche). Bewertet wird mit demselben Werkzeug
 wie die Messung (benchmark/sondierungen_eval.py). Jede Pruefung zeigt auch, dass sie greift ("Regel aus -> Fall faellt").
 """
@@ -54,7 +54,7 @@ def anteil(bruch: str) -> tuple[int, int]:
 FAELLE = ["s01_dph_diagramm", "s02_dph_tabelle", "s03_dph_laengsschnitt", "s04_cpt_linear_log",
           "s05_zensiert", "s06_zweiseitig", "s07_falle_bohrprofil_lineal", "s08_falle_labortabelle",
           "s09_stationscode_achse", "s10_rs_nn", "s11_kurz_langes_blatt",
-          "s12_endlabel"]
+          "s12_endlabel", "s13_nachbarkopf", "s14_zwei_felder"]
 
 
 @pytest.mark.parametrize("fall", FAELLE)
@@ -79,6 +79,8 @@ SCHUTZ = [
     ("kurze_rahmen", "s11_kurz_langes_blatt", "gefunden"),                       # 2,5-m-Diagramm, langes Blatt (#55)
     ("tickstriche_am_rahmen", "s11_kurz_langes_blatt", "falsche_werte"),         # Label auf der Linie, Schraffur links
     ("endlabel_nullschlaege", "s12_endlabel", "endtiefe_5cm"),                   # Endlabel 2,30 unter dem Kurvenende
+    ("titel_lokal", "s13_nachbarkopf", "gefunden"),                              # Nachbarkopf in der Tickzeile (#54)
+    ("rahmen_kante_verbindet", "s14_zwei_felder", "gefunden"),                   # Linie quer durch zwei Felder (#54)
 ]
 
 
